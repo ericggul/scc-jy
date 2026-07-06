@@ -3,7 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "node scripts/dev-https.mjs",
+    "dev:next": "bash scripts/generate-certs.sh && next dev --experimental-https --experimental-https-key certificates/server.key --experimental-https-cert certificates/server.pem --experimental-https-ca certificates/rootCA.pem",
+    "dev:socket": "bash scripts/generate-certs.sh && node socket-server.mjs",
+    "dev:http": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
@@ -11,7 +14,11 @@
   "dependencies": {
     "next": "16.2.10",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "simple-icons": "^16.25.0",
+    "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.3",
+    "styled-components": "^6.4.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

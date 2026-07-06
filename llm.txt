@@ -1,0 +1,26 @@
+# llm.txt
+
+This file is the LLM/harness index for the SCC repo.
+
+Active coding rules:
+- `AGENTS.md`
+
+Harness documentation:
+- `docs/harness/overview.md`
+- `docs/harness/nextjs.md`
+- `docs/harness/experiments.md`
+- `docs/harness/https-and-sockets.md`
+
+Per-experiment documentation:
+- `docs/moma.md`
+- `docs/stock.md`
+- `docs/table.md`
+- `docs/w1.md`
+
+External references checked:
+- OpenAI Codex best practices: https://developers.openai.com/codex/learn/best-practices
+- OpenAI Codex AGENTS.md guide: https://developers.openai.com/codex/guides/agents-md
+- OpenAI Codex prompting guide: https://developers.openai.com/codex/prompting
+- Anthropic Claude Code memory guide: https://code.claude.com/docs/en/memory
+- Anthropic Claude Code common workflows: https://code.claude.com/docs/en/common-workflows
+- Anthropic Building Effective AI Agents: https://www.anthropic.com/engineering/building-effective-agents
