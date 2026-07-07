@@ -1,5 +1,12 @@
 import Link from "next/link";
-import { indices, marketSession, type MarketSymbol, type PricePoint } from "./data";
+import type { CSSProperties } from "react";
+import {
+  indices,
+  marketSession,
+  stockPalettes,
+  type MarketSymbol,
+  type PricePoint,
+} from "./data";
 
 export function signed(value: number) {
   return `${value > 0 ? "+" : ""}${value.toFixed(2)}`;
@@ -56,13 +63,17 @@ export function Sparkline({
 export function AreaChart({
   symbol,
   className = "",
+  style,
   lineClassName = "text-cyan-300",
-  fillClassName = "fill-cyan-300/15",
+  lineColor,
+  fill = "rgba(103, 232, 249, 0.15)",
 }: {
   symbol: MarketSymbol;
   className?: string;
+  style?: CSSProperties;
   lineClassName?: string;
-  fillClassName?: string;
+  lineColor?: string;
+  fill?: string;
 }) {
   const width = 900;
   const height = 340;
@@ -71,14 +82,20 @@ export function AreaChart({
   const volumeMax = Math.max(...symbol.series.map((point) => point.volume));
 
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} className={className} role="img" aria-label={`${symbol.symbol} intraday price chart`}>
+    <svg
+      viewBox={`0 0 ${width} ${height}`}
+      className={className}
+      style={style}
+      role="img"
+      aria-label={`${symbol.symbol} intraday price chart`}
+    >
       <defs>
         <pattern id={`grid-${symbol.symbol}`} width="90" height="68" patternUnits="userSpaceOnUse">
           <path d="M 90 0 L 0 0 0 68" fill="none" stroke="currentColor" strokeOpacity="0.12" strokeWidth="1" />
         </pattern>
       </defs>
       <rect width={width} height={height} fill={`url(#grid-${symbol.symbol})`} className="text-current" />
-      <polygon points={area} className={fillClassName} />
+      <polygon points={area} fill={fill} />
       {symbol.series.map((point, index) => {
         const barHeight = (point.volume / volumeMax) * 52;
         const x = 24 + index * ((width - 48) / (symbol.series.length - 1));
@@ -96,7 +113,7 @@ export function AreaChart({
       <polyline
         points={line}
         fill="none"
-        stroke="currentColor"
+        stroke={lineColor ?? "currentColor"}
         strokeLinecap="round"
         strokeLinejoin="round"
         strokeWidth="5"
@@ -126,6 +143,22 @@ export function StockTopbar({ current = "1" }: { current?: string }) {
         ))}
       </nav>
     </header>
+  );
+}
+
+export function VariantSignature({ slug }: { slug: keyof typeof stockPalettes }) {
+  const palette = stockPalettes[slug];
+
+  return (
+    <div className="flex items-center gap-1" aria-label={`${palette.name} palette`}>
+      {palette.colors.map((color) => (
+        <span
+          key={color}
+          className="h-2.5 w-2.5 border border-current/20"
+          style={{ backgroundColor: color }}
+        />
+      ))}
+    </div>
   );
 }
 
@@ -166,4 +199,3 @@ export function ChangeText({ value }: { value: number }) {
     </span>
   );
 }
-

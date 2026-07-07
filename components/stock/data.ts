@@ -241,3 +241,25 @@ export const riskMetrics = [
   { label: "Sharpe YTD", value: "1.71", change: "+0.14" },
 ] as const;
 
+export const stockPalettes = {
+  "1": {
+    name: "Terminal phosphor",
+    colors: ["#050607", "#d7fbe8", "#7ce7ff", "#ffcc66", "#7cffb2"],
+  },
+  "2": {
+    name: "Consumer glass",
+    colors: ["#f5f7fb", "#ffffff", "#111318", "#10b981", "#94a3b8"],
+  },
+  "3": {
+    name: "Graph wall",
+    colors: ["#090b10", "#eef3f8", "#8fb8ff", "#14b8a6", "#f43f5e"],
+  },
+  "4": {
+    name: "Options flow",
+    colors: ["#07100f", "#eafff8", "#53ffd6", "#ff5d8f", "#0d1a18"],
+  },
+  "5": {
+    name: "Portfolio brief",
+    colors: ["#f7f9fb", "#ffffff", "#17202a", "#006fbf", "#d8dee6"],
+  },
+} as const;
