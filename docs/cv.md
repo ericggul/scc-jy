@@ -54,9 +54,15 @@ density can become first-class controls later.
   screens. Multi-page formats should render as stacked A4 pages, not as one
   compressed pseudo-page.
 - `cv/2` grid cells must be exactly A4-sheet-sized, not viewport-sized, with no
-  inter-cell margins unless a later request explicitly adds margins. Multiple
-  CVs should be visible in one viewport when space allows, and neighboring CVs
-  should sit directly above, below, left, and right of the current CV.
+  viewport-sized dead space. Inter-CV margin is controlled by one responsive
+  ratio constant in the plane component, currently sized from the A4 page width.
+  Positive values add space between CVs; negative values intentionally overlap
+  neighboring CV sheets without changing each CV's internal layout. In negative
+  overlap mode, CV sheet backgrounds must be transparent so text layers visually
+  stack instead of being covered by white page fills.
+  Multiple CVs should be visible in one viewport when space allows, and
+  neighboring CVs should sit directly above, below, left, and right of the
+  current CV.
 - `cv/2` must have exactly one scroll container: the fixed full-screen 2D plane.
   The page/body and individual CV sheets must not create nested scroll regions.
 - `cv/2` must not use native mandatory scroll snapping because it interrupts

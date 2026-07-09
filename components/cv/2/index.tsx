@@ -10,6 +10,8 @@ const GRID_SIZE = 100;
 const CENTER_INDEX = Math.floor(GRID_SIZE / 2);
 const SETTLE_DELAY_MS = 140;
 const RENDER_SPAN = 15;
+const CELL_GAP_RATIO = 0.075;
+// const CELL_GAP_RATIO = -0.375;
 const ZOOM_LEVELS = [0.1, 0.2, 0.35, 0.5, 0.7, 1, 1.3] as const;
 
 type PageSize = {
@@ -38,6 +40,16 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
+function getCellPitch(pageSize: PageSize, zoom: number) {
+  const gap = pageSize.width * CELL_GAP_RATIO;
+
+  return {
+    gap,
+    width: (pageSize.width + gap) * zoom,
+    height: (pageSize.height + gap) * zoom,
+  };
+}
+
 function getBasePageSize(): PageSize {
   if (typeof window === "undefined") {
     return { width: 760, height: (760 * 297) / 210 };
@@ -52,10 +64,9 @@ function getBasePageSize(): PageSize {
 }
 
 function getRenderRange(plane: HTMLElement, pageSize: PageSize, zoom: number): RenderRange {
-  const cellWidth = pageSize.width * zoom;
-  const cellHeight = pageSize.height * zoom;
-  const centerColumn = clamp(Math.floor((plane.scrollLeft + plane.clientWidth / 2) / cellWidth), 0, GRID_SIZE - 1);
-  const centerRow = clamp(Math.floor((plane.scrollTop + plane.clientHeight / 2) / cellHeight), 0, GRID_SIZE - 1);
+  const cellPitch = getCellPitch(pageSize, zoom);
+  const centerColumn = clamp(Math.floor((plane.scrollLeft + plane.clientWidth / 2) / cellPitch.width), 0, GRID_SIZE - 1);
+  const centerRow = clamp(Math.floor((plane.scrollTop + plane.clientHeight / 2) / cellPitch.height), 0, GRID_SIZE - 1);
   const columnSpan = RENDER_SPAN;
   const rowSpan = RENDER_SPAN;
   const startColumn = clamp(Math.floor(centerColumn - columnSpan / 2), 0, Math.max(0, GRID_SIZE - columnSpan));
@@ -92,15 +103,18 @@ function CvPlaneCell({ cell, pageSize, zoom, transformCv }: { cell: GridCell; pa
   const generatedCv = generateCv(parameters);
   const cv = transformCv ? transformCv(generatedCv, cell) : generatedCv;
   const style = getCvStyle(cv.styleIndex);
+  const cellPitch = getCellPitch(pageSize, zoom);
 
   return (
     <section
-      className="absolute grid place-items-start overflow-hidden"
+      className="absolute grid place-items-start"
       style={{
-        left: cell.column * pageSize.width * zoom,
-        top: cell.row * pageSize.height * zoom,
-        width: pageSize.width * zoom,
-        height: pageSize.height * zoom,
+        left: cell.column * cellPitch.width,
+        top: cell.row * cellPitch.height,
+        width: cellPitch.width,
+        height: cellPitch.height,
+        padding: cellPitch.gap > 0 ? (cellPitch.gap * zoom) / 2 : 0,
+        overflow: cellPitch.gap < 0 ? "visible" : "hidden",
       }}
     >
       <div
@@ -146,12 +160,13 @@ export function CvPlane({ transformCv, label = "CV two" }: { transformCv?: CvTra
         return;
       }
 
-      const cellWidth = pageSize.width * zoom;
-      const cellHeight = pageSize.height * zoom;
+      const cellPitch = getCellPitch(pageSize, zoom);
+      const sheetWidth = pageSize.width * zoom;
+      const sheetHeight = pageSize.height * zoom;
       settlingRef.current = true;
       plane.scrollTo({
-        left: column * cellWidth - (plane.clientWidth - cellWidth) / 2,
-        top: row * cellHeight - (plane.clientHeight - cellHeight) / 2,
+        left: column * cellPitch.width - (plane.clientWidth - sheetWidth) / 2,
+        top: row * cellPitch.height - (plane.clientHeight - sheetHeight) / 2,
         behavior,
       });
       window.setTimeout(
@@ -161,7 +176,7 @@ export function CvPlane({ transformCv, label = "CV two" }: { transformCv?: CvTra
         behavior === "smooth" ? 280 : 0,
       );
     },
-    [pageSize.height, pageSize.width, zoom],
+    [pageSize, zoom],
   );
 
   const updateRenderRange = useCallback(() => {
@@ -194,13 +209,14 @@ export function CvPlane({ transformCv, label = "CV two" }: { transformCv?: CvTra
         return;
       }
 
-      const cellWidth = pageSize.width * zoom;
-      const cellHeight = pageSize.height * zoom;
-      const column = clamp(Math.round((plane.scrollLeft + plane.clientWidth / 2 - cellWidth / 2) / cellWidth), 0, GRID_SIZE - 1);
-      const row = clamp(Math.round((plane.scrollTop + plane.clientHeight / 2 - cellHeight / 2) / cellHeight), 0, GRID_SIZE - 1);
+      const cellPitch = getCellPitch(pageSize, zoom);
+      const sheetWidth = pageSize.width * zoom;
+      const sheetHeight = pageSize.height * zoom;
+      const column = clamp(Math.round((plane.scrollLeft + plane.clientWidth / 2 - sheetWidth / 2) / cellPitch.width), 0, GRID_SIZE - 1);
+      const row = clamp(Math.round((plane.scrollTop + plane.clientHeight / 2 - sheetHeight / 2) / cellPitch.height), 0, GRID_SIZE - 1);
       centerOnCell(column, row, behavior);
     },
-    [centerOnCell, pageSize.height, pageSize.width, zoom],
+    [centerOnCell, pageSize, zoom],
   );
 
   const changeZoom = useCallback(
@@ -211,10 +227,11 @@ export function CvPlane({ transformCv, label = "CV two" }: { transformCv?: CvTra
         return;
       }
 
-      const cellWidth = pageSize.width * zoom;
-      const cellHeight = pageSize.height * zoom;
-      const centerColumn = clamp((plane.scrollLeft + plane.clientWidth / 2) / cellWidth, 0, GRID_SIZE - 1);
-      const centerRow = clamp((plane.scrollTop + plane.clientHeight / 2) / cellHeight, 0, GRID_SIZE - 1);
+      const cellPitch = getCellPitch(pageSize, zoom);
+      const sheetWidth = pageSize.width * zoom;
+      const sheetHeight = pageSize.height * zoom;
+      const centerColumn = clamp((plane.scrollLeft + plane.clientWidth / 2 - sheetWidth / 2) / cellPitch.width, 0, GRID_SIZE - 1);
+      const centerRow = clamp((plane.scrollTop + plane.clientHeight / 2 - sheetHeight / 2) / cellPitch.height, 0, GRID_SIZE - 1);
       const nextZoomIndex = clamp(zoomIndex + direction, 0, ZOOM_LEVELS.length - 1);
 
       if (nextZoomIndex === zoomIndex) {
@@ -222,16 +239,19 @@ export function CvPlane({ transformCv, label = "CV two" }: { transformCv?: CvTra
       }
 
       const nextZoom = ZOOM_LEVELS[nextZoomIndex];
+      const nextPitch = getCellPitch(pageSize, nextZoom);
+      const nextSheetWidth = pageSize.width * nextZoom;
+      const nextSheetHeight = pageSize.height * nextZoom;
       setZoomIndex(nextZoomIndex);
       requestAnimationFrame(() => {
         plane.scrollTo({
-          left: centerColumn * pageSize.width * nextZoom - plane.clientWidth / 2,
-          top: centerRow * pageSize.height * nextZoom - plane.clientHeight / 2,
+          left: centerColumn * nextPitch.width - (plane.clientWidth - nextSheetWidth) / 2,
+          top: centerRow * nextPitch.height - (plane.clientHeight - nextSheetHeight) / 2,
           behavior: "instant",
         });
       });
     },
-    [pageSize.height, pageSize.width, zoom, zoomIndex],
+    [pageSize, zoom, zoomIndex],
   );
 
   useEffect(() => {
@@ -324,15 +344,20 @@ export function CvPlane({ transformCv, label = "CV two" }: { transformCv?: CvTra
   }, [updateRenderRange]);
 
   return (
-    <main ref={planeRef} className="fixed inset-0 overflow-auto overscroll-contain bg-white text-black">
+    <main ref={planeRef} className="fixed inset-0 overflow-auto overscroll-contain bg-white text-black" data-cv-overlap={CELL_GAP_RATIO < 0 ? "true" : undefined}>
       {mounted ? (
         <>
+          <style>{`
+            [data-cv-overlap="true"] article {
+              background: transparent !important;
+            }
+          `}</style>
           <div
             className="relative"
             style={
               {
-                width: pageSize.width * zoom * GRID_SIZE,
-                height: pageSize.height * zoom * GRID_SIZE,
+                width: getCellPitch(pageSize, zoom).width * GRID_SIZE,
+                height: getCellPitch(pageSize, zoom).height * GRID_SIZE,
                 "--cv-page-width": `${pageSize.width}px`,
                 "--cv-page-height": `${pageSize.height}px`,
               } as CSSProperties
