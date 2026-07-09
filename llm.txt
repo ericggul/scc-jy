@@ -15,6 +15,7 @@ Per-experiment documentation:
 - `docs/moma.md`
 - `docs/stock.md`
 - `docs/table.md`
+- `docs/translate.md`
 - `docs/w1.md`
 
 External references checked:
