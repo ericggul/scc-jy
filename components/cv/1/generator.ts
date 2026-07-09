@@ -149,10 +149,41 @@ function createBullet(
     ],
     random,
   );
+  const audience = pick(
+    [
+      "senior sponsors",
+      "front-line teams",
+      "external partners",
+      "review committees",
+      "regional operators",
+      "client leadership",
+    ],
+    random,
+  );
+  const cadence = pick(
+    [
+      "monthly review pack",
+      "decision log",
+      "working group",
+      "readiness checklist",
+      "measurement plan",
+      "implementation playbook",
+    ],
+    random,
+  );
+  const template = pick(
+    [
+      `${verb} ${competency} for a ${scope}; used ${method} to move ${metric} by ${value}% and left a reusable ${cadence}.`,
+      `Owned ${competency} with ${audience}, translating ambiguous requirements into a ${cadence} and a ${value}% gain in ${metric}.`,
+      `Rebuilt the ${scope} around ${method}, clearer handoffs, and weekly evidence review; ${metric} improved by ${value}%.`,
+      `Prepared analysis and operating recommendations for ${audience} on ${competency}, including risks, tradeoffs, and ${metric} follow-up.`,
+    ],
+    random,
+  );
 
   return {
     id,
-    text: `${verb} ${competency} across a ${scope}, improving ${metric} by ${value}% through ${method} and documented operating changes.`,
+    text: template,
   };
 }
 
@@ -260,10 +291,26 @@ function createProjects(
 ): Project[] {
   return Array.from({ length: 7 }, (_, index) => {
     const competency = pick(industry.competencies, random);
+    const phase = pick(
+      ["Discovery", "Pilot", "Rollout", "Review", "Remediation", "Scale-up"],
+      random,
+    );
+    const artifact = pick(
+      [
+        "briefing note",
+        "field report",
+        "operating model",
+        "case file",
+        "project register",
+        "implementation memo",
+      ],
+      random,
+    );
+    const venue = pick(industry.employers, random);
     return {
       id: `${seed}-project-${index}`,
-      label: `${competency[0].toUpperCase()}${competency.slice(1)} program`,
-      text: `Owned scope, stakeholder cadence, and evidence pack for ${pick(industry.employers, random)}; delivered with ${pick(industry.tools, random)} and tracked against ${pick(industry.metrics, random)}.`,
+      label: `${phase}: ${competency}`,
+      text: `${venue} ${artifact} covering scope, owners, evidence, and decision points; delivered with ${pick(industry.tools, random)} and tracked against ${pick(industry.metrics, random)}.`,
     };
   });
 }
@@ -343,8 +390,8 @@ export function generateCv(parameters: GeneratorParameters): CvDocument {
     targetTitle,
     profile:
       format === "academic-cv"
-        ? `${targetTitle} working across ${industry.field}, with a record of peer-reviewed writing, teaching, and collaborative research programs.`
-        : `${targetTitle} with ${Math.max(1, yearsOfExperience)} years of experience in ${industry.field}; strongest in ${pick(industry.competencies, random)}, ${pick(industry.competencies, random)}, and evidence-led execution.`,
+        ? `${targetTitle} working across ${industry.field}, with appointments spanning research, teaching, publications, and collaborative programs. Current work focuses on ${pick(industry.competencies, random)}, ${pick(industry.competencies, random)}, and documented methods.`
+        : `${targetTitle} with ${Math.max(1, yearsOfExperience)} years of experience in ${industry.field}. Record covers ${pick(industry.competencies, random)}, ${pick(industry.competencies, random)}, operating evidence, stakeholder decisions, and follow-through from brief to measurable result.`,
     roles: createRoles(industry, level, yearsOfExperience, seed, random),
     education: createEducation(industry, yearsOfExperience, seed, random),
     publications: createPublications(industry, yearsOfExperience, seed, random),

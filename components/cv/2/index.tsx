@@ -32,38 +32,38 @@ function fontFamily(style: CvTwoStyle) {
 
 function fontSize(style: CvTwoStyle) {
   if (style.density === "tight") {
-    return "clamp(6.8px, 1.04cqw, 9px)";
+    return "1.9cqw";
   }
 
   if (style.density === "open") {
-    return "clamp(7.4px, 1.18cqw, 10.4px)";
+    return "2.08cqw";
   }
 
-  return "clamp(7.1px, 1.12cqw, 9.7px)";
+  return "1.98cqw";
 }
 
 function pagePadding(style: CvTwoStyle) {
   if (style.header === "poster" || style.density === "open") {
-    return "5.8em";
+    return "3.75em";
   }
 
   if (style.density === "tight") {
-    return "4.35em";
+    return "3.35em";
   }
 
-  return "5em";
+  return "3.55em";
 }
 
 function sectionGap(style: CvTwoStyle) {
   if (style.density === "tight") {
-    return "0.95em";
+    return "0.68em";
   }
 
   if (style.density === "open") {
-    return "1.55em";
+    return "0.88em";
   }
 
-  return "1.2em";
+  return "0.76em";
 }
 
 function Header({ cv, style }: { cv: CvDocument; style: CvTwoStyle }) {
@@ -167,7 +167,17 @@ function Section({
   );
 }
 
-function RoleBlock({ role, style }: { role: Role; style: CvTwoStyle }) {
+function RoleBlock({
+  role,
+  style,
+  bulletLimit,
+}: {
+  role: Role;
+  style: CvTwoStyle;
+  bulletLimit?: number;
+}) {
+  const bullets = bulletLimit ? role.bullets.slice(0, bulletLimit) : role.bullets;
+
   return (
     <article className="break-inside-avoid grid gap-[0.38em]">
       <div className="grid grid-cols-[1fr_auto] gap-[1.2em]">
@@ -187,7 +197,7 @@ function RoleBlock({ role, style }: { role: Role; style: CvTwoStyle }) {
         </p>
       )}
       <ul className="grid gap-[0.2em] pl-[1.1em] text-[0.78em] leading-[1.31]">
-        {role.bullets.map((bullet) => (
+        {bullets.map((bullet) => (
           <li key={bullet.id} className="list-disc">
             {bullet.text}
           </li>
@@ -200,14 +210,21 @@ function RoleBlock({ role, style }: { role: Role; style: CvTwoStyle }) {
 function Experience({
   roles,
   style,
+  bulletLimit,
 }: {
   roles: Role[];
   style: CvTwoStyle;
+  bulletLimit?: number;
 }) {
   return (
     <div className="grid gap-[0.9em]">
       {roles.map((role) => (
-        <RoleBlock key={role.id} role={role} style={style} />
+        <RoleBlock
+          key={role.id}
+          role={role}
+          style={style}
+          bulletLimit={bulletLimit}
+        />
       ))}
     </div>
   );
@@ -258,7 +275,7 @@ function Skills({ cv }: { cv: CvDocument }) {
 function Projects({ cv }: { cv: CvDocument }) {
   return (
     <div className="grid gap-[0.42em] text-[0.78em] leading-[1.3]">
-      {cv.projects.map((project) => (
+      {cv.projects.slice(0, 4).map((project) => (
         <p key={project.id}>
           <span className="font-bold">{project.label}: </span>
           {project.text}
@@ -271,7 +288,7 @@ function Projects({ cv }: { cv: CvDocument }) {
 function Publications({ cv }: { cv: CvDocument }) {
   return (
     <ol className="grid gap-[0.32em] text-[0.76em] leading-[1.28]">
-      {cv.publications.map((publication) => (
+      {cv.publications.slice(0, 8).map((publication) => (
         <li key={publication.id}>{publication.citation}</li>
       ))}
     </ol>
@@ -302,31 +319,43 @@ function Page({
   children: React.ReactNode;
 }) {
   return (
-    <article
-      className="relative grid aspect-[210/297] content-start"
-      style={
-        {
-          width: PAGE_WIDTH,
-          containerType: "inline-size",
-          fontFamily: fontFamily(style),
-          fontSize: fontSize(style),
-          padding: pagePadding(style),
-          gap: sectionGap(style),
-          background: style.paper,
-          color: style.ink,
-          border: "1px solid #000000",
-          letterSpacing: "0",
-          lineHeight: style.density === "open" ? 1.38 : 1.3,
-        } as React.CSSProperties
-      }
-    >
-      {children}
-      {page && (
-        <span className="absolute bottom-[2.1em] right-[4.8em] text-[0.66em]" style={{ color: style.muted }}>
-          {cv.person.name} / {page}
-        </span>
-      )}
-    </article>
+    <div className="grid h-dvh snap-start place-items-center">
+      <div
+        className="relative aspect-[210/297] overflow-hidden border border-black"
+        style={
+          {
+            width: PAGE_WIDTH,
+            boxSizing: "border-box",
+            flex: "0 0 auto",
+            containerType: "inline-size",
+          } as React.CSSProperties
+        }
+      >
+        <article
+          className="absolute inset-0 grid content-start overflow-hidden"
+          style={
+            {
+              boxSizing: "border-box",
+              fontFamily: fontFamily(style),
+              fontSize: fontSize(style),
+              padding: pagePadding(style),
+              gap: sectionGap(style),
+              background: style.paper,
+              color: style.ink,
+              letterSpacing: "0",
+              lineHeight: style.density === "open" ? 1.38 : 1.3,
+            } as React.CSSProperties
+          }
+        >
+          {children}
+          {page && (
+            <span className="absolute bottom-[2.1em] right-[4.8em] text-[0.66em]" style={{ color: style.muted }}>
+              {cv.person.name} / {page}
+            </span>
+          )}
+        </article>
+      </div>
+    </div>
   );
 }
 
@@ -365,7 +394,7 @@ function OnePage({ cv, style }: { cv: CvDocument; style: CvTwoStyle }) {
         style={style}
         sections={[
           { title: "Profile", content: <p className="text-[0.8em] leading-[1.32]">{cv.profile}</p> },
-          { title: "Experience", content: <Experience roles={cv.roles.slice(0, 4)} style={style} /> },
+          { title: "Experience", content: <Experience roles={cv.roles.slice(0, 3)} style={style} bulletLimit={3} /> },
           { title: "Selected work", content: <Projects cv={cv} /> },
           { title: "Education", content: <Education cv={cv} style={style} /> },
           { title: "Skills", content: <Skills cv={cv} /> },
@@ -385,7 +414,7 @@ function TwoPage({ cv, style }: { cv: CvDocument; style: CvTwoStyle }) {
           style={style}
           sections={[
             { title: "Profile", content: <p className="text-[0.8em] leading-[1.32]">{cv.profile}</p> },
-            { title: "Recent experience", content: <Experience roles={cv.roles.slice(0, 3)} style={style} /> },
+            { title: "Recent experience", content: <Experience roles={cv.roles.slice(0, 3)} style={style} bulletLimit={3} /> },
             { title: style.emphasis === "portfolio" ? "Portfolio evidence" : "Selected evidence", content: <Projects cv={cv} /> },
           ]}
         />
@@ -395,7 +424,7 @@ function TwoPage({ cv, style }: { cv: CvDocument; style: CvTwoStyle }) {
           cv={cv}
           style={style}
           sections={[
-            { title: "Earlier experience", content: <Experience roles={cv.roles.slice(3)} style={style} /> },
+            { title: "Earlier experience", content: <Experience roles={cv.roles.slice(3)} style={style} bulletLimit={2} /> },
             { title: "Education and credentials", content: <Education cv={cv} style={style} /> },
             { title: "Skills", content: <Skills cv={cv} /> },
             { title: "Recognition", content: <Awards cv={cv} /> },
@@ -416,7 +445,7 @@ function ThreePage({ cv, style }: { cv: CvDocument; style: CvTwoStyle }) {
           style={style}
           sections={[
             { title: "Profile", content: <p className="text-[0.8em] leading-[1.32]">{cv.profile}</p> },
-            { title: "Appointments and roles", content: <Experience roles={cv.roles.slice(0, 4)} style={style} /> },
+            { title: "Appointments and roles", content: <Experience roles={cv.roles.slice(0, 3)} style={style} bulletLimit={3} /> },
             { title: "Education", content: <Education cv={cv} style={style} /> },
           ]}
         />
@@ -436,7 +465,7 @@ function ThreePage({ cv, style }: { cv: CvDocument; style: CvTwoStyle }) {
           cv={cv}
           style={style}
           sections={[
-            { title: "Earlier experience", content: <Experience roles={cv.roles.slice(4)} style={style} /> },
+            { title: "Earlier experience", content: <Experience roles={cv.roles.slice(3)} style={style} bulletLimit={2} /> },
             { title: "Recognition and service", content: <Awards cv={cv} /> },
             { title: "Skills and languages", content: <Skills cv={cv} /> },
           ]}
@@ -448,7 +477,10 @@ function ThreePage({ cv, style }: { cv: CvDocument; style: CvTwoStyle }) {
 
 function DocumentStack({ cv, style }: { cv: CvDocument; style: CvTwoStyle }) {
   return (
-    <div className="grid h-dvh justify-items-center gap-10 overflow-y-auto bg-white px-3 py-3">
+    <div
+      className="h-dvh snap-y snap-mandatory overflow-y-auto bg-white"
+      style={{ scrollbarGutter: "stable both-edges" }}
+    >
       {style.pageMode === "three" ? (
         <ThreePage cv={cv} style={style} />
       ) : style.pageMode === "two" ? (
@@ -462,6 +494,7 @@ function DocumentStack({ cv, style }: { cv: CvDocument; style: CvTwoStyle }) {
 
 export default function CvTwo() {
   const frameRef = useRef<number | null>(null);
+  const lastClientRef = useRef<{ x: number; y: number } | null>(null);
   const pendingRef = useRef<PointerState>({ x: 0.47, y: 0.52 });
   const [pointer, setPointer] = useState<PointerState>({ x: 0.47, y: 0.52 });
 
@@ -491,6 +524,19 @@ export default function CvTwo() {
       className="h-dvh cursor-crosshair overflow-hidden bg-white text-black"
       onPointerMove={(event) => {
         const rect = event.currentTarget.getBoundingClientRect();
+        const client = {
+          x: Math.round(event.clientX),
+          y: Math.round(event.clientY),
+        };
+
+        if (
+          lastClientRef.current?.x === client.x &&
+          lastClientRef.current?.y === client.y
+        ) {
+          return;
+        }
+
+        lastClientRef.current = client;
         pendingRef.current = {
           x: (event.clientX - rect.left) / rect.width,
           y: (event.clientY - rect.top) / rect.height,

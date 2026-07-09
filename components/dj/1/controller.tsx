@@ -131,12 +131,17 @@ export default function DjController() {
           handlePointer(event.clientX, event.clientY, event.currentTarget);
         }}
         onPointerMove={(event) => {
-          if (!pointerDownRef.current) return;
+          if (event.pointerType !== "mouse" && !pointerDownRef.current) return;
           handlePointer(event.clientX, event.clientY, event.currentTarget);
         }}
         onPointerCancel={() => {
           pointerDownRef.current = false;
           setActiveTarget(null);
+        }}
+        onPointerLeave={(event) => {
+          if (event.pointerType !== "mouse") return;
+          setActiveTarget(null);
+          lastEmitRef.current = { key: null, sentAt: performance.now() };
         }}
         onPointerUp={() => {
           pointerDownRef.current = false;

@@ -22,21 +22,24 @@ export default function DjPage() {
             controller/{experiment.slug}
           </Link>
         ))}
-        {djScreenIds.map((screenId) => (
+        {djExperiments.flatMap((experiment) => [
+          ...djScreenIds.map((screenId) => (
+            <Link
+              key={`screen-${experiment.slug}-${screenId}`}
+              href={`/dj/screen/${experiment.slug}/${screenId}`}
+              className="border-b border-[#f7f4ec] py-4 text-[clamp(28px,7vw,72px)] font-black leading-none hover:bg-[#f7f4ec] hover:text-[#050505]"
+            >
+              screen/{experiment.slug}/{screenId}
+            </Link>
+          )),
           <Link
-            key={`screen-${screenId}`}
-            href={`/dj/screen/${screenId}`}
+            key={`screen-${experiment.slug}-whole`}
+            href={`/dj/screen/${experiment.slug}/whole`}
             className="border-b border-[#f7f4ec] py-4 text-[clamp(28px,7vw,72px)] font-black leading-none hover:bg-[#f7f4ec] hover:text-[#050505]"
           >
-            screen/{screenId}
-          </Link>
-        ))}
-        <Link
-          href="/dj/screen/whole"
-          className="border-b border-[#f7f4ec] py-4 text-[clamp(28px,7vw,72px)] font-black leading-none hover:bg-[#f7f4ec] hover:text-[#050505]"
-        >
-          screen/whole
-        </Link>
+            screen/{experiment.slug}/whole
+          </Link>,
+        ])}
       </nav>
     </main>
   );

@@ -32,38 +32,38 @@ function fontFamily(style: CvStyle) {
 
 function pageFontSize(style: CvStyle) {
   if (style.density === "compact") {
-    return "clamp(7.1px, 1.1cqw, 9.4px)";
+    return "1.92cqw";
   }
 
   if (style.density === "expanded") {
-    return "clamp(7.6px, 1.2cqw, 10.4px)";
+    return "2.08cqw";
   }
 
-  return "clamp(7.3px, 1.16cqw, 9.9px)";
+  return "2cqw";
 }
 
 function pagePadding(style: CvStyle) {
   if (style.density === "compact") {
-    return "4.4em";
+    return "6.6cqw";
   }
 
   if (style.density === "expanded") {
-    return "5.8em";
+    return "7.8cqw";
   }
 
-  return "5.1em";
+  return "7.2cqw";
 }
 
 function sectionGap(style: CvStyle) {
   if (style.density === "compact") {
-    return "1.05em";
+    return "0.72em";
   }
 
   if (style.density === "expanded") {
-    return "1.55em";
+    return "0.9em";
   }
 
-  return "1.28em";
+  return "0.8em";
 }
 
 function formatDate(role: Role) {
@@ -177,7 +177,57 @@ function Header({ cv, style }: { cv: CvDocument; style: CvStyle }) {
   );
 }
 
-function RoleBlock({ role, style }: { role: Role; style: CvStyle }) {
+function RoleBlock({
+  role,
+  style,
+  bulletLimit,
+  mode = "bullets",
+}: {
+  role: Role;
+  style: CvStyle;
+  bulletLimit?: number;
+  mode?: "bullets" | "narrative" | "ledger";
+}) {
+  const bullets = bulletLimit ? role.bullets.slice(0, bulletLimit) : role.bullets;
+
+  if (mode === "ledger") {
+    return (
+      <article className="break-inside-avoid grid grid-cols-[7.6em_1fr] gap-[1em] border-t border-[#d0d0d0] pt-[0.42em] text-[0.78em] leading-[1.3]">
+        <p className="text-[0.92em] uppercase tracking-[0.06em] text-[#444]">
+          {formatDate(role)}
+        </p>
+        <div>
+          <p className="font-bold">
+            {role.title}, {role.employer}
+          </p>
+          <p>{role.context}</p>
+          <p>{role.bullets[0]?.text}</p>
+        </div>
+      </article>
+    );
+  }
+
+  if (mode === "narrative") {
+    return (
+      <article className="break-inside-avoid grid gap-[0.32em]">
+        <div className="grid grid-cols-[1fr_auto] gap-[1.35em]">
+          <div>
+            <h3 className="text-[0.96em] font-bold leading-tight">{role.title}</h3>
+            <p className="text-[0.82em] leading-tight">
+              {role.employer}, {role.city}
+            </p>
+          </div>
+          <p className="whitespace-nowrap text-right text-[0.74em] leading-tight">
+            {formatDate(role)}
+          </p>
+        </div>
+        <p className="text-[0.8em] leading-[1.32]">
+          {role.context} {bullets.map((bullet) => bullet.text).join(" ")}
+        </p>
+      </article>
+    );
+  }
+
   return (
     <article className="break-inside-avoid grid gap-[0.42em]">
       <div className="grid grid-cols-[1fr_auto] gap-[1.35em]">
@@ -197,7 +247,7 @@ function RoleBlock({ role, style }: { role: Role; style: CvStyle }) {
         </p>
       )}
       <ul className="grid gap-[0.2em] pl-[1.15em] text-[0.8em] leading-[1.31]">
-        {role.bullets.map((bullet) => (
+        {bullets.map((bullet) => (
           <li key={bullet.id} className="list-disc">
             {bullet.text}
           </li>
@@ -211,15 +261,25 @@ function Experience({
   cv,
   style,
   roles,
+  bulletLimit,
+  mode = "bullets",
 }: {
   cv: CvDocument;
   style: CvStyle;
   roles: Role[];
+  bulletLimit?: number;
+  mode?: "bullets" | "narrative" | "ledger";
 }) {
   return (
-    <div className="grid gap-[0.92em]">
+    <div className={mode === "ledger" ? "grid gap-[0.34em]" : "grid gap-[0.88em]"}>
       {roles.map((role) => (
-        <RoleBlock key={role.id} role={role} style={style} />
+        <RoleBlock
+          key={role.id}
+          role={role}
+          style={style}
+          bulletLimit={bulletLimit}
+          mode={mode}
+        />
       ))}
       {roles.length === 0 && (
         <p className="text-[0.82em] leading-[1.32]">
@@ -270,10 +330,97 @@ function Skills({ cv }: { cv: CvDocument }) {
   );
 }
 
-function Projects({ cv }: { cv: CvDocument }) {
+function SkillsMatrix({ cv }: { cv: CvDocument }) {
+  return (
+    <div className="grid grid-cols-[6.8em_1fr] border-t border-[#d4d4d4] text-[0.76em] leading-[1.28]">
+      {cv.skillGroups.map((group) => (
+        <div key={group.id} className="contents">
+          <p className="border-b border-[#d4d4d4] py-[0.36em] pr-[1em] font-bold uppercase tracking-[0.06em]">
+            {group.label}
+          </p>
+          <p className="border-b border-[#d4d4d4] py-[0.36em]">
+            {group.items.join(" / ")}
+          </p>
+        </div>
+      ))}
+      <p className="border-b border-[#d4d4d4] py-[0.36em] pr-[1em] font-bold uppercase tracking-[0.06em]">
+        Credentials
+      </p>
+      <p className="border-b border-[#d4d4d4] py-[0.36em]">
+        {cv.credentials.join(" / ")}
+      </p>
+    </div>
+  );
+}
+
+function Projects({
+  cv,
+  variant = "paragraph",
+  limit = 4,
+}: {
+  cv: CvDocument;
+  variant?: "paragraph" | "table" | "casebook" | "matter";
+  limit?: number;
+}) {
+  const projects = cv.projects.slice(0, limit);
+
+  if (variant === "table") {
+    return (
+      <div className="grid grid-cols-[3.8em_1fr_8em] border-t border-[#d2d2d2] text-[0.76em] leading-[1.26]">
+        {projects.map((project, index) => (
+          <div key={project.id} className="contents">
+            <p className="border-b border-[#d2d2d2] py-[0.38em] pr-[0.9em] font-bold">
+              {String(2026 - index)}
+            </p>
+            <p className="border-b border-[#d2d2d2] py-[0.38em] pr-[1em]">
+              <span className="font-bold">{project.label}</span> - {project.text}
+            </p>
+            <p className="border-b border-[#d2d2d2] py-[0.38em] text-right">
+              {cv.industry.metrics[index % cv.industry.metrics.length]}
+            </p>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (variant === "casebook") {
+    return (
+      <div className="grid grid-cols-2 gap-x-[1.2em] gap-y-[0.56em] text-[0.76em] leading-[1.28]">
+        {projects.map((project, index) => (
+          <article key={project.id} className="break-inside-avoid border-t border-[#cfcfcf] pt-[0.4em]">
+            <p className="text-[0.72em] uppercase tracking-[0.1em] text-[#555]">
+              Case {String(index + 1).padStart(2, "0")}
+            </p>
+            <p className="font-bold">{project.label}</p>
+            <p>{project.text}</p>
+          </article>
+        ))}
+      </div>
+    );
+  }
+
+  if (variant === "matter") {
+    return (
+      <div className="grid gap-[0.5em] text-[0.78em] leading-[1.3]">
+        {projects.map((project, index) => (
+          <article key={project.id} className="grid grid-cols-[7.5em_1fr] gap-[1em]">
+            <p className="font-bold">
+              {cv.roles[index % cv.roles.length]?.employer ?? cv.industry.field}
+            </p>
+            <p>
+              <span className="font-bold">{project.label}: </span>
+              {project.text}
+            </p>
+          </article>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div className="grid gap-[0.48em] text-[0.79em] leading-[1.31]">
-      {cv.projects.map((project) => (
+        {projects.map((project) => (
         <p key={project.id}>
           <span className="font-bold">{project.label}: </span>
           {project.text}
@@ -286,10 +433,74 @@ function Projects({ cv }: { cv: CvDocument }) {
 function Publications({ cv }: { cv: CvDocument }) {
   return (
     <ol className="grid gap-[0.36em] text-[0.78em] leading-[1.3]">
-      {cv.publications.map((publication) => (
+        {cv.publications.slice(0, 8).map((publication) => (
         <li key={publication.id}>{publication.citation}</li>
       ))}
     </ol>
+  );
+}
+
+function CredentialFile({ cv }: { cv: CvDocument }) {
+  return (
+    <div className="grid grid-cols-[8em_1fr] gap-x-[1.1em] gap-y-[0.36em] text-[0.78em] leading-[1.3]">
+      <p className="font-bold">Registration</p>
+      <p>{cv.credentials.join(", ")}</p>
+      <p className="font-bold">Systems</p>
+      <p>{cv.skillGroups[1]?.items.join(", ")}</p>
+      <p className="font-bold">Languages</p>
+      <p>{cv.languages.join(", ")}</p>
+      <p className="font-bold">Evidence</p>
+      <p>{cv.skillGroups[2]?.items.join(", ")}</p>
+    </div>
+  );
+}
+
+function FederalNarratives({ cv }: { cv: CvDocument }) {
+  return (
+    <div className="grid gap-[0.62em] text-[0.78em] leading-[1.31]">
+      {cv.roles.slice(0, 3).map((role) => (
+        <article key={role.id} className="break-inside-avoid grid gap-[0.22em]">
+          <p className="font-bold">
+            {role.title} | {role.employer} | {formatDate(role)}
+          </p>
+          <p>
+            <span className="font-bold">Scope: </span>
+            {role.context}
+          </p>
+          <p>
+            <span className="font-bold">Evidence: </span>
+            {role.bullets.slice(0, 2).map((bullet) => bullet.text).join(" ")}
+          </p>
+        </article>
+      ))}
+    </div>
+  );
+}
+
+function RirekishoTable({ cv }: { cv: CvDocument }) {
+  return (
+    <div className="grid grid-cols-[5.2em_1fr] border-t border-[#cfcfcf] text-[0.78em] leading-[1.32]">
+      {cv.education.map((education) => (
+        <div key={education.id} className="contents">
+          <p className="border-b border-[#cfcfcf] py-[0.42em] pr-[1em] text-right font-bold">
+            {education.year}
+          </p>
+          <p className="border-b border-[#cfcfcf] py-[0.42em]">
+            {education.degree}, {education.institution}
+          </p>
+        </div>
+      ))}
+      {cv.roles.map((role) => (
+        <div key={role.id} className="contents">
+          <p className="border-b border-[#cfcfcf] py-[0.42em] pr-[1em] text-right font-bold">
+            {role.start.split(" ").at(-1)}
+          </p>
+          <p className="border-b border-[#cfcfcf] py-[0.42em]">
+            Joined {role.employer} as {role.title}; {role.context}
+          </p>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -329,31 +540,43 @@ function Page({
   pageNumber?: number;
 }) {
   return (
-    <article
-      className="relative grid aspect-[210/297] content-start text-[#151515]"
-      style={
-        {
-          width: PAGE_WIDTH,
-          containerType: "inline-size",
-          fontFamily: fontFamily(style),
-          fontSize: pageFontSize(style),
-          padding: pagePadding(style),
-          gap: sectionGap(style),
-          lineHeight: style.density === "expanded" ? 1.38 : 1.31,
-          background: "#ffffff",
-          border: "1px solid #000000",
-          color: "#151515",
-          fontStretch: style.type === "condensed" ? "condensed" : "normal",
-        } as React.CSSProperties
-      }
-    >
-      {children}
-      {pageNumber && (
-        <span className="absolute bottom-[2.2em] right-[4.8em] text-[0.68em] text-[#555]">
-          {cv.person.name} / {pageNumber}
-        </span>
-      )}
-    </article>
+    <div className="grid h-dvh snap-start place-items-center">
+      <div
+        className="relative aspect-[210/297] overflow-hidden border border-black"
+        style={
+          {
+            width: PAGE_WIDTH,
+            boxSizing: "border-box",
+            flex: "0 0 auto",
+            containerType: "inline-size",
+          } as React.CSSProperties
+        }
+      >
+        <article
+          className="absolute inset-0 grid content-start overflow-hidden text-[#151515]"
+          style={
+            {
+              boxSizing: "border-box",
+              fontFamily: fontFamily(style),
+              fontSize: pageFontSize(style),
+              padding: pagePadding(style),
+              gap: sectionGap(style),
+              lineHeight: style.density === "expanded" ? 1.38 : 1.31,
+              background: "#ffffff",
+              color: "#151515",
+              fontStretch: style.type === "condensed" ? "condensed" : "normal",
+            } as React.CSSProperties
+          }
+        >
+          {children}
+          {pageNumber && (
+            <span className="absolute bottom-[2.2em] right-[4.8em] text-[0.68em] text-[#555]">
+              {cv.person.name} / {pageNumber}
+            </span>
+          )}
+        </article>
+      </div>
+    </div>
   );
 }
 
@@ -383,7 +606,44 @@ function PageSections({
 }
 
 function OnePageDocument({ cv, style }: { cv: CvDocument; style: CvStyle }) {
-  const roles = cv.roles.slice(0, style.id === "plain-ats" ? 4 : 3);
+  const roles = cv.roles.slice(0, style.structure === "plain" ? 3 : 2);
+
+  if (style.structure === "technical") {
+    return (
+      <Page cv={cv} style={style}>
+        <Header cv={cv} style={style} />
+        <PageSections
+          cv={cv}
+          style={style}
+          sections={[
+            {
+              title: "Profile / operating scope",
+              content: <p className="text-[0.82em] leading-[1.33]">{cv.profile}</p>,
+            },
+            {
+              title: "Delivery record",
+              content: (
+                <Experience
+                  cv={cv}
+                  style={style}
+                  roles={cv.roles.slice(0, 4)}
+                  mode="ledger"
+                />
+              ),
+            },
+            {
+              title: "System programs",
+              content: <Projects cv={cv} variant="table" limit={5} />,
+            },
+            {
+              title: "Technical matrix",
+              content: <SkillsMatrix cv={cv} />,
+            },
+          ]}
+        />
+      </Page>
+    );
+  }
 
   return (
     <Page cv={cv} style={style}>
@@ -398,11 +658,25 @@ function OnePageDocument({ cv, style }: { cv: CvDocument; style: CvStyle }) {
           },
           {
             title: "Experience",
-            content: <Experience cv={cv} style={style} roles={roles} />,
+            content: (
+              <Experience
+                cv={cv}
+                style={style}
+                roles={roles}
+                bulletLimit={style.structure === "plain" ? 3 : 2}
+                mode={style.structure === "impact" ? "narrative" : "bullets"}
+              />
+            ),
           },
           {
-            title: "Selected projects",
-            content: <Projects cv={cv} />,
+            title: style.structure === "impact" ? "Selected impact cases" : "Selected projects",
+            content: (
+              <Projects
+                cv={cv}
+                variant={style.structure === "impact" ? "casebook" : "paragraph"}
+                limit={style.structure === "impact" ? 4 : 3}
+              />
+            ),
           },
           {
             title: "Education",
@@ -421,6 +695,246 @@ function OnePageDocument({ cv, style }: { cv: CvDocument; style: CvStyle }) {
 function TwoPageDocument({ cv, style }: { cv: CvDocument; style: CvStyle }) {
   const firstRoles = cv.roles.slice(0, 3);
   const secondRoles = cv.roles.slice(3);
+
+  if (style.structure === "legal") {
+    return (
+      <>
+        <Page cv={cv} style={style}>
+          <Header cv={cv} style={style} />
+          <PageSections
+            cv={cv}
+            style={style}
+            sections={[
+              {
+                title: "Practice profile",
+                content: <p className="text-[0.83em] leading-[1.34]">{cv.profile}</p>,
+              },
+              {
+                title: "Counsel and policy experience",
+                content: (
+                  <Experience cv={cv} style={style} roles={firstRoles} mode="narrative" bulletLimit={2} />
+                ),
+              },
+              {
+                title: "Representative matters",
+                content: <Projects cv={cv} variant="matter" limit={5} />,
+              },
+            ]}
+          />
+        </Page>
+        <Page cv={cv} style={style} pageNumber={2}>
+          <PageSections
+            cv={cv}
+            style={style}
+            sections={[
+              { title: "Earlier appointments", content: <Experience cv={cv} style={style} roles={secondRoles} mode="ledger" /> },
+              { title: "Education and admissions", content: <Education cv={cv} /> },
+              { title: "Practice credentials", content: <CredentialFile cv={cv} /> },
+              { title: "Publications and policy notes", content: <Publications cv={cv} /> },
+            ]}
+          />
+        </Page>
+      </>
+    );
+  }
+
+  if (style.structure === "federal") {
+    return (
+      <>
+        <Page cv={cv} style={style}>
+          <Header cv={cv} style={style} />
+          <PageSections
+            cv={cv}
+            style={style}
+            sections={[
+              { title: "Specialized experience", content: <FederalNarratives cv={cv} /> },
+              { title: "Training and certificates", content: <CredentialFile cv={cv} /> },
+            ]}
+          />
+        </Page>
+        <Page cv={cv} style={style} pageNumber={2}>
+          <PageSections
+            cv={cv}
+            style={style}
+            sections={[
+              { title: "Employment chronology", content: <Experience cv={cv} style={style} roles={cv.roles} mode="ledger" /> },
+              { title: "Education", content: <Education cv={cv} /> },
+              { title: "Awards", content: <Awards cv={cv} /> },
+            ]}
+          />
+        </Page>
+      </>
+    );
+  }
+
+  if (style.structure === "rirekisho") {
+    return (
+      <>
+        <Page cv={cv} style={style}>
+          <Header cv={cv} style={style} />
+          <PageSections
+            cv={cv}
+            style={style}
+            sections={[
+              { title: "Profile", content: <p className="text-[0.82em] leading-[1.34]">{cv.profile}</p> },
+              { title: "Education and employment history", content: <RirekishoTable cv={cv} /> },
+            ]}
+          />
+        </Page>
+        <Page cv={cv} style={style} pageNumber={2}>
+          <PageSections
+            cv={cv}
+            style={style}
+            sections={[
+              { title: "Qualifications", content: <CredentialFile cv={cv} /> },
+              { title: "Reason for application", content: <Experience cv={cv} style={style} roles={firstRoles.slice(0, 2)} mode="narrative" bulletLimit={1} /> },
+              { title: "Skills", content: <SkillsMatrix cv={cv} /> },
+            ]}
+          />
+        </Page>
+      </>
+    );
+  }
+
+  if (style.structure === "structured" || style.structure === "clinical") {
+    return (
+      <>
+        <Page cv={cv} style={style}>
+          <Header cv={cv} style={style} />
+          <PageSections
+            cv={cv}
+            style={style}
+            sections={[
+              {
+                title: style.structure === "clinical" ? "Clinical profile" : "Personal profile",
+                content: <p className="text-[0.83em] leading-[1.34]">{cv.profile}</p>,
+              },
+              {
+                title: style.structure === "clinical" ? "Clinical appointments" : "Work experience",
+                content: <Experience cv={cv} style={style} roles={firstRoles} mode="ledger" />,
+              },
+              {
+                title: style.structure === "clinical" ? "Quality programs" : "Projects and mobility",
+                content: <Projects cv={cv} variant="table" limit={5} />,
+              },
+            ]}
+          />
+        </Page>
+        <Page cv={cv} style={style} pageNumber={2}>
+          <PageSections
+            cv={cv}
+            style={style}
+            sections={[
+              { title: "Education and training", content: <Education cv={cv} /> },
+              { title: "Skills and qualifications", content: <CredentialFile cv={cv} /> },
+              { title: "Recognition", content: <Awards cv={cv} /> },
+            ]}
+          />
+        </Page>
+      </>
+    );
+  }
+
+  if (
+    style.structure === "casebook" ||
+    style.structure === "architecture" ||
+    style.structure === "editorial"
+  ) {
+    return (
+      <>
+        <Page cv={cv} style={style}>
+          <Header cv={cv} style={style} />
+          <PageSections
+            cv={cv}
+            style={style}
+            sections={[
+              { title: "Profile", content: <p className="text-[0.83em] leading-[1.34]">{cv.profile}</p> },
+              {
+                title:
+                  style.structure === "architecture"
+                    ? "Selected commissions"
+                    : style.structure === "editorial"
+                      ? "Selected work"
+                      : "Case studies",
+                content: (
+                  <Projects
+                    cv={cv}
+                    variant={style.structure === "casebook" ? "casebook" : "table"}
+                    limit={6}
+                  />
+                ),
+              },
+              { title: "Capability matrix", content: <SkillsMatrix cv={cv} /> },
+            ]}
+          />
+        </Page>
+        <Page cv={cv} style={style} pageNumber={2}>
+          <PageSections
+            cv={cv}
+            style={style}
+            sections={[
+              { title: "Experience", content: <Experience cv={cv} style={style} roles={cv.roles} mode={style.structure === "architecture" ? "ledger" : "narrative"} bulletLimit={2} /> },
+              { title: "Education", content: <Education cv={cv} /> },
+              { title: "Recognition", content: <Awards cv={cv} /> },
+            ]}
+          />
+        </Page>
+      </>
+    );
+  }
+
+  if (style.structure === "executive" || style.structure === "grant" || style.structure === "teaching") {
+    return (
+      <>
+        <Page cv={cv} style={style}>
+          <Header cv={cv} style={style} />
+          <PageSections
+            cv={cv}
+            style={style}
+            sections={[
+              {
+                title:
+                  style.structure === "executive"
+                    ? "Executive profile"
+                    : style.structure === "grant"
+                      ? "Grants and program profile"
+                      : "Teaching profile",
+                content: <p className="text-[0.83em] leading-[1.34]">{cv.profile}</p>,
+              },
+              {
+                title:
+                  style.structure === "teaching"
+                    ? "Teaching appointments"
+                    : "Leadership mandates",
+                content: <Experience cv={cv} style={style} roles={firstRoles} mode="narrative" bulletLimit={2} />,
+              },
+              {
+                title:
+                  style.structure === "grant"
+                    ? "Funded programs"
+                    : style.structure === "teaching"
+                      ? "Curriculum and assessment work"
+                      : "Board-level initiatives",
+                content: <Projects cv={cv} variant="table" limit={5} />,
+              },
+            ]}
+          />
+        </Page>
+        <Page cv={cv} style={style} pageNumber={2}>
+          <PageSections
+            cv={cv}
+            style={style}
+            sections={[
+              { title: "Earlier record", content: <Experience cv={cv} style={style} roles={secondRoles} mode="ledger" /> },
+              { title: "Education and credentials", content: <Education cv={cv} /> },
+              { title: "Service and recognition", content: <Service cv={cv} /> },
+              { title: "Skills", content: <SkillsMatrix cv={cv} /> },
+            ]}
+          />
+        </Page>
+      </>
+    );
+  }
 
   return (
     <>
@@ -444,7 +958,9 @@ function TwoPageDocument({ cv, style }: { cv: CvDocument; style: CvStyle }) {
                 style.id === "government-ksas"
                   ? "Specialized experience"
                   : "Recent experience",
-              content: <Experience cv={cv} style={style} roles={firstRoles} />,
+              content: (
+                <Experience cv={cv} style={style} roles={firstRoles} bulletLimit={2} mode="narrative" />
+              ),
             },
             {
               title:
@@ -463,7 +979,15 @@ function TwoPageDocument({ cv, style }: { cv: CvDocument; style: CvStyle }) {
           sections={[
             {
               title: "Earlier experience",
-              content: <Experience cv={cv} style={style} roles={secondRoles} />,
+              content: (
+                <Experience
+                  cv={cv}
+                  style={style}
+                  roles={secondRoles}
+                  bulletLimit={2}
+                  mode="ledger"
+                />
+              ),
             },
             {
               title: "Education and training",
@@ -499,7 +1023,15 @@ function DossierDocument({ cv, style }: { cv: CvDocument; style: CvStyle }) {
             },
             {
               title: "Appointments",
-              content: <Experience cv={cv} style={style} roles={cv.roles.slice(0, 4)} />,
+              content: (
+                <Experience
+                  cv={cv}
+                  style={style}
+                  roles={cv.roles.slice(0, 3)}
+                  bulletLimit={2}
+                  mode="narrative"
+                />
+              ),
             },
             {
               title: "Education",
@@ -518,8 +1050,8 @@ function DossierDocument({ cv, style }: { cv: CvDocument; style: CvStyle }) {
               content: <Publications cv={cv} />,
             },
             {
-              title: "Research programs",
-              content: <Projects cv={cv} />,
+              title: "Research programs and grants",
+              content: <Projects cv={cv} variant="table" limit={6} />,
             },
           ]}
         />
@@ -539,7 +1071,7 @@ function DossierDocument({ cv, style }: { cv: CvDocument; style: CvStyle }) {
             },
             {
               title: "Methods and skills",
-              content: <Skills cv={cv} />,
+              content: <SkillsMatrix cv={cv} />,
             },
           ]}
         />
@@ -550,7 +1082,10 @@ function DossierDocument({ cv, style }: { cv: CvDocument; style: CvStyle }) {
 
 function DocumentStack({ cv, style }: { cv: CvDocument; style: CvStyle }) {
   return (
-    <div className="grid h-dvh snap-y snap-mandatory justify-items-center gap-10 overflow-y-auto bg-white px-3 py-3">
+    <div
+      className="h-dvh snap-y snap-mandatory overflow-y-auto bg-white"
+      style={{ scrollbarGutter: "stable both-edges" }}
+    >
       {style.pageMode === "dossier" ? (
         <DossierDocument cv={cv} style={style} />
       ) : style.pageMode === "two" ? (
@@ -564,6 +1099,7 @@ function DocumentStack({ cv, style }: { cv: CvDocument; style: CvStyle }) {
 
 export default function CvsOne() {
   const frameRef = useRef<number | null>(null);
+  const lastClientRef = useRef<{ x: number; y: number } | null>(null);
   const pendingRef = useRef<PointerState>({ x: 0.5, y: 0.42 });
   const [pointer, setPointer] = useState<PointerState>({ x: 0.5, y: 0.42 });
 
@@ -587,6 +1123,19 @@ export default function CvsOne() {
       className="relative h-dvh cursor-crosshair overflow-hidden bg-white text-black"
       onPointerMove={(event) => {
         const rect = event.currentTarget.getBoundingClientRect();
+        const client = {
+          x: Math.round(event.clientX),
+          y: Math.round(event.clientY),
+        };
+
+        if (
+          lastClientRef.current?.x === client.x &&
+          lastClientRef.current?.y === client.y
+        ) {
+          return;
+        }
+
+        lastClientRef.current = client;
         pendingRef.current = {
           x: (event.clientX - rect.left) / rect.width,
           y: (event.clientY - rect.top) / rect.height,

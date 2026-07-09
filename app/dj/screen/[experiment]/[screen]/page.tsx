@@ -2,36 +2,41 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import DjScreen, { DjScreenExperience } from "@/components/dj/1/screen";
 import {
+  djExperiments,
   djScreenIds,
+  isDjExperimentSlug,
   isDjScreenId,
   isDjScreenRoute,
 } from "@/components/dj/experiments";
 
 export function generateStaticParams() {
-  return [...djScreenIds, "whole"].map((screen) => ({
-    screen,
-  }));
+  return djExperiments.flatMap((experiment) =>
+    [...djScreenIds, "whole"].map((screen) => ({
+      experiment: experiment.slug,
+      screen,
+    })),
+  );
 }
 
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ screen: string }>;
+  params: Promise<{ experiment: string; screen: string }>;
 }): Promise<Metadata> {
-  const { screen } = await params;
+  const { experiment, screen } = await params;
   return {
-    title: `dj screen ${screen}`,
+    title: `dj ${experiment} screen ${screen}`,
   };
 }
 
 export default async function DjScreenPage({
   params,
 }: {
-  params: Promise<{ screen: string }>;
+  params: Promise<{ experiment: string; screen: string }>;
 }) {
-  const { screen } = await params;
+  const { experiment, screen } = await params;
 
-  if (!isDjScreenRoute(screen)) {
+  if (!isDjExperimentSlug(experiment) || !isDjScreenRoute(screen)) {
     notFound();
   }
 

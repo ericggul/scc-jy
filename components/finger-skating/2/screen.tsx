@@ -1,36 +1,26 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import styled, { keyframes } from "styled-components";
+import styled from "styled-components";
 import {
   type ExperimentSignal,
   useExperimentSocket,
 } from "@/hooks/use-experiment-socket";
 
 const EXPERIMENT_ID = "finger-skating";
-const pulseLifetimeMs = 2600;
-const cleanupIntervalMs = 300;
-const maxPulsesPerStream = 18;
+const pulseLifetimeMs = 2200;
+const maxPulsesPerStream = 10;
+const maxPixelRatio = 1.25;
 
-type Pulse = ExperimentSignal & {
+type CanvasPulse = {
+  createdAt: number;
   expiresAt: number;
-  localId: string;
+  hue: number;
+  intensity: number;
   streamKey: string;
+  x: number;
+  y: number;
 };
-
-type StreamPulses = Record<string, Pulse[]>;
-
-const fade = keyframes`
-  from {
-    opacity: 0.95;
-    transform: translate3d(-50%, -50%, 0) scale(0.18);
-  }
-
-  to {
-    opacity: 0;
-    transform: translate3d(-50%, -50%, 0) scale(2.8);
-  }
-`;
 
 const Page = styled.main`
   min-height: 100vh;
@@ -51,33 +41,19 @@ const Header = styled.div`
   gap: 16px;
   color: rgba(248, 243, 232, 0.68);
   font-size: 13px;
+  pointer-events: none;
 `;
 
 const Field = styled.div`
   position: absolute;
   inset: 0;
-  contain: layout paint style;
+  contain: strict;
 `;
 
-const PulseMark = styled.div<{
-  $hue: number;
-  $intensity: number;
-  $x: number;
-  $y: number;
-}>`
-  position: absolute;
-  left: ${({ $x }) => `${$x * 100}%`};
-  top: ${({ $y }) => `${$y * 100}%`};
-  width: ${({ $intensity }) => `${180 + $intensity * 360}px`};
-  aspect-ratio: 1;
-  border-radius: 999px;
-  border: 1px solid hsl(${({ $hue }) => $hue} 90% 64% / 0.78);
-  box-shadow:
-    0 0 32px hsl(${({ $hue }) => $hue} 90% 64% / 0.42),
-    inset 0 0 80px hsl(${({ $hue }) => $hue} 90% 64% / 0.18);
-  animation: ${fade} 2.4s ease-out forwards;
-  pointer-events: none;
-  will-change: opacity, transform;
+const PulseCanvas = styled.canvas`
+  display: block;
+  width: 100%;
+  height: 100%;
 `;
 
 const Idle = styled.div`
@@ -87,62 +63,176 @@ const Idle = styled.div`
   font-size: clamp(32px, 8vw, 96px);
   font-weight: 600;
   line-height: 0.95;
+  pointer-events: none;
 `;
 
 function getStreamKey(signal: ExperimentSignal) {
   return signal.streamId || `${signal.from}:primary`;
 }
 
+function drawPulse(
+  context: CanvasRenderingContext2D,
+  pulse: CanvasPulse,
+  now: number,
+  width: number,
+  height: number,
+) {
+  const progress = Math.min(
+    Math.max((now - pulse.createdAt) / pulseLifetimeMs, 0),
+    1,
+  );
+  const opacity = (1 - progress) * 0.95;
+  if (opacity <= 0) return;
+
+  const centerX = pulse.x * width;
+  const centerY = pulse.y * height;
+  const diameter = 180 + pulse.intensity * 360;
+  const radius = (diameter / 2) * (0.18 + progress * 2.62);
+  const hue = Math.round(pulse.hue);
+
+  context.save();
+  context.globalAlpha = opacity * 0.18;
+  context.strokeStyle = `hsla(${hue}, 90%, 64%, 0.42)`;
+  context.lineWidth = 28;
+  context.beginPath();
+  context.arc(centerX, centerY, radius, 0, Math.PI * 2);
+  context.stroke();
+
+  context.globalAlpha = opacity * 0.32;
+  context.strokeStyle = `hsla(${hue}, 90%, 64%, 0.18)`;
+  context.lineWidth = 10;
+  context.beginPath();
+  context.arc(centerX, centerY, radius * 0.72, 0, Math.PI * 2);
+  context.stroke();
+
+  context.globalAlpha = opacity;
+  context.strokeStyle = `hsla(${hue}, 90%, 64%, 0.78)`;
+  context.lineWidth = 1;
+  context.beginPath();
+  context.arc(centerX, centerY, radius, 0, Math.PI * 2);
+  context.stroke();
+  context.restore();
+}
+
 export default function FingerSkatingTwoScreen() {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const contextRef = useRef<CanvasRenderingContext2D | null>(null);
+  const drawFrameRef = useRef<(now: number) => void>(() => {});
   const frameRef = useRef<number | null>(null);
-  const pendingSignalsRef = useRef<ExperimentSignal[]>([]);
-  const [streams, setStreams] = useState<StreamPulses>({});
+  const pendingSignalsRef = useRef<Map<string, ExperimentSignal>>(new Map());
+  const pulsesRef = useRef<CanvasPulse[]>([]);
+  const sizeRef = useRef({ height: 0, ratio: 1, width: 0 });
+  const [hasPulses, setHasPulses] = useState(false);
 
-  const flushPendingSignals = useCallback(() => {
-    frameRef.current = null;
+  const setCanvasSize = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
-    const pendingSignals = pendingSignalsRef.current;
-    if (pendingSignals.length === 0) return;
+    const rect = canvas.getBoundingClientRect();
+    const ratio = Math.min(window.devicePixelRatio || 1, maxPixelRatio);
+    const pixelWidth = Math.max(1, Math.round(rect.width * ratio));
+    const pixelHeight = Math.max(1, Math.round(rect.height * ratio));
 
-    pendingSignalsRef.current = [];
-    const now = performance.now();
-    const latestSignalByStream = new Map<string, ExperimentSignal>();
-
-    for (const signal of pendingSignals) {
-      latestSignalByStream.set(getStreamKey(signal), signal);
+    if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
+      canvas.width = pixelWidth;
+      canvas.height = pixelHeight;
     }
 
-    setStreams((current) => {
-      const next = { ...current };
-
-      for (const signal of latestSignalByStream.values()) {
-        const streamKey = getStreamKey(signal);
-        const pulse = {
-          ...signal,
-          expiresAt: now + pulseLifetimeMs,
-          localId: `${signal.id}-${now}`,
-          streamKey,
-        };
-
-        next[streamKey] = [
-          ...(next[streamKey] || []).slice(-(maxPulsesPerStream - 1)),
-          pulse,
-        ];
-      }
-
-      return next;
-    });
+    sizeRef.current = {
+      height: rect.height,
+      ratio,
+      width: rect.width,
+    };
   }, []);
 
-  const handleSignal = useCallback((signal: ExperimentSignal) => {
-    if (signal.phase === "end") return;
+  const drawFrame = useCallback(
+    (now: number) => {
+      frameRef.current = null;
 
-    pendingSignalsRef.current.push(signal);
+      const context = contextRef.current;
+      const canvas = canvasRef.current;
+      if (!context || !canvas) return;
 
+      const pendingSignals = pendingSignalsRef.current;
+      if (pendingSignals.size > 0) {
+        const nextPulses = pulsesRef.current.slice();
+
+        for (const signal of pendingSignals.values()) {
+          const streamKey = getStreamKey(signal);
+          nextPulses.push({
+            createdAt: now,
+            expiresAt: now + pulseLifetimeMs,
+            hue: signal.hue,
+            intensity: signal.intensity,
+            streamKey,
+            x: signal.x,
+            y: signal.y,
+          });
+        }
+
+        pendingSignals.clear();
+
+        const perStreamCounts = new Map<string, number>();
+        pulsesRef.current = nextPulses
+          .filter((pulse) => pulse.expiresAt > now)
+          .reverse()
+          .filter((pulse) => {
+            const count = perStreamCounts.get(pulse.streamKey) || 0;
+            if (count >= maxPulsesPerStream) return false;
+            perStreamCounts.set(pulse.streamKey, count + 1);
+            return true;
+          })
+          .reverse();
+      } else {
+        pulsesRef.current = pulsesRef.current.filter(
+          (pulse) => pulse.expiresAt > now,
+        );
+      }
+
+      const pulses = pulsesRef.current;
+      const { height, ratio, width } = sizeRef.current;
+      context.setTransform(ratio, 0, 0, ratio, 0, 0);
+      context.clearRect(0, 0, width, height);
+
+      for (const pulse of pulses) {
+        drawPulse(context, pulse, now, width, height);
+      }
+
+      if (pulses.length > 0 || pendingSignalsRef.current.size > 0) {
+        frameRef.current = window.requestAnimationFrame((time) =>
+          drawFrameRef.current(time),
+        );
+      }
+
+      setHasPulses((current) => {
+        const next = pulses.length > 0;
+        return current === next ? current : next;
+      });
+    },
+    [],
+  );
+
+  useEffect(() => {
+    drawFrameRef.current = drawFrame;
+  }, [drawFrame]);
+
+  const requestDraw = useCallback(() => {
     if (frameRef.current === null) {
-      frameRef.current = window.requestAnimationFrame(flushPendingSignals);
+      frameRef.current = window.requestAnimationFrame((time) =>
+        drawFrameRef.current(time),
+      );
     }
-  }, [flushPendingSignals]);
+  }, []);
+
+  const handleSignal = useCallback(
+    (signal: ExperimentSignal) => {
+      if (signal.phase === "end") return;
+
+      pendingSignalsRef.current.set(getStreamKey(signal), signal);
+      requestDraw();
+    },
+    [requestDraw],
+  );
 
   const { connected, connectionError, presence } = useExperimentSocket({
     experimentId: EXPERIMENT_ID,
@@ -151,37 +241,25 @@ export default function FingerSkatingTwoScreen() {
   });
 
   useEffect(() => {
-    const cleanup = window.setInterval(() => {
-      const now = performance.now();
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
-      setStreams((current) => {
-        let changed = false;
-        const next: StreamPulses = {};
+    contextRef.current = canvas.getContext("2d", { alpha: true });
+    setCanvasSize();
 
-        for (const [streamKey, stream] of Object.entries(current)) {
-          const livePulses = stream.filter((pulse) => pulse.expiresAt > now);
-          if (livePulses.length !== stream.length) {
-            changed = true;
-          }
-          if (livePulses.length > 0) {
-            next[streamKey] = livePulses;
-          }
-        }
-
-        return changed ? next : current;
-      });
-    }, cleanupIntervalMs);
+    window.addEventListener("resize", setCanvasSize);
+    window.visualViewport?.addEventListener("resize", setCanvasSize);
 
     return () => {
-      window.clearInterval(cleanup);
+      window.removeEventListener("resize", setCanvasSize);
+      window.visualViewport?.removeEventListener("resize", setCanvasSize);
 
       if (frameRef.current !== null) {
         window.cancelAnimationFrame(frameRef.current);
       }
     };
-  }, []);
+  }, [setCanvasSize]);
 
-  const pulses = useMemo(() => Object.values(streams).flat(), [streams]);
   const status = useMemo(() => {
     const live = connected
       ? "live"
@@ -199,17 +277,9 @@ export default function FingerSkatingTwoScreen() {
         <span>{status}</span>
       </Header>
       <Field>
-        {pulses.map((pulse) => (
-          <PulseMark
-            key={pulse.localId}
-            $hue={pulse.hue}
-            $intensity={pulse.intensity}
-            $x={pulse.x}
-            $y={pulse.y}
-          />
-        ))}
+        <PulseCanvas ref={canvasRef} />
       </Field>
-      {pulses.length === 0 ? <Idle>waiting for mobile signal</Idle> : null}
+      {!hasPulses ? <Idle>waiting for mobile signal</Idle> : null}
     </Page>
   );
 }

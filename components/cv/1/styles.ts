@@ -5,6 +5,23 @@ export type CvStyle = {
   label: string;
   family: string;
   type: "system" | "serif" | "mono" | "condensed";
+  structure:
+    | "chronological"
+    | "impact"
+    | "legal"
+    | "academic"
+    | "structured"
+    | "clinical"
+    | "teaching"
+    | "technical"
+    | "casebook"
+    | "architecture"
+    | "editorial"
+    | "executive"
+    | "grant"
+    | "federal"
+    | "rirekisho"
+    | "plain";
   header: "center" | "left" | "rule" | "block" | "letterhead" | "table";
   section: "caps" | "smallcaps" | "numbered" | "plain" | "boxed" | "tabular";
   density: "compact" | "normal" | "expanded";
@@ -18,6 +35,7 @@ export const cvStyles: readonly CvStyle[] = [
     label: "Harvard compact",
     family: "campus resume",
     type: "serif",
+    structure: "chronological",
     header: "center",
     section: "caps",
     density: "compact",
@@ -29,6 +47,7 @@ export const cvStyles: readonly CvStyle[] = [
     label: "Banking classic",
     family: "finance",
     type: "serif",
+    structure: "impact",
     header: "center",
     section: "smallcaps",
     density: "compact",
@@ -40,6 +59,7 @@ export const cvStyles: readonly CvStyle[] = [
     label: "Legal brief",
     family: "law",
     type: "serif",
+    structure: "legal",
     header: "left",
     section: "plain",
     density: "normal",
@@ -51,6 +71,7 @@ export const cvStyles: readonly CvStyle[] = [
     label: "Consulting impact",
     family: "strategy",
     type: "system",
+    structure: "impact",
     header: "rule",
     section: "caps",
     density: "compact",
@@ -62,6 +83,7 @@ export const cvStyles: readonly CvStyle[] = [
     label: "Academic dossier",
     family: "academic",
     type: "serif",
+    structure: "academic",
     header: "left",
     section: "plain",
     density: "expanded",
@@ -73,6 +95,7 @@ export const cvStyles: readonly CvStyle[] = [
     label: "Lab CV",
     family: "research",
     type: "system",
+    structure: "academic",
     header: "left",
     section: "numbered",
     density: "normal",
@@ -84,6 +107,7 @@ export const cvStyles: readonly CvStyle[] = [
     label: "Europass clean",
     family: "european structured",
     type: "system",
+    structure: "structured",
     header: "block",
     section: "boxed",
     density: "normal",
@@ -95,6 +119,7 @@ export const cvStyles: readonly CvStyle[] = [
     label: "Clinical practitioner",
     family: "healthcare",
     type: "system",
+    structure: "clinical",
     header: "left",
     section: "tabular",
     density: "normal",
@@ -106,6 +131,7 @@ export const cvStyles: readonly CvStyle[] = [
     label: "Teaching portfolio",
     family: "education",
     type: "serif",
+    structure: "teaching",
     header: "letterhead",
     section: "plain",
     density: "expanded",
@@ -117,6 +143,7 @@ export const cvStyles: readonly CvStyle[] = [
     label: "Engineer spec",
     family: "technical",
     type: "mono",
+    structure: "technical",
     header: "rule",
     section: "tabular",
     density: "compact",
@@ -128,6 +155,7 @@ export const cvStyles: readonly CvStyle[] = [
     label: "Product casebook",
     family: "product",
     type: "system",
+    structure: "casebook",
     header: "left",
     section: "numbered",
     density: "normal",
@@ -139,6 +167,7 @@ export const cvStyles: readonly CvStyle[] = [
     label: "Design minimal",
     family: "design",
     type: "system",
+    structure: "casebook",
     header: "left",
     section: "plain",
     density: "expanded",
@@ -150,6 +179,7 @@ export const cvStyles: readonly CvStyle[] = [
     label: "Architecture plate",
     family: "architecture",
     type: "condensed",
+    structure: "architecture",
     header: "table",
     section: "tabular",
     density: "compact",
@@ -161,6 +191,7 @@ export const cvStyles: readonly CvStyle[] = [
     label: "Editorial resume",
     family: "media",
     type: "serif",
+    structure: "editorial",
     header: "letterhead",
     section: "smallcaps",
     density: "normal",
@@ -172,6 +203,7 @@ export const cvStyles: readonly CvStyle[] = [
     label: "Executive board",
     family: "executive",
     type: "serif",
+    structure: "executive",
     header: "block",
     section: "smallcaps",
     density: "expanded",
@@ -183,6 +215,7 @@ export const cvStyles: readonly CvStyle[] = [
     label: "Nonprofit grants",
     family: "foundation",
     type: "system",
+    structure: "grant",
     header: "left",
     section: "plain",
     density: "normal",
@@ -194,6 +227,7 @@ export const cvStyles: readonly CvStyle[] = [
     label: "Government KSA",
     family: "public sector",
     type: "system",
+    structure: "federal",
     header: "table",
     section: "boxed",
     density: "expanded",
@@ -205,6 +239,7 @@ export const cvStyles: readonly CvStyle[] = [
     label: "Rirekisho lite",
     family: "japanese structured",
     type: "system",
+    structure: "rirekisho",
     header: "table",
     section: "tabular",
     density: "normal",
@@ -216,6 +251,7 @@ export const cvStyles: readonly CvStyle[] = [
     label: "Startup operator",
     family: "operator",
     type: "system",
+    structure: "impact",
     header: "rule",
     section: "numbered",
     density: "compact",
@@ -227,6 +263,7 @@ export const cvStyles: readonly CvStyle[] = [
     label: "Plain ATS",
     family: "parser-first",
     type: "system",
+    structure: "plain",
     header: "center",
     section: "caps",
     density: "normal",

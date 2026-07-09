@@ -156,20 +156,6 @@ const palettes = [
     accent: "#005eb8",
   },
   {
-    name: "Charcoal",
-    paper: "#1c1c1c",
-    ink: "#f5f1ea",
-    muted: "#c8c1b6",
-    accent: "#ffffff",
-  },
-  {
-    name: "Obsidian",
-    paper: "#050505",
-    ink: "#f4f4f4",
-    muted: "#b7b7b7",
-    accent: "#d8d8d8",
-  },
-  {
     name: "Oxide",
     paper: "#fffbf8",
     ink: "#1f1410",
@@ -191,6 +177,20 @@ const palettes = [
     accent: "#1849a9",
   },
   {
+    name: "Pearl Grey",
+    paper: "#f7f7f5",
+    ink: "#151515",
+    muted: "#5f625f",
+    accent: "#2e3130",
+  },
+  {
+    name: "Parchment",
+    paper: "#fffaf0",
+    ink: "#1a1510",
+    muted: "#6c6257",
+    accent: "#4c3f32",
+  },
+  {
     name: "Stone",
     paper: "#ffffff",
     ink: "#1f1f1f",
@@ -199,7 +199,75 @@ const palettes = [
   },
 ] as const;
 
-export const cvTwoStyles: readonly CvTwoStyle[] = archetypes.flatMap(
+const darkStyles: readonly CvTwoStyle[] = [
+  {
+    id: "cv2-black-editorial-obsidian",
+    label: "Black Editorial / Obsidian",
+    archetype: "Black Editorial",
+    palette: "Obsidian",
+    paper: "#050505",
+    ink: "#f4f4f4",
+    muted: "#b7b7b7",
+    accent: "#ffffff",
+    type: "serif",
+    header: "poster",
+    sections: "label",
+    density: "open",
+    pageMode: "two",
+    emphasis: "portfolio",
+  },
+  {
+    id: "cv2-museum-monograph-charcoal",
+    label: "Museum Monograph / Charcoal",
+    archetype: "Museum Monograph",
+    palette: "Charcoal",
+    paper: "#1c1c1c",
+    ink: "#f5f1ea",
+    muted: "#c8c1b6",
+    accent: "#ffffff",
+    type: "serif",
+    header: "poster",
+    sections: "folio",
+    density: "open",
+    pageMode: "two",
+    emphasis: "portfolio",
+  },
+  {
+    id: "cv2-product-spec-graphite",
+    label: "Product Spec / Graphite",
+    archetype: "Product Spec",
+    palette: "Graphite",
+    paper: "#101010",
+    ink: "#f2f2f2",
+    muted: "#bdbdbd",
+    accent: "#e6e6e6",
+    type: "mono",
+    header: "ledger",
+    sections: "numbered",
+    density: "tight",
+    pageMode: "one",
+    emphasis: "evidence",
+  },
+  {
+    id: "cv2-fashion-minimal-noir",
+    label: "Fashion Minimal / Noir",
+    archetype: "Fashion Minimal",
+    palette: "Noir",
+    paper: "#080808",
+    ink: "#fafafa",
+    muted: "#c9c9c9",
+    accent: "#ffffff",
+    type: "sans",
+    header: "poster",
+    sections: "label",
+    density: "open",
+    pageMode: "two",
+    emphasis: "portfolio",
+  },
+] as const;
+
+export const cvTwoStyles: readonly CvTwoStyle[] = [
+  ...archetypes.flatMap(
   (archetype, archetypeIndex) =>
     palettes.map((palette, paletteIndex) => ({
       id: `cv2-${archetype.name.toLowerCase().replaceAll(" ", "-")}-${palette.name
@@ -227,7 +295,9 @@ export const cvTwoStyles: readonly CvTwoStyle[] = archetypes.flatMap(
           : archetype.pageMode,
       emphasis: archetype.emphasis,
     })),
-);
+  ),
+  ...darkStyles,
+];
 
 export function getCvTwoStyle(index: number): CvTwoStyle {
   return cvTwoStyles[index % cvTwoStyles.length] ?? cvTwoStyles[0];

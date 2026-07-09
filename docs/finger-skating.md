@@ -29,7 +29,7 @@ Intent:
 
 Multi-touch behavior for experiment 2 is stream-aware while preserving the original pulse visual. Each finger has a stable `streamId` from pointer down to pointer up/cancel. The screen keeps a separate pulse trail per `streamId`, so a single finger still looks like experiment 1's pulse accumulation/fade, while two or more fingers get independent trails instead of competing for one global pulse list.
 
-Screen rendering for experiment 2 is frame-batched: incoming socket signals are collected and applied once per animation frame, with one latest pulse per `streamId` per frame. Expired pulses are cleaned on an interval rather than with one timer per pulse.
+Screen rendering for experiment 2 is canvas-based for performance. Incoming socket signals are collected per animation frame, with one latest pulse per `streamId` per frame. Pulses are stored in refs and rendered through one canvas draw loop instead of React-managed DOM nodes. Mobile move signals are also emitted at most once per pointer per animation frame. Canvas glow is drawn with layered strokes instead of `shadowBlur`.
 
 Routing rule:
 

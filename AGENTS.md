@@ -77,6 +77,14 @@ This version has breaking changes — APIs, conventions, and file structure may 
   - dedicated socket modules under `socket/experiments/[group].mjs`.
 - Do not add decorative labels, footers, captions, archive text, mode badges, or explanatory chrome unless the user explicitly asks.
 - If a page is specified as non-scrollable, visible content must actually fit inside the viewport.
+- Fixed-format experiments such as A4 pages, boards, grids, and instrument
+  panels must scale internal typography, spacing, and content constraints from
+  the same responsive container as the outer frame. Never make only the boundary
+  responsive while leaving the inside at fixed pixel sizes.
+- Responsive scaling must preserve the intended visual scale of the artifact.
+  Do not satisfy responsiveness by making text or controls technically scale
+  while the default rendered size is too small, too dense, or unusable for the
+  format being represented.
 
 ## HTTPS and Sockets
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import styled from "styled-components";
 import { useExperimentSocket } from "@/hooks/use-experiment-socket";
 
@@ -59,6 +59,16 @@ type ActivePointer = {
 
 type ActivePointers = Record<number, ActivePointer>;
 type PointerPhase = "start" | "move" | "end";
+type QueuedSignal = {
+  hue: number;
+  intensity: number;
+  label: string;
+  phase: PointerPhase;
+  pointerId: number;
+  streamId: string;
+  x: number;
+  y: number;
+};
 
 function getViewportRows() {
   const cellSize = window.innerWidth / gridColumnCount;
@@ -70,6 +80,8 @@ export default function FingerSkatingTwoMobile() {
     experimentId: EXPERIMENT_ID,
     role: "mobile",
   });
+  const frameRef = useRef<number | null>(null);
+  const queuedSignalsRef = useRef<Map<number, QueuedSignal>>(new Map());
   const [rows, setRows] = useState(initialRows);
   const [activePointers, setActivePointers] = useState<ActivePointers>({});
   const [lastCellIndex, setLastCellIndex] = useState<number | null>(null);
@@ -102,6 +114,48 @@ export default function FingerSkatingTwoMobile() {
     };
   }, []);
 
+  const flushQueuedSignals = useCallback(() => {
+    frameRef.current = null;
+
+    const queuedSignals = queuedSignalsRef.current;
+    if (queuedSignals.size === 0) return;
+
+    for (const signal of queuedSignals.values()) {
+      sendSignal(signal);
+    }
+    queuedSignals.clear();
+  }, [sendSignal]);
+
+  const sendPointerSignal = useCallback(
+    (signal: QueuedSignal) => {
+      if (signal.phase === "move") {
+        queuedSignalsRef.current.set(signal.pointerId, signal);
+
+        if (frameRef.current === null) {
+          frameRef.current = window.requestAnimationFrame(flushQueuedSignals);
+        }
+        return;
+      }
+
+      const queuedMove = queuedSignalsRef.current.get(signal.pointerId);
+      if (queuedMove) {
+        queuedSignalsRef.current.delete(signal.pointerId);
+        sendSignal(queuedMove);
+      }
+
+      sendSignal(signal);
+    },
+    [flushQueuedSignals, sendSignal],
+  );
+
+  useEffect(() => {
+    return () => {
+      if (frameRef.current !== null) {
+        window.cancelAnimationFrame(frameRef.current);
+      }
+    };
+  }, []);
+
   function emitAt(
     pointerId: number,
     clientX: number,
@@ -126,7 +180,7 @@ export default function FingerSkatingTwoMobile() {
       }));
     }
     setLastCellIndex(cellIndex);
-    sendSignal({
+    sendPointerSignal({
       hue: fixedHue,
       intensity: fixedIntensity,
       x,
