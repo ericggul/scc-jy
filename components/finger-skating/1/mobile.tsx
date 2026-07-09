@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import styled from "styled-components";
 import { useExperimentSocket } from "@/hooks/use-experiment-socket";
 
-const EXPERIMENT_ID = "w1";
+const EXPERIMENT_ID = "finger-skating";
 
 const Page = styled.main`
   min-height: 100vh;
@@ -63,14 +63,18 @@ const Range = styled.input`
   accent-color: #ff5c35;
 `;
 
-export default function W1MobilePage() {
-  const { connected, presence, sendSignal } = useExperimentSocket({
+export default function FingerSkatingOneMobile() {
+  const { connected, connectionError, presence, sendSignal } = useExperimentSocket({
     experimentId: EXPERIMENT_ID,
     role: "mobile",
   });
   const [hue, setHue] = useState(12);
   const [intensity, setIntensity] = useState(0.72);
-  const connectionLabel = connected ? "connected" : "offline";
+  const connectionLabel = connected
+    ? "connected"
+    : connectionError
+      ? `offline: ${connectionError}`
+      : "offline";
 
   const countLabel = useMemo(() => {
     if (!presence) return "waiting";
@@ -91,14 +95,14 @@ export default function W1MobilePage() {
   return (
     <Page>
       <Status>
-        <span>w1 / mobile: {connectionLabel}</span>
+        <span>finger-skating / mobile: {connectionLabel}</span>
         <span>{countLabel}</span>
       </Status>
 
       <Pad
         $hue={hue}
         $intensity={intensity}
-        aria-label="Send w1 artwork signal"
+        aria-label="Send finger-skating artwork signal"
         onPointerDown={(event) => {
           event.currentTarget.setPointerCapture(event.pointerId);
           emitAt(event.clientX, event.clientY, event.currentTarget);

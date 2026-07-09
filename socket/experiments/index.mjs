@@ -1,3 +1,3 @@
-import { w1Experiment } from "./w1.mjs";
+import { fingerSkatingExperiment } from "./finger-skating.mjs";
 
-export const experiments = [w1Experiment];
+export const experiments = [fingerSkatingExperiment];

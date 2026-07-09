@@ -2,8 +2,8 @@ import Link from "next/link";
 
 const routes = [
   {
-    href: "/w1",
-    label: "w1",
+    href: "/finger-skating",
+    label: "finger-skating",
     description: "Multi-device socket experiment with mobile and screen routes.",
   },
   {

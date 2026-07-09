@@ -1,16 +1,16 @@
 import { randomUUID } from "node:crypto";
 
-const id = "w1";
+const id = "finger-skating";
 const room = `experiment:${id}`;
 const clients = new Map();
 let lastSignal = null;
 
 const events = {
-  join: "w1:join",
-  hello: "w1:hello",
-  presence: "w1:presence",
-  signalIn: "w1:signal:in",
-  signalOut: "w1:signal:out",
+  join: "finger-skating:join",
+  hello: "finger-skating:hello",
+  presence: "finger-skating:presence",
+  signalIn: "finger-skating:signal:in",
+  signalOut: "finger-skating:signal:out",
 };
 
 function getPresence(io) {
@@ -82,7 +82,7 @@ function register({ io, socket }) {
   });
 }
 
-export const w1Experiment = {
+export const fingerSkatingExperiment = {
   id,
   events,
   register,

@@ -46,10 +46,16 @@ This version has breaking changes — APIs, conventions, and file structure may 
   - `app/[group]/page.tsx` as a minimal index.
   - `app/[group]/[experiment]/page.tsx` as dynamic routing.
   - `components/[group]/[experiment]/...` for implementation and data.
+- Do not create literal numbered route folders such as `app/[group]/1/page.tsx`
+  for single-device experiment variants. Numbered variants must go through
+  `app/[group]/[experiment]/page.tsx`.
 - Multi-device experiments use:
-  - `app/[experiment]/mobile`
-  - `app/[experiment]/screen`
-  - dedicated socket modules under `socket/experiments/[experiment].mjs`.
+  - `app/[group]/page.tsx` as a minimal role/variant index.
+  - `app/[group]/mobile/[experiment]/page.tsx` as dynamic mobile routing.
+  - `app/[group]/screen/[experiment]/page.tsx` as dynamic screen routing.
+  - `components/[group]/experiments.ts` as the shared variant registry.
+  - `components/[group]/[experiment]/mobile.tsx` and `components/[group]/[experiment]/screen.tsx` for implementation.
+  - dedicated socket modules under `socket/experiments/[group].mjs`.
 - Do not add decorative labels, footers, captions, archive text, mode badges, or explanatory chrome unless the user explicitly asks.
 - If a page is specified as non-scrollable, visible content must actually fit inside the viewport.
 

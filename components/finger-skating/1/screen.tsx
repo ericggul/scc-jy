@@ -7,7 +7,7 @@ import {
   useExperimentSocket,
 } from "@/hooks/use-experiment-socket";
 
-const EXPERIMENT_ID = "w1";
+const EXPERIMENT_ID = "finger-skating";
 
 type Pulse = ExperimentSignal & {
   localId: string;
@@ -80,7 +80,7 @@ const Idle = styled.div`
   line-height: 0.95;
 `;
 
-export default function W1ScreenPage() {
+export default function FingerSkatingOneScreen() {
   const timeoutRef = useRef<number[]>([]);
   const [pulses, setPulses] = useState<Pulse[]>([]);
 
@@ -99,7 +99,7 @@ export default function W1ScreenPage() {
     timeoutRef.current.push(timeout);
   }, []);
 
-  const { connected, presence } = useExperimentSocket({
+  const { connected, connectionError, presence } = useExperimentSocket({
     experimentId: EXPERIMENT_ID,
     role: "screen",
     onSignal: handleSignal,
@@ -116,15 +116,19 @@ export default function W1ScreenPage() {
   }, []);
 
   const status = useMemo(() => {
-    const live = connected ? "live" : "offline";
+    const live = connected
+      ? "live"
+      : connectionError
+        ? `offline: ${connectionError}`
+        : "offline";
     if (!presence) return live;
     return `${live} / ${presence.mobiles} mobile`;
-  }, [connected, presence]);
+  }, [connected, connectionError, presence]);
 
   return (
     <Page>
       <Header>
-        <span>w1 / screen</span>
+        <span>finger-skating / screen</span>
         <span>{status}</span>
       </Header>
       <Field>

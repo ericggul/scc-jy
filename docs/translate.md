@@ -8,7 +8,7 @@ Routes:
 Files:
 
 - `app/translate/page.tsx`
-- `app/translate/1/page.tsx`
+- `app/translate/[experiment]/page.tsx`
 - `components/translate/experiments.ts`
 - `components/translate/1/TranslateGridExperiment.tsx`
 - `components/translate/1/data.ts`
@@ -33,4 +33,6 @@ Rules:
 - No LLM call.
 - Keep the interface plain and tool-like.
 - The page may scroll horizontally or vertically when the viewport is smaller than the interface.
+- Keep `app/translate/[experiment]/page.tsx` as a route switch only. Do not
+  create literal route folders such as `app/translate/1` for numbered variants.
 - Shared grid interaction belongs in `components/translate/TranslationGrid.tsx`; per-experiment scale and language data belongs in each numbered data file.

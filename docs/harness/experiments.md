@@ -17,11 +17,18 @@ components/[group]/[experiment]/data.ts
 Multi-device experiments use this shape:
 
 ```txt
-app/[experiment]/mobile/page.tsx
-app/[experiment]/screen/page.tsx
-socket/experiments/[experiment].mjs
-socket/experiments/[experiment].md
+app/[group]/page.tsx
+app/[group]/mobile/[experiment]/page.tsx
+app/[group]/screen/[experiment]/page.tsx
+components/[group]/experiments.ts
+components/[group]/[experiment]/mobile.tsx
+components/[group]/[experiment]/screen.tsx
+socket/experiments/[group].mjs
 ```
+
+`app/[group]/page.tsx` should be a minimal index linking to role-specific numbered variants, for example `/finger-skating/mobile/1` and `/finger-skating/screen/1`.
+
+`app/[group]/mobile/[experiment]/page.tsx` and `app/[group]/screen/[experiment]/page.tsx` should route dynamically from the same `components/[group]/experiments.ts` registry.
 
 Rules:
 

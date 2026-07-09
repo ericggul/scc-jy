@@ -77,6 +77,7 @@ export function useExperimentSocket({
   const events = useMemo(() => getEvents(experimentId), [experimentId]);
   const [connected, setConnected] = useState(false);
   const [socketId, setSocketId] = useState<string | null>(null);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
   const [presence, setPresence] = useState<ExperimentPresence | null>(null);
   const [lastSignal, setLastSignal] = useState<ExperimentSignal | null>(null);
 
@@ -87,7 +88,10 @@ export function useExperimentSocket({
   useEffect(() => {
     const socket = io(getSocketOrigin(), {
       path: "/socket.io",
-      transports: ["websocket", "polling"],
+      rejectUnauthorized: false,
+      transports: ["polling", "websocket"],
+      upgrade: true,
+      tryAllTransports: true,
       reconnection: true,
       reconnectionDelay: 300,
       reconnectionDelayMax: 1500,
@@ -98,6 +102,7 @@ export function useExperimentSocket({
 
     socket.on("connect", () => {
       setConnected(true);
+      setConnectionError(null);
       setSocketId(socket.id ?? null);
       socket.emit(events.join, { role });
     });
@@ -105,6 +110,10 @@ export function useExperimentSocket({
     socket.on("disconnect", () => {
       setConnected(false);
       setSocketId(null);
+    });
+
+    socket.on("connect_error", (error) => {
+      setConnectionError(error.message || "socket connection failed");
     });
 
     socket.on(
@@ -144,6 +153,7 @@ export function useExperimentSocket({
 
   return {
     connected,
+    connectionError,
     socketId,
     presence,
     lastSignal,
