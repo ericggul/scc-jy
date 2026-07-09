@@ -59,6 +59,8 @@ const WholeGrid = styled.div`
 
 const Pane = styled.section`
   position: relative;
+  width: 100%;
+  height: 100%;
   min-width: 0;
   min-height: 0;
   overflow: hidden;

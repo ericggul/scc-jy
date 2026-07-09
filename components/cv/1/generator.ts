@@ -209,6 +209,22 @@ function createRoles(
     const startYear = Math.max(1996, numericEnd - duration);
     const localLevel = index === 0 ? level : levelForYears(Math.max(1, years - index * 5));
     const roleId = `${seed}-role-${index}`;
+    const scale =
+      years < 4
+        ? pick(["3-person working group", "single department", "pilot cohort", "local operating team"], random)
+        : years < 14
+          ? pick(["40-person program", "regional portfolio", "multi-vendor delivery group", "two-market rollout"], random)
+          : pick(["global function", "executive transformation office", "post-acquisition portfolio", "multi-year capital plan"], random);
+    const accountability = pick(
+      [
+        "budget, risk, and decision cadence",
+        "quality evidence and implementation readiness",
+        "stakeholder alignment and handover discipline",
+        "measurement design and operating review",
+        "policy interpretation and delivery assurance",
+      ],
+      random,
+    );
     const bullets = Array.from(
       { length: index === 0 ? 5 : index < 3 ? 4 : 3 },
       (_, bulletIndex) =>
@@ -222,7 +238,7 @@ function createRoles(
       city: pick(cities, random),
       start: monthYear(startYear, random),
       end: endYear === "Present" ? "Present" : monthYear(endYear, random),
-      context: `${pick(["Reported to", "Partnered with", "Supported"], random)} ${pick(["executive sponsors", "clinical leads", "product leadership", "regional directors", "faculty committees", "client steering groups"], random)} on ${pick(industry.competencies, random)} and ${pick(industry.metrics, random)}.`,
+      context: `${pick(["Reported to", "Partnered with", "Supported"], random)} ${pick(["executive sponsors", "clinical leads", "product leadership", "regional directors", "faculty committees", "client steering groups"], random)} for a ${scale}; owned ${accountability} across ${pick(industry.competencies, random)} and ${pick(industry.metrics, random)}.`,
       bullets,
     });
 
@@ -289,7 +305,7 @@ function createProjects(
   seed: string,
   random: () => number,
 ): Project[] {
-  return Array.from({ length: 7 }, (_, index) => {
+  return Array.from({ length: 9 }, (_, index) => {
     const competency = pick(industry.competencies, random);
     const phase = pick(
       ["Discovery", "Pilot", "Rollout", "Review", "Remediation", "Scale-up"],
@@ -344,7 +360,7 @@ function createAwards(
   seed: string,
   random: () => number,
 ): Award[] {
-  return Array.from({ length: 4 }, (_, index) => ({
+  return Array.from({ length: 5 }, (_, index) => ({
     id: `${seed}-award-${index}`,
     text: `${pick(["Finalist", "Recipient", "Selected contributor", "Invited speaker"], random)}, ${pick(["industry leadership forum", "regional excellence award", "annual research showcase", "professional association convening"], random)} for work in ${pick(industry.competencies, random)}.`,
   }));
@@ -403,6 +419,8 @@ export function generateCv(parameters: GeneratorParameters): CvDocument {
       `Reviewer or mentor for ${pick(["early-career practitioners", "student teams", "industry working groups", "community programs"], random)}.`,
       `Prepared internal guidance on ${pick(industry.competencies, random)} and ${pick(industry.tools, random)}.`,
       `Organized knowledge-sharing sessions for ${pick(["cross-functional teams", "department colleagues", "external partners", "graduate fellows"], random)}.`,
+      `Maintained reusable examples and onboarding notes for ${pick(industry.tools, random)} and ${pick(industry.metrics, random)}.`,
+      `Contributed to peer review sessions on ${pick(industry.competencies, random)} for ${pick(["hiring panels", "program reviews", "client retrospectives", "curriculum reviews"], random)}.`,
     ],
     languages: pickMany(languages, 3, random),
     dimensions: {

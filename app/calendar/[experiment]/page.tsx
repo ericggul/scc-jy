@@ -1,21 +1,19 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import type { ComponentType } from "react";
-import SnsOne from "@/components/sns/1";
-import SnsTwo from "@/components/sns/2";
+import CalendarOne from "@/components/calendar/1";
 import {
-  isSnsExperimentSlug,
-  snsExperiments,
-  type SnsExperimentSlug,
-} from "@/components/sns/experiments";
+  calendarExperiments,
+  isCalendarExperimentSlug,
+  type CalendarExperimentSlug,
+} from "@/components/calendar/experiments";
 
-const components: Record<SnsExperimentSlug, ComponentType> = {
-  "1": SnsOne,
-  "2": SnsTwo,
+const components: Record<CalendarExperimentSlug, ComponentType> = {
+  "1": CalendarOne,
 };
 
 export function generateStaticParams() {
-  return snsExperiments.map((experiment) => ({
+  return calendarExperiments.map((experiment) => ({
     experiment: experiment.slug,
   }));
 }
@@ -27,18 +25,18 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { experiment } = await params;
   return {
-    title: `sns ${experiment}`,
+    title: `calendar ${experiment}`,
   };
 }
 
-export default async function SnsExperimentPage({
+export default async function CalendarExperimentPage({
   params,
 }: {
   params: Promise<{ experiment: string }>;
 }) {
   const { experiment } = await params;
 
-  if (!isSnsExperimentSlug(experiment)) {
+  if (!isCalendarExperimentSlug(experiment)) {
     notFound();
   }
 

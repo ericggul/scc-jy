@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { djExperiments, djScreenIds } from "@/components/dj/experiments";
+import { djExperiments } from "@/components/dj/experiments";
 
 export const metadata: Metadata = {
   title: "dj",
@@ -23,7 +23,7 @@ export default function DjPage() {
           </Link>
         ))}
         {djExperiments.flatMap((experiment) => [
-          ...djScreenIds.map((screenId) => (
+          ...experiment.screenIds.map((screenId) => (
             <Link
               key={`screen-${experiment.slug}-${screenId}`}
               href={`/dj/screen/${experiment.slug}/${screenId}`}

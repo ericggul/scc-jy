@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import type { ComponentType } from "react";
 import CvOne from "@/components/cv/1";
 import CvTwo from "@/components/cv/2";
+import CvThree from "@/components/cv/3";
 import {
   cvExperiments,
   isCvExperimentSlug,
@@ -12,6 +13,7 @@ import {
 const components: Record<CvExperimentSlug, ComponentType> = {
   "1": CvOne,
   "2": CvTwo,
+  "3": CvThree,
 };
 
 export function generateStaticParams() {

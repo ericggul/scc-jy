@@ -2,6 +2,11 @@ import Link from "next/link";
 
 const routes = [
   {
+    href: "/calendar",
+    label: "calendar",
+    description: "Minimal Google Calendar-like month grid experiment.",
+  },
+  {
     href: "/dj",
     label: "dj",
     description: "K4 graph controller routed to four socket screens.",

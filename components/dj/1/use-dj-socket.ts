@@ -3,26 +3,53 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { io, type Socket } from "socket.io-client";
 import type { DjEdge, DjHitTarget } from "@/components/dj/1/graph";
-import type { DjScreenId } from "@/components/dj/experiments";
+import type { DjExperimentSlug, DjScreenId } from "@/components/dj/experiments";
 
 export type DjRole = "controller" | "screen";
+
+export type DjReactionParameters = {
+  coupling: number;
+  diffusionA: number;
+  diffusionB: number;
+  rooms: Record<
+    "1" | "2",
+    {
+      feed: number;
+      kill: number;
+      drive: number;
+    }
+  >;
+};
+
+export type DjReactionInteraction = {
+  target: "1" | "2" | "connector";
+  localX: number;
+  localY: number;
+  materialA: number;
+  materialB: number;
+  strength: number;
+};
 
 export type DjSignal = {
   id: string;
   experimentId: "dj";
+  variantId: DjExperimentSlug;
   from: string;
   role: DjRole | "unknown";
   sentAt: number;
-  source: "node" | "edge";
+  source: "node" | "edge" | "parameter";
   nodeId: DjScreenId | null;
-  edgeId: DjEdge["id"] | null;
+  edgeId: DjEdge["id"] | string | null;
   targetScreenIds: DjScreenId[];
   x: number | null;
   y: number | null;
+  parameters?: DjReactionParameters;
+  interaction?: DjReactionInteraction;
 };
 
 export type DjPresence = {
   experimentId: "dj";
+  variantId: DjExperimentSlug;
   total: number;
   controllers: number;
   screens: number;
@@ -35,14 +62,25 @@ export type DjPresence = {
 };
 
 type DjSocketOptions = {
+  experimentSlug?: DjExperimentSlug;
   role: DjRole;
   onSignal?: (signal: DjSignal) => void;
+  replayLastSignal?: boolean;
 };
 
-type OutgoingDjSignal = DjHitTarget & {
-  x: number;
-  y: number;
-};
+type OutgoingDjSignal =
+  | (DjHitTarget & {
+      x: number;
+      y: number;
+    })
+  | {
+      source: "parameter";
+      targetScreenIds: DjScreenId[];
+      x: number;
+      y: number;
+      parameters: DjReactionParameters;
+      interaction: DjReactionInteraction;
+    };
 
 function getSocketOrigin() {
   if (process.env.NEXT_PUBLIC_SOCKET_URL) {
@@ -69,7 +107,12 @@ function getEvents() {
   };
 }
 
-export function useDjSocket({ role, onSignal }: DjSocketOptions) {
+export function useDjSocket({
+  experimentSlug = "1",
+  role,
+  onSignal,
+  replayLastSignal = false,
+}: DjSocketOptions) {
   const socketRef = useRef<Socket | null>(null);
   const onSignalRef = useRef(onSignal);
   const events = useMemo(() => getEvents(), []);
@@ -102,7 +145,7 @@ export function useDjSocket({ role, onSignal }: DjSocketOptions) {
       setConnected(true);
       setConnectionError(null);
       setSocketId(socket.id ?? null);
-      socket.emit(events.join, { role });
+      socket.emit(events.join, { role, experimentSlug });
     });
 
     socket.on("disconnect", () => {
@@ -125,6 +168,9 @@ export function useDjSocket({ role, onSignal }: DjSocketOptions) {
       }) => {
         if (incomingSignal) {
           setLastSignal(incomingSignal);
+          if (replayLastSignal) {
+            onSignalRef.current?.(incomingSignal);
+          }
         }
         setPresence(incomingPresence);
       },
@@ -140,13 +186,16 @@ export function useDjSocket({ role, onSignal }: DjSocketOptions) {
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [events, role]);
+  }, [events, experimentSlug, replayLastSignal, role]);
 
   const sendSignal = useCallback(
     (signal: OutgoingDjSignal) => {
-      socketRef.current?.emit(events.signalIn, signal);
+      socketRef.current?.emit(events.signalIn, {
+        ...signal,
+        experimentSlug,
+      });
     },
-    [events.signalIn],
+    [events.signalIn, experimentSlug],
   );
 
   return {
