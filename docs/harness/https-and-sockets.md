@@ -9,17 +9,18 @@ pnpm dev
 It starts:
 
 - Next dev over HTTPS on port 3000.
-- Socket.IO over HTTPS on port 3001.
+- Socket.IO over HTTPS on port 4000.
 - Root CA download from the Socket.IO HTTPS server at `/cert`.
 
-Socket startup is non-critical for the Next app. If the socket port is already
-in use, `pnpm dev` keeps the HTTPS app running instead of killing the whole dev
-session with `EADDRINUSE`.
+This mirrors the local Banpo-Xism shape: the app and socket relay are separate
+local HTTPS processes, with the client connecting to the same hostname and the
+socket port.
 
 Certificate scripts:
 
 - `scripts/generate-certs.sh`
 - `scripts/dev-https.mjs`
+- `socket/create-socket-server.mjs`
 
 Generated certificates live under `certificates/` and are ignored by git.
 

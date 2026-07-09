@@ -1,16 +1,16 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import type { ComponentType } from "react";
-import StockOne from "@/components/stock/1";
-import StockTwo from "@/components/stock/2";
-import StockThree from "@/components/stock/3";
-import StockFour from "@/components/stock/4";
-import StockFive from "@/components/stock/5";
+import StockOne from "@/components/stock/test/1";
+import StockTwo from "@/components/stock/test/2";
+import StockThree from "@/components/stock/test/3";
+import StockFour from "@/components/stock/test/4";
+import StockFive from "@/components/stock/test/5";
 import {
   isStockExperimentSlug,
   stockExperiments,
   type StockExperimentSlug,
-} from "@/components/stock/experiments";
+} from "@/components/stock/test/experiments";
 
 const components: Record<StockExperimentSlug, ComponentType> = {
   "1": StockOne,
@@ -33,7 +33,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { experiment } = await params;
   return {
-    title: `stock ${experiment}`,
+    title: `stock test ${experiment}`,
   };
 }
 

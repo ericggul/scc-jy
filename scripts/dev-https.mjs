@@ -1,13 +1,15 @@
 import { spawn, spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
-import { createServer } from "node:net";
 import { join } from "node:path";
 
 const root = process.cwd();
 const certDir = join(root, "certificates");
 const hostnameFile = join(certDir, ".hostname");
 const appPort = Number.parseInt(process.env.PORT || "3000", 10);
-const socketPort = Number.parseInt(process.env.SOCKET_PORT || "3001", 10);
+const socketPort = Number.parseInt(
+  process.env.NEXT_PUBLIC_SOCKET_PORT || process.env.SOCKET_PORT || "4000",
+  10,
+);
 
 const certResult = spawnSync("bash", ["scripts/generate-certs.sh"], {
   cwd: root,
@@ -21,18 +23,6 @@ if (certResult.status !== 0) {
 const devHostname = existsSync(hostnameFile)
   ? readFileSync(hostnameFile, "utf8").trim()
   : "localhost";
-
-function canBind(port) {
-  return new Promise((resolve) => {
-    const server = createServer();
-
-    server.once("error", () => resolve(false));
-    server.once("listening", () => {
-      server.close(() => resolve(true));
-    });
-    server.listen(port, "0.0.0.0");
-  });
-}
 
 function spawnNext() {
   return spawn(
@@ -73,20 +63,14 @@ function spawnSocket() {
       ...process.env,
       NEXT_PUBLIC_DEV_HOSTNAME: devHostname,
       SOCKET_PORT: String(socketPort),
+      PORT: String(socketPort),
     },
   });
 }
 
 const nextProcess = spawnNext();
-const children = [nextProcess];
-
-if (await canBind(socketPort)) {
-  children.push(spawnSocket());
-} else {
-  console.log(
-    `> Socket relay not started: port ${socketPort} is already in use.`,
-  );
-}
+const socketProcess = spawnSocket();
+const children = [nextProcess, socketProcess];
 
 console.log("");
 console.log(`> Open app: https://${devHostname}:${appPort}`);
@@ -112,4 +96,11 @@ for (const signal of ["SIGINT", "SIGTERM"]) {
 nextProcess.on("exit", (code, signal) => {
   stopAll(signal || "SIGTERM");
   process.exit(code ?? 0);
+});
+
+socketProcess.on("exit", (code, signal) => {
+  if (code && code !== 0) {
+    stopAll(signal || "SIGTERM");
+    process.exit(code);
+  }
 });

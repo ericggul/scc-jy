@@ -1,8 +1,4 @@
-export const translateExperiments = [
-  { slug: "1", label: "translate/1" },
-  { slug: "2", label: "translate/2" },
-  { slug: "3", label: "translate/3" },
-] as const;
+export const translateExperiments = [{ slug: "1", label: "translate/1" }] as const;
 
 export type TranslateExperimentSlug =
   (typeof translateExperiments)[number]["slug"];

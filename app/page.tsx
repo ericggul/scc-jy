@@ -22,14 +22,9 @@ const routes = [
     description: "Minimal table experiments for dense visual datasets.",
   },
   {
-    href: "/language",
-    label: "language",
-    description: "Two-axis language and political text transformation experiment.",
-  },
-  {
     href: "/translate",
     label: "translate",
-    description: "Single-screen Korean to Japanese translation interface study.",
+    description: "Hundred-language translation grid interface study.",
   },
 ];
 

@@ -126,14 +126,14 @@ export function AreaChart({
 export function StockTopbar({ current = "1" }: { current?: string }) {
   return (
     <header className="flex items-center justify-between gap-4 border-b border-current/15 px-4 py-3 text-sm md:px-6">
-      <Link href="/stock" className="font-mono text-xs uppercase tracking-[0.28em]">
+      <Link href="/stock/test" className="font-mono text-xs uppercase tracking-[0.28em]">
         Stock Lab
       </Link>
       <nav className="flex items-center gap-1 font-mono text-xs" aria-label="Stock interface variants">
         {["1", "2", "3", "4", "5"].map((slug) => (
           <Link
             key={slug}
-            href={`/stock/${slug}`}
+            href={`/stock/test/${slug}`}
             className={`px-2.5 py-1 transition ${
               current === slug ? "bg-current text-white mix-blend-difference" : "opacity-65 hover:opacity-100"
             }`}

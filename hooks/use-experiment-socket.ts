@@ -48,12 +48,13 @@ function getSocketOrigin() {
   }
 
   if (typeof window !== "undefined") {
-    return `https://${window.location.hostname}:${
-      process.env.NEXT_PUBLIC_SOCKET_PORT || "3001"
-    }`;
+    const protocol = window.location.protocol === "https:" ? "https" : "http";
+    const port = process.env.NEXT_PUBLIC_SOCKET_PORT || "4000";
+
+    return `${protocol}://${window.location.hostname}:${port}`;
   }
 
-  return `https://localhost:${process.env.NEXT_PUBLIC_SOCKET_PORT || "3001"}`;
+  return `https://localhost:${process.env.NEXT_PUBLIC_SOCKET_PORT || "4000"}`;
 }
 
 function getEvents(experimentId: string) {

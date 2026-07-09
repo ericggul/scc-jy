@@ -1,11 +1,13 @@
 import { readFileSync } from "node:fs";
 import { createServer } from "node:https";
 import { join } from "node:path";
-import { Server } from "socket.io";
-import { experiments } from "./socket/experiments/index.mjs";
+import {
+  createExperimentSocketServer,
+  handleSocketHealth,
+} from "./socket/create-socket-server.mjs";
 
 const hostname = process.env.SOCKET_HOST || "0.0.0.0";
-const port = Number.parseInt(process.env.SOCKET_PORT || "3001", 10);
+const port = Number.parseInt(process.env.SOCKET_PORT || process.env.PORT || "4000", 10);
 const certDir = join(process.cwd(), "certificates");
 
 const serverOptions = {
@@ -15,50 +17,13 @@ const serverOptions = {
 };
 
 const httpServer = createServer(serverOptions, (req, res) => {
-  if (req.url === "/cert") {
-    res.writeHead(200, { "content-type": "application/x-x509-ca-cert" });
-    res.end(readFileSync(join(certDir, "rootCA.pem")));
-    return;
-  }
-
-  res.writeHead(200, { "content-type": "application/json" });
-  res.end(
-    JSON.stringify({
-      ok: true,
-      service: "scc-socket",
-      secure: true,
-      experiments: experiments.map((experiment) => experiment.id),
-    }),
-  );
+  if (handleSocketHealth(req, res, certDir)) return;
+  res.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
+  res.end("Not found\n");
 });
 
-const io = new Server(httpServer, {
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"],
-  },
-  transports: ["websocket", "polling"],
-});
-
-io.on("connection", (socket) => {
-  socket.emit("socket:hello", {
-    socketId: socket.id,
-    experiments: experiments.map((experiment) => ({
-      id: experiment.id,
-      events: experiment.events,
-    })),
-  });
-
-  for (const experiment of experiments) {
-    experiment.register({ io, socket });
-  }
-});
+createExperimentSocketServer(httpServer);
 
 httpServer.listen(port, hostname, () => {
   console.log(`> SCC Socket.IO relay ready on https://${hostname}:${port}`);
-  console.log(
-    `> Registered experiments: ${experiments
-      .map((experiment) => experiment.id)
-      .join(", ")}`,
-  );
 });

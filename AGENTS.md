@@ -5,6 +5,9 @@ Never run `pnpm build` in this repository.
 
 Never run `pnpm dev` or `pnpm dev:http` in this repository.
 
+Never start any dev server yourself. If runtime verification requires a server,
+ask the user exactly: `서버 켜주세요 전하`.
+
 All local runtime verification must use HTTPS. Do not start an HTTP dev server.
 <!-- END:repo-agent-rules -->
 
@@ -27,7 +30,9 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - Do not run `pnpm build`.
 - Do not run `pnpm dev` or `pnpm dev:http`.
 - `pnpm lint` and `pnpm exec tsc --noEmit` are acceptable verification commands.
-- Do not start or kill dev servers unless the user asks with an explicit HTTPS command, or a running process is explicitly blocking requested work.
+- Do not start dev servers under any circumstance. If a server is needed, ask
+  the user exactly: `서버 켜주세요 전하`.
+- Do not kill dev servers unless the user explicitly asks you to shut them down.
 
 ## Next.js
 

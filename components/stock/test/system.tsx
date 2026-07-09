@@ -401,7 +401,7 @@ function ControlDeck({
       <div className="grid gap-4 px-4 py-3 md:px-6 xl:grid-cols-[190px_1fr_auto] xl:items-center">
         <div className="flex items-center justify-between gap-4 xl:block">
           <Link
-            href="/stock"
+            href="/stock/test"
             className="font-mono text-xs uppercase tracking-[0.24em]"
             style={{ color: ctx.colors.accent }}
           >
@@ -453,7 +453,7 @@ function ControlDeck({
             {presets.map((preset, index) => (
               <Link
                 key={preset.id}
-                href={`/stock/${preset.id}`}
+                href={`/stock/test/${preset.id}`}
                 className="px-3 py-2 transition"
                 style={{
                   backgroundColor:

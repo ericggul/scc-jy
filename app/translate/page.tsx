@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { translateExperiments } from "@/components/translate/experiments";
 
 export const metadata: Metadata = {
@@ -14,13 +13,13 @@ export default function TranslateIndexPage() {
       </h1>
       <nav className="grid border-t border-black">
         {translateExperiments.map((experiment) => (
-          <Link
+          <a
             key={experiment.slug}
             href={`/translate/${experiment.slug}`}
             className="border-b border-black py-4 text-[clamp(28px,7vw,72px)] font-black leading-none tracking-[-0.06em] hover:bg-black hover:text-white"
           >
             {experiment.label}
-          </Link>
+          </a>
         ))}
       </nav>
     </main>

@@ -71,7 +71,10 @@ export default function TranslationGrid<
                 return (
                   <td
                     key={`${conversation.id}-${language.id}`}
-                    className="cursor-crosshair border border-black bg-[#f7f7f4] px-3 align-middle text-[clamp(17px,2.2vw,34px)] font-semibold leading-[1.08] outline-none hover:bg-white focus-visible:bg-white"
+                    className={`cursor-crosshair border border-black px-3 align-middle text-[clamp(17px,2.2vw,34px)] font-semibold leading-[1.08] outline-none hover:bg-white focus-visible:bg-white ${
+                      isVisible ? "bg-white" : "bg-[#f7f7f4]"
+                    }`}
+                    data-visible={isVisible ? "true" : "false"}
                     dir={language.dir}
                     lang={language.id}
                     onClick={() => {
