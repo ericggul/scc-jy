@@ -1,5 +1,6 @@
 export const fingerSkatingExperiments = [
   { slug: "1", label: "finger-skating/1" },
+  { slug: "2", label: "finger-skating/2" },
 ] as const;
 
 export type FingerSkatingExperimentSlug =

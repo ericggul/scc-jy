@@ -2,9 +2,19 @@ import Link from "next/link";
 
 const routes = [
   {
+    href: "/dj",
+    label: "dj",
+    description: "K4 graph controller routed to four socket screens.",
+  },
+  {
     href: "/finger-skating",
     label: "finger-skating",
     description: "Multi-device socket experiment with mobile and screen routes.",
+  },
+  {
+    href: "/cv",
+    label: "cv",
+    description: "Parametric A4 CV generator mapped to pointer position.",
   },
   {
     href: "/moma",
@@ -15,6 +25,11 @@ const routes = [
     href: "/stock",
     label: "stock",
     description: "Five parametric stock market interface clone experiments.",
+  },
+  {
+    href: "/sns",
+    label: "sns",
+    description: "Infinite mobile social feed with horizontal media swipes.",
   },
   {
     href: "/table",

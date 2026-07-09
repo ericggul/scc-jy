@@ -12,7 +12,10 @@ Harness documentation:
 - `docs/harness/https-and-sockets.md`
 
 Per-experiment documentation:
+- `docs/cv.md`
+- `docs/dj.md`
 - `docs/moma.md`
+- `docs/sns.md`
 - `docs/stock.md`
 - `docs/table.md`
 - `docs/translate.md`

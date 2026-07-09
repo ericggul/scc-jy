@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import type { ComponentType } from "react";
 import FingerSkatingOneMobile from "@/components/finger-skating/1/mobile";
+import FingerSkatingTwoMobile from "@/components/finger-skating/2/mobile";
 import {
   fingerSkatingExperiments,
   isFingerSkatingExperimentSlug,
@@ -10,6 +11,7 @@ import {
 
 const components: Record<FingerSkatingExperimentSlug, ComponentType> = {
   "1": FingerSkatingOneMobile,
+  "2": FingerSkatingTwoMobile,
 };
 
 export function generateStaticParams() {

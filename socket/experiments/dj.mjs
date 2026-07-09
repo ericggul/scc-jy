@@ -1,16 +1,26 @@
 import { randomUUID } from "node:crypto";
 
-const id = "finger-skating";
+const id = "dj";
 const room = `experiment:${id}`;
 const clients = new Map();
 let lastSignal = null;
 
+const nodeIds = ["1", "2", "3", "4"];
+const edgeTargets = new Map([
+  ["1-2", ["1", "2"]],
+  ["1-3", ["1", "3"]],
+  ["1-4", ["1", "4"]],
+  ["2-3", ["2", "3"]],
+  ["2-4", ["2", "4"]],
+  ["3-4", ["3", "4"]],
+]);
+
 const events = {
-  join: "finger-skating:join",
-  hello: "finger-skating:hello",
-  presence: "finger-skating:presence",
-  signalIn: "finger-skating:signal:in",
-  signalOut: "finger-skating:signal:out",
+  join: "dj:join",
+  hello: "dj:hello",
+  presence: "dj:presence",
+  signalIn: "dj:signal:in",
+  signalOut: "dj:signal:out",
 };
 
 function getPresence(io) {
@@ -21,8 +31,9 @@ function getPresence(io) {
   return {
     experimentId: id,
     total: sockets.length,
-    mobiles: sockets.filter((socket) => socket.data[id]?.role === "mobile")
-      .length,
+    controllers: sockets.filter(
+      (socket) => socket.data[id]?.role === "controller",
+    ).length,
     screens: sockets.filter((socket) => socket.data[id]?.role === "screen")
       .length,
     clients: sockets.map((socket) => ({
@@ -38,22 +49,23 @@ function broadcastPresence(io) {
   io.to(room).emit(events.presence, getPresence(io));
 }
 
+function normalizeCoordinate(value) {
+  if (!Number.isFinite(value)) return null;
+  return Math.min(Math.max(value, 0), 1);
+}
+
 function normalizeSignal(socket, payload = {}) {
-  const pointerId = Number.isFinite(payload.pointerId)
-    ? payload.pointerId
-    : undefined;
-  const streamId =
-    typeof payload.streamId === "string" && payload.streamId.length > 0
-      ? `${socket.id}:${payload.streamId}`
-      : pointerId === undefined
-        ? undefined
-        : `${socket.id}:pointer-${pointerId}`;
-  const phase =
-    payload.phase === "start" ||
-    payload.phase === "move" ||
-    payload.phase === "end"
-      ? payload.phase
-      : undefined;
+  const source = payload.source === "edge" ? "edge" : "node";
+  const nodeId = typeof payload.nodeId === "string" ? payload.nodeId : null;
+  const edgeId = typeof payload.edgeId === "string" ? payload.edgeId : null;
+  const targetScreenIds =
+    source === "edge"
+      ? edgeTargets.get(edgeId) || null
+      : nodeIds.includes(nodeId)
+        ? [nodeId]
+        : null;
+
+  if (!targetScreenIds) return null;
 
   return {
     id: randomUUID(),
@@ -61,21 +73,19 @@ function normalizeSignal(socket, payload = {}) {
     from: socket.id,
     role: socket.data[id]?.role || "unknown",
     sentAt: Date.now(),
-    streamId,
-    pointerId,
-    phase,
-    hue: Number.isFinite(payload.hue) ? payload.hue : 12,
-    intensity: Number.isFinite(payload.intensity) ? payload.intensity : 0.5,
-    x: Number.isFinite(payload.x) ? payload.x : 0.5,
-    y: Number.isFinite(payload.y) ? payload.y : 0.5,
-    label: typeof payload.label === "string" ? payload.label : "pulse",
+    source,
+    nodeId: source === "node" ? nodeId : null,
+    edgeId: source === "edge" ? edgeId : null,
+    targetScreenIds,
+    x: normalizeCoordinate(payload.x),
+    y: normalizeCoordinate(payload.y),
   };
 }
 
 function register({ io, socket }) {
   socket.on(events.join, ({ role } = {}) => {
     socket.data[id] = {
-      role: role === "mobile" || role === "screen" ? role : "unknown",
+      role: role === "controller" || role === "screen" ? role : "unknown",
     };
     clients.set(socket.id, { connectedAt: Date.now() });
     socket.join(room);
@@ -91,6 +101,8 @@ function register({ io, socket }) {
     if (!socket.rooms.has(room)) return;
 
     const signal = normalizeSignal(socket, payload);
+    if (!signal) return;
+
     lastSignal = signal;
     io.to(room).emit(events.signalOut, signal);
   });
@@ -101,7 +113,7 @@ function register({ io, socket }) {
   });
 }
 
-export const fingerSkatingExperiment = {
+export const djExperiment = {
   id,
   events,
   register,

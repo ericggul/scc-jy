@@ -2,48 +2,46 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { io, type Socket } from "socket.io-client";
+import type { DjEdge, DjHitTarget } from "@/components/dj/1/graph";
+import type { DjScreenId } from "@/components/dj/experiments";
 
-export type ExperimentRole = "mobile" | "screen";
+export type DjRole = "controller" | "screen";
 
-export type ExperimentSignal = {
+export type DjSignal = {
   id: string;
-  experimentId: string;
+  experimentId: "dj";
   from: string;
-  role: ExperimentRole | "unknown";
+  role: DjRole | "unknown";
   sentAt: number;
-  streamId?: string;
-  pointerId?: number;
-  phase?: "start" | "move" | "end";
-  hue: number;
-  intensity: number;
-  x: number;
-  y: number;
-  label: string;
+  source: "node" | "edge";
+  nodeId: DjScreenId | null;
+  edgeId: DjEdge["id"] | null;
+  targetScreenIds: DjScreenId[];
+  x: number | null;
+  y: number | null;
 };
 
-export type ExperimentPresence = {
-  experimentId: string;
+export type DjPresence = {
+  experimentId: "dj";
   total: number;
-  mobiles: number;
+  controllers: number;
   screens: number;
   clients: Array<{
     id: string;
-    role: ExperimentRole | "unknown";
+    role: DjRole | "unknown";
     connectedAt: number;
   }>;
   serverTime: number;
 };
 
-type OutgoingSignal = Pick<
-  ExperimentSignal,
-  "hue" | "intensity" | "x" | "y" | "label"
-> &
-  Partial<Pick<ExperimentSignal, "phase" | "pointerId" | "streamId">>;
+type DjSocketOptions = {
+  role: DjRole;
+  onSignal?: (signal: DjSignal) => void;
+};
 
-type ExperimentSocketOptions = {
-  experimentId: string;
-  role: ExperimentRole;
-  onSignal?: (signal: ExperimentSignal) => void;
+type OutgoingDjSignal = DjHitTarget & {
+  x: number;
+  y: number;
 };
 
 function getSocketOrigin() {
@@ -61,29 +59,25 @@ function getSocketOrigin() {
   return `https://localhost:${process.env.NEXT_PUBLIC_SOCKET_PORT || "4000"}`;
 }
 
-function getEvents(experimentId: string) {
+function getEvents() {
   return {
-    join: `${experimentId}:join`,
-    hello: `${experimentId}:hello`,
-    presence: `${experimentId}:presence`,
-    signalIn: `${experimentId}:signal:in`,
-    signalOut: `${experimentId}:signal:out`,
+    join: "dj:join",
+    hello: "dj:hello",
+    presence: "dj:presence",
+    signalIn: "dj:signal:in",
+    signalOut: "dj:signal:out",
   };
 }
 
-export function useExperimentSocket({
-  experimentId,
-  role,
-  onSignal,
-}: ExperimentSocketOptions) {
+export function useDjSocket({ role, onSignal }: DjSocketOptions) {
   const socketRef = useRef<Socket | null>(null);
   const onSignalRef = useRef(onSignal);
-  const events = useMemo(() => getEvents(experimentId), [experimentId]);
+  const events = useMemo(() => getEvents(), []);
   const [connected, setConnected] = useState(false);
   const [socketId, setSocketId] = useState<string | null>(null);
   const [connectionError, setConnectionError] = useState<string | null>(null);
-  const [presence, setPresence] = useState<ExperimentPresence | null>(null);
-  const [lastSignal, setLastSignal] = useState<ExperimentSignal | null>(null);
+  const [presence, setPresence] = useState<DjPresence | null>(null);
+  const [lastSignal, setLastSignal] = useState<DjSignal | null>(null);
 
   useEffect(() => {
     onSignalRef.current = onSignal;
@@ -126,8 +120,8 @@ export function useExperimentSocket({
         lastSignal: incomingSignal,
         presence: incomingPresence,
       }: {
-        lastSignal: ExperimentSignal | null;
-        presence: ExperimentPresence;
+        lastSignal: DjSignal | null;
+        presence: DjPresence;
       }) => {
         if (incomingSignal) {
           setLastSignal(incomingSignal);
@@ -137,7 +131,7 @@ export function useExperimentSocket({
     );
 
     socket.on(events.presence, setPresence);
-    socket.on(events.signalOut, (signal: ExperimentSignal) => {
+    socket.on(events.signalOut, (signal: DjSignal) => {
       setLastSignal(signal);
       onSignalRef.current?.(signal);
     });
@@ -149,7 +143,7 @@ export function useExperimentSocket({
   }, [events, role]);
 
   const sendSignal = useCallback(
-    (signal: OutgoingSignal) => {
+    (signal: OutgoingDjSignal) => {
       socketRef.current?.emit(events.signalIn, signal);
     },
     [events.signalIn],

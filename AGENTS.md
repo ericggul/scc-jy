@@ -8,6 +8,9 @@ Never run `pnpm dev` or `pnpm dev:http` in this repository.
 Never start any dev server yourself. If runtime verification requires a server,
 ask the user exactly: `서버 켜주세요 전하`.
 
+Never run browser or runtime interaction verification unless the user explicitly
+asks for browser testing.
+
 All local runtime verification must use HTTPS. Do not start an HTTP dev server.
 <!-- END:repo-agent-rules -->
 
@@ -24,12 +27,28 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - `AGENTS.md` is the active operational rule file for coding agents.
 - `llm.txt` is an index for LLM/harness documentation, not a dumping ground.
 - Durable explanations live under `docs/`; per-experiment notes live at `docs/[experiment].md`.
+- `AGENTS.md` is repository-wide only. Do not add experiment-specific,
+  feature-specific, or one-off implementation notes to `AGENTS.md`; put those
+  in the relevant `docs/[experiment].md` or another scoped file under `docs/`.
+- When the user says to update "memory", "memory.md", or "remember" for this
+  repository, update `AGENTS.md` and/or files under `docs/` as appropriate.
+  Do not write to Codex-global memory files unless the user explicitly names
+  that external location.
+
+## React
+
+- Never use generated display text, pseudo-random sentence text, or mutable
+  content strings as React list keys.
+- For generated records, create stable IDs in the data/model layer and key by
+  those IDs. Duplicate display text must not produce React key collisions.
 
 ## Verification
 
 - Do not run `pnpm build`.
 - Do not run `pnpm dev` or `pnpm dev:http`.
 - `pnpm lint` and `pnpm exec tsc --noEmit` are acceptable verification commands.
+- Do not run browser checks, Playwright checks, curl runtime probes, or other
+  runtime interaction verification unless the user explicitly asks for it.
 - Do not start dev servers under any circumstance. If a server is needed, ask
   the user exactly: `서버 켜주세요 전하`.
 - Do not kill dev servers unless the user explicitly asks you to shut them down.
