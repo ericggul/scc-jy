@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import type { ComponentType } from "react";
 import StockOne from "@/components/stock/1";
@@ -25,6 +26,17 @@ export function generateStaticParams() {
   }));
 }
 
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ experiment: string }>;
+}): Promise<Metadata> {
+  const { experiment } = await params;
+  return {
+    title: `stock ${experiment}`,
+  };
+}
+
 export default async function StockExperimentPage({
   params,
 }: {
@@ -39,4 +51,3 @@ export default async function StockExperimentPage({
   const Component = components[experiment];
   return <Component />;
 }
-

@@ -1,5 +1,10 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { stockExperiments } from "@/components/stock/experiments";
+
+export const metadata: Metadata = {
+  title: "stock",
+};
 
 export default function StockIndexPage() {
   return (
@@ -53,4 +58,3 @@ export default function StockIndexPage() {
     </main>
   );
 }
-

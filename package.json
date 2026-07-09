@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "node scripts/dev-https.mjs",
-    "dev:next": "bash scripts/generate-certs.sh && next dev --experimental-https --experimental-https-key certificates/server.key --experimental-https-cert certificates/server.pem --experimental-https-ca certificates/rootCA.pem",
+    "dev:next": "bash scripts/generate-certs.sh && next dev --hostname 0.0.0.0 --experimental-https --experimental-https-key certificates/server.key --experimental-https-cert certificates/server.pem --experimental-https-ca certificates/rootCA.pem",
     "dev:socket": "bash scripts/generate-certs.sh && node socket-server.mjs",
     "dev:http": "next dev",
     "build": "next build",

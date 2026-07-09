@@ -1,5 +1,10 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { languageExperiments } from "@/components/language/experiments";
+
+export const metadata: Metadata = {
+  title: "language",
+};
 
 export default function LanguageIndexPage() {
   return (

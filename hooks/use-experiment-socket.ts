@@ -48,10 +48,12 @@ function getSocketOrigin() {
   }
 
   if (typeof window !== "undefined") {
-    return `https://${window.location.hostname}:3001`;
+    return `https://${window.location.hostname}:${
+      process.env.NEXT_PUBLIC_SOCKET_PORT || "3001"
+    }`;
   }
 
-  return "https://localhost:3001";
+  return `https://localhost:${process.env.NEXT_PUBLIC_SOCKET_PORT || "3001"}`;
 }
 
 function getEvents(experimentId: string) {

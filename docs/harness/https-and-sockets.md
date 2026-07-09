@@ -10,13 +10,16 @@ It starts:
 
 - Next dev over HTTPS on port 3000.
 - Socket.IO over HTTPS on port 3001.
-- Root CA download helper on port 4080.
+- Root CA download from the Socket.IO HTTPS server at `/cert`.
+
+Socket startup is non-critical for the Next app. If the socket port is already
+in use, `pnpm dev` keeps the HTTPS app running instead of killing the whole dev
+session with `EADDRINUSE`.
 
 Certificate scripts:
 
 - `scripts/generate-certs.sh`
 - `scripts/dev-https.mjs`
-- `scripts/cert-server.mjs`
 
 Generated certificates live under `certificates/` and are ignored by git.
 

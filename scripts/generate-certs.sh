@@ -5,7 +5,8 @@ SCRIPT_DIR=$(cd "$(dirname "$0")/.." && pwd)
 CERT_DIR="$SCRIPT_DIR/certificates"
 
 LOCAL_HOSTNAME=$(scutil --get LocalHostName 2>/dev/null || hostname -s)
-CERT_HOSTNAME=${CERT_HOSTNAME:-"${LOCAL_HOSTNAME}.local"}
+DEFAULT_CERT_HOSTNAME=$(printf "%s.local" "$LOCAL_HOSTNAME" | tr '[:upper:]' '[:lower:]')
+CERT_HOSTNAME=${CERT_HOSTNAME:-"$DEFAULT_CERT_HOSTNAME"}
 SHORT_HOSTNAME=${CERT_HOSTNAME%.local}
 
 ROOT_KEY="$CERT_DIR/rootCA.key"

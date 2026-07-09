@@ -1,5 +1,10 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { translateExperiments } from "@/components/translate/experiments";
+
+export const metadata: Metadata = {
+  title: "translate",
+};
 
 export default function TranslateIndexPage() {
   return (

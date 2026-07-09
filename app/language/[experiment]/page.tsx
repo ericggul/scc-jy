@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import type { ComponentType } from "react";
 import LanguageOne from "@/components/language/1";
@@ -15,6 +16,17 @@ export function generateStaticParams() {
   return languageExperiments.map((experiment) => ({
     experiment: experiment.slug,
   }));
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ experiment: string }>;
+}): Promise<Metadata> {
+  const { experiment } = await params;
+  return {
+    title: `language ${experiment}`,
+  };
 }
 
 export default async function LanguageExperimentPage({

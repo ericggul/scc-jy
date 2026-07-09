@@ -1,5 +1,10 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { momaExperiments } from "@/components/moma/experiments";
+
+export const metadata: Metadata = {
+  title: "moma",
+};
 
 export default function MomaIndexPage() {
   return (

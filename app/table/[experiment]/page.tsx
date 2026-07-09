@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import type { ComponentType } from "react";
 import TableOne from "@/components/table/1";
@@ -15,6 +16,17 @@ export function generateStaticParams() {
   return tableExperiments.map((experiment) => ({
     experiment: experiment.slug,
   }));
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ experiment: string }>;
+}): Promise<Metadata> {
+  const { experiment } = await params;
+  return {
+    title: `table ${experiment}`,
+  };
 }
 
 export default async function TableExperimentPage({

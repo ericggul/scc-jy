@@ -1,5 +1,10 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { tableExperiments } from "@/components/table/experiments";
+
+export const metadata: Metadata = {
+  title: "table",
+};
 
 export default function TableIndexPage() {
   return (
