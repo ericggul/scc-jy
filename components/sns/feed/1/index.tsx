@@ -324,7 +324,7 @@ function FeedPost({
   );
 }
 
-export default function SnsOne() {
+export default function SnsFeedOne() {
   const [visibleCount, setVisibleCount] = useState(initialCount);
   const feedItems = useMemo(
     () =>

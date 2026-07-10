@@ -1,10 +1,22 @@
 export const snsExperiments = [
-  { slug: "1", label: "sns/1" },
-  { slug: "2", label: "sns/2" },
+  { category: "feed", slug: "1", label: "sns/feed/1" },
+  { category: "navigation", slug: "1", label: "sns/navigation/1" },
 ] as const;
 
-export type SnsExperimentSlug = (typeof snsExperiments)[number]["slug"];
+export type SnsExperiment = (typeof snsExperiments)[number];
+export type SnsExperimentCategory = SnsExperiment["category"];
 
-export function isSnsExperimentSlug(value: string): value is SnsExperimentSlug {
-  return snsExperiments.some((experiment) => experiment.slug === value);
+type ExperimentKey<
+  Experiment extends { category: string; slug: string },
+> = Experiment extends unknown
+  ? `${Experiment["category"]}/${Experiment["slug"]}`
+  : never;
+
+export type SnsExperimentKey = ExperimentKey<SnsExperiment>;
+
+export function findSnsExperiment(category: string, slug: string) {
+  return snsExperiments.find(
+    (experiment) =>
+      experiment.category === category && experiment.slug === slug,
+  );
 }

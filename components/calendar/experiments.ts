@@ -10,3 +10,10 @@ export function isCalendarExperimentSlug(
 ): value is CalendarExperimentSlug {
   return calendarExperiments.some((experiment) => experiment.slug === value);
 }
+
+export const calendarDirectRoutes = ["default", "1"] as const;
+export type CalendarDirectRoute = (typeof calendarDirectRoutes)[number];
+
+export function isCalendarDirectRoute(value: string): value is CalendarDirectRoute {
+  return calendarDirectRoutes.some((route) => route === value);
+}

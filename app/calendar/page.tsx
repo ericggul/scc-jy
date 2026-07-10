@@ -13,15 +13,28 @@ export default function CalendarIndexPage() {
         calendar
       </h1>
       <nav className="grid border-t border-black">
-        {calendarExperiments.map((experiment) => (
+        <Link
+          href="/calendar/default"
+          className="border-b border-black py-4 text-[clamp(28px,7vw,72px)] font-black leading-none tracking-[-0.06em] hover:bg-black hover:text-white"
+        >
+          default
+        </Link>
+        {calendarExperiments.flatMap((experiment) => [
           <Link
-            key={experiment.slug}
-            href={`/calendar/${experiment.slug}`}
+            key={`mobile-${experiment.slug}`}
+            href={`/calendar/mobile/${experiment.slug}`}
             className="border-b border-black py-4 text-[clamp(28px,7vw,72px)] font-black leading-none tracking-[-0.06em] hover:bg-black hover:text-white"
           >
-            {experiment.label}
-          </Link>
-        ))}
+            mobile/{experiment.slug}
+          </Link>,
+          <Link
+            key={`screen-${experiment.slug}`}
+            href={`/calendar/screen/${experiment.slug}`}
+            className="border-b border-black py-4 text-[clamp(28px,7vw,72px)] font-black leading-none tracking-[-0.06em] hover:bg-black hover:text-white"
+          >
+            screen/{experiment.slug}
+          </Link>,
+        ])}
       </nav>
     </main>
   );

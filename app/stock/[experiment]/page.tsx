@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import type { ComponentType } from "react";
 import StockOne from "@/components/stock/1";
+import StockTwo from "@/components/stock/2";
 import {
   isStockExperimentSlug,
   stockExperiments,
@@ -10,6 +11,7 @@ import {
 
 const components: Record<StockExperimentSlug, ComponentType> = {
   "1": StockOne,
+  "2": StockTwo,
 };
 
 export function generateStaticParams() {

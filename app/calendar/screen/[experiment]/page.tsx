@@ -2,22 +2,18 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import type { ComponentType } from "react";
 import CalendarOneScreen from "@/components/calendar/1/screen";
-import CalendarDefault from "@/components/calendar/default";
 import {
-  calendarDirectRoutes,
-  isCalendarDirectRoute,
-  type CalendarDirectRoute,
+  calendarExperiments,
+  isCalendarExperimentSlug,
+  type CalendarExperimentSlug,
 } from "@/components/calendar/experiments";
 
-const components: Record<CalendarDirectRoute, ComponentType> = {
-  default: CalendarDefault,
+const components: Record<CalendarExperimentSlug, ComponentType> = {
   "1": CalendarOneScreen,
 };
 
 export function generateStaticParams() {
-  return calendarDirectRoutes.map((experiment) => ({
-    experiment,
-  }));
+  return calendarExperiments.map(({ slug: experiment }) => ({ experiment }));
 }
 
 export async function generateMetadata({
@@ -26,22 +22,16 @@ export async function generateMetadata({
   params: Promise<{ experiment: string }>;
 }): Promise<Metadata> {
   const { experiment } = await params;
-  return {
-    title: `calendar ${experiment}`,
-  };
+  return { title: `calendar screen ${experiment}` };
 }
 
-export default async function CalendarExperimentPage({
+export default async function CalendarScreenPage({
   params,
 }: {
   params: Promise<{ experiment: string }>;
 }) {
   const { experiment } = await params;
-
-  if (!isCalendarDirectRoute(experiment)) {
-    notFound();
-  }
-
+  if (!isCalendarExperimentSlug(experiment)) notFound();
   const Component = components[experiment];
   return <Component />;
 }

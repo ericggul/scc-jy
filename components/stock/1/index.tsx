@@ -1,3 +1,9 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+
+import { historicalSeries, type HistoricalRange } from "./historical-data";
+
 type PricePoint = {
   id: string;
   time: string;
@@ -14,6 +20,8 @@ type StockRow = {
   timeAsOf: string;
   series: PricePoint[];
 };
+
+type TimeRange = "1D" | HistoricalRange;
 
 const stocks: StockRow[] = [
   {
@@ -368,6 +376,54 @@ const stocks: StockRow[] = [
   },
 ];
 
+const chartAnimationDuration = 1200;
+const timeRanges: TimeRange[] = ["1D", "1Y", "5Y"];
+
+function seriesForRange(stock: StockRow, range: TimeRange) {
+  if (range === "1D") {
+    return stock.series;
+  }
+
+  return historicalSeries[stock.id]?.[range] ?? stock.series;
+}
+
+function stockSnapshot(
+  stock: StockRow,
+  series: PricePoint[],
+  range: TimeRange,
+  progress: number,
+) {
+  const boundedProgress = Math.max(0, Math.min(progress, 1));
+
+  if (range === "1D" && boundedProgress >= 1) {
+    return {
+      change: stock.change,
+      positive: stock.changeValue >= 0,
+      price: stock.price,
+    };
+  }
+
+  const seriesPosition = boundedProgress * (series.length - 1);
+  const startIndex = Math.floor(seriesPosition);
+  const endIndex = Math.min(startIndex + 1, series.length - 1);
+  const pointProgress = seriesPosition - startIndex;
+  const startValue = series[startIndex].value;
+  const endValue = series[endIndex].value;
+  const sampledValue = startValue + (endValue - startValue) * pointProgress;
+  const endpointOffset = range === "1D" ? Number(stock.price) - series.at(-1)!.value : 0;
+  const value = sampledValue + endpointOffset * boundedProgress;
+  const baseline = range === "1D" ? Number(stock.price) - stock.changeValue : series[0].value;
+  const changeValue = value - baseline;
+  const changePercent = (changeValue / baseline) * 100;
+  const sign = changeValue >= 0 ? "+" : "-";
+
+  return {
+    change: `${sign}${Math.abs(changeValue).toFixed(2)}  ${sign}${Math.abs(changePercent).toFixed(2)}%`,
+    positive: changeValue >= 0,
+    price: value.toFixed(2),
+  };
+}
+
 function chartPath(series: PricePoint[], width: number, height: number) {
   const values = series.map((point) => point.value);
   const min = Math.min(...values);
@@ -405,19 +461,32 @@ function chartAreaPath(series: PricePoint[], width: number, height: number) {
   return `${line} L ${width - 5} ${height - 5} L 5 ${height - 5} Z`;
 }
 
-function StockChart({ stock }: { stock: StockRow }) {
+function StockChart({
+  positive,
+  progress,
+  range,
+  series,
+  stock,
+}: {
+  positive: boolean;
+  progress: number;
+  range: TimeRange;
+  series: PricePoint[];
+  stock: StockRow;
+}) {
   const width = 420;
   const height = 104;
-  const positive = stock.changeValue >= 0;
   const color = positive ? "#32d74b" : "#ff453a";
   const fillId = `${stock.id}-area-fill`;
+  const revealId = `${stock.id}-chart-reveal`;
+  const revealWidth = Math.max(0, progress) * width;
 
   return (
     <svg
       viewBox={`0 0 ${width} ${height}`}
       className="h-full w-full"
       role="img"
-      aria-label={`${stock.symbol} one day price graph`}
+      aria-label={`${stock.symbol} ${range} price graph`}
       preserveAspectRatio="none"
     >
       <defs>
@@ -426,77 +495,165 @@ function StockChart({ stock }: { stock: StockRow }) {
           <stop offset="58%" stopColor={color} stopOpacity="0.055" />
           <stop offset="100%" stopColor={color} stopOpacity="0" />
         </linearGradient>
+        <clipPath id={revealId}>
+          <rect width={revealWidth} height={height} />
+        </clipPath>
       </defs>
-      <path d={chartAreaPath(stock.series, width, height)} fill={`url(#${fillId})`} />
-      <path
-        d={chartPath(stock.series, width, height)}
-        fill="none"
-        stroke={color}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeOpacity="0.18"
-        strokeWidth="5.8"
-      />
-      <path
-        d={chartPath(stock.series, width, height)}
-        fill="none"
-        stroke={color}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="2.35"
-      />
+      <g clipPath={`url(#${revealId})`}>
+        <path d={chartAreaPath(series, width, height)} fill={`url(#${fillId})`} />
+        <path
+          d={chartPath(series, width, height)}
+          fill="none"
+          stroke={color}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeOpacity="0.18"
+          strokeWidth="5.8"
+        />
+        <path
+          d={chartPath(series, width, height)}
+          fill="none"
+          stroke={color}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="2.35"
+        />
+      </g>
     </svg>
   );
 }
 
-export default function StockOne() {
+function StockCard({ range, stock }: { range: TimeRange; stock: StockRow }) {
+  const [progress, setProgress] = useState(1);
+  const animationFrameRef = useRef<number | null>(null);
+  const series = seriesForRange(stock, range);
+  const snapshot = stockSnapshot(stock, series, range, progress);
+
+  useEffect(() => {
+    return () => {
+      if (animationFrameRef.current !== null) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, []);
+
+  function stopAnimation() {
+    if (animationFrameRef.current !== null) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+  }
+
+  function handleMouseEnter() {
+    stopAnimation();
+    setProgress(0);
+
+    const startTime = performance.now();
+    const animate = (time: number) => {
+      const nextProgress = Math.max(
+        0,
+        Math.min((time - startTime) / chartAnimationDuration, 1),
+      );
+      setProgress(nextProgress);
+
+      if (nextProgress < 1) {
+        animationFrameRef.current = requestAnimationFrame(animate);
+      } else {
+        animationFrameRef.current = null;
+      }
+    };
+
+    animationFrameRef.current = requestAnimationFrame(animate);
+  }
+
+  function handleMouseLeave() {
+    stopAnimation();
+    setProgress(1);
+  }
+
   return (
-    <main className="grid min-h-screen place-items-center overflow-hidden bg-black px-3 py-4 text-[#f5f5f7] sm:px-6">
+    <article
+      className="grid h-[clamp(76px,17.5vh,122px)] grid-cols-[minmax(94px,132px)_minmax(0,1fr)] items-center gap-2 rounded-[8px] bg-[#1c1c1e] px-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.045),0_16px_44px_rgba(0,0,0,0.18)] sm:grid-cols-[164px_minmax(0,1fr)] sm:gap-4 sm:px-5 lg:h-[clamp(92px,17.2vh,128px)]"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
+      <div className="min-w-0">
+        <div className="flex min-w-0 items-baseline justify-between gap-3 sm:block">
+          <h2 className="truncate text-[18px] font-semibold leading-5 text-white sm:text-[20px]">
+            {stock.symbol}
+          </h2>
+          <p
+            className={`shrink-0 text-[13px] font-semibold leading-none tabular-nums sm:hidden ${
+              snapshot.positive ? "text-[#32d74b]" : "text-[#ff453a]"
+            }`}
+          >
+            {snapshot.change}
+          </p>
+        </div>
+        <p className="mt-1 truncate text-[12px] leading-4 text-[#8e8e93] sm:text-[13px]">
+          {stock.name}
+        </p>
+        <p className="mt-[clamp(8px,1.8vh,18px)] text-[22px] font-semibold leading-none tracking-normal text-white tabular-nums sm:text-[26px]">
+          {snapshot.price}
+        </p>
+        <p
+          className={`mt-1 hidden text-[13px] font-semibold leading-none tabular-nums sm:block ${
+            snapshot.positive ? "text-[#32d74b]" : "text-[#ff453a]"
+          }`}
+        >
+          {snapshot.change}
+        </p>
+      </div>
+      <div className="h-[clamp(54px,11.5vh,88px)] min-w-0 overflow-hidden rounded-[6px] bg-black/[0.08]">
+        <StockChart
+          positive={snapshot.positive}
+          progress={progress}
+          range={range}
+          series={series}
+          stock={stock}
+        />
+      </div>
+    </article>
+  );
+}
+
+export default function StockOne() {
+  const [range, setRange] = useState<TimeRange>("1D");
+
+  return (
+    <main className="relative grid min-h-screen place-items-center overflow-hidden bg-black px-3 py-4 text-[#f5f5f7] sm:px-6">
       <section className="w-full max-w-[1520px]" aria-label="Ten stock graphs">
         <div className="grid gap-[clamp(8px,1.35vh,12px)] lg:grid-cols-2 lg:gap-x-4">
-          {stocks.map((stock) => {
-            const positive = stock.changeValue >= 0;
-
-            return (
-              <article
-                key={stock.id}
-                className="grid h-[clamp(76px,17.5vh,122px)] grid-cols-[minmax(94px,132px)_minmax(0,1fr)] items-center gap-2 rounded-[8px] bg-[#1c1c1e] px-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.045),0_16px_44px_rgba(0,0,0,0.18)] sm:grid-cols-[164px_minmax(0,1fr)] sm:gap-4 sm:px-5 lg:h-[clamp(92px,17.2vh,128px)]"
-              >
-                <div className="min-w-0">
-                  <div className="flex min-w-0 items-baseline justify-between gap-3 sm:block">
-                    <h2 className="truncate text-[18px] font-semibold leading-5 text-white sm:text-[20px]">
-                      {stock.symbol}
-                    </h2>
-                    <p
-                      className={`shrink-0 text-[13px] font-semibold leading-none tabular-nums sm:hidden ${
-                        positive ? "text-[#32d74b]" : "text-[#ff453a]"
-                      }`}
-                    >
-                      {stock.change}
-                    </p>
-                  </div>
-                  <p className="mt-1 truncate text-[12px] leading-4 text-[#8e8e93] sm:text-[13px]">
-                    {stock.name}
-                  </p>
-                  <p className="mt-[clamp(8px,1.8vh,18px)] text-[22px] font-semibold leading-none tracking-normal text-white tabular-nums sm:text-[26px]">
-                    {stock.price}
-                  </p>
-                  <p
-                    className={`mt-1 hidden text-[13px] font-semibold leading-none tabular-nums sm:block ${
-                      positive ? "text-[#32d74b]" : "text-[#ff453a]"
-                    }`}
-                  >
-                    {stock.change}
-                  </p>
-                </div>
-                <div className="h-[clamp(54px,11.5vh,88px)] min-w-0 overflow-hidden rounded-[6px] bg-black/[0.08]">
-                  <StockChart stock={stock} />
-                </div>
-              </article>
-            );
-          })}
+          {stocks.map((stock) => (
+            <StockCard key={`${stock.id}-${range}`} range={range} stock={stock} />
+          ))}
         </div>
       </section>
+      <div
+        className="fixed bottom-3 left-3 z-10 flex rounded-[6px] border border-white/[0.08] bg-[#1c1c1e]/95 p-1 shadow-[0_8px_24px_rgba(0,0,0,0.35)] backdrop-blur-sm sm:bottom-4 sm:left-6"
+        role="group"
+        aria-label="Stock chart time range"
+      >
+        {timeRanges.map((option) => {
+          const selected = option === range;
+
+          return (
+            <button
+              key={option}
+              type="button"
+              aria-pressed={selected}
+              className={`h-7 min-w-10 rounded-[4px] px-2 text-[12px] font-semibold tabular-nums transition-colors ${
+                selected
+                  ? "bg-white text-black"
+                  : "text-[#8e8e93] hover:bg-white/[0.07] hover:text-white"
+              }`}
+              onClick={() => setRange(option)}
+            >
+              {option}
+            </button>
+          );
+        })}
+      </div>
     </main>
   );
 }

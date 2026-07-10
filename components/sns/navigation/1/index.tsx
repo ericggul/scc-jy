@@ -1,7 +1,7 @@
 "use client";
 
 import type { PointerEvent, ReactNode } from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type TabId = "home" | "reels" | "messages" | "search" | "profile";
 
@@ -15,6 +15,10 @@ const tabs: { id: TabId; label: string; icon: ReactNode }[] = [
 
 function defaultTabForRow(index: number) {
   return tabs[index % tabs.length].id;
+}
+
+function isTabId(value: string | undefined): value is TabId {
+  return tabs.some((tab) => tab.id === value);
 }
 
 function HomeIcon() {
@@ -96,22 +100,32 @@ function ProfileAvatar() {
 }
 
 function TabButton({
+  rowIndex,
+  tabId,
   label,
   children,
   active = false,
-  onClick,
+  onActivate,
 }: {
+  rowIndex: number;
+  tabId: TabId;
   label: string;
   children: ReactNode;
   active?: boolean;
-  onClick: () => void;
+  onActivate: () => void;
 }) {
   return (
     <button
       type="button"
       aria-label={label}
       aria-current={active ? "page" : undefined}
-      onClick={onClick}
+      data-skate-row={rowIndex}
+      data-skate-tab={tabId}
+      onClick={(event) => {
+        if (event.detail === 0) {
+          onActivate();
+        }
+      }}
       className="relative grid h-[50px] min-w-0 select-none place-items-center text-current outline-none transition-transform active:scale-[0.92] focus:outline-none focus-visible:outline-none [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none]"
       style={{
         userSelect: "none",
@@ -119,10 +133,10 @@ function TabButton({
       }}
     >
       <span
-        className={`relative grid place-items-center transition-[opacity,transform,filter] duration-[360ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${
+        className={`relative grid place-items-center transition-[opacity,transform,filter] duration-[460ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${
           active
-            ? "scale-[1.08] opacity-100 drop-shadow-[0_1px_0_rgba(255,255,255,0.4)]"
-            : "scale-100 opacity-[0.64]"
+            ? "scale-[1.08] opacity-100 drop-shadow-[0_1px_0_rgba(255,255,255,0.65)] saturate-100"
+            : "scale-100 opacity-[0.38] saturate-50"
         }`}
       >
         {children}
@@ -131,13 +145,12 @@ function TabButton({
   );
 }
 
-export default function SnsTwo() {
+export default function SnsNavigationOne() {
   const [activeTabs, setActiveTabs] = useState<TabId[]>(() =>
     Array.from({ length: 8 }, (_, index) => defaultTabForRow(index)),
   );
-  const [dragStart, setDragStart] = useState<number | null>(null);
-  const [dragRow, setDragRow] = useState<number | null>(null);
   const [barCount, setBarCount] = useState(8);
+  const activePointerIdsRef = useRef(new Set<number>());
 
   useEffect(() => {
     function syncBarCount() {
@@ -162,32 +175,57 @@ export default function SnsTwo() {
   }, []);
 
   function setRowTab(rowIndex: number, tabId: TabId) {
-    setActiveTabs((current) =>
-      current.map((value, index) => (index === rowIndex ? tabId : value)),
-    );
+    setActiveTabs((current) => {
+      if (
+        rowIndex < 0 ||
+        rowIndex >= current.length ||
+        current[rowIndex] === tabId
+      ) {
+        return current;
+      }
+
+      return current.map((value, index) =>
+        index === rowIndex ? tabId : value,
+      );
+    });
   }
 
-  function selectOffset(rowIndex: number, offset: number) {
-    const activeTab = activeTabs[rowIndex] ?? "home";
-    const activeIndex = tabs.findIndex((tab) => tab.id === activeTab);
-    const nextIndex = Math.max(0, Math.min(tabs.length - 1, activeIndex + offset));
-    setRowTab(rowIndex, tabs[nextIndex].id);
+  function selectAtPoint(clientX: number, clientY: number) {
+    const target = document
+      .elementFromPoint(clientX, clientY)
+      ?.closest<HTMLElement>("[data-skate-row][data-skate-tab]");
+
+    if (!target) return;
+
+    const rowIndex = Number(target.dataset.skateRow);
+    const tabId = target.dataset.skateTab;
+
+    if (Number.isInteger(rowIndex) && isTabId(tabId)) {
+      setRowTab(rowIndex, tabId);
+    }
   }
 
-  function handlePointerUp(event: PointerEvent<HTMLElement>) {
-    if (dragStart === null || dragRow === null) {
-      return;
+  function selectFromPointerEvent(event: PointerEvent<HTMLElement>) {
+    const coalescedPoints = event.nativeEvent.getCoalescedEvents?.();
+    const points =
+      coalescedPoints && coalescedPoints.length > 0
+        ? coalescedPoints
+        : [event.nativeEvent];
+
+    for (const point of points) {
+      selectAtPoint(point.clientX, point.clientY);
     }
+  }
 
-    const delta = event.clientX - dragStart;
-    setDragStart(null);
-    setDragRow(null);
+  function finishPointer(event: PointerEvent<HTMLElement>) {
+    if (!activePointerIdsRef.current.has(event.pointerId)) return;
 
-    if (Math.abs(delta) < 32) {
-      return;
+    selectFromPointerEvent(event);
+    activePointerIdsRef.current.delete(event.pointerId);
+
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
     }
-
-    selectOffset(dragRow, delta < 0 ? 1 : -1);
   }
 
   return (
@@ -195,11 +233,26 @@ export default function SnsTwo() {
       className="fixed inset-0 h-dvh touch-none select-none overflow-hidden overscroll-none bg-[linear-gradient(180deg,#f7f7f7_0%,#ffffff_42%,#f1f1f1_100%)] text-black caret-transparent [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none]"
       onContextMenu={(event) => event.preventDefault()}
       onDragStart={(event) => event.preventDefault()}
-      onPointerCancel={() => {
-        setDragStart(null);
-        setDragRow(null);
+      onLostPointerCapture={(event) => {
+        activePointerIdsRef.current.delete(event.pointerId);
       }}
-      onPointerUp={handlePointerUp}
+      onPointerCancel={(event) => {
+        activePointerIdsRef.current.delete(event.pointerId);
+      }}
+      onPointerDown={(event) => {
+        if (event.pointerType === "mouse" && event.button !== 0) return;
+
+        event.preventDefault();
+        activePointerIdsRef.current.add(event.pointerId);
+        event.currentTarget.setPointerCapture(event.pointerId);
+        selectFromPointerEvent(event);
+      }}
+      onPointerMove={(event) => {
+        if (activePointerIdsRef.current.has(event.pointerId)) {
+          selectFromPointerEvent(event);
+        }
+      }}
+      onPointerUp={finishPointer}
       style={{
         userSelect: "none",
         WebkitUserSelect: "none",
@@ -214,12 +267,8 @@ export default function SnsTwo() {
       >
         {Array.from({ length: barCount }, (_, rowIndex) => (
           <nav
-            key={`sns-2-nav-${rowIndex}`}
+            key={`sns-navigation-1-nav-${rowIndex}`}
             aria-label={`Instagram primary navigation ${rowIndex + 1}`}
-            onPointerDown={(event) => {
-              setDragStart(event.clientX);
-              setDragRow(rowIndex);
-            }}
             className="min-h-0 rounded-[999px] border border-white/60 bg-white/58 px-1.5 shadow-[0_14px_32px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.72)] backdrop-blur-2xl"
           >
             <div className="relative h-full min-h-[48px]">
@@ -231,20 +280,22 @@ export default function SnsTwo() {
                   <>
                     <span
                       aria-hidden="true"
-                      className="absolute left-1.5 top-1/2 h-[calc(100%-8px)] min-h-10 rounded-full bg-white/36 shadow-[inset_0_1px_0_rgba(255,255,255,0.75),inset_0_-1px_0_rgba(255,255,255,0.22),0_10px_24px_rgba(0,0,0,0.1)] transition-[transform,width,opacity,filter] duration-[440ms] ease-[cubic-bezier(0.16,1,0.3,1)]"
+                      className="pointer-events-none absolute inset-y-0 w-1/5 px-px py-1 transition-[left] duration-[560ms] ease-[cubic-bezier(0.16,1,0.3,1)]"
                       style={{
-                        width: "calc((100% - 12px) / 5)",
-                        transform: `translate3d(${activeIndex * 100}%, -50%, 0)`,
+                        left: `${activeIndex * 20}%`,
                       }}
-                    />
+                    >
+                      <span className="block h-full min-h-10 rounded-full border border-white/75 bg-white/64 shadow-[inset_0_1px_0_rgba(255,255,255,0.92),inset_0_-1px_0_rgba(255,255,255,0.3),0_10px_24px_rgba(0,0,0,0.13)]" />
+                    </span>
                     <span
                       aria-hidden="true"
-                      className="absolute left-1.5 top-1/2 h-[calc(100%-16px)] min-h-8 rounded-full bg-white/24 blur-md transition-transform duration-[520ms] ease-[cubic-bezier(0.16,1,0.3,1)]"
+                      className="pointer-events-none absolute inset-y-0 w-1/5 px-px py-2 transition-[left] duration-[640ms] ease-[cubic-bezier(0.16,1,0.3,1)]"
                       style={{
-                        width: "calc((100% - 12px) / 5)",
-                        transform: `translate3d(${activeIndex * 100}%, -50%, 0)`,
+                        left: `${activeIndex * 20}%`,
                       }}
-                    />
+                    >
+                      <span className="block h-full min-h-8 rounded-full bg-white/38 blur-md" />
+                    </span>
                   </>
                 );
               })()}
@@ -252,9 +303,11 @@ export default function SnsTwo() {
                 {tabs.map((tab) => (
                   <TabButton
                     key={`${rowIndex}-${tab.id}`}
+                    rowIndex={rowIndex}
+                    tabId={tab.id}
                     label={tab.label}
                     active={(activeTabs[rowIndex] ?? "home") === tab.id}
-                    onClick={() => setRowTab(rowIndex, tab.id)}
+                    onActivate={() => setRowTab(rowIndex, tab.id)}
                   >
                     {tab.icon}
                   </TabButton>
