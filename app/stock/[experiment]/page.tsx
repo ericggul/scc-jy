@@ -1,23 +1,23 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import type { ComponentType } from "react";
-import StockOne from "@/components/stock/1";
+import StockOneScreen from "@/components/stock/1/screen";
 import StockTwo from "@/components/stock/2";
+import StockDefault from "@/components/stock/default";
 import {
-  isStockExperimentSlug,
-  stockExperiments,
-  type StockExperimentSlug,
+  isStockDirectRoute,
+  stockDirectRoutes,
+  type StockDirectRoute,
 } from "@/components/stock/experiments";
 
-const components: Record<StockExperimentSlug, ComponentType> = {
-  "1": StockOne,
+const components: Record<StockDirectRoute, ComponentType> = {
+  default: StockDefault,
+  "1": StockOneScreen,
   "2": StockTwo,
 };
 
 export function generateStaticParams() {
-  return stockExperiments.map((experiment) => ({
-    experiment: experiment.slug,
-  }));
+  return stockDirectRoutes.map((experiment) => ({ experiment }));
 }
 
 export async function generateMetadata({
@@ -39,7 +39,7 @@ export default async function StockExperimentPage({
 }) {
   const { experiment } = await params;
 
-  if (!isStockExperimentSlug(experiment)) {
+  if (!isStockDirectRoute(experiment)) {
     notFound();
   }
 

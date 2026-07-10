@@ -1,9 +1,13 @@
 import type { LifeProfile, ProfileSex } from "./types";
 
 export const POPULATION_SIZE = 2_500;
-export const GRID_SIZE = 50;
-export const VISIBLE_COLUMNS = 3;
-export const VISIBLE_ROWS = 10;
+export const GRID_COLUMNS = 3;
+// Compatibility alias for an in-flight Turbopack graph compiled before the
+// mobile directory changed from a square grid to a vertical ledger.
+export const GRID_SIZE = GRID_COLUMNS;
+export const GRID_ROWS = Math.ceil(POPULATION_SIZE / GRID_COLUMNS);
+export const VISIBLE_COLUMNS = GRID_COLUMNS;
+export const VISIBLE_ROWS = 30;
 export const VISIBLE_PROFILE_COUNT = VISIBLE_COLUMNS * VISIBLE_ROWS;
 export const POPULATION_REFERENCE_DATE = "2024-11-01";
 
@@ -223,6 +227,38 @@ function shuffle<T>(values: T[], random: () => number) {
   return values;
 }
 
+function createSyntheticRegistrationNumber(
+  birthDate: string,
+  sex: ProfileSex,
+  random: () => number,
+) {
+  const [year, month, day] = birthDate.split("-");
+  const yearNumber = Number(year);
+  const sexCode = yearNumber >= 2000
+    ? sex === "male" ? 3 : 4
+    : sex === "male" ? 1 : 2;
+  const randomDigits = Array.from(
+    { length: 5 },
+    () => Math.floor(random() * 10),
+  );
+  const firstPart = `${year!.slice(-2)}${month}${day}`;
+  const firstTwelveDigits = [
+    ...firstPart.split("").map(Number),
+    sexCode,
+    ...randomDigits,
+  ];
+  const weights = [2, 3, 4, 5, 6, 7, 8, 9, 2, 3, 4, 5];
+  const legacyCheckDigit = (
+    11 - firstTwelveDigits.reduce(
+      (sum, digit, index) => sum + digit * weights[index]!,
+      0,
+    ) % 11
+  ) % 10;
+  const deliberatelyInvalidCheckDigit = (legacyCheckDigit + 1) % 10;
+
+  return `${firstPart}-${sexCode}${randomDigits.join("")}${deliberatelyInvalidCheckDigit}`;
+}
+
 function createProfiles(): LifeProfile[] {
   const random = mulberry32(0x5cc2024);
   const records: LifeProfile[] = [];
@@ -235,6 +271,7 @@ function createProfiles(): LifeProfile[] {
       const pool = getNamePool(age, sex);
       const givenName = pool[Math.floor(random() * pool.length)]!;
       const birthDate = createBirthDate(age, random);
+      const registrationRandom = mulberry32(0x7aa0000 + records.length);
 
       records.push({
         id: `npc-${String(records.length + 1).padStart(4, "0")}`,
@@ -242,6 +279,11 @@ function createProfiles(): LifeProfile[] {
         sex,
         birthDate,
         deathDate: createDeathDate(age, sex, random),
+        registrationNumber: createSyntheticRegistrationNumber(
+          birthDate,
+          sex,
+          registrationRandom,
+        ),
       });
     }
   }
@@ -254,6 +296,27 @@ export const lifeProfilesById = new Map(
   lifeProfiles.map((profile) => [profile.id, profile] as const),
 );
 
-export const initialProfileIds = lifeProfiles
+const koreanNameCollator = new Intl.Collator("ko-KR", {
+  numeric: true,
+  sensitivity: "variant",
+  usage: "sort",
+});
+
+const profilesSortedByName = [...lifeProfiles].sort(
+  (a, b) => koreanNameCollator.compare(a.name, b.name) || a.id.localeCompare(b.id),
+);
+
+export const lifeProfilesInSnakeOrder: readonly LifeProfile[] = Array.from(
+  { length: GRID_ROWS },
+  (_, rowIndex) => {
+    const row = profilesSortedByName.slice(
+      rowIndex * GRID_COLUMNS,
+      (rowIndex + 1) * GRID_COLUMNS,
+    );
+    return rowIndex % 2 === 0 ? row : row.reverse();
+  },
+).flat();
+
+export const initialProfileIds = lifeProfilesInSnakeOrder
   .slice(0, VISIBLE_PROFILE_COUNT)
   .map((profile) => profile.id);

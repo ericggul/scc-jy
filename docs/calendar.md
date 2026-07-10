@@ -3,18 +3,27 @@
 ## Routes
 
 - `/calendar/default`: the original single-device calendar, preserved unchanged.
-- `/calendar/mobile/1`: the mobile 50 × 50 life-profile field.
+- `/calendar/mobile/1`: the mobile five-column life-profile directory.
 - `/calendar/screen/1`: the synchronized calendar display.
 - `/calendar/1/mobile`: compatibility alias for the mobile field.
 - `/calendar/1/screen`: compatibility alias for the synchronized display.
 - `/calendar/1`: compatibility alias for the variant 1 screen.
 
 The mobile viewport is intentionally defined by `VISIBLE_COLUMNS` and
-`VISIBLE_ROWS` in `components/calendar/1/data.ts`. It currently selects 3 × 10
-profiles. Changing those constants changes the local viewport calculation; the
-socket contract remains a list of stable profile IDs plus viewport metadata.
-The server validates any bounded `rows × columns` window rather than hard-coding
-30 records, so changing those constants does not require a socket rewrite.
+`VISIBLE_ROWS` in `components/calendar/1/data.ts`. It currently selects 3 × 30
+profiles. The full 2,500-profile directory is three columns by 834 rows and only
+scrolls vertically. Each record is divided into name and synthetic resident
+registration-number fields and styled as a monochrome Korean administrative
+ledger: white paper, black rules, the installed AppleMyungjo face for names,
+and the installed AppleGothic face for centered numbers.
+The numbers are deterministic fictional identifiers whose final digit
+intentionally fails the legacy checksum; they are not records of real people.
+Profiles are sorted with a Korean collator, then alternate
+left-to-right and right-to-left on successive rows so alphabetical order follows
+a continuous vertical snake. Changing the constants updates the local viewport;
+the socket validates the supplied total grid and bounded `rows × columns`
+window rather than hard-coding 90 records. The final partial row is allowed to
+send fewer records without invalidating the socket payload.
 
 ## Synthetic population
 
@@ -49,23 +58,36 @@ Every profile owns four event definitions in `LifeEventStore`:
 1. `birth`: one occurrence on the exact birth date.
 2. `birthday`: annual recurrence beginning the year after birth.
 3. `death`: one occurrence on the predicted death date.
-4. `memorial`: annual recurrence beginning the year after death.
+4. `memorial`: an annual recurrence of the profile's scheduled death month and
+   day, beginning the year after birth. This is the experiment's speculative
+   inverse-birthday rather than a conventional memorial that starts only after
+   death, so its annual density matches birthdays for the same selected cohort.
 
-The screen currently materializes only `birth`, `birthday`, and `death`.
-`memorial` remains a first-class stored recurrence and can be enabled by passing
-it in the `kinds` option without changing profile data or socket state.
+The screen always supports `birth`, `birthday`, and `death`. Its upper-right
+`기일` control adds or removes `memorial` without changing profile data or
+socket state. The control is on by default, so annual birthdays and annual death
+anniversaries appear together.
 
 The screen offers two display modes from the upper-right control. `Event` keeps
 the original compact cards and animates those cards on selection updates.
 `Cell` colors and flashes the entire date cell; overlapping event kinds split
-the cell background into corresponding color fields. Birth, birthday, and
+the cell background into semantic color bands with narrow blended seams. Two
+independent color layers crossfade, preventing rapid socket updates from
+interpolating or corrupting a single background layer. Birth, birthday, and
 death use a sunburst, cake, and memorial-stone SVG mark respectively, avoiding
 platform-dependent emoji rendering and clipping.
+
+The upper-right sound control is off by default. Enabling it from a user gesture
+lazily creates one Web Audio context. Newly added birthdays produce a short high
+tone and newly added memorials a short low tone. Updates inside a 140 ms window
+are coalesced into one cue with at most two oscillators, so rapid mobile scrolling
+cannot create audio work per profile or per event. Disabling the control suspends
+the context; unmounting the screen closes it.
 
 ## Socket isolation
 
 Calendar uses only `calendar:*` events and the room
-`experiment:calendar:1`. The server stores the latest validated 30-profile
+`experiment:calendar:1`. The server stores the latest validated profile
 selection per calendar variant. A reconnecting screen receives that state in
 the hello payload. Only clients joined as `mobile` may update selection, and
 payloads are bounded, deduplicated, and validated before broadcast. No generic

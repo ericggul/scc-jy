@@ -38,6 +38,17 @@ modern worker's lifetime to birth, education, work, hospital, and death. Its
 bottom-left `24h / Life` switch preserves separate interaction state for both
 timescales so they can be compared without leaving the route.
 
+The icon system must communicate these cycles without visible explanatory
+text. At the rendered 28-pixel size, prefer established universal pictograms
+and reduce each stage to its strongest recognition cue: a baby bottle, open
+book, monitor, medical cross, and gravestone. Do not invent bespoke symbolic
+silhouettes or add details that make the primary object harder to recognize.
+
+The bottom-left visual toggle compares three experimental selected states:
+`Stroke` colors the icon outline, `Fill` colors its primary body, and `Halo`
+keeps the icon monochrome while applying a light object-referential tint,
+border, and shadow to the selected pill. Unselected icons remain monochrome.
+
 Interaction:
 
 - Vertical scroll extends the feed in batches and wraps through the 100-post

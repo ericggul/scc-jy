@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { stockExperiments } from "@/components/stock/experiments";
+import {
+  stockExperiments,
+  stockMultiDeviceExperiments,
+} from "@/components/stock/experiments";
 
 export const metadata: Metadata = {
   title: "stock",
@@ -10,7 +13,29 @@ export default function StockIndexPage() {
   return (
     <main className="grid min-h-screen place-items-center bg-[#050505] p-4 text-[#f5f5f7]">
       <nav className="grid w-full max-w-[760px] overflow-hidden rounded-[8px] bg-[#111113] ring-1 ring-white/[0.08]">
-        {stockExperiments.map((experiment) => (
+        <Link
+          href="/stock/default"
+          className="border-b border-white/[0.075] px-5 py-5 text-[28px] font-semibold leading-none hover:bg-white/[0.06]"
+        >
+          stock/default
+        </Link>
+        {stockMultiDeviceExperiments.flatMap((experiment) => [
+          <Link
+            key={`mobile-${experiment.slug}`}
+            href={`/stock/mobile/${experiment.slug}`}
+            className="border-b border-white/[0.075] px-5 py-5 text-[28px] font-semibold leading-none hover:bg-white/[0.06]"
+          >
+            mobile/{experiment.slug}
+          </Link>,
+          <Link
+            key={`screen-${experiment.slug}`}
+            href={`/stock/screen/${experiment.slug}`}
+            className="border-b border-white/[0.075] px-5 py-5 text-[28px] font-semibold leading-none hover:bg-white/[0.06]"
+          >
+            screen/{experiment.slug}
+          </Link>,
+        ])}
+        {stockExperiments.filter(({ slug }) => slug !== "1").map((experiment) => (
           <Link
             key={experiment.slug}
             href={`/stock/${experiment.slug}`}

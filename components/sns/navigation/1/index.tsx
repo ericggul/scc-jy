@@ -15,22 +15,73 @@ type TabId =
   | "reels";
 
 type InterfaceMode = "day" | "life";
-type TabDefinition = { id: TabId; label: string; icon: ReactNode };
+type VisualMode = "stroke" | "fill" | "halo";
+type TabDefinition = {
+  id: TabId;
+  label: string;
+  icon: ReactNode;
+  selectedColor: string;
+};
 
 const dayTabs: readonly TabDefinition[] = [
-  { id: "bed", label: "Bed", icon: <BedIcon /> },
-  { id: "commute", label: "Commute", icon: <CommuteIcon /> },
-  { id: "work-day", label: "Work", icon: <WorkIcon /> },
-  { id: "meal", label: "Meal", icon: <MealIcon /> },
-  { id: "reels", label: "Phone reels", icon: <PhoneReelsIcon /> },
+  { id: "bed", label: "Bed", icon: <BedIcon />, selectedColor: "#5f7185" },
+  {
+    id: "commute",
+    label: "Commute",
+    icon: <CommuteIcon />,
+    selectedColor: "#2563a6",
+  },
+  {
+    id: "work-day",
+    label: "Work",
+    icon: <WorkIcon />,
+    selectedColor: "#2b7896",
+  },
+  {
+    id: "meal",
+    label: "Meal",
+    icon: <MealIcon />,
+    selectedColor: "#b85e24",
+  },
+  {
+    id: "reels",
+    label: "Phone reels",
+    icon: <PhoneReelsIcon />,
+    selectedColor: "#8a3fa0",
+  },
 ];
 
 const lifeTabs: readonly TabDefinition[] = [
-  { id: "birth", label: "Birth", icon: <BirthIcon /> },
-  { id: "education", label: "Education", icon: <EducationIcon /> },
-  { id: "work-day", label: "Work", icon: <WorkIcon /> },
-  { id: "hospital", label: "Hospital", icon: <HospitalIcon /> },
-  { id: "death", label: "Death", icon: <DeathIcon /> },
+  {
+    id: "birth",
+    label: "Birth",
+    icon: <BirthIcon />,
+    selectedColor: "#3f8496",
+  },
+  {
+    id: "education",
+    label: "Education",
+    icon: <EducationIcon />,
+    selectedColor: "#8f3f4a",
+  },
+  {
+    id: "work-day",
+    label: "Work",
+    icon: <WorkIcon />,
+    selectedColor: "#2b7896",
+  },
+  {
+    id: "hospital",
+    label: "Hospital",
+    icon: <HospitalIcon />,
+    selectedColor: "#c23838",
+  },
+  {
+    id: "death",
+    label: "Death",
+    icon: <DeathIcon />,
+    selectedColor: "#5f6f4e",
+  },
 ];
 
 const tabSets: Record<InterfaceMode, readonly TabDefinition[]> = {
@@ -56,6 +107,7 @@ const iconStrokeWidth = 1.9;
 function BedIcon() {
   return (
     <svg aria-hidden="true" viewBox="0 0 28 28" className={iconClassName}>
+      <path data-icon-fill="" d="M4 17h20v6.5H4V17Z" fill="none" />
       <path
         d="M4 23.5V8M4 17h20v6.5M7 17v-5.5h4.25c1.55 0 2.75 1.2 2.75 2.75V17m0-3.25h5.25A4.75 4.75 0 0 1 24 18.5M4 21.5h20"
         fill="none"
@@ -71,30 +123,41 @@ function BedIcon() {
 function BirthIcon() {
   return (
     <svg aria-hidden="true" viewBox="0 0 28 28" className={iconClassName}>
-      <circle
-        cx="14"
-        cy="6.75"
-        r="3.25"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={iconStrokeWidth}
-      />
       <path
-        d="M9.25 10.75c-2.55 2.8-2.55 7.45-.1 10.35L14 25.5l4.85-4.4c2.45-2.9 2.45-7.55-.1-10.35A6.75 6.75 0 0 1 14 12.6a6.75 6.75 0 0 1-4.75-1.85Zm-.9 4.2 9.9 7.15m1.4-7.15-9.9 7.15"
+        d="M12 6V4.75a2 2 0 0 1 4 0V6"
         fill="none"
         stroke="currentColor"
         strokeLinecap="round"
         strokeLinejoin="round"
         strokeWidth={iconStrokeWidth}
       />
-      <circle cx="12.8" cy="6.35" r="0.45" fill="currentColor" />
-      <circle cx="15.2" cy="6.35" r="0.45" fill="currentColor" />
       <path
-        d="M13 7.75c.6.45 1.4.45 2 0"
+        data-icon-fill=""
+        d="M10 9h8l2 3v10a3 3 0 0 1-3 3h-6a3 3 0 0 1-3-3V12l2-3Z"
         fill="none"
         stroke="currentColor"
         strokeLinecap="round"
-        strokeWidth="1.1"
+        strokeLinejoin="round"
+        strokeWidth={iconStrokeWidth}
+      />
+      <rect
+        data-icon-fill=""
+        x="9.5"
+        y="6"
+        width="9"
+        height="3"
+        rx="1"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={iconStrokeWidth}
+      />
+      <path
+        data-icon-detail=""
+        d="M12 14h4M12 18h3"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth={iconStrokeWidth}
       />
     </svg>
   );
@@ -104,6 +167,7 @@ function EducationIcon() {
   return (
     <svg aria-hidden="true" viewBox="0 0 28 28" className={iconClassName}>
       <path
+        data-icon-fill=""
         d="M3.5 5.25H10a4 4 0 0 1 4 4v14.5a4 4 0 0 0-4-4H3.5V5.25Zm21 0H18a4 4 0 0 0-4 4v14.5a4 4 0 0 1 4-4h6.5V5.25Z"
         fill="none"
         stroke="currentColor"
@@ -119,6 +183,7 @@ function CommuteIcon() {
   return (
     <svg aria-hidden="true" viewBox="0 0 28 28" className={iconClassName}>
       <rect
+        data-icon-fill=""
         x="5.25"
         y="3.5"
         width="17.5"
@@ -129,7 +194,7 @@ function CommuteIcon() {
         strokeWidth={iconStrokeWidth}
       />
       <path
-        d="M6 10h16M9.25 17.5h.01M18.75 17.5h.01M9 21.75l-2 2.75m12-2.75 2 2.75"
+        d="M9.25 17.5h.01M18.75 17.5h.01M9 21.75l-2 2.75m12-2.75 2 2.75"
         fill="none"
         stroke="currentColor"
         strokeLinecap="round"
@@ -137,6 +202,15 @@ function CommuteIcon() {
         strokeWidth={iconStrokeWidth}
       />
       <path
+        data-icon-detail=""
+        d="M6 10h16"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth={iconStrokeWidth}
+      />
+      <path
+        data-icon-detail=""
         d="M10.75 6.75h6.5"
         fill="none"
         stroke="currentColor"
@@ -151,6 +225,7 @@ function WorkIcon() {
   return (
     <svg aria-hidden="true" viewBox="0 0 28 28" className={iconClassName}>
       <rect
+        data-icon-fill=""
         x="3.5"
         y="5"
         width="21"
@@ -175,21 +250,11 @@ function WorkIcon() {
 function HospitalIcon() {
   return (
     <svg aria-hidden="true" viewBox="0 0 28 28" className={iconClassName}>
-      <rect
-        x="4"
-        y="4.5"
-        width="20"
-        height="20"
-        rx="2"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={iconStrokeWidth}
-      />
       <path
-        d="M14 7.25v7M10.5 10.75h7M8 17h.01M20 17h.01M10.5 24.5v-5h7v5"
+        data-icon-fill=""
+        d="M11 3.5h6v7.5h7.5v6H17v7.5h-6V17H3.5v-6H11V3.5Z"
         fill="none"
         stroke="currentColor"
-        strokeLinecap="round"
         strokeLinejoin="round"
         strokeWidth={iconStrokeWidth}
       />
@@ -201,21 +266,26 @@ function DeathIcon() {
   return (
     <svg aria-hidden="true" viewBox="0 0 28 28" className={iconClassName}>
       <path
-        d="M6 12a8 8 0 1 1 16 0c0 3.1-1.55 5.8-4 7.25V24h-8v-4.75C7.55 17.8 6 15.1 6 12Z"
+        data-icon-fill=""
+        d="M7 24V12a7 7 0 0 1 14 0v12H7Z"
+        fill="none"
+      />
+      <path
+        d="M7 24V12a7 7 0 0 1 14 0v12M4 24h20"
         fill="none"
         stroke="currentColor"
         strokeLinecap="round"
         strokeLinejoin="round"
         strokeWidth={iconStrokeWidth}
       />
-      <circle cx="10.5" cy="12.75" r="2" fill="currentColor" />
-      <circle cx="17.5" cy="12.75" r="2" fill="currentColor" />
-      <path d="m14 15.5-1.35 2.25h2.7L14 15.5Z" fill="currentColor" />
       <path
-        d="M11 20.25V24M14 20.25V24M17 20.25V24"
+        data-icon-detail=""
+        d="M14 8.5v8M10.5 12.5h7"
         fill="none"
         stroke="currentColor"
-        strokeWidth="1.35"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={iconStrokeWidth}
       />
     </svg>
   );
@@ -224,6 +294,11 @@ function DeathIcon() {
 function MealIcon() {
   return (
     <svg aria-hidden="true" viewBox="0 0 28 28" className={iconClassName}>
+      <path
+        data-icon-fill=""
+        d="M5 13.5h18c-.65 5.45-3.95 8.25-9 8.25s-8.35-2.8-9-8.25Z"
+        fill="none"
+      />
       <path
         d="M5 13.5h18c-.65 5.45-3.95 8.25-9 8.25s-8.35-2.8-9-8.25ZM8 24h12M10.5 10.25c-1.5-1.4-1.45-3 .1-4.5m4.25 4.5c-1.5-1.4-1.45-3 .1-4.5m4.25 4.5c-1.5-1.4-1.45-3 .1-4.5"
         fill="none"
@@ -240,6 +315,7 @@ function PhoneReelsIcon() {
   return (
     <svg aria-hidden="true" viewBox="0 0 28 28" className={iconClassName}>
       <rect
+        data-icon-fill=""
         x="7"
         y="2.75"
         width="14"
@@ -251,6 +327,7 @@ function PhoneReelsIcon() {
         strokeWidth={iconStrokeWidth}
       />
       <path
+        data-icon-detail=""
         d="m12.15 10.25 5.25 3.25-5.25 3.25v-6.5ZM12.25 5.75h3.5M13.25 22.25h1.5"
         fill="none"
         stroke="currentColor"
@@ -266,6 +343,8 @@ function TabButton({
   rowIndex,
   tabId,
   label,
+  selectedColor,
+  visualMode,
   children,
   active = false,
   onActivate,
@@ -273,6 +352,8 @@ function TabButton({
   rowIndex: number;
   tabId: TabId;
   label: string;
+  selectedColor: string;
+  visualMode: VisualMode;
   children: ReactNode;
   active?: boolean;
   onActivate: () => void;
@@ -296,11 +377,19 @@ function TabButton({
       }}
     >
       <span
-        className={`relative grid place-items-center transition-[opacity,transform,filter] duration-[460ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${
+        className={`relative grid place-items-center transition-[color,opacity,transform,filter] duration-[460ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${
           active
-            ? "scale-[1.08] opacity-100 drop-shadow-[0_1px_0_rgba(255,255,255,0.65)] saturate-100"
+            ? `scale-[1.08] opacity-100 drop-shadow-[0_1px_0_rgba(255,255,255,0.65)] saturate-100 ${
+                visualMode === "fill"
+                  ? "[&_[data-icon-detail]]:stroke-white [&_[data-icon-fill]]:fill-current"
+                  : ""
+              }`
             : "scale-100 opacity-[0.38] saturate-50"
         }`}
+        style={{
+          color:
+            active && visualMode !== "halo" ? selectedColor : undefined,
+        }}
       >
         {children}
       </span>
@@ -310,6 +399,7 @@ function TabButton({
 
 export default function SnsNavigationOne() {
   const [interfaceMode, setInterfaceMode] = useState<InterfaceMode>("day");
+  const [visualMode, setVisualMode] = useState<VisualMode>("fill");
   const [activeTabsByMode, setActiveTabsByMode] = useState<
     Record<InterfaceMode, TabId[]>
   >(() => ({
@@ -465,6 +555,7 @@ export default function SnsNavigationOne() {
               {(() => {
                 const activeTab = activeTabs[rowIndex] ?? fallbackTab;
                 const activeIndex = tabs.findIndex((tab) => tab.id === activeTab);
+                const activeColor = tabs[activeIndex].selectedColor;
 
                 return (
                   <>
@@ -476,7 +567,18 @@ export default function SnsNavigationOne() {
                         width: `calc(100% / ${tabs.length})`,
                       }}
                     >
-                      <span className="block h-full min-h-10 rounded-full border border-white/75 bg-white/64 shadow-[inset_0_1px_0_rgba(255,255,255,0.92),inset_0_-1px_0_rgba(255,255,255,0.3),0_10px_24px_rgba(0,0,0,0.13)]" />
+                      <span
+                        className="block h-full min-h-10 rounded-full border border-white/75 bg-white/64 shadow-[inset_0_1px_0_rgba(255,255,255,0.92),inset_0_-1px_0_rgba(255,255,255,0.3),0_10px_24px_rgba(0,0,0,0.13)] transition-[background-color,border-color,box-shadow] duration-[460ms]"
+                        style={
+                          visualMode === "halo"
+                            ? {
+                                backgroundColor: `${activeColor}18`,
+                                borderColor: `${activeColor}66`,
+                                boxShadow: `inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 ${activeColor}24, 0 10px 26px ${activeColor}40`,
+                              }
+                            : undefined
+                        }
+                      />
                     </span>
                     <span
                       aria-hidden="true"
@@ -486,7 +588,14 @@ export default function SnsNavigationOne() {
                         width: `calc(100% / ${tabs.length})`,
                       }}
                     >
-                      <span className="block h-full min-h-8 rounded-full bg-white/38 blur-md" />
+                      <span
+                        className="block h-full min-h-8 rounded-full bg-white/38 blur-md transition-colors duration-[460ms]"
+                        style={
+                          visualMode === "halo"
+                            ? { backgroundColor: `${activeColor}2e` }
+                            : undefined
+                        }
+                      />
                     </span>
                   </>
                 );
@@ -503,6 +612,8 @@ export default function SnsNavigationOne() {
                     rowIndex={rowIndex}
                     tabId={tab.id}
                     label={tab.label}
+                    selectedColor={tab.selectedColor}
+                    visualMode={visualMode}
                     active={(activeTabs[rowIndex] ?? fallbackTab) === tab.id}
                     onActivate={() => setRowTab(rowIndex, tab.id)}
                   >
@@ -514,37 +625,72 @@ export default function SnsNavigationOne() {
           </nav>
         ))}
       </section>
-      <nav
-        aria-label="Human cycle timescale"
-        className="fixed bottom-[max(12px,env(safe-area-inset-bottom))] left-3 z-50 flex gap-0.5 rounded-full border border-black/12 bg-white/72 p-1 shadow-[0_8px_24px_rgba(0,0,0,0.12)] backdrop-blur-xl"
+      <div
+        className="fixed bottom-[max(12px,env(safe-area-inset-bottom))] left-3 z-50 flex flex-col items-start gap-1.5"
         onPointerDown={(event) => event.stopPropagation()}
       >
-        {(
-          [
-            { mode: "day", label: "24h" },
-            { mode: "life", label: "Life" },
-          ] as const
-        ).map(({ mode, label }) => {
-          const active = interfaceMode === mode;
+        <nav
+          aria-label="Human cycle timescale"
+          className="flex gap-0.5 rounded-full border border-black/12 bg-white/72 p-1 shadow-[0_8px_24px_rgba(0,0,0,0.12)] backdrop-blur-xl"
+        >
+          {(
+            [
+              { mode: "day", label: "24h" },
+              { mode: "life", label: "Life" },
+            ] as const
+          ).map(({ mode, label }) => {
+            const active = interfaceMode === mode;
 
-          return (
-            <button
-              key={mode}
-              type="button"
-              aria-label={`Show ${label} interface`}
-              aria-pressed={active}
-              className={`grid h-8 min-w-10 place-items-center rounded-full px-2.5 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black ${
-                active
-                  ? "bg-black text-white"
-                  : "text-black/45 hover:text-black"
-              }`}
-              onClick={() => setInterfaceMode(mode)}
-            >
-              {label}
-            </button>
-          );
-        })}
-      </nav>
+            return (
+              <button
+                key={mode}
+                type="button"
+                aria-label={`Show ${label} interface`}
+                aria-pressed={active}
+                className={`grid h-8 min-w-10 place-items-center rounded-full px-2.5 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black ${
+                  active
+                    ? "bg-black text-white"
+                    : "text-black/45 hover:text-black"
+                }`}
+                onClick={() => setInterfaceMode(mode)}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </nav>
+        <nav
+          aria-label="Selected icon color treatment"
+          className="flex gap-0.5 rounded-full border border-black/12 bg-white/72 p-1 shadow-[0_8px_24px_rgba(0,0,0,0.12)] backdrop-blur-xl"
+        >
+          {(
+            [
+              { mode: "stroke", label: "Stroke" },
+              { mode: "fill", label: "Fill" },
+              { mode: "halo", label: "Halo" },
+            ] as const
+          ).map(({ mode, label }) => {
+            const active = visualMode === mode;
+
+            return (
+              <button
+                key={mode}
+                type="button"
+                aria-label={`Use ${label} color treatment`}
+                aria-pressed={active}
+                className={`grid h-8 min-w-10 place-items-center rounded-full px-2.5 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black ${
+                  active
+                    ? "bg-black text-white"
+                    : "text-black/45 hover:text-black"
+                }`}
+                onClick={() => setVisualMode(mode)}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </nav>
+      </div>
     </main>
   );
 }

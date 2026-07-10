@@ -68,7 +68,7 @@ export function createLifeEventDefinitions(
           type: "annual",
           month: death.month,
           day: death.day,
-          startYear: death.year + 1,
+          startYear: birth.year + 1,
         },
       },
     ] satisfies LifeEventDefinition[];

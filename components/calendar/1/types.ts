@@ -6,6 +6,7 @@ export type LifeProfile = {
   sex: ProfileSex;
   birthDate: string;
   deathDate: string;
+  registrationNumber: string;
 };
 
 export type LifeEventKind = "birth" | "birthday" | "death" | "memorial";
@@ -42,6 +43,8 @@ export type CalendarViewport = {
   column: number;
   rows: number;
   columns: number;
+  totalRows: number;
+  totalColumns: number;
 };
 
 export type CalendarSelection = {

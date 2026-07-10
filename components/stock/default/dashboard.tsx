@@ -4,13 +4,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { historicalSeries, type HistoricalRange } from "./historical-data";
 
-type PricePoint = {
+export type PricePoint = {
   id: string;
   time: string;
   value: number;
 };
 
-type StockRow = {
+export type StockRow = {
   id: string;
   symbol: string;
   name: string;
@@ -21,10 +21,19 @@ type StockRow = {
   series: PricePoint[];
 };
 
-type TimeRange = "1D" | HistoricalRange;
+export type TimeRange = "1D" | HistoricalRange;
 type AnimationMode = "REVEAL" | "STREAM";
 
-const stocks: StockRow[] = [
+export type LiveStockStream = {
+  domainMaximum: number;
+  domainMinimum: number;
+  offset: number;
+  series: PricePoint[];
+};
+
+export type LiveStockStreams = Record<string, LiveStockStream>;
+
+export const stocks: StockRow[] = [
   {
     id: "aapl",
     symbol: "AAPL",
@@ -488,7 +497,7 @@ function snapshotFromWindow(series: PricePoint[]) {
   };
 }
 
-function seriesForRange(stock: StockRow, range: TimeRange) {
+export function seriesForRange(stock: StockRow, range: TimeRange) {
   if (range === "1D") {
     return stock.series;
   }
@@ -584,6 +593,8 @@ function chartAreaPath(
 }
 
 function StockChart({
+  domainMaximum,
+  domainMinimum,
   positive,
   progress,
   range,
@@ -592,6 +603,8 @@ function StockChart({
   streamOffset = 0,
   visibleLength = series.length,
 }: {
+  domainMaximum?: number;
+  domainMinimum?: number;
   positive: boolean;
   progress: number;
   range: TimeRange;
@@ -606,10 +619,16 @@ function StockChart({
   const fillId = `${stock.id}-area-fill`;
   const revealId = `${stock.id}-chart-reveal`;
   const revealWidth = Math.max(0, progress) * width;
-  const domainSeries = useMemo(
-    () => series.slice(0, visibleLength),
-    [series, visibleLength],
-  );
+  const domainSeries = useMemo(() => {
+    if (Number.isFinite(domainMinimum) && Number.isFinite(domainMaximum)) {
+      return [
+        { id: "domain-minimum", time: "", value: domainMinimum! },
+        { id: "domain-maximum", time: "", value: domainMaximum! },
+      ];
+    }
+
+    return series.slice(0, visibleLength);
+  }, [domainMaximum, domainMinimum, series, visibleLength]);
   const pointSpacing = (width - 10) / (visibleLength - 1);
   const translateX = -streamOffset * pointSpacing;
   const linePath = useMemo(
@@ -667,10 +686,12 @@ function StockChart({
 
 function StockCard({
   animationMode,
+  liveStream,
   range,
   stock,
 }: {
   animationMode: AnimationMode;
+  liveStream?: LiveStockStream;
   range: TimeRange;
   stock: StockRow;
 }) {
@@ -682,15 +703,27 @@ function StockCard({
     () => speculativeStream(stock, range, series),
     [range, series, stock],
   );
-  const displayedSeries =
-    animationMode === "STREAM" && animating
+  const displayedSeries = liveStream
+    ? streamWindow(liveStream.series, series.length, liveStream.offset)
+    : animationMode === "STREAM" && animating
       ? streamWindow(speculativeSeries, series.length, animationValue)
       : series;
-  const snapshot =
-    animationMode === "STREAM" && animating
+  const snapshot = liveStream
+    ? snapshotFromWindow(displayedSeries)
+    : animationMode === "STREAM" && animating
       ? snapshotFromWindow(displayedSeries)
       : stockSnapshot(stock, series, range, animationValue);
-  const chartProgress = animationMode === "REVEAL" ? animationValue : 1;
+  const chartProgress = liveStream || animationMode === "STREAM" ? 1 : animationValue;
+  const chartSeries = liveStream
+    ? liveStream.series
+    : animationMode === "STREAM"
+      ? speculativeSeries
+      : series;
+  const chartOffset = liveStream
+    ? liveStream.offset
+    : animationMode === "STREAM" && animating
+      ? animationValue
+      : 0;
 
   useEffect(() => {
     return () => {
@@ -749,14 +782,14 @@ function StockCard({
 
     stopAnimation();
     setAnimating(false);
-    setAnimationValue(animationMode === "REVEAL" ? 1 : 0);
+    setAnimationValue(0);
   }
 
   return (
     <article
       className="grid h-[clamp(76px,17.5vh,122px)] grid-cols-[minmax(94px,132px)_minmax(0,1fr)] items-center gap-2 rounded-[8px] bg-[#1c1c1e] px-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.045),0_16px_44px_rgba(0,0,0,0.18)] sm:grid-cols-[164px_minmax(0,1fr)] sm:gap-4 sm:px-5 lg:h-[clamp(92px,17.2vh,128px)]"
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
+      onMouseEnter={liveStream ? undefined : handleMouseEnter}
+      onMouseLeave={liveStream ? undefined : handleMouseLeave}
     >
       <div className="min-w-0">
         <div className="flex min-w-0 items-baseline justify-between gap-3 sm:block">
@@ -787,12 +820,14 @@ function StockCard({
       </div>
       <div className="h-[clamp(54px,11.5vh,88px)] min-w-0 overflow-hidden rounded-[6px] bg-black/[0.08]">
         <StockChart
+          domainMaximum={liveStream?.domainMaximum}
+          domainMinimum={liveStream?.domainMinimum}
           positive={snapshot.positive}
           progress={chartProgress}
           range={range}
-          series={animationMode === "STREAM" ? speculativeSeries : series}
+          series={chartSeries}
           stock={stock}
-          streamOffset={animationMode === "STREAM" && animating ? animationValue : 0}
+          streamOffset={chartOffset}
           visibleLength={series.length}
         />
       </div>
@@ -800,9 +835,24 @@ function StockCard({
   );
 }
 
-export default function StockOne() {
-  const [range, setRange] = useState<TimeRange>("1D");
+export default function StockOne({
+  liveStreams,
+  onRangeChange,
+  range: controlledRange,
+}: {
+  liveStreams?: LiveStockStreams;
+  onRangeChange?: (range: TimeRange) => void;
+  range?: TimeRange;
+} = {}) {
+  const [internalRange, setInternalRange] = useState<TimeRange>("1D");
   const [animationMode, setAnimationMode] = useState<AnimationMode>("REVEAL");
+  const range = controlledRange ?? internalRange;
+  const activeAnimationMode = liveStreams ? "STREAM" : animationMode;
+
+  function selectRange(nextRange: TimeRange) {
+    setInternalRange(nextRange);
+    onRangeChange?.(nextRange);
+  }
 
   return (
     <main className="relative grid min-h-screen place-items-center overflow-hidden bg-black px-3 py-4 text-[#f5f5f7] sm:px-6">
@@ -811,7 +861,8 @@ export default function StockOne() {
           {stocks.map((stock) => (
             <StockCard
               key={`${stock.id}-${range}-${animationMode}`}
-              animationMode={animationMode}
+              animationMode={activeAnimationMode}
+              liveStream={liveStreams?.[stock.id]}
               range={range}
               stock={stock}
             />
@@ -821,31 +872,33 @@ export default function StockOne() {
       <div
         className="fixed bottom-3 left-3 z-10 flex flex-col items-start gap-1.5 sm:bottom-4 sm:left-6"
       >
-        <div
-          className="flex rounded-[6px] border border-white/[0.08] bg-[#1c1c1e]/95 p-1 shadow-[0_8px_24px_rgba(0,0,0,0.35)] backdrop-blur-sm"
-          role="group"
-          aria-label="Chart animation mode"
-        >
-          {animationModes.map((mode) => {
-            const selected = mode === animationMode;
+        {liveStreams ? null : (
+          <div
+            className="flex rounded-[6px] border border-white/[0.08] bg-[#1c1c1e]/95 p-1 shadow-[0_8px_24px_rgba(0,0,0,0.35)] backdrop-blur-sm"
+            role="group"
+            aria-label="Chart animation mode"
+          >
+            {animationModes.map((mode) => {
+              const selected = mode === animationMode;
 
-            return (
-              <button
-                key={mode}
-                type="button"
-                aria-pressed={selected}
-                className={`h-7 min-w-14 rounded-[4px] px-2 text-[11px] font-semibold transition-colors ${
-                  selected
-                    ? "bg-white text-black"
-                    : "text-[#8e8e93] hover:bg-white/[0.07] hover:text-white"
-                }`}
-                onClick={() => setAnimationMode(mode)}
-              >
-                {mode}
-              </button>
-            );
-          })}
-        </div>
+              return (
+                <button
+                  key={mode}
+                  type="button"
+                  aria-pressed={selected}
+                  className={`h-7 min-w-14 rounded-[4px] px-2 text-[11px] font-semibold transition-colors ${
+                    selected
+                      ? "bg-white text-black"
+                      : "text-[#8e8e93] hover:bg-white/[0.07] hover:text-white"
+                  }`}
+                  onClick={() => setAnimationMode(mode)}
+                >
+                  {mode}
+                </button>
+              );
+            })}
+          </div>
+        )}
         <div
           className="flex rounded-[6px] border border-white/[0.08] bg-[#1c1c1e]/95 p-1 shadow-[0_8px_24px_rgba(0,0,0,0.35)] backdrop-blur-sm"
           role="group"
@@ -864,7 +917,7 @@ export default function StockOne() {
                     ? "bg-white text-black"
                     : "text-[#8e8e93] hover:bg-white/[0.07] hover:text-white"
                 }`}
-                onClick={() => setRange(option)}
+                onClick={() => selectRange(option)}
               >
                 {option}
               </button>
