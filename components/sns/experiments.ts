@@ -1,5 +1,6 @@
 export const snsExperiments = [
   { category: "feed", slug: "1", label: "sns/feed/1" },
+  { category: "navigation", slug: "default", label: "sns/navigation/default" },
   { category: "navigation", slug: "1", label: "sns/navigation/1" },
 ] as const;
 

@@ -5,6 +5,8 @@
 - `/calendar/default`: the original single-device calendar, preserved unchanged.
 - `/calendar/mobile/1`: the mobile 50 × 50 life-profile field.
 - `/calendar/screen/1`: the synchronized calendar display.
+- `/calendar/1/mobile`: compatibility alias for the mobile field.
+- `/calendar/1/screen`: compatibility alias for the synchronized display.
 - `/calendar/1`: compatibility alias for the variant 1 screen.
 
 The mobile viewport is intentionally defined by `VISIBLE_COLUMNS` and
@@ -52,6 +54,13 @@ Every profile owns four event definitions in `LifeEventStore`:
 The screen currently materializes only `birth`, `birthday`, and `death`.
 `memorial` remains a first-class stored recurrence and can be enabled by passing
 it in the `kinds` option without changing profile data or socket state.
+
+The screen offers two display modes from the upper-right control. `Event` keeps
+the original compact cards and animates those cards on selection updates.
+`Cell` colors and flashes the entire date cell; overlapping event kinds split
+the cell background into corresponding color fields. Birth, birthday, and
+death use a sunburst, cake, and memorial-stone SVG mark respectively, avoiding
+platform-dependent emoji rendering and clipping.
 
 ## Socket isolation
 

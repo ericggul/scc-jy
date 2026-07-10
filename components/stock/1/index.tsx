@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { historicalSeries, type HistoricalRange } from "./historical-data";
 
@@ -22,6 +22,7 @@ type StockRow = {
 };
 
 type TimeRange = "1D" | HistoricalRange;
+type AnimationMode = "REVEAL" | "STREAM";
 
 const stocks: StockRow[] = [
   {
@@ -378,6 +379,114 @@ const stocks: StockRow[] = [
 
 const chartAnimationDuration = 1200;
 const timeRanges: TimeRange[] = ["1D", "1Y", "5Y"];
+const animationModes: AnimationMode[] = ["REVEAL", "STREAM"];
+
+function numberSeed(value: string) {
+  let seed = 2166136261;
+
+  for (const character of value) {
+    seed ^= character.charCodeAt(0);
+    seed = Math.imul(seed, 16777619);
+  }
+
+  return seed >>> 0;
+}
+
+function seededRandom(seed: number) {
+  let state = seed || 1;
+
+  return () => {
+    state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+    return state / 4294967296;
+  };
+}
+
+function clamp(value: number, minimum: number, maximum: number) {
+  return Math.max(minimum, Math.min(value, maximum));
+}
+
+function speculativeStream(stock: StockRow, range: TimeRange, series: PricePoint[]) {
+  const endpointOffset = range === "1D" ? Number(stock.price) - series.at(-1)!.value : 0;
+  const stream = series.map((point) => ({
+    ...point,
+    value: point.value + endpointOffset,
+  }));
+  const logReturns = stream.slice(1).map((point, index) =>
+    Math.log(point.value / stream[index].value),
+  );
+  const averageReturn =
+    logReturns.reduce((total, value) => total + value, 0) / Math.max(logReturns.length, 1);
+  const volatility = Math.max(
+    Math.sqrt(
+      logReturns.reduce((total, value) => total + (value - averageReturn) ** 2, 0) /
+        Math.max(logReturns.length - 1, 1),
+    ),
+    0.0015,
+  );
+  const random = seededRandom(numberSeed(`${stock.id}-${range}`));
+  const domainMinimum = Math.min(...stream.map((point) => point.value));
+  const domainMaximum = Math.max(...stream.map((point) => point.value));
+  let previousReturn = logReturns.at(-1) ?? 0;
+  let previousValue = stream.at(-1)!.value;
+  const domainSpread = domainMaximum - domainMinimum || previousValue * 0.02;
+
+  for (let index = 0; index < series.length * 16; index += 1) {
+    const gaussianLikeShock =
+      (random() + random() + random() + random() + random() + random() - 3) * Math.SQRT2;
+    const nextReturn = clamp(
+      averageReturn * 0.12 + previousReturn * 0.2 + gaussianLikeShock * volatility * 0.72,
+      -volatility * 2.8,
+      volatility * 2.8,
+    );
+    const proposedValue = previousValue * Math.exp(nextReturn);
+    const reflectedValue =
+      proposedValue > domainMaximum
+        ? domainMaximum - Math.min(proposedValue - domainMaximum, domainSpread * 0.35)
+        : proposedValue < domainMinimum
+          ? domainMinimum + Math.min(domainMinimum - proposedValue, domainSpread * 0.35)
+          : proposedValue;
+    previousReturn = Math.log(reflectedValue / previousValue);
+    previousValue = reflectedValue;
+    stream.push({
+      id: `${stock.id}-${range.toLowerCase()}-speculative-${index}`,
+      time: `Speculative ${index + 1}`,
+      value: previousValue,
+    });
+  }
+
+  return stream;
+}
+
+function streamWindow(stream: PricePoint[], length: number, offset: number) {
+  return Array.from({ length }, (_, index) => {
+    const position = offset + index;
+    const startIndex = Math.floor(position);
+    const endIndex = Math.min(startIndex + 1, stream.length - 1);
+    const pointProgress = position - startIndex;
+    const start = stream[startIndex];
+    const end = stream[endIndex];
+
+    return {
+      id: `${start.id}-window-${index}`,
+      time: start.time,
+      value: start.value + (end.value - start.value) * pointProgress,
+    };
+  });
+}
+
+function snapshotFromWindow(series: PricePoint[]) {
+  const baseline = series[0].value;
+  const value = series.at(-1)!.value;
+  const changeValue = value - baseline;
+  const changePercent = (changeValue / baseline) * 100;
+  const sign = changeValue >= 0 ? "+" : "-";
+
+  return {
+    change: `${sign}${Math.abs(changeValue).toFixed(2)}  ${sign}${Math.abs(changePercent).toFixed(2)}%`,
+    positive: changeValue >= 0,
+    price: value.toFixed(2),
+  };
+}
 
 function seriesForRange(stock: StockRow, range: TimeRange) {
   if (range === "1D") {
@@ -424,15 +533,21 @@ function stockSnapshot(
   };
 }
 
-function chartPath(series: PricePoint[], width: number, height: number) {
-  const values = series.map((point) => point.value);
+function chartPath(
+  series: PricePoint[],
+  width: number,
+  height: number,
+  visibleLength = series.length,
+  domainSeries = series,
+) {
+  const values = domainSeries.map((point) => point.value);
   const min = Math.min(...values);
   const max = Math.max(...values);
   const spread = max - min || 1;
   const padX = 5;
   const padY = 12;
   const points = series.map((point, index) => ({
-    x: padX + (index / (series.length - 1)) * (width - padX * 2),
+    x: padX + (index / (visibleLength - 1)) * (width - padX * 2),
     y: padY + (1 - (point.value - min) / spread) * (height - padY * 2),
   }));
 
@@ -456,9 +571,16 @@ function chartPath(series: PricePoint[], width: number, height: number) {
   }, "");
 }
 
-function chartAreaPath(series: PricePoint[], width: number, height: number) {
-  const line = chartPath(series, width, height);
-  return `${line} L ${width - 5} ${height - 5} L 5 ${height - 5} Z`;
+function chartAreaPath(
+  series: PricePoint[],
+  width: number,
+  height: number,
+  visibleLength = series.length,
+  domainSeries = series,
+) {
+  const line = chartPath(series, width, height, visibleLength, domainSeries);
+  const lastX = 5 + ((series.length - 1) / (visibleLength - 1)) * (width - 10);
+  return `${line} L ${lastX} ${height - 5} L 5 ${height - 5} Z`;
 }
 
 function StockChart({
@@ -467,12 +589,16 @@ function StockChart({
   range,
   series,
   stock,
+  streamOffset = 0,
+  visibleLength = series.length,
 }: {
   positive: boolean;
   progress: number;
   range: TimeRange;
   series: PricePoint[];
   stock: StockRow;
+  streamOffset?: number;
+  visibleLength?: number;
 }) {
   const width = 420;
   const height = 104;
@@ -480,6 +606,20 @@ function StockChart({
   const fillId = `${stock.id}-area-fill`;
   const revealId = `${stock.id}-chart-reveal`;
   const revealWidth = Math.max(0, progress) * width;
+  const domainSeries = useMemo(
+    () => series.slice(0, visibleLength),
+    [series, visibleLength],
+  );
+  const pointSpacing = (width - 10) / (visibleLength - 1);
+  const translateX = -streamOffset * pointSpacing;
+  const linePath = useMemo(
+    () => chartPath(series, width, height, visibleLength, domainSeries),
+    [domainSeries, series, visibleLength],
+  );
+  const areaPath = useMemo(
+    () => chartAreaPath(series, width, height, visibleLength, domainSeries),
+    [domainSeries, series, visibleLength],
+  );
 
   return (
     <svg
@@ -500,34 +640,57 @@ function StockChart({
         </clipPath>
       </defs>
       <g clipPath={`url(#${revealId})`}>
-        <path d={chartAreaPath(series, width, height)} fill={`url(#${fillId})`} />
-        <path
-          d={chartPath(series, width, height)}
-          fill="none"
-          stroke={color}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeOpacity="0.18"
-          strokeWidth="5.8"
-        />
-        <path
-          d={chartPath(series, width, height)}
-          fill="none"
-          stroke={color}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="2.35"
-        />
+        <g transform={`translate(${translateX} 0)`}>
+          <path d={areaPath} fill={`url(#${fillId})`} />
+          <path
+            d={linePath}
+            fill="none"
+            stroke={color}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeOpacity="0.18"
+            strokeWidth="5.8"
+          />
+          <path
+            d={linePath}
+            fill="none"
+            stroke={color}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2.35"
+          />
+        </g>
       </g>
     </svg>
   );
 }
 
-function StockCard({ range, stock }: { range: TimeRange; stock: StockRow }) {
-  const [progress, setProgress] = useState(1);
+function StockCard({
+  animationMode,
+  range,
+  stock,
+}: {
+  animationMode: AnimationMode;
+  range: TimeRange;
+  stock: StockRow;
+}) {
+  const [animationValue, setAnimationValue] = useState(animationMode === "REVEAL" ? 1 : 0);
+  const [animating, setAnimating] = useState(false);
   const animationFrameRef = useRef<number | null>(null);
   const series = seriesForRange(stock, range);
-  const snapshot = stockSnapshot(stock, series, range, progress);
+  const speculativeSeries = useMemo(
+    () => speculativeStream(stock, range, series),
+    [range, series, stock],
+  );
+  const displayedSeries =
+    animationMode === "STREAM" && animating
+      ? streamWindow(speculativeSeries, series.length, animationValue)
+      : series;
+  const snapshot =
+    animationMode === "STREAM" && animating
+      ? snapshotFromWindow(displayedSeries)
+      : stockSnapshot(stock, series, range, animationValue);
+  const chartProgress = animationMode === "REVEAL" ? animationValue : 1;
 
   useEffect(() => {
     return () => {
@@ -546,29 +709,47 @@ function StockCard({ range, stock }: { range: TimeRange; stock: StockRow }) {
 
   function handleMouseEnter() {
     stopAnimation();
-    setProgress(0);
+    setAnimationValue(0);
+    setAnimating(true);
 
     const startTime = performance.now();
     const animate = (time: number) => {
-      const nextProgress = Math.max(
-        0,
-        Math.min((time - startTime) / chartAnimationDuration, 1),
-      );
-      setProgress(nextProgress);
+      const elapsed = Math.max(0, time - startTime);
 
-      if (nextProgress < 1) {
-        animationFrameRef.current = requestAnimationFrame(animate);
-      } else {
-        animationFrameRef.current = null;
+      if (animationMode === "STREAM") {
+        const pointsPerMillisecond = (series.length * 4) / 6500;
+        const nextOffset = Math.min(
+          elapsed * pointsPerMillisecond,
+          speculativeSeries.length - series.length - 1,
+        );
+        setAnimationValue(nextOffset);
+
+        if (nextOffset < speculativeSeries.length - series.length - 1) {
+          animationFrameRef.current = requestAnimationFrame(animate);
+        } else {
+          animationFrameRef.current = null;
+        }
+
+        return;
       }
+
+      const nextProgress = Math.min(elapsed / chartAnimationDuration, 1);
+      setAnimationValue(nextProgress);
+      animationFrameRef.current =
+        nextProgress < 1 ? requestAnimationFrame(animate) : null;
     };
 
     animationFrameRef.current = requestAnimationFrame(animate);
   }
 
   function handleMouseLeave() {
+    if (animationMode === "REVEAL") {
+      return;
+    }
+
     stopAnimation();
-    setProgress(1);
+    setAnimating(false);
+    setAnimationValue(animationMode === "REVEAL" ? 1 : 0);
   }
 
   return (
@@ -607,10 +788,12 @@ function StockCard({ range, stock }: { range: TimeRange; stock: StockRow }) {
       <div className="h-[clamp(54px,11.5vh,88px)] min-w-0 overflow-hidden rounded-[6px] bg-black/[0.08]">
         <StockChart
           positive={snapshot.positive}
-          progress={progress}
+          progress={chartProgress}
           range={range}
-          series={series}
+          series={animationMode === "STREAM" ? speculativeSeries : series}
           stock={stock}
+          streamOffset={animationMode === "STREAM" && animating ? animationValue : 0}
+          visibleLength={series.length}
         />
       </div>
     </article>
@@ -619,40 +802,75 @@ function StockCard({ range, stock }: { range: TimeRange; stock: StockRow }) {
 
 export default function StockOne() {
   const [range, setRange] = useState<TimeRange>("1D");
+  const [animationMode, setAnimationMode] = useState<AnimationMode>("REVEAL");
 
   return (
     <main className="relative grid min-h-screen place-items-center overflow-hidden bg-black px-3 py-4 text-[#f5f5f7] sm:px-6">
       <section className="w-full max-w-[1520px]" aria-label="Ten stock graphs">
         <div className="grid gap-[clamp(8px,1.35vh,12px)] lg:grid-cols-2 lg:gap-x-4">
           {stocks.map((stock) => (
-            <StockCard key={`${stock.id}-${range}`} range={range} stock={stock} />
+            <StockCard
+              key={`${stock.id}-${range}-${animationMode}`}
+              animationMode={animationMode}
+              range={range}
+              stock={stock}
+            />
           ))}
         </div>
       </section>
       <div
-        className="fixed bottom-3 left-3 z-10 flex rounded-[6px] border border-white/[0.08] bg-[#1c1c1e]/95 p-1 shadow-[0_8px_24px_rgba(0,0,0,0.35)] backdrop-blur-sm sm:bottom-4 sm:left-6"
-        role="group"
-        aria-label="Stock chart time range"
+        className="fixed bottom-3 left-3 z-10 flex flex-col items-start gap-1.5 sm:bottom-4 sm:left-6"
       >
-        {timeRanges.map((option) => {
-          const selected = option === range;
+        <div
+          className="flex rounded-[6px] border border-white/[0.08] bg-[#1c1c1e]/95 p-1 shadow-[0_8px_24px_rgba(0,0,0,0.35)] backdrop-blur-sm"
+          role="group"
+          aria-label="Chart animation mode"
+        >
+          {animationModes.map((mode) => {
+            const selected = mode === animationMode;
 
-          return (
-            <button
-              key={option}
-              type="button"
-              aria-pressed={selected}
-              className={`h-7 min-w-10 rounded-[4px] px-2 text-[12px] font-semibold tabular-nums transition-colors ${
-                selected
-                  ? "bg-white text-black"
-                  : "text-[#8e8e93] hover:bg-white/[0.07] hover:text-white"
-              }`}
-              onClick={() => setRange(option)}
-            >
-              {option}
-            </button>
-          );
-        })}
+            return (
+              <button
+                key={mode}
+                type="button"
+                aria-pressed={selected}
+                className={`h-7 min-w-14 rounded-[4px] px-2 text-[11px] font-semibold transition-colors ${
+                  selected
+                    ? "bg-white text-black"
+                    : "text-[#8e8e93] hover:bg-white/[0.07] hover:text-white"
+                }`}
+                onClick={() => setAnimationMode(mode)}
+              >
+                {mode}
+              </button>
+            );
+          })}
+        </div>
+        <div
+          className="flex rounded-[6px] border border-white/[0.08] bg-[#1c1c1e]/95 p-1 shadow-[0_8px_24px_rgba(0,0,0,0.35)] backdrop-blur-sm"
+          role="group"
+          aria-label="Stock chart time range"
+        >
+          {timeRanges.map((option) => {
+            const selected = option === range;
+
+            return (
+              <button
+                key={option}
+                type="button"
+                aria-pressed={selected}
+                className={`h-7 min-w-10 rounded-[4px] px-2 text-[12px] font-semibold tabular-nums transition-colors ${
+                  selected
+                    ? "bg-white text-black"
+                    : "text-[#8e8e93] hover:bg-white/[0.07] hover:text-white"
+                }`}
+                onClick={() => setRange(option)}
+              >
+                {option}
+              </button>
+            );
+          })}
+        </div>
       </div>
     </main>
   );

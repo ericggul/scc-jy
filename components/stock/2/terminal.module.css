@@ -22,6 +22,14 @@
 .muted { color: #999b94 !important; }
 .linkText { color: var(--cyan) !important; }
 .orangeText { color: var(--orange); }
+.heatPositiveSoft { background: #0c2b1b; color: #dfece3; }
+.heatPositiveMedium { background: #064625; color: #edf7ef; }
+.heatPositiveStrong { background: #00652d; color: #fff; }
+.heatNegativeSoft { background: #30101b; color: #f0e1e5; }
+.heatNegativeMedium { background: #521027; color: #f9e8ed; }
+.heatNegativeStrong { background: #781037; color: #fff; }
+.heatPositiveSoft, .heatPositiveMedium, .heatPositiveStrong,
+.heatNegativeSoft, .heatNegativeMedium, .heatNegativeStrong { box-shadow: inset 1px 0 #050606; font-weight: 700; }
 
 .chrome { align-items: stretch; background: #252724; border-bottom: 1px solid #5b5c56; display: grid; grid-template-columns: auto auto minmax(280px, 1fr) auto; min-height: 44px; }
 .menuButton { background: #d7d5cc; border: 0; color: #111; cursor: pointer; font-family: Arial, sans-serif; font-weight: 700; padding: 0 18px; }

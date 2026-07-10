@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import type { ComponentType } from "react";
 import SnsFeedOne from "@/components/sns/feed/1";
 import SnsNavigationOne from "@/components/sns/navigation/1";
+import SnsNavigationDefault from "@/components/sns/navigation/default";
 import {
   findSnsExperiment,
   snsExperiments,
@@ -11,6 +12,7 @@ import {
 
 const components: Record<SnsExperimentKey, ComponentType> = {
   "feed/1": SnsFeedOne,
+  "navigation/default": SnsNavigationDefault,
   "navigation/1": SnsNavigationOne,
 };
 

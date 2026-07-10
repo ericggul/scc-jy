@@ -21,6 +21,13 @@ function tone(value: number) {
   return value >= 0 ? styles.positive : styles.negative;
 }
 
+function heatCell(value: number, strongAt: number) {
+  const intensity = Math.abs(value) / strongAt;
+  const direction = value >= 0 ? "Positive" : "Negative";
+  const strength = intensity >= 0.67 ? "Strong" : intensity >= 0.25 ? "Medium" : "Soft";
+  return styles[`heat${direction}${strength}`];
+}
+
 const functionNames: Record<TerminalFunction, string> = {
   HOME: "Market Monitor",
   WEI: "World Equity Indices",
@@ -77,8 +84,8 @@ function FragmentRows({ region }: { region: "Americas" | "EMEA" | "Asia/Pacific"
       {worldIndices.filter((item) => item.region === region).map((item) => (
         <tr key={item.id}>
           <td>{item.name}</td><td className={styles.linkText}>{item.ticker}</td><td>{item.last}</td>
-          <td className={tone(item.net)}>{signed(item.net)}</td><td className={tone(item.percent)}>{signed(item.percent)}%</td>
-          <td className={styles.muted}>{item.time}</td><td className={tone(item.ytd)}>{signed(item.ytd)}%</td><td>{item.pe}</td>
+          <td className={heatCell(item.percent, 1.5)}>{signed(item.net)}</td><td className={heatCell(item.percent, 1.5)}>{signed(item.percent)}%</td>
+          <td className={styles.muted}>{item.time}</td><td className={heatCell(item.ytd, 15)}>{signed(item.ytd)}%</td><td>{item.pe}</td>
         </tr>
       ))}
     </>

@@ -4,6 +4,7 @@ Routes:
 
 - `/sns`
 - `/sns/feed/1`
+- `/sns/navigation/default`
 - `/sns/navigation/1`
 
 Files:
@@ -13,6 +14,7 @@ Files:
 - `components/sns/experiments.ts`
 - `components/sns/feed/1/index.tsx`
 - `components/sns/feed/1/data.ts`
+- `components/sns/navigation/default/index.tsx`
 - `components/sns/navigation/1/index.tsx`
 
 Intent:
@@ -22,13 +24,19 @@ deterministic predefined posts and wraps through them as the vertical feed
 extends, giving the interaction model of an infinite feed without fetching live
 content.
 
-`/sns/navigation/1` only implements the current iPhone Instagram bottom
+`/sns/navigation/default` preserves the iPhone Instagram bottom
 navigation test: Home, Reels, Messages, Search, and Profile. It intentionally
 does not clone the feed or center interface. The bar uses the newer floating
 translucent iOS-style treatment rather than the older flat white strip. Tapping
 a tab moves the active glass highlight. Finger skating lets one uninterrupted
 pointer gesture continuously select tabs across both columns and independently
 stateful navigation rows.
+
+`/sns/navigation/1` compares two five-part cycles. `24h` compresses a modern
+worker's day to bed, commute, work, meal, and phone reels. `Life` compresses a
+modern worker's lifetime to birth, education, work, hospital, and death. Its
+bottom-left `24h / Life` switch preserves separate interaction state for both
+timescales so they can be compared without leaving the route.
 
 Interaction:
 
@@ -37,9 +45,8 @@ Interaction:
 - Each post has a horizontally snapping media carousel with two to five images.
 - The active media index is tracked per carousel and shown as progress dots.
 - Like, save, comment, and send are present as direct feed controls.
-- `/sns/navigation/1` adds the fixed five-tab bottom navigation.
-- `/sns/navigation/1` uses the shared finger-skating behavior defined in
-  `docs/finger-skating.md`.
+- `/sns/navigation/default` and `/sns/navigation/1` use the shared
+  finger-skating behavior defined in `docs/finger-skating.md`.
 - Double-clicking media triggers a heart burst and likes the post.
 
 Rules:
