@@ -1,21 +1,19 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import type { ComponentType } from "react";
-import TableOne from "@/components/table/1";
-import TableTwo from "@/components/table/2";
+import StockOne from "@/components/stock/1";
 import {
-  isTableExperimentSlug,
-  tableExperiments,
-  type TableExperimentSlug,
-} from "@/components/table/experiments";
+  isStockExperimentSlug,
+  stockExperiments,
+  type StockExperimentSlug,
+} from "@/components/stock/experiments";
 
-const components: Record<TableExperimentSlug, ComponentType> = {
-  "1": TableOne,
-  "2": TableTwo,
+const components: Record<StockExperimentSlug, ComponentType> = {
+  "1": StockOne,
 };
 
 export function generateStaticParams() {
-  return tableExperiments.map((experiment) => ({
+  return stockExperiments.map((experiment) => ({
     experiment: experiment.slug,
   }));
 }
@@ -26,19 +24,20 @@ export async function generateMetadata({
   params: Promise<{ experiment: string }>;
 }): Promise<Metadata> {
   const { experiment } = await params;
+
   return {
-    title: `table ${experiment}`,
+    title: `stock ${experiment}`,
   };
 }
 
-export default async function TableExperimentPage({
+export default async function StockExperimentPage({
   params,
 }: {
   params: Promise<{ experiment: string }>;
 }) {
   const { experiment } = await params;
 
-  if (!isTableExperimentSlug(experiment)) {
+  if (!isStockExperimentSlug(experiment)) {
     notFound();
   }
 

@@ -3,6 +3,7 @@
 Routes:
 
 - `/stock`
+- `/stock/1`
 - `/stock/test`
 - `/stock/test/1`
 - `/stock/test/2`
@@ -13,6 +14,9 @@ Routes:
 Files:
 
 - `app/stock/page.tsx`
+- `app/stock/[experiment]/page.tsx`
+- `components/stock/experiments.ts`
+- `components/stock/1/index.tsx`
 - `app/stock/test/page.tsx`
 - `app/stock/test/[experiment]/page.tsx`
 - `components/stock/test/experiments.ts`
@@ -23,9 +27,12 @@ Files:
 
 Intent:
 
-Stock currently keeps the first five market/data display screens only as archived
-reference material under `test`. Do not treat them as the active direction for a
-new stock experiment.
+`/stock/1` is the active stock direction. It is a minimal, Apple Stocks-like
+centered stack of five responsive stock time-series rows.
+
+Stock keeps the first five market/data display screens only as archived reference
+material under `test`. Do not treat them as the active direction for a new stock
+experiment.
 
 The archived implementation treats the five screens as named positions inside
 one parametric interface system, not as five unrelated pages.

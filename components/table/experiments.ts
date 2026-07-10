@@ -1,4 +1,7 @@
-export const tableExperiments = [{ slug: "1", label: "table/1" }] as const;
+export const tableExperiments = [
+  { slug: "1", label: "table/1" },
+  { slug: "2", label: "table/2" },
+] as const;
 
 export type TableExperimentSlug = (typeof tableExperiments)[number]["slug"];
 

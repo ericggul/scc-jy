@@ -1,8 +1,7 @@
-import * as simpleIcons from "simple-icons";
-import type { SimpleIcon } from "simple-icons";
-import { luxuryLogos, type LogoCell } from "./data";
+"use client";
 
-const icons = simpleIcons as Record<string, SimpleIcon | undefined>;
+import { useState } from "react";
+import { brandLogos, logoTableSize, type LogoCell } from "./data";
 
 function chunk<T>(items: readonly T[], size: number) {
   return Array.from({ length: Math.ceil(items.length / size) }, (_, index) =>
@@ -10,46 +9,46 @@ function chunk<T>(items: readonly T[], size: number) {
   );
 }
 
-function LogoSvg({ logo }: { logo: LogoCell }) {
-  const icon = logo.iconKey ? icons[logo.iconKey] : undefined;
-  const viewBox = logo.custom?.viewBox ?? "0 0 24 24";
-  const path = logo.custom?.path ?? icon?.path;
-
-  if (!path) {
-    return null;
-  }
-
+function LogoSvg({
+  logo,
+  monochrome,
+}: {
+  logo: LogoCell;
+  monochrome: boolean;
+}) {
   return (
     <svg
-      aria-labelledby={`logo-${logo.name.replace(/[^a-z0-9]/gi, "-")}`}
-      className="h-[62%] w-[62%]"
+      aria-labelledby={`logo-${logo.id}`}
+      className="h-[68%] w-[68%]"
       role="img"
-      viewBox={viewBox}
+      viewBox="0 0 24 24"
     >
-      <title id={`logo-${logo.name.replace(/[^a-z0-9]/gi, "-")}`}>
-        {logo.name}
-      </title>
-      <path d={path} fill="currentColor" />
+      <title id={`logo-${logo.id}`}>{logo.name}</title>
+      <path d={logo.path} fill={monochrome ? "currentColor" : `#${logo.hex}`} />
     </svg>
   );
 }
 
 export default function TableOne() {
-  const rows = chunk(luxuryLogos, 10);
+  const [monochrome, setMonochrome] = useState(false);
+  const rows = chunk(brandLogos, logoTableSize.columns);
 
   return (
     <main className="h-dvh overflow-hidden bg-white text-black">
       <table className="h-full w-full table-fixed border-collapse">
         <tbody>
           {rows.map((row, rowIndex) => (
-            <tr key={rowIndex}>
+            <tr key={`row-${rowIndex}`}>
               {row.map((logo) => (
                 <td
-                  key={logo.name}
-                  className="h-[10dvh] border border-black p-[clamp(4px,0.8vw,12px)]"
+                  key={logo.id}
+                  className="h-[2dvh] p-[clamp(1px,0.12vw,3px)]"
                 >
-                  <div className="flex h-full w-full items-center justify-center">
-                    <LogoSvg logo={logo} />
+                  <div
+                    className="flex h-full w-full items-center justify-center"
+                    title={`${logo.name} - ${logo.source}`}
+                  >
+                    <LogoSvg logo={logo} monochrome={monochrome} />
                   </div>
                 </td>
               ))}
@@ -57,6 +56,15 @@ export default function TableOne() {
           ))}
         </tbody>
       </table>
+      <label className="fixed bottom-3 left-3 z-10 flex h-9 items-center gap-2 bg-white px-2 text-[11px] font-black uppercase text-black mix-blend-normal">
+        <input
+          checked={monochrome}
+          className="h-4 w-4 accent-black"
+          onChange={(event) => setMonochrome(event.target.checked)}
+          type="checkbox"
+        />
+        monochrome
+      </label>
     </main>
   );
 }
