@@ -1,8 +1,8 @@
-# Network System/1 — Four-Institution Relational Instrument
+# Network System/Macro Economy — Four-Institution Relational Instrument
 
 ## Status and scope
 
-`network-system/1` applies the K4 skeleton first tested in `dj/1` to four institutional actors:
+`network-system/macro-economy` applies the K4 skeleton first tested in `dj/1` to four institutional actors:
 
 | Screen | Node | Primary intervention |
 | --- | --- | --- |
@@ -13,12 +13,12 @@
 
 Routes:
 
-- `/network-system/controller/1`
-- `/network-system/screen/1/1`
-- `/network-system/screen/1/2`
-- `/network-system/screen/1/3`
-- `/network-system/screen/1/4`
-- `/network-system/screen/1/whole`
+- `/network-system/controller/macro-economy`
+- `/network-system/screen/macro-economy/1`
+- `/network-system/screen/macro-economy/2`
+- `/network-system/screen/macro-economy/3`
+- `/network-system/screen/macro-economy/4`
+- `/network-system/screen/macro-economy/whole`
 
 The work is **not a calibrated economic simulation, forecast, policy model, or educational replica**. It is a signed system-dynamics experiment for testing whether a state change at one node can be experienced as it reappears—changed in sign, magnitude, and timing—through the other nodes. Values are normalized system coordinates, not empirical rates or indices.
 
@@ -125,8 +125,8 @@ The system and its visual wrappers are separate:
 3. `presenter.ts` translates normalized values into wrapper-facing labels, rates, indices, and traces.
 4. `wrappers/registry.ts` maps each institution to a replaceable React wrapper.
 5. Individual files under `wrappers/` define the visual language of each screen.
-6. `network-system-model.mjs` owns the continuously running server-side dynamics and applies interventions.
-7. `network-system.mjs` owns the clock, room, intervention validation, and state broadcast.
+6. `network-system-macro-economy-model.mjs` owns the continuously running server-side dynamics and applies interventions.
+7. `network-system-macro-economy.mjs` owns the clock, room, intervention validation, and state broadcast.
 8. `screen.tsx` only observes socket state, selects the wrapper, and applies the shared scaling mechanism.
 
 A wrapper may be redesigned, détourned, or replaced without changing graph propagation or the socket contract. Conversely, relation weights may change without rewriting the institutional screens.
@@ -152,7 +152,7 @@ The design failed for specific reasons:
 - Wrapper spectacle overwhelmed the intended subject: how a parameter crosses an edge and changes another screen.
 - The designs were aesthetically overdetermined while remaining semantically generic—the characteristic signature of an AI-generated concept dashboard.
 
-Do not repeat this design language in `network-system/1`. In particular:
+Do not repeat this design language in `network-system/macro-economy`. In particular:
 
 - Do not add neon-on-black dashboards, glow, gradients, fake terminal chrome, fake live status, fake revision codes, ornamental gauges, badges, or decorative process footers.
 - Do not assign a separate visual theme to every node merely because the institutions have different names.
@@ -246,7 +246,7 @@ Secondary correctness checks confirm:
 
 ## Screen design contract
 
-These rules apply to all four `network-system/1` screens:
+These rules apply to all four `network-system/macro-economy` screens:
 
 1. Every numbered route renders as a complete full-screen composition on its own. A pane must not depend on the `whole` grid assigning its size.
 2. No fixed resolution or aspect ratio is assumed. A screen must compose itself against whatever width and height its current viewport provides.
@@ -278,7 +278,7 @@ socket connections remain intact. Immediately after reset, the server broadcasts
 the same fresh snapshot to the controller and every connected screen; the normal
 100 ms simulation clock then continues from that state.
 
-Only a socket already joined to `experiment:network-system:1` with role
+Only a socket already joined to `experiment:network-system:macro-economy` with role
 `controller` may issue reset. A screen or unjoined socket cannot reset the
 runtime.
 
@@ -286,23 +286,23 @@ The controller is also an observer. Node values, 12 directional weights, and 12 
 
 ## Socket contract
 
-- Room: `experiment:network-system:1`
-- Events: `network-system:join`, `network-system:hello`, `network-system:presence`, `network-system:state`, `network-system:intervention:in`, `network-system:reset:in`
+- Room: `experiment:network-system:macro-economy`
+- Events: `network-system-macro-economy:join`, `network-system-macro-economy:hello`, `network-system-macro-economy:presence`, `network-system-macro-economy:state`, `network-system-macro-economy:intervention:in`, `network-system-macro-economy:reset:in`
 - The server sends `NetworkSystemSnapshot` state continuously.
 - The controller sends `node-shock`, `edge-weight`, or the distinct server reset command.
 - Screens never author system state; they receive the current state on join and then observe the ongoing broadcast.
-- `network-system/1` state must remain isolated from `dj/1`, `finger-skating`, and future experiments.
+- `network-system/macro-economy` state must remain isolated from `dj/1`, `finger-skating`, and future experiments.
 
 ## Main files
 
-- `components/network-system/1/model.ts`
-- `components/network-system/1/graph.ts`
-- `components/network-system/1/presenter.ts`
-- `components/network-system/1/controller.tsx`
-- `components/network-system/1/screen.tsx`
-- `components/network-system/1/use-network-system-socket.ts`
-- `components/network-system/1/wrappers/registry.ts`
-- `components/network-system/1/wrappers/*.tsx`
-- `components/network-system/1/wrappers/wrappers.module.css`
-- `socket/experiments/network-system.mjs`
-- `socket/experiments/network-system-model.mjs`
+- `components/network-system/macro-economy/model.ts`
+- `components/network-system/macro-economy/graph.ts`
+- `components/network-system/macro-economy/presenter.ts`
+- `components/network-system/macro-economy/controller.tsx`
+- `components/network-system/macro-economy/screen.tsx`
+- `components/network-system/macro-economy/use-network-system-socket.ts`
+- `components/network-system/macro-economy/wrappers/registry.ts`
+- `components/network-system/macro-economy/wrappers/*.tsx`
+- `components/network-system/macro-economy/wrappers/wrappers.module.css`
+- `socket/experiments/network-system-macro-economy.mjs`
+- `socket/experiments/network-system-macro-economy-model.mjs`

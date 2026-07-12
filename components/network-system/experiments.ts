@@ -5,8 +5,8 @@ export const networkSystemExperiments = [
     screenIds: ["1", "2", "3", "4"],
   },
   {
-    slug: "1",
-    label: "network-system/1",
+    slug: "macro-economy",
+    label: "network-system/macro-economy",
     screenIds: ["1", "2", "3", "4"],
   },
 ] as const;

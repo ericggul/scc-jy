@@ -2,13 +2,13 @@
 
 import { useState } from "react";
 import styled from "styled-components";
-import { useNetworkSystemSocket } from "@/components/network-system/1/use-network-system-socket";
+import { useNetworkSystemSocket } from "@/components/network-system/macro-economy/use-network-system-socket";
 import {
   createInitialSystemSnapshot,
   screenInstitutionMap,
   type NetworkSystemSnapshot,
-} from "@/components/network-system/1/model";
-import { institutionWrapperRegistry } from "@/components/network-system/1/wrappers/registry";
+} from "@/components/network-system/macro-economy/model";
+import { institutionWrapperRegistry } from "@/components/network-system/macro-economy/wrappers/registry";
 import type { NetworkSystemScreenId } from "@/components/network-system/experiments";
 
 const Page = styled.main`
@@ -96,7 +96,7 @@ export function NetworkSystemScreenExperience({
   );
 
   useNetworkSystemSocket({
-    experimentSlug: "1",
+    experimentSlug: "macro-economy",
     role: "screen",
     onState: setSnapshot,
   });

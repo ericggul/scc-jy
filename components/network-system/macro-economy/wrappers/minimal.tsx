@@ -1,9 +1,9 @@
 import {
   linePath,
   presentInstitution,
-} from "@/components/network-system/1/presenter";
-import type { InstitutionWrapperProps } from "@/components/network-system/1/wrappers/types";
-import styles from "@/components/network-system/1/wrappers/wrappers.module.css";
+} from "@/components/network-system/macro-economy/presenter";
+import type { InstitutionWrapperProps } from "@/components/network-system/macro-economy/wrappers/types";
+import styles from "@/components/network-system/macro-economy/wrappers/wrappers.module.css";
 
 export function MinimalInstitutionWrapper({
   institutionId,

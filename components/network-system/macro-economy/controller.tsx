@@ -7,12 +7,12 @@ import {
   getInstitutionalNode,
   institutionalConnections,
   institutionalNodes,
-} from "@/components/network-system/1/graph";
+} from "@/components/network-system/macro-economy/graph";
 import {
   createInitialSystemSnapshot,
-} from "@/components/network-system/1/model";
-import { presentInstitution } from "@/components/network-system/1/presenter";
-import { useNetworkSystemSocket } from "@/components/network-system/1/use-network-system-socket";
+} from "@/components/network-system/macro-economy/model";
+import { presentInstitution } from "@/components/network-system/macro-economy/presenter";
+import { useNetworkSystemSocket } from "@/components/network-system/macro-economy/use-network-system-socket";
 
 const Page = styled.main`
   position: fixed;
@@ -270,7 +270,7 @@ export default function NetworkSystemController() {
   const [initialState] = useState(() => createInitialSystemSnapshot());
   const { connected, state, sendIntervention, resetSystem } =
     useNetworkSystemSocket({
-    experimentSlug: "1",
+    experimentSlug: "macro-economy",
     role: "controller",
   });
   const snapshot = state ?? initialState;

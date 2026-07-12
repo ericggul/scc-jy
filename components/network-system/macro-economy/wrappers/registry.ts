@@ -1,7 +1,7 @@
 import type { ComponentType } from "react";
-import type { InstitutionId } from "@/components/network-system/1/model";
-import { MinimalInstitutionWrapper } from "@/components/network-system/1/wrappers/minimal";
-import type { InstitutionWrapperProps } from "@/components/network-system/1/wrappers/types";
+import type { InstitutionId } from "@/components/network-system/macro-economy/model";
+import { MinimalInstitutionWrapper } from "@/components/network-system/macro-economy/wrappers/minimal";
+import type { InstitutionWrapperProps } from "@/components/network-system/macro-economy/wrappers/types";
 
 export const institutionWrapperRegistry: Record<
   InstitutionId,

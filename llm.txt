@@ -17,7 +17,7 @@ Common design documentation:
 Per-experiment documentation:
 - `docs/cv.md`
 - `docs/dj.md`
-- `docs/network-system1.md`
+- `docs/network-system-macro-economy.md`
 - `docs/moma.md`
 - `docs/sns.md`
 - `docs/stock.md`

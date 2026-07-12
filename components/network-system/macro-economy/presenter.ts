@@ -1,7 +1,7 @@
 import type {
   InstitutionId,
   NetworkSystemSnapshot,
-} from "@/components/network-system/1/model";
+} from "@/components/network-system/macro-economy/model";
 
 export type ParameterReading = {
   id: string;

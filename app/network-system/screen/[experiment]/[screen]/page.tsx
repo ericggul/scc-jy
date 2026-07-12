@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import NetworkSystemScreen, {
   NetworkSystemScreenExperience,
-} from "@/components/network-system/1/screen";
+} from "@/components/network-system/macro-economy/screen";
 import MarkovScreen, {
   MarkovScreenExperience,
 } from "@/components/network-system/default/screen";

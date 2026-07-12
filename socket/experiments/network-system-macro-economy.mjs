@@ -5,22 +5,22 @@ import {
   resetNetworkSystem,
   snapshotNetworkSystem,
   stepNetworkSystem,
-} from "./network-system-model.mjs";
+} from "./network-system-macro-economy-model.mjs";
 
 const id = "network-system";
-const variantId = "1";
+const variantId = "macro-economy";
 const room = `experiment:${id}:${variantId}`;
 const clients = new Map();
 const runtime = createNetworkSystemRuntime();
 let ioRef = null;
 
 const events = {
-  join: "network-system:join",
-  hello: "network-system:hello",
-  presence: "network-system:presence",
-  stateOut: "network-system:state",
-  interventionIn: "network-system:intervention:in",
-  resetIn: "network-system:reset:in",
+  join: "network-system-macro-economy:join",
+  hello: "network-system-macro-economy:hello",
+  presence: "network-system-macro-economy:presence",
+  stateOut: "network-system-macro-economy:state",
+  interventionIn: "network-system-macro-economy:intervention:in",
+  resetIn: "network-system-macro-economy:reset:in",
 };
 
 function clamp(value, min, max) {
@@ -145,7 +145,7 @@ function register({ io, socket }) {
   });
 }
 
-export const networkSystemExperiment = {
+export const networkSystemMacroEconomyExperiment = {
   id,
   events,
   register,

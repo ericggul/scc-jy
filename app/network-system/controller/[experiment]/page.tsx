@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import NetworkSystemController from "@/components/network-system/1/controller";
+import NetworkSystemController from "@/components/network-system/macro-economy/controller";
 import MarkovController from "@/components/network-system/default/controller";
 import {
   isNetworkSystemExperimentSlug,

@@ -1,7 +1,7 @@
 import type {
   InstitutionId,
   SystemEdgeId,
-} from "@/components/network-system/1/model";
+} from "@/components/network-system/macro-economy/model";
 import type { NetworkSystemScreenId } from "@/components/network-system/experiments";
 
 export type InstitutionalNode = {

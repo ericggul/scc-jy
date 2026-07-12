@@ -6,7 +6,7 @@ import type {
   InstitutionId,
   NetworkSystemSnapshot,
   SystemEdgeId,
-} from "@/components/network-system/1/model";
+} from "@/components/network-system/macro-economy/model";
 import type { NetworkSystemExperimentSlug } from "@/components/network-system/experiments";
 
 export type NetworkSystemRole = "controller" | "screen";
@@ -63,17 +63,17 @@ function getSocketOrigin() {
 
 function getEvents() {
   return {
-    join: "network-system:join",
-    hello: "network-system:hello",
-    presence: "network-system:presence",
-    stateOut: "network-system:state",
-    interventionIn: "network-system:intervention:in",
-    resetIn: "network-system:reset:in",
+    join: "network-system-macro-economy:join",
+    hello: "network-system-macro-economy:hello",
+    presence: "network-system-macro-economy:presence",
+    stateOut: "network-system-macro-economy:state",
+    interventionIn: "network-system-macro-economy:intervention:in",
+    resetIn: "network-system-macro-economy:reset:in",
   };
 }
 
 export function useNetworkSystemSocket({
-  experimentSlug = "1",
+  experimentSlug = "macro-economy",
   role,
   onState,
 }: NetworkSystemSocketOptions) {
