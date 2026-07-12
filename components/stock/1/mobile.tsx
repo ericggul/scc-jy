@@ -60,7 +60,7 @@ export default function StockOneMobile() {
     setOrientation(next);
 
     const now = performance.now();
-    if (now - lastSentAtRef.current >= 45) {
+    if (now - lastSentAtRef.current >= 16) {
       lastSentAtRef.current = now;
       sendOrientation(next);
     }
@@ -161,19 +161,19 @@ export default function StockOneMobile() {
         <div className="border-r border-white/[0.12] px-3 py-4 text-[#ffd60a]">
           <div className="text-[11px]">ALPHA</div>
           <div className="mt-1 text-[clamp(22px,8vw,40px)] leading-none">
-            {orientation.alpha.toFixed(1)}
+            {orientation.alpha.toFixed(1)}%
           </div>
         </div>
         <div className="border-r border-white/[0.12] px-3 py-4 text-[#32d74b]">
           <div className="text-[11px]">BETA</div>
           <div className="mt-1 text-[clamp(22px,8vw,40px)] leading-none">
-            {orientation.beta.toFixed(1)}
+            {orientation.beta.toFixed(1)}%
           </div>
         </div>
         <div className="px-3 py-4 text-[#64d2ff]">
           <div className="text-[11px]">GAMMA</div>
           <div className="mt-1 text-[clamp(22px,8vw,40px)] leading-none">
-            {orientation.gamma.toFixed(1)}
+            {orientation.gamma.toFixed(1)}%
           </div>
         </div>
       </section>

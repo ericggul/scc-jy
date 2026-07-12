@@ -6,7 +6,16 @@ Never run `pnpm build` in this repository.
 Never run `pnpm dev` or `pnpm dev:http` in this repository.
 
 Never start any dev server yourself. If runtime verification requires a server,
-ask the user exactly: `서버 켜주세요 전하`.
+do not drop a bare command on the user. Address the user as the sovereign with
+the respect of a lowly subject, briefly explain why the server is needed, and
+ask with this complete wording: `전하, 소인이 감히 실제 작동을 확인해
+올리려면 서버가 필요하옵니다. 번거로우시겠지만 서버 켜주세요 전하.`
+
+If an already-running server must be restarted to load changed server or socket
+code, distinguish restart from first start and use this complete wording:
+`전하, 미천한 소인이 감히 새로 고친 서버 코드를 반영해 올리려면 기존
+서버를 다시 기동해야 하옵니다. 번거로우시겠지만 서버 재시작해주세요
+전하.` Never reduce this to a bare restart command.
 
 Never run browser or runtime interaction verification unless the user explicitly
 asks for browser testing.
@@ -42,6 +51,27 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - For generated records, create stable IDs in the data/model layer and key by
   those IDs. Duplicate display text must not produce React key collisions.
 
+## Visual Design
+
+- Before creating a new interface or materially redesigning an existing one,
+  read and follow `docs/design-guidelines.md`.
+- Do not translate a subject, institution, role, dataset, or system node into a
+  themed dashboard by default. A visual wrapper must be derived from the
+  participant's perceptual and interaction task, not from surface associations
+  with the subject.
+- When the interaction and visual language are not yet proven, begin with the
+  minimal shared wrapper described in `docs/design-guidelines.md`. Add visual
+  elements only when each one has a specific informational or interactive job.
+- The generic AI concept-dashboard formula is prohibited: faux technical
+  chrome, arbitrary dark/neon themes, glow, gradients, giant metrics surrounded
+  by tiny labels, ornamental charts, fake live states, revision codes, badges,
+  gauges, or process footers must not be used as substitutes for an actual
+  interface concept.
+- Visual difference between system nodes must not be invented merely because
+  their names or institutional roles differ. Preserve a coherent system family
+  unless a different wrapper is justified by a genuinely different parameter,
+  interaction, observation task, or established everyday-interface grammar.
+
 ## Verification
 
 - Do not run `pnpm build`.
@@ -49,9 +79,17 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - `pnpm lint` and `pnpm exec tsc --noEmit` are acceptable verification commands.
 - Do not run browser checks, Playwright checks, curl runtime probes, or other
   runtime interaction verification unless the user explicitly asks for it.
-- Do not start dev servers under any circumstance. If a server is needed, ask
-  the user exactly: `서버 켜주세요 전하`.
+- Do not start dev servers under any circumstance. If a server is needed,
+  respectfully explain the need as a lowly subject addressing the sovereign;
+  never send only `서버 켜주세요 전하`. Use the full wording: `전하, 소인이
+  감히 실제 작동을 확인해 올리려면 서버가 필요하옵니다. 번거로우시겠지만
+  서버 켜주세요 전하.`
 - Do not kill dev servers unless the user explicitly asks you to shut them down.
+- When changed server or socket code requires the user's already-running server
+  to restart, never send only `서버 재시작해주세요 전하`. Use the full wording:
+  `전하, 미천한 소인이 감히 새로 고친 서버 코드를 반영해 올리려면 기존
+  서버를 다시 기동해야 하옵니다. 번거로우시겠지만 서버 재시작해주세요
+  전하.`
 
 ## Next.js
 
@@ -60,6 +98,25 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - `app/` route files should stay thin. Put experiment implementation, data, and variant registries under `components/[experiment]/...`.
 
 ## Experiment Structure
+
+### Preserve established UI contracts
+
+- A request to change data, math, behavior, device input, transport, or the
+  number of records does not authorize a visual redesign. Preserve the
+  existing layout, component geometry, typography, spacing, chart treatment,
+  interaction language, and domain-specific display language unless the user
+  explicitly asks to change them.
+- Before editing an existing experiment, separate requested changes from
+  invariants. Treat every unmentioned visual and interaction property as an
+  invariant, and verify those invariants after implementation.
+- Keep model language out of the rendered product UI unless explicitly asked.
+  Internal units such as velocity, sensor slope, simulation gain, or debug
+  status must be translated into the experiment's established domain language.
+- Reuse the existing component or extract its visual primitive when a new data
+  model must inhabit an established interface. Do not recreate an approximate
+  version from memory and do not introduce explanatory chrome as a substitute.
+- For a concrete failure analysis and preservation checklist, read
+  `docs/stock-ui-preservation-postmortem.md`.
 
 - Single-device experiment groups use:
   - `app/[group]/page.tsx` as a minimal index.
@@ -92,3 +149,8 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - Do not use HTTP dev servers for this app.
 - Socket behavior must be modular per experiment. Each socket experiment gets its own event prefix, room, and state.
 - Events for one experiment must not be visible to another experiment.
+- Socket servers may own only abstract system/domain state, parameters, flows,
+  interventions, and time. They must never calculate or broadcast presentation
+  state such as color, size, stroke width, opacity, animation phase, layout, or
+  visual active/highlight flags. Every browser client derives its own visual
+  mapping from the abstract state.

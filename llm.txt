@@ -11,9 +11,13 @@ Harness documentation:
 - `docs/harness/experiments.md`
 - `docs/harness/https-and-sockets.md`
 
+Common design documentation:
+- `docs/design-guidelines.md`
+
 Per-experiment documentation:
 - `docs/cv.md`
 - `docs/dj.md`
+- `docs/network-system1.md`
 - `docs/moma.md`
 - `docs/sns.md`
 - `docs/stock.md`

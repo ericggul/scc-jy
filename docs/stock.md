@@ -1,5 +1,8 @@
 # Stock experiments
 
+Agents changing the stock data model or device behavior must first read
+[stock-ui-preservation-postmortem.md](./stock-ui-preservation-postmortem.md).
+
 Routes:
 
 - `/stock`
@@ -22,7 +25,7 @@ Routes:
 - `components/stock/1/mobile.tsx` captures device orientation and emits stock-only signals.
 - `components/stock/1/screen.tsx` owns the shared live market clock.
 - `components/stock/default/dashboard.tsx` also exposes the reusable graph surface consumed by the live screen.
-- `components/stock/1/market-model.ts` owns orientation mapping, calibration, and stochastic stepping.
+- `components/stock/1/axis-model.ts` owns the exact axis-to-slope integration and rolling samples.
 - `components/stock/1/use-stock-socket.ts` owns the client socket contract.
 - `socket/experiments/stock.mjs` owns the isolated `stock:*` room and events.
 - `components/stock/2/index.tsx` is the interactive Bloomberg-inspired terminal.
@@ -31,9 +34,11 @@ Routes:
 
 ## stock/1 signal model
 
-The mobile zeroes `alpha`, `beta`, and `gamma` against the device pose captured when motion starts, then sends signed deltas. `ZERO` recalibrates that pose. The screen maps front/back beta tilt directly to broad market direction, alpha rotation to sector rotation, and lateral gamma tilt to growth/defensive divergence. A small dead zone removes sensor jitter, then a fast low-pass response feeds ten independent stochastic processes. Every stock has explicit alpha/beta/gamma sensitivity, inertia, signal gain, volatility, and mean-reversion parameters in `stockCalibrations`.
+The mobile zeroes `alpha`, `beta`, and `gamma` against the device pose captured when motion starts, then sends signed deltas. `ZERO` recalibrates that pose. The screen contains exactly three synthetic stocks, `ALPHA`, `BETA`, and `GAMMA`, each initialized at `100.00`.
 
-The simulation appends new world-space points and translates the fixed chart window. Existing points are never regenerated from a new sensor reading. The live y-domain follows the rolling window: it expands quickly when a new extreme arrives, contracts slowly after that extreme leaves, and always includes proportional breathing room around the visible prices. This keeps sharp moves on-screen without abrupt range snapping. A distant 5%-to-2,000% safety bound prevents invalid prices. Global intensity and range-following controls live in `stockResponseSettings`; edit those, `stockCalibrations`, or `orientationToFactors` to tune the behavior. Socket transport does not contain market math.
+An axis value is shown directly as that stock's securities percentage change while it controls price direction against the initial 100-point basis. The internal market clock runs at 2x real time so price and chart motion react decisively without adding stochastic gain or cross-axis coupling. Axes never affect one another. Prices have no upper or lower cap: they continue through `1000.00`, `0.00`, and negative values. When mobile events stop, the last value is held for 100ms and then linearly released to zero over 180ms.
+
+The charts retain 2.5 real seconds of samples, equivalent to five seconds at the accelerated market clock. Samples are captured every 25ms and mobile events are emitted at up to roughly 60Hz. Each y-domain expands quickly to include new extrema and contracts slowly after extrema leave, with a guaranteed visible margin. Integration and range constants are centralized in `axisMarketSettings`; socket transport contains no price mathematics.
 
 ## stock/2 intent
 

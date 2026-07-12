@@ -1,9 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import DjScreen, { DjScreenExperience } from "@/components/dj/1/screen";
-import DjReactionScreen, {
-  DjReactionScreenExperience,
-} from "@/components/dj/2/screen";
 import {
   djExperiments,
   getDjExperimentScreenIds,
@@ -65,20 +62,12 @@ export default async function DjScreenPage({
 }
 
 function getWholeComponent(
-  experiment: DjExperimentSlug,
+  _experiment: DjExperimentSlug,
   screenIds: readonly DjScreenId[],
 ) {
-  if (experiment === "2") {
-    return <DjReactionScreenExperience screenIds={screenIds} />;
-  }
-
   return <DjScreenExperience screenIds={screenIds} />;
 }
 
-function getScreenComponent(experiment: DjExperimentSlug, screenId: DjScreenId) {
-  if (experiment === "2") {
-    return <DjReactionScreen screenId={screenId} />;
-  }
-
+function getScreenComponent(_experiment: DjExperimentSlug, screenId: DjScreenId) {
   return <DjScreen screenId={screenId} />;
 }

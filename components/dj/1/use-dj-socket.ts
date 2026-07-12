@@ -7,29 +7,6 @@ import type { DjExperimentSlug, DjScreenId } from "@/components/dj/experiments";
 
 export type DjRole = "controller" | "screen";
 
-export type DjReactionParameters = {
-  coupling: number;
-  diffusionA: number;
-  diffusionB: number;
-  rooms: Record<
-    "1" | "2",
-    {
-      feed: number;
-      kill: number;
-      drive: number;
-    }
-  >;
-};
-
-export type DjReactionInteraction = {
-  target: "1" | "2" | "connector";
-  localX: number;
-  localY: number;
-  materialA: number;
-  materialB: number;
-  strength: number;
-};
-
 export type DjSignal = {
   id: string;
   experimentId: "dj";
@@ -37,14 +14,12 @@ export type DjSignal = {
   from: string;
   role: DjRole | "unknown";
   sentAt: number;
-  source: "node" | "edge" | "parameter";
+  source: "node" | "edge";
   nodeId: DjScreenId | null;
   edgeId: DjEdge["id"] | string | null;
   targetScreenIds: DjScreenId[];
   x: number | null;
   y: number | null;
-  parameters?: DjReactionParameters;
-  interaction?: DjReactionInteraction;
 };
 
 export type DjPresence = {
@@ -69,18 +44,10 @@ type DjSocketOptions = {
 };
 
 type OutgoingDjSignal =
-  | (DjHitTarget & {
-      x: number;
-      y: number;
-    })
-  | {
-      source: "parameter";
-      targetScreenIds: DjScreenId[];
-      x: number;
-      y: number;
-      parameters: DjReactionParameters;
-      interaction: DjReactionInteraction;
-    };
+  DjHitTarget & {
+    x: number;
+    y: number;
+  };
 
 function getSocketOrigin() {
   if (process.env.NEXT_PUBLIC_SOCKET_URL) {

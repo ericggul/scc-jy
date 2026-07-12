@@ -1,0 +1,105 @@
+# Stock UI preservation postmortem
+
+This document records a concrete agent failure during the migration of the
+stock experiment from ten data records to three mobile-driven synthetic
+stocks. It is durable guidance for future agents working anywhere in this
+repository.
+
+## 1. The request was expanded without authorization
+
+The requested change concerned the data model: reduce the live screen from ten
+stocks to `ALPHA`, `BETA`, and `GAMMA`, initialize each at `100.00`, and map the
+three calibrated mobile axes directly to their price slopes. The request did
+not ask for a new screen design.
+
+The failed implementation treated a new data context as permission to invent a
+new instrument-panel UI. It replaced the established stock cards, information
+hierarchy, chart proportions, and securities display language. That was a
+scope violation, not merely an aesthetic disagreement.
+
+For an existing experiment, the current interface is an active contract. A
+change request must first be divided into:
+
+- Explicit changes: records, values, formulas, routes, device roles, or named
+  visual changes.
+- Invariants: every existing visual, structural, interaction, and language
+  choice that the user did not ask to change.
+
+In this case, only the stock count, names, value calculation, and grid shape
+were mutable. Card geometry, typography, spacing, colors, chart styling,
+responsive behavior, and the surrounding page treatment were invariants.
+
+## 2. The repository's visual and domain language was ignored
+
+The stock interface already established a precise vocabulary:
+
+- Symbol and company name in the left information column.
+- A tabular price such as `100.00`.
+- Securities change language such as `+1.23  +1.23%`.
+- Green for gains and red for losses.
+- A dark area chart with glow and a fine foreground stroke.
+- Fixed responsive card height, padding, radius, and chart proportions.
+- No explanatory labels, badges, status chrome, or implementation notes.
+
+The failed screen exposed `%/s`, an internal integration unit. Even when that
+unit accurately described the model, it did not belong in the stock screen.
+The mobile controller may expose `alpha`, `beta`, and `gamma`; the screen must
+translate their effect into the established securities language of price,
+absolute change, percentage change, color, and chart shape.
+
+An experimental repository does not mean arbitrary redesign. The experiment
+is often the insertion of a new behavior into an existing form. A surprising
+input should produce a disciplined mutation of the established artifact, not
+erase the artifact's identity.
+
+## 3. Verification covered math but not fidelity
+
+The failed implementation verified that `alpha = -45` integrated from `100.00`
+to `55.00` after one second. That proved only the numerical half of the task.
+It did not prove that the result still looked and behaved like the stock
+experiment.
+
+Completion required an explicit fidelity audit:
+
+- Exactly three stocks are rendered.
+- The layout changes only from `2 x 5` to `1 x 3`.
+- Each card uses the original height, internal columns, padding, radius,
+  background, and shadow.
+- The original `StockChart` implementation is reused.
+- Price and change use the original securities formatting.
+- No `%/s`, sensor labels, connection indicators, explanatory text, or new
+  control surfaces appear on the screen.
+- The original ten-stock `/stock/default` remains independent and unchanged.
+- Mobile values alter data only; they do not alter visual composition.
+
+Tests, TypeScript, and formula smoke checks are necessary evidence, but they
+cannot establish visual preservation by themselves. Source comparison and,
+when explicitly authorized, browser screenshots must be part of the evidence.
+
+## Required checklist for future agents
+
+Before editing an existing experiment:
+
+1. Read the current implementation and its scoped documentation.
+2. Write down the explicit requested changes.
+3. Write down the unmentioned UI and interaction invariants.
+4. Identify reusable visual primitives before creating new components.
+5. Keep model units and debugging terms out of the rendered UI.
+
+Before reporting completion:
+
+1. Compare the new and original component geometry directly in source.
+2. Search for newly introduced visible labels and chrome.
+3. Verify record count, layout shape, and domain formatting separately from
+   the mathematical behavior.
+4. Verify the archived/default experiment remains isolated.
+5. State any fidelity item that could not be checked visually.
+
+## Corrective implementation
+
+The corrected stock screen reuses the original `StockChart` and the exact card
+class contract from `components/stock/default/dashboard.tsx`. It renders three
+cards in a one-column container sized to the original desktop card width. The
+screen displays only symbol, company name, price, securities change, and the
+original chart. The exact slope integration remains confined to
+`components/stock/1/axis-model.ts`.

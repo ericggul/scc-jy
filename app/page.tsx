@@ -12,6 +12,11 @@ const routes = [
     description: "K4 graph controller routed to four socket screens.",
   },
   {
+    href: "/network-system",
+    label: "network-system",
+    description: "Four-node institutional network and parameter screens.",
+  },
+  {
     href: "/finger-skating",
     label: "finger-skating",
     description: "Multi-device socket experiment with mobile and screen routes.",

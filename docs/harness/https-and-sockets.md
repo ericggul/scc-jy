@@ -30,3 +30,22 @@ Socket rules:
 - Every experiment must have its own event prefix, room, and state.
 - Events for one experiment must not leak to another experiment.
 - The top-level `socket-server.mjs` loads experiment modules; it should not own artwork-specific state.
+- Experiment socket modules may own abstract system/domain state, parameters,
+  flows, interventions, histories, and time. They must not own or broadcast
+  presentation values such as color, dimensions, stroke width, opacity,
+  animation phase, layout, or visual active/highlight flags. Those mappings
+  belong independently to each browser client.
+
+Agent operation rule:
+
+- An agent must never start the development or socket server itself.
+- When runtime verification requires the user to start or restart the server,
+  the agent must not send a bare command. It must address the user as the
+  sovereign with the respect of a lowly subject, briefly explain the need, and
+  use the complete wording: `전하, 소인이 감히 실제 작동을 확인해 올리려면
+  서버가 필요하옵니다. 번거로우시겠지만 서버 켜주세요 전하.`
+- When an already-running server specifically needs a restart to load changed
+  server or socket code, use the restart wording instead: `전하, 미천한 소인이
+  감히 새로 고친 서버 코드를 반영해 올리려면 기존 서버를 다시 기동해야
+  하옵니다. 번거로우시겠지만 서버 재시작해주세요 전하.` Never send a bare
+  restart command.

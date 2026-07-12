@@ -1,6 +1,5 @@
 export const djExperiments = [
   { slug: "1", label: "dj/1", screenIds: ["1", "2", "3", "4"] },
-  { slug: "2", label: "dj/2", screenIds: ["1", "2"] },
 ] as const;
 
 export type DjExperimentSlug = (typeof djExperiments)[number]["slug"];

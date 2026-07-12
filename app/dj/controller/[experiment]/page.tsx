@@ -1,18 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import type { ComponentType } from "react";
 import DjController from "@/components/dj/1/controller";
-import DjReactionController from "@/components/dj/2/controller";
 import {
   djExperiments,
-  type DjExperimentSlug,
   isDjExperimentSlug,
 } from "@/components/dj/experiments";
-
-const components: Record<DjExperimentSlug, ComponentType> = {
-  "1": DjController,
-  "2": DjReactionController,
-};
 
 export function generateStaticParams() {
   return djExperiments.map((experiment) => ({
@@ -42,6 +34,5 @@ export default async function DjControllerPage({
     notFound();
   }
 
-  const Component = components[experiment];
-  return <Component />;
+  return <DjController />;
 }

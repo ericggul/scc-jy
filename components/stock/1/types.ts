@@ -31,13 +31,3 @@ export type StockPresence = {
   total: number;
   variantId: "1";
 };
-
-export type OrientationFactors = {
-  alpha: number;
-  beta: number;
-  energy: number;
-  gamma: number;
-  momentum: number;
-  risk: number;
-  rotation: number;
-};
