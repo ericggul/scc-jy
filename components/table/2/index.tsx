@@ -3,7 +3,7 @@
 import { useState, type CSSProperties } from "react";
 import { brandLogos, logoTableSize, type LogoCell } from "../1/data";
 
-const initialIconScale = 100;
+const initialIconScale = 3;
 
 function chunk<T>(items: readonly T[], size: number) {
   return Array.from({ length: Math.ceil(items.length / size) }, (_, index) => items.slice(index * size, index * size + size));

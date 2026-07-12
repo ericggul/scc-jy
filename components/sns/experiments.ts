@@ -1,19 +1,22 @@
 export const snsExperiments = [
-  { category: "feed", slug: "1", label: "sns/feed/1" },
-  { category: "navigation", slug: "default", label: "sns/navigation/default" },
-  { category: "navigation", slug: "1", label: "sns/navigation/1" },
+  { key: "feed/1", category: "feed", slug: "1", label: "sns/feed/1" },
+  {
+    key: "navigation/default",
+    category: "navigation",
+    slug: "default",
+    label: "sns/navigation/default",
+  },
+  {
+    key: "navigation/1",
+    category: "navigation",
+    slug: "1",
+    label: "sns/navigation/1",
+  },
 ] as const;
 
 export type SnsExperiment = (typeof snsExperiments)[number];
 export type SnsExperimentCategory = SnsExperiment["category"];
-
-type ExperimentKey<
-  Experiment extends { category: string; slug: string },
-> = Experiment extends unknown
-  ? `${Experiment["category"]}/${Experiment["slug"]}`
-  : never;
-
-export type SnsExperimentKey = ExperimentKey<SnsExperiment>;
+export type SnsExperimentKey = SnsExperiment["key"];
 
 export function findSnsExperiment(category: string, slug: string) {
   return snsExperiments.find(

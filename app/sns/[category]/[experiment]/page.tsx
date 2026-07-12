@@ -46,7 +46,6 @@ export default async function SnsExperimentPage({
     notFound();
   }
 
-  const key: SnsExperimentKey = `${registeredExperiment.category}/${registeredExperiment.slug}`;
-  const Component = components[key];
+  const Component = components[registeredExperiment.key];
   return <Component />;
 }
