@@ -6,6 +6,12 @@ import NetworkSystemScreen, {
 import MarkovScreen, {
   MarkovScreenExperience,
 } from "@/components/network-system/default/screen";
+import PopulationScreen, {
+  PopulationScreenExperience,
+} from "@/components/network-system/population/screen";
+import CompetitiveFirmsScreen, {
+  CompetitiveFirmsScreenExperience,
+} from "@/components/network-system/competitive-firms/screen";
 import {
   getNetworkSystemScreenIds,
   isNetworkSystemExperimentSlug,
@@ -55,6 +61,22 @@ export default async function NetworkSystemScreenPage({
     }
     if (!isNetworkSystemScreenId(screen)) notFound();
     return <MarkovScreen screenId={screen} />;
+  }
+
+  if (experiment === "population") {
+    if (screen === "whole") {
+      return <PopulationScreenExperience screenIds={screenIds} />;
+    }
+    if (!isNetworkSystemScreenId(screen)) notFound();
+    return <PopulationScreen screenId={screen} />;
+  }
+
+  if (experiment === "competitive-firms") {
+    if (screen === "whole") {
+      return <CompetitiveFirmsScreenExperience screenIds={screenIds} />;
+    }
+    if (!isNetworkSystemScreenId(screen)) notFound();
+    return <CompetitiveFirmsScreen screenId={screen} />;
   }
 
   if (screen === "whole") {

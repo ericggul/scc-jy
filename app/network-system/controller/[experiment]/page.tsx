@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import NetworkSystemController from "@/components/network-system/macro-economy/controller";
 import MarkovController from "@/components/network-system/default/controller";
+import PopulationController from "@/components/network-system/population/controller";
+import CompetitiveFirmsController from "@/components/network-system/competitive-firms/controller";
 import {
   isNetworkSystemExperimentSlug,
   networkSystemExperiments,
@@ -30,5 +32,7 @@ export default async function NetworkSystemControllerPage({
   const { experiment } = await params;
   if (!isNetworkSystemExperimentSlug(experiment)) notFound();
   if (experiment === "default") return <MarkovController />;
+  if (experiment === "population") return <PopulationController />;
+  if (experiment === "competitive-firms") return <CompetitiveFirmsController />;
   return <NetworkSystemController />;
 }

@@ -9,6 +9,16 @@ export const networkSystemExperiments = [
     label: "network-system/macro-economy",
     screenIds: ["1", "2", "3", "4"],
   },
+  {
+    slug: "population",
+    label: "network-system/population",
+    screenIds: ["1", "2", "3", "4"],
+  },
+  {
+    slug: "competitive-firms",
+    label: "network-system/competitive-firms",
+    screenIds: ["1", "2", "3", "4"],
+  },
 ] as const;
 
 export type NetworkSystemExperimentSlug =
