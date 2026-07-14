@@ -2,6 +2,11 @@ import Link from "next/link";
 
 const routes = [
   {
+    href: "/bastille-day",
+    label: "bastille-day",
+    description: "Sixty full-screen images spanning Paris parades and the French Revolution.",
+  },
+  {
     href: "/hangman",
     label: "hangman",
     description: "A tactile word game drawn one wrong guess at a time.",

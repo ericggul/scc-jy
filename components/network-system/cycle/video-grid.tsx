@@ -22,6 +22,19 @@ const GridCanvas = styled.canvas`
   height: 100%;
 `;
 
+const CELL_FADE_MS = 200;
+
+const OutgoingCanvas = styled.canvas<{ $visible: boolean }>`
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: ${({ $visible }) => ($visible ? 1 : 0)};
+  transition: opacity ${CELL_FADE_MS}ms linear;
+`;
+
 const PreloadedVideo = styled.video`
   position: absolute;
   width: 1px;
@@ -30,8 +43,6 @@ const PreloadedVideo = styled.video`
   opacity: 0;
   pointer-events: none;
 `;
-
-const CELL_FADE_MS = 200;
 
 function drawCover(
   context: CanvasRenderingContext2D,
@@ -84,6 +95,7 @@ export default function CycleVideoGrid({
 }) {
   const frameRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const outgoingCanvasRef = useRef<HTMLCanvasElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const activeCountRef = useRef(activeCount);
   const activeTargetRef = useRef(activeCount);
@@ -93,6 +105,8 @@ export default function CycleVideoGrid({
   const wasActiveRef = useRef(false);
   const segment = cycleVideoSegments[side];
   const [renderDimension, setRenderDimension] = useState(dimension);
+  const [outgoingVisible, setOutgoingVisible] = useState(false);
+  const previousRenderDimensionRef = useRef(renderDimension);
   const cellOrder = useMemo(
     () => cycleRowMajorOrder(renderDimension),
     [renderDimension],
@@ -113,6 +127,38 @@ export default function CycleVideoGrid({
     );
     return () => window.clearTimeout(timeout);
   }, [dimension, renderDimension]);
+
+  useEffect(() => {
+    if (previousRenderDimensionRef.current === renderDimension) return;
+    previousRenderDimensionRef.current = renderDimension;
+
+    const source = canvasRef.current;
+    const outgoing = outgoingCanvasRef.current;
+    if (!source || !outgoing) return;
+
+    const context = outgoing.getContext("2d", { alpha: false });
+    if (!context) return;
+    outgoing.width = source.width;
+    outgoing.height = source.height;
+    context.drawImage(source, 0, 0);
+
+    let fadeFrame = 0;
+    let settleFrame = 0;
+    const showTimer = window.setTimeout(() => {
+      setOutgoingVisible(true);
+      fadeFrame = window.requestAnimationFrame(() => {
+        settleFrame = window.requestAnimationFrame(() => {
+          setOutgoingVisible(false);
+        });
+      });
+    }, 0);
+
+    return () => {
+      window.clearTimeout(showTimer);
+      window.cancelAnimationFrame(fadeFrame);
+      window.cancelAnimationFrame(settleFrame);
+    };
+  }, [renderDimension]);
 
   useEffect(() => {
     activeCountRef.current = activeCount;
@@ -304,6 +350,11 @@ export default function CycleVideoGrid({
   return (
     <GridFrame ref={frameRef}>
       <GridCanvas ref={canvasRef} aria-hidden="true" />
+      <OutgoingCanvas
+        ref={outgoingCanvasRef}
+        $visible={outgoingVisible}
+        aria-hidden="true"
+      />
       <PreloadedVideo
         ref={videoRef}
         autoPlay

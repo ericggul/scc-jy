@@ -1,0 +1,24 @@
+.stage {
+  position: relative;
+  width: 100%;
+  min-height: 100svh;
+  overflow: hidden;
+  background: #000000;
+  isolation: isolate;
+}
+
+.imageSurface {
+  position: absolute;
+  inset: 0;
+  width: 100vw;
+  height: 100svh;
+  overflow: hidden;
+  background: #000000;
+}
+
+.image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
