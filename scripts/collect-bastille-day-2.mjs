@@ -1,12 +1,15 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { execFile } from "node:child_process";
+import { mkdir, readFile, stat, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { promisify } from "node:util";
 
 const API_URL = "https://commons.wikimedia.org/w/api.php";
 const USER_AGENT = "SCC-Bastille-Experiment/2.0 (local art research)";
 const ROOT = process.cwd();
+const execFileAsync = promisify(execFile);
 
 const goodTopics = [
-  ["Défilé du 14 juillet 2025", "défilé du 14 juillet Paris 2025"],
+  ["Défilés du 14 juillet", "défilé du 14 juillet Paris 2025"],
   ["Fête nationale française", "fête nationale française 14 juillet"],
   ["Feux d’artifice", "feu d'artifice 14 juillet Paris"],
   ["Patrouille de France", "Patrouille de France 14 juillet"],
@@ -15,45 +18,27 @@ const goodTopics = [
 ];
 
 const darkTopics = [
-  ["Mobilisations de 2025", "mouvement 10 septembre 2025 France manifestation"],
-  ["Gilets jaunes", "mouvement des Gilets jaunes France manifestation"],
-  ["Réforme des retraites", "manifestation réforme des retraites France 2023"],
-  ["Grèves SNCF et RER", "grève SNCF RER France gare fermée"],
-  ["Grève des éboueurs", "grève des éboueurs Paris 2023 déchets rue"],
-  ["Conditions migratoires à Calais", "Jungle de Calais camp migrants réfugiés"],
-  ["Traversées de la Manche", "migrants small boats Manche Calais France"],
-  ["Violences urbaines de 2023", "émeutes Nahel violences urbaines France 2023"],
-  ["Police et manifestations", "affrontements police manifestation France"],
-  ["Sans-abrisme", "tente sans-abri Paris France rue"],
-  ["Hôpital public", "hôpital public grève manifestation France"],
-  ["Précarité alimentaire", "aide alimentaire précarité France distribution"],
-  ["Mobilisations agricoles", "manifestation agriculteurs France tracteurs"],
-  ["Canicules 2025–2026", "canicule France chaleur ville thermomètre"],
-  ["Incendies et sécheresse", "incendie forêt sécheresse France pompiers"],
-  ["Inondations", "inondation France catastrophe climatique"],
+  ["Gilets jaunes", "Gilets jaunes France"],
+  ["Réforme des retraites", "réforme retraites 2023 France"],
+  ["Grèves SNCF", "grève SNCF France"],
+  ["Grève des éboueurs", "grève éboueurs Paris 2023"],
+  ["Conditions migratoires à Calais", "Jungle de Calais migrants"],
+  ["Violences urbaines de 2023", "Nahel France 2023"],
+  ["Sans-abrisme", "sans-abri Paris"],
+  ["Canicules 2025–2026", "canicule Paris"],
+  ["Incendies et sécheresse", "incendie forêt France"],
+  ["Inondations", "inondation France"],
+  ["Police et manifestations", "manifestation police France"],
+  ["Mobilisations de 2025", "manifestation France 2025"],
+  ["Hôpital public", "grève hôpital France"],
+  ["Grèves RER", "RER Paris grève"],
+  ["Traversées de la Manche", "migrants Manche Calais"],
+  ["Climatisation et fortes chaleurs", "climatisation France canicule"],
+  ["Campements de migrants à Paris", "camp migrants Paris"],
 ];
 
 const wait = (milliseconds) =>
   new Promise((resolve) => setTimeout(resolve, milliseconds));
-
-async function fetchWithRetry(url, options = {}, attempts = 6) {
-  for (let attempt = 1; attempt <= attempts; attempt += 1) {
-    const response = await fetch(url, {
-      ...options,
-      headers: { "User-Agent": USER_AGENT, ...options.headers },
-      redirect: "follow",
-    });
-
-    if (response.ok) return response;
-    if (response.status !== 429 && response.status < 500) {
-      throw new Error(`${response.status} ${response.statusText}: ${url}`);
-    }
-
-    await wait(attempt * 1500);
-  }
-
-  throw new Error(`Request failed after retries: ${url}`);
-}
 
 async function searchCommons(query) {
   const url = new URL(API_URL);
@@ -69,8 +54,21 @@ async function searchCommons(query) {
     iiurlwidth: "640",
   }).toString();
 
-  const response = await fetchWithRetry(url);
-  const payload = await response.json();
+  const { stdout } = await execFileAsync("curl", [
+    "--max-time",
+    "90",
+    "--retry",
+    "5",
+    "--retry-all-errors",
+    "--retry-delay",
+    "2",
+    "--silent",
+    "--show-error",
+    "-H",
+    `User-Agent: ${USER_AGENT}`,
+    url.toString(),
+  ], { maxBuffer: 5_000_000 });
+  const payload = JSON.parse(stdout);
   const pages = Object.values(payload.query?.pages ?? {});
 
   return pages
@@ -87,10 +85,16 @@ async function searchCommons(query) {
     });
 }
 
-async function downloadPool({ topics, perTopic, outputDirectory, publicPrefix }) {
+async function downloadPool({
+  topics,
+  perTopic,
+  outputDirectory,
+  publicPrefix,
+  initialRecords = [],
+}) {
   await mkdir(outputDirectory, { recursive: true });
-  const records = [];
-  const usedSources = new Set();
+  const records = [...initialRecords];
+  const usedSources = new Set(records.map((record) => record.sourceUrl));
 
   for (const [topic, query] of topics) {
     const candidates = await searchCommons(query);
@@ -101,16 +105,34 @@ async function downloadPool({ topics, perTopic, outputDirectory, publicPrefix })
       if (usedSources.has(candidate.sourceUrl)) continue;
 
       try {
-        const response = await fetchWithRetry(candidate.remoteUrl, {}, 3);
-        const contentType = response.headers.get("content-type") ?? "";
-        if (!contentType.startsWith("image/jpeg")) continue;
-
-        const bytes = new Uint8Array(await response.arrayBuffer());
-        if (bytes.byteLength < 5000) continue;
-
         const number = String(records.length + 1).padStart(3, "0");
         const fileName = `${number}.jpg`;
-        await writeFile(path.join(outputDirectory, fileName), bytes);
+        const targetPath = path.join(outputDirectory, fileName);
+        await execFileAsync("curl", [
+          "-L",
+          "--fail",
+          "--silent",
+          "--show-error",
+          "--max-time",
+          "90",
+          "--retry",
+          "4",
+          "--retry-all-errors",
+          "--retry-delay",
+          "2",
+          "--remove-on-error",
+          "-A",
+          USER_AGENT,
+          "-o",
+          targetPath,
+          candidate.remoteUrl,
+        ]);
+
+        const fileStats = await stat(targetPath);
+        if (fileStats.size < 5000) {
+          await unlink(targetPath);
+          continue;
+        }
 
         records.push({
           id: `${publicPrefix.replaceAll("/", "-")}-${number}`,
@@ -142,19 +164,51 @@ const darkDirectory = path.join(ROOT, "public/images/bastille-day-2-dark");
 const componentDirectory = path.join(ROOT, "components/bastille-day/2");
 await mkdir(componentDirectory, { recursive: true });
 
-const goodRecords = await downloadPool({
-  topics: goodTopics,
-  perTopic: 5,
-  outputDirectory: goodDirectory,
-  publicPrefix: "/images/bastille-day-2-good",
-});
+let goodRecords;
+try {
+  goodRecords = JSON.parse(
+    await readFile(path.join(componentDirectory, "good-sources.json"), "utf8"),
+  );
+  goodRecords = goodRecords.map((record) => ({
+    ...record,
+    topic: record.topic === "Défilé du 14 juillet 2025"
+      ? "Défilés du 14 juillet"
+      : record.topic,
+  }));
+  process.stdout.write(`Reusing good=${goodRecords.length}\n`);
+} catch {
+  goodRecords = await downloadPool({
+    topics: goodTopics,
+    perTopic: 5,
+    outputDirectory: goodDirectory,
+    publicPrefix: "/images/bastille-day-2-good",
+  });
+}
 
-const darkRecords = await downloadPool({
-  topics: darkTopics,
-  perTopic: 5,
-  outputDirectory: darkDirectory,
-  publicPrefix: "/images/bastille-day-2-dark",
-});
+let existingDarkRecords = [];
+try {
+  existingDarkRecords = JSON.parse(
+    await readFile(path.join(componentDirectory, "dark-sources.json"), "utf8"),
+  );
+} catch {
+  // The first successful run creates the ledger.
+}
+
+const existingDarkTopics = new Set(
+  existingDarkRecords.map((record) => record.topic),
+);
+const missingDarkTopics = darkTopics.filter(
+  ([topic]) => !existingDarkTopics.has(topic),
+);
+const darkRecords = missingDarkTopics.length > 0
+  ? await downloadPool({
+      topics: missingDarkTopics,
+      perTopic: 5,
+      outputDirectory: darkDirectory,
+      publicPrefix: "/images/bastille-day-2-dark",
+      initialRecords: existingDarkRecords,
+    })
+  : existingDarkRecords;
 
 await writeFile(
   path.join(componentDirectory, "good-sources.json"),
