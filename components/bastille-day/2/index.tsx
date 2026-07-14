@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { bastilleDayImages } from "@/components/bastille-day/1/images";
 import additionalGoodImages from "./good-sources.json";
 import darkImages from "./dark-sources.json";
+import { Intro } from "./intro";
+import { PlaybackControl } from "./playback-control";
 import styles from "./styles.module.css";
 
 const IMAGE_CHANGE_INTERVAL_MS = 20;
@@ -171,9 +173,7 @@ export default function BastilleDayTwo() {
   const [rightBuffered, setRightBuffered] = useState(false);
   const isBuffered = leftBuffered && rightBuffered;
 
-  const enterExperiment = () => {
-    if (!isBuffered) return;
-
+  const enterExperiment = useCallback(() => {
     const audio = audioRef.current;
     setHasEntered(true);
     setIsPlaying(true);
@@ -181,9 +181,9 @@ export default function BastilleDayTwo() {
     if (audio?.paused) {
       void audio.play();
     }
-  };
+  }, []);
 
-  const togglePlayback = () => {
+  const togglePlayback = useCallback(() => {
     const audio = audioRef.current;
 
     if (isPlaying) {
@@ -196,31 +196,38 @@ export default function BastilleDayTwo() {
       void audio.play();
     }
     setIsPlaying(true);
-  };
+  }, [isPlaying]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!event.repeat && event.code === "Space") {
+        event.preventDefault();
+        togglePlayback();
+      }
+    };
+
+    if (!hasEntered) return;
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [hasEntered, togglePlayback]);
 
   return (
     <main className={styles.stage} aria-label="France: national mythology and contemporary social tensions">
       <audio ref={audioRef} src="/audio/LaMarseillaise.mp3" loop preload="auto" />
-      <ImageSequence images={leftImages} className={styles.blue} label="Bastille Day and French Revolution images" active={hasEntered && isPlaying} onBuffered={() => setLeftBuffered(true)} />
-      <ImageSequence images={rightImages} className={styles.red} label="Contemporary French social tension images" active={hasEntered && isPlaying} onBuffered={() => setRightBuffered(true)} />
-      {!hasEntered ? (
-        <section className={styles.intro} aria-label="Introduction">
-          <h1 className={styles.title}>14 juillet — Fête nationale</h1>
-          <button className={styles.enter} type="button" disabled={!isBuffered} onClick={enterExperiment}>
-            Entrer
-          </button>
-        </section>
-      ) : null}
-      {hasEntered ? (
-        <button
-          className={styles.playback}
-          type="button"
-          aria-pressed={!isPlaying}
-          onClick={togglePlayback}
-        >
-          {isPlaying ? "Pause" : "Reprendre"}
-        </button>
-      ) : null}
+      <div className={styles.baseFlag} aria-hidden="true">
+        <div className={styles.baseBlue} />
+        <div className={styles.baseWhite} />
+        <div className={styles.baseRed} />
+      </div>
+      <div className={`${styles.imagery} ${hasEntered && isBuffered ? styles.imageryVisible : ""}`}>
+        <ImageSequence images={leftImages} className={styles.blue} label="Bastille Day and French Revolution images" active={hasEntered && isPlaying} onBuffered={() => setLeftBuffered(true)} />
+        <ImageSequence images={rightImages} className={styles.red} label="Contemporary French social tension images" active={hasEntered && isPlaying} onBuffered={() => setRightBuffered(true)} />
+        <div className={`${styles.flagOverlay} ${styles.flagBlue}`} aria-hidden="true" />
+        <div className={`${styles.flagOverlay} ${styles.flagRed}`} aria-hidden="true" />
+      </div>
+      {!hasEntered ? <Intro isBuffered={isBuffered} onEnter={enterExperiment} /> : null}
+      {hasEntered ? <PlaybackControl isPlaying={isPlaying} onToggle={togglePlayback} /> : null}
     </main>
   );
 }

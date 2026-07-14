@@ -7,6 +7,38 @@
   background: #000000;
 }
 
+.baseFlag {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.baseBlue {
+  background: #0055a4;
+}
+
+.baseWhite {
+  background: #ffffff;
+}
+
+.baseRed {
+  background: #ef4135;
+}
+
+.imagery {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 3s linear;
+}
+
+.imageryVisible {
+  opacity: 1;
+}
+
 .panel {
   position: absolute;
   top: 0;
@@ -34,68 +66,28 @@
   height: 100%;
 }
 
-.intro {
+.flagOverlay {
   position: absolute;
-  z-index: 10;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: clamp(28px, 5vh, 52px);
-  background: #ffffff;
-  color: #111111;
-  text-align: center;
+  z-index: 3;
+  top: 0;
+  width: 33.333333vw;
+  height: 100vh;
+  pointer-events: none;
+  mix-blend-mode: color;
 }
 
-.title {
-  margin: 0;
-  padding: 0 24px;
-  font-size: clamp(28px, 5vw, 68px);
-  font-weight: 400;
-  line-height: 1;
-  letter-spacing: -0.045em;
+.flagBlue {
+  left: 0;
+  background: #0055a4;
 }
 
-.enter {
-  border: 1px solid currentColor;
-  border-radius: 0;
-  padding: 10px 22px 11px;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  font-size: 15px;
-  line-height: 1;
-  cursor: pointer;
+.flagRed {
+  right: 0;
+  background: #ef4135;
 }
 
-.enter:focus-visible {
-  outline: 2px solid currentColor;
-  outline-offset: 4px;
-}
-
-.enter:disabled {
-  cursor: default;
-  opacity: 0.22;
-}
-
-.playback {
-  position: absolute;
-  z-index: 20;
-  top: 16px;
-  right: 16px;
-  border: 0;
-  border-radius: 0;
-  padding: 9px 12px 10px;
-  background: #ffffff;
-  color: #111111;
-  font: inherit;
-  font-size: 13px;
-  line-height: 1;
-  cursor: pointer;
-}
-
-.playback:focus-visible {
-  outline: 2px solid #ffffff;
-  outline-offset: 3px;
+@media (prefers-reduced-motion: reduce) {
+  .imagery {
+    transition-duration: 0s;
+  }
 }
