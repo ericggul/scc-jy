@@ -278,6 +278,74 @@ export function createBrandMenuEntries(
   ];
 }
 
+export function createStandardMenuDefinitions(
+  rowId: string,
+): readonly MenuDefinition[] {
+  return [
+    {
+      id: `${rowId}-file`,
+      label: "File",
+      entries: [
+        { id: `${rowId}-file-new`, kind: "command", label: "New", shortcut: "⌘N" },
+        { id: `${rowId}-file-open`, kind: "command", label: "Open…", shortcut: "⌘O" },
+        { id: `${rowId}-file-recent`, kind: "command", label: "Open Recent", children: recentItems },
+        { id: `${rowId}-file-separator-1`, kind: "separator" },
+        { id: `${rowId}-file-close`, kind: "command", label: "Close", shortcut: "⌘W" },
+        { id: `${rowId}-file-save`, kind: "command", label: "Save", shortcut: "⌘S" },
+        { id: `${rowId}-file-save-as`, kind: "command", label: "Save As…", shortcut: "⇧⌘S" },
+        { id: `${rowId}-file-separator-2`, kind: "separator" },
+        { id: `${rowId}-file-print`, kind: "command", label: "Print…", shortcut: "⌘P" },
+      ],
+    },
+    {
+      id: `${rowId}-edit`,
+      label: "Edit",
+      entries: [
+        { id: `${rowId}-edit-undo`, kind: "command", label: "Undo", shortcut: "⌘Z" },
+        { id: `${rowId}-edit-redo`, kind: "command", label: "Redo", shortcut: "⇧⌘Z" },
+        { id: `${rowId}-edit-separator-1`, kind: "separator" },
+        { id: `${rowId}-edit-cut`, kind: "command", label: "Cut", shortcut: "⌘X" },
+        { id: `${rowId}-edit-copy`, kind: "command", label: "Copy", shortcut: "⌘C" },
+        { id: `${rowId}-edit-paste`, kind: "command", label: "Paste", shortcut: "⌘V" },
+        { id: `${rowId}-edit-select-all`, kind: "command", label: "Select All", shortcut: "⌘A" },
+        { id: `${rowId}-edit-separator-2`, kind: "separator" },
+        { id: `${rowId}-edit-find`, kind: "command", label: "Find…", shortcut: "⌘F" },
+      ],
+    },
+    {
+      id: `${rowId}-view`,
+      label: "View",
+      entries: [
+        { id: `${rowId}-view-toolbar`, kind: "command", label: "Show Toolbar" },
+        { id: `${rowId}-view-sidebar`, kind: "command", label: "Show Sidebar", shortcut: "⌃⌘S" },
+        { id: `${rowId}-view-separator`, kind: "separator" },
+        { id: `${rowId}-view-zoom-in`, kind: "command", label: "Zoom In", shortcut: "⌘+" },
+        { id: `${rowId}-view-zoom-out`, kind: "command", label: "Zoom Out", shortcut: "⌘−" },
+        { id: `${rowId}-view-full-screen`, kind: "command", label: "Enter Full Screen", shortcut: "⌃⌘F" },
+      ],
+    },
+    {
+      id: `${rowId}-window`,
+      label: "Window",
+      entries: [
+        { id: `${rowId}-window-minimize`, kind: "command", label: "Minimize", shortcut: "⌘M" },
+        { id: `${rowId}-window-zoom`, kind: "command", label: "Zoom" },
+        { id: `${rowId}-window-separator`, kind: "separator" },
+        { id: `${rowId}-window-front`, kind: "command", label: "Bring All to Front" },
+      ],
+    },
+    {
+      id: `${rowId}-help`,
+      label: "Help",
+      entries: [
+        { id: `${rowId}-help-search`, kind: "command", label: "Search" },
+        { id: `${rowId}-help-guide`, kind: "command", label: "User Guide" },
+        { id: `${rowId}-help-support`, kind: "command", label: "Support" },
+      ],
+    },
+  ];
+}
+
 export function createWordMenuEntries(
   rowId: string,
   wordId: string,

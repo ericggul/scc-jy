@@ -4,6 +4,7 @@ import NetworkSystemController from "@/components/network-system/macro-economy/c
 import MarkovController from "@/components/network-system/default/controller";
 import PopulationController from "@/components/network-system/population/controller";
 import CompetitiveFirmsController from "@/components/network-system/competitive-firms/controller";
+import CycleController from "@/components/network-system/cycle/controller";
 import {
   isNetworkSystemExperimentSlug,
   networkSystemExperiments,
@@ -34,5 +35,6 @@ export default async function NetworkSystemControllerPage({
   if (experiment === "default") return <MarkovController />;
   if (experiment === "population") return <PopulationController />;
   if (experiment === "competitive-firms") return <CompetitiveFirmsController />;
+  if (experiment === "cycle") return <CycleController />;
   return <NetworkSystemController />;
 }

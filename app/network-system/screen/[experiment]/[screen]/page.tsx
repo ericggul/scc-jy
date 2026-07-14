@@ -12,12 +12,17 @@ import PopulationScreen, {
 import CompetitiveFirmsScreen, {
   CompetitiveFirmsScreenExperience,
 } from "@/components/network-system/competitive-firms/screen";
+import CycleScreen, {
+  CycleVideoScreenExperience,
+} from "@/components/network-system/cycle/screen";
 import {
-  getNetworkSystemScreenIds,
+  cycleMediaScreenIds,
+  isCycleMediaScreenId,
   isNetworkSystemExperimentSlug,
   isNetworkSystemScreenId,
   isNetworkSystemScreenRoute,
   networkSystemExperiments,
+  networkSystemScreenIds,
 } from "@/components/network-system/experiments";
 
 export function generateStaticParams() {
@@ -52,12 +57,19 @@ export default async function NetworkSystemScreenPage({
     notFound();
   }
 
-  const screenIds = getNetworkSystemScreenIds(experiment);
-  if (!screenIds) notFound();
+  if (experiment === "cycle") {
+    if (screen === "whole") {
+      return <CycleVideoScreenExperience sides={cycleMediaScreenIds} />;
+    }
+    if (!isNetworkSystemScreenId(screen) && !isCycleMediaScreenId(screen)) {
+      notFound();
+    }
+    return <CycleScreen screenId={screen} />;
+  }
 
   if (experiment === "default") {
     if (screen === "whole") {
-      return <MarkovScreenExperience screenIds={screenIds} />;
+      return <MarkovScreenExperience screenIds={networkSystemScreenIds} />;
     }
     if (!isNetworkSystemScreenId(screen)) notFound();
     return <MarkovScreen screenId={screen} />;
@@ -65,7 +77,7 @@ export default async function NetworkSystemScreenPage({
 
   if (experiment === "population") {
     if (screen === "whole") {
-      return <PopulationScreenExperience screenIds={screenIds} />;
+      return <PopulationScreenExperience screenIds={networkSystemScreenIds} />;
     }
     if (!isNetworkSystemScreenId(screen)) notFound();
     return <PopulationScreen screenId={screen} />;
@@ -73,14 +85,14 @@ export default async function NetworkSystemScreenPage({
 
   if (experiment === "competitive-firms") {
     if (screen === "whole") {
-      return <CompetitiveFirmsScreenExperience screenIds={screenIds} />;
+      return <CompetitiveFirmsScreenExperience screenIds={networkSystemScreenIds} />;
     }
     if (!isNetworkSystemScreenId(screen)) notFound();
     return <CompetitiveFirmsScreen screenId={screen} />;
   }
 
   if (screen === "whole") {
-    return <NetworkSystemScreenExperience screenIds={screenIds} />;
+    return <NetworkSystemScreenExperience screenIds={networkSystemScreenIds} />;
   }
 
   if (!isNetworkSystemScreenId(screen)) notFound();

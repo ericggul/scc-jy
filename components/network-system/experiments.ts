@@ -10,6 +10,11 @@ export const networkSystemExperiments = [
     screenIds: ["1", "2", "3", "4"],
   },
   {
+    slug: "cycle",
+    label: "network-system/cycle",
+    screenIds: ["1", "2", "3", "4", "left", "right"],
+  },
+  {
     slug: "population",
     label: "network-system/population",
     screenIds: ["1", "2", "3", "4"],
@@ -26,8 +31,14 @@ export type NetworkSystemExperimentSlug =
 
 export const networkSystemScreenIds = ["1", "2", "3", "4"] as const;
 
+export const cycleMediaScreenIds = ["left", "right"] as const;
+
 export type NetworkSystemScreenId = (typeof networkSystemScreenIds)[number];
-export type NetworkSystemScreenRoute = NetworkSystemScreenId | "whole";
+export type CycleMediaScreenId = (typeof cycleMediaScreenIds)[number];
+export type NetworkSystemScreenRoute =
+  | NetworkSystemScreenId
+  | CycleMediaScreenId
+  | "whole";
 
 export function isNetworkSystemExperimentSlug(
   value: string,
@@ -43,6 +54,12 @@ export function isNetworkSystemScreenId(
   return networkSystemScreenIds.some((screenId) => screenId === value);
 }
 
+export function isCycleMediaScreenId(
+  value: string,
+): value is CycleMediaScreenId {
+  return cycleMediaScreenIds.some((screenId) => screenId === value);
+}
+
 export function getNetworkSystemScreenIds(
   experimentSlug: NetworkSystemExperimentSlug,
 ) {
@@ -56,5 +73,8 @@ export function isNetworkSystemScreenRoute(
   value: string,
 ): value is NetworkSystemScreenRoute {
   const screenIds = getNetworkSystemScreenIds(experimentSlug);
-  return value === "whole" || Boolean(screenIds?.includes(value as NetworkSystemScreenId));
+  return (
+    value === "whole" ||
+    Boolean(screenIds?.some((screenId) => screenId === value))
+  );
 }

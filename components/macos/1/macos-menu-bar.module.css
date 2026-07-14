@@ -278,6 +278,88 @@
   content: "";
 }
 
+.searchWindow {
+  position: fixed;
+  top: clamp(54px, 9vh, 96px);
+  right: clamp(18px, 4vw, 68px);
+  z-index: 160;
+  display: grid;
+  width: min(680px, calc(100vw - 36px));
+  height: min(760px, calc(100vh - 108px));
+  grid-template-rows: 42px minmax(0, 1fr);
+  overflow: hidden;
+  border: 1px solid #5d6066;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 22px 70px rgba(0, 0, 0, 0.55);
+  color: #18181a;
+}
+
+.searchWindowBar {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 9px 0 14px;
+  border-bottom: 1px solid #c8c9cc;
+  background: #ececee;
+}
+
+.searchWindowTitle {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.searchWindowActions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 9px;
+}
+
+.searchWindowLink {
+  color: #075eb7;
+  font-size: 12px;
+  text-decoration: none;
+}
+
+.searchWindowLink:hover,
+.searchWindowLink:focus-visible {
+  text-decoration: underline;
+}
+
+.searchWindowClose {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  padding: 0 0 2px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: #343438;
+  cursor: pointer;
+  font: 20px/1 -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.searchWindowClose:hover,
+.searchWindowClose:focus-visible {
+  background: #d6d6d9;
+  outline: none;
+}
+
+.searchFrame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #fff;
+}
+
 .entryRoot:hover > .submenuPanel,
 .entryRoot:focus-within > .submenuPanel {
   display: block;
@@ -312,6 +394,13 @@
 
   .statusGroup {
     gap: 10px;
+  }
+
+  .searchWindow {
+    top: 42px;
+    right: 10px;
+    width: calc(100vw - 20px);
+    height: calc(100vh - 52px);
   }
 }
 

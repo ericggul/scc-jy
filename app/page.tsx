@@ -2,6 +2,16 @@ import Link from "next/link";
 
 const routes = [
   {
+    href: "/hangman",
+    label: "hangman",
+    description: "A tactile word game drawn one wrong guess at a time.",
+  },
+  {
+    href: "/swarm",
+    label: "swarm",
+    description: "Minimal Boids study of separation, alignment, and cohesion.",
+  },
+  {
     href: "/calendar",
     label: "calendar",
     description: "Minimal Google Calendar-like month grid experiment.",
@@ -50,6 +60,11 @@ const routes = [
     href: "/translate",
     label: "translate",
     description: "Hundred-language translation grid interface study.",
+  },
+  {
+    href: "/video-player",
+    label: "video-player",
+    description: "Full-height rows of horizontally skatable video players.",
   },
 ];
 

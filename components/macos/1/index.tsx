@@ -4,6 +4,7 @@ import type { KeyboardEvent } from "react";
 import { useEffect, useRef, useState } from "react";
 import {
   type MenuEntry,
+  type MenuCommand,
   type MenuId,
 } from "./menu-data";
 import {
@@ -11,6 +12,78 @@ import {
   type MacosSloganRow,
 } from "./rows";
 import styles from "./macos-menu-bar.module.css";
+
+type SearchResult = {
+  pageId: number;
+  title: string;
+  excerpt: string;
+};
+
+type SearchResponse = {
+  query: string;
+  state: "loading" | "ready" | "error";
+  results: readonly SearchResult[];
+};
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function createSearchDocument(response: SearchResponse) {
+  const content =
+    response.state === "loading"
+      ? '<p class="message">Searching Wikipedia…</p>'
+      : response.state === "error"
+        ? '<p class="message">Results could not be loaded.</p>'
+        : response.results.length === 0
+          ? '<p class="message">No matching Wikipedia pages were found.</p>'
+          : response.results
+              .map(
+                (result) => `
+                  <article>
+                    <a href="https://en.wikipedia.org/?curid=${result.pageId}" target="_blank" rel="noreferrer">
+                      ${escapeHtml(result.title)}
+                    </a>
+                    <p>${escapeHtml(result.excerpt)}</p>
+                  </article>
+                `,
+              )
+              .join("");
+
+  return `<!doctype html>
+    <html lang="en">
+      <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <style>
+          * { box-sizing: border-box; }
+          body {
+            margin: 0;
+            padding: 22px 24px 40px;
+            background: #fff;
+            color: #202124;
+            font: 14px/1.48 -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+          }
+          .source { margin: 0 0 18px; color: #6a6d72; font-size: 12px; }
+          article { max-width: 640px; padding: 16px 0; border-top: 1px solid #e2e3e5; }
+          article:first-of-type { border-top: 0; padding-top: 0; }
+          a { color: #075eb7; font-size: 17px; font-weight: 600; text-decoration: none; }
+          a:hover, a:focus { text-decoration: underline; }
+          p { margin: 6px 0 0; }
+          .message { color: #55585d; }
+        </style>
+      </head>
+      <body>
+        <p class="source">Wikipedia results for “${escapeHtml(response.query)}”</p>
+        ${content}
+      </body>
+    </html>`;
+}
 
 function formatMenuBarTime(date: Date) {
   const weekday = new Intl.DateTimeFormat("en-US", {
@@ -160,7 +233,7 @@ function MenuEntries({
   onSelect,
 }: {
   entries: readonly MenuEntry[];
-  onSelect: () => void;
+  onSelect: (entry: MenuCommand) => void;
 }) {
   return entries.map((entry) => {
     if (entry.kind === "separator") {
@@ -178,7 +251,7 @@ function MenuEntries({
           aria-haspopup={hasChildren ? "menu" : undefined}
           className={styles.menuEntry}
           onClick={() => {
-            if (!hasChildren) onSelect();
+            if (!hasChildren) onSelect(entry);
           }}
           onKeyDown={(event) => {
             if (event.key === "ArrowDown") {
@@ -241,19 +314,17 @@ function MenuBarRow({
   row,
   virtualMinute,
   runtimeStatus,
+  onOpenSearch,
 }: {
   row: MacosSloganRow;
   virtualMinute: number;
   runtimeStatus: MacosSloganRow["status"];
+  onOpenSearch: (name: string) => void;
 }) {
   const [selectedMenu, setSelectedMenu] = useState<MenuId | null>(null);
   const menuButtonRefs = useRef(new Map<MenuId, HTMLButtonElement>());
   const rowRef = useRef<HTMLElement>(null);
-  const clock = formatMenuBarTime(
-    new Date(
-      (virtualMinute + row.status.timeOffsetMinutes) * 60_000,
-    ),
-  );
+  const clock = formatMenuBarTime(new Date(virtualMinute * 60_000));
 
   useEffect(() => {
     if (selectedMenu === null) return;
@@ -310,7 +381,7 @@ function MenuBarRow({
   return (
     <nav
       ref={rowRef}
-      aria-label={`${row.brand}: ${row.phrase}`}
+      aria-label={row.brand}
       className={`${styles.menuBar} ${selectedMenu !== null ? styles.menuBarOpen : ""}`}
       onMouseLeave={() => setSelectedMenu(null)}
       onKeyDown={(event) => {
@@ -362,7 +433,13 @@ function MenuBarRow({
                 >
                   <MenuEntries
                     entries={menu.entries}
-                    onSelect={() => setSelectedMenu(null)}
+                    onSelect={(entry) => {
+                      setSelectedMenu(null);
+
+                      if (entry.id === `${row.id}-brand-about`) {
+                        onOpenSearch(row.brand);
+                      }
+                    }}
                   />
                 </div>
               ) : null}
@@ -391,78 +468,17 @@ function MenuBarRow({
 }
 
 export default function MacosMenuBarOne() {
-  const [simulation, setSimulation] = useState(() => ({
-    virtualMinute: Math.floor(
-      new Date(2026, 6, 10, 16, 15).getTime() / 60_000,
-    ),
-    statuses: macosSloganRows.map((row) => ({ ...row.status })),
-    randomSeed: 0x6d_61_63_27,
-  }));
+  const [virtualMinute] = useState(() => Math.floor(Date.now() / 60_000));
+  const sharedStatus = macosSloganRows[0].status;
+  const [searchName, setSearchName] = useState<string | null>(null);
+  const [searchResponse, setSearchResponse] = useState<SearchResponse>({
+    query: "",
+    state: "loading",
+    results: [],
+  });
   const [stackLayout, setStackLayout] = useState({
     rowCount: 26,
   });
-
-  useEffect(() => {
-    const interval = window.setInterval(() => {
-      setSimulation((current) => {
-        let randomSeed = current.randomSeed;
-        const nextRandom = () => {
-          randomSeed =
-            (Math.imul(randomSeed, 1_664_525) + 1_013_904_223) >>> 0;
-          return randomSeed / 4_294_967_296;
-        };
-        const statuses = current.statuses.map((status) => {
-          let charging = status.charging;
-          let batteryPercent = status.batteryPercent;
-
-          if (charging) {
-            batteryPercent += 0.12 + nextRandom() * 0.18;
-
-            if (batteryPercent >= 99.5 || nextRandom() < 0.0025) {
-              charging = false;
-            }
-          } else {
-            batteryPercent -= 0.025 + nextRandom() * 0.055;
-
-            if (batteryPercent <= 7 || nextRandom() < 0.0012) {
-              charging = true;
-            }
-          }
-
-          batteryPercent = Math.max(2, Math.min(100, batteryPercent));
-
-          let wifiLevel = status.wifiLevel;
-          if (nextRandom() < 0.026) {
-            if (wifiLevel === 0) {
-              wifiLevel = nextRandom() < 0.72 ? 1 : 0;
-            } else if (wifiLevel === 3) {
-              wifiLevel = nextRandom() < 0.7 ? 2 : 3;
-            } else {
-              wifiLevel = (wifiLevel + (nextRandom() < 0.5 ? -1 : 1)) as
-                | 0
-                | 1
-                | 2
-                | 3;
-            }
-          }
-
-          return {
-            ...status,
-            batteryPercent,
-            charging,
-            wifiLevel,
-          };
-        });
-
-        return {
-          virtualMinute: current.virtualMinute + 1,
-          statuses,
-          randomSeed,
-        };
-      });
-    }, 1_000 / 6);
-    return () => window.clearInterval(interval);
-  }, []);
 
   useEffect(() => {
     function syncStackLayout() {
@@ -485,24 +501,110 @@ export default function MacosMenuBarOne() {
     };
   }, []);
 
+  const searchQuery = searchName ? `${searchName} Epstein file` : "";
+  const wikipediaSearchUrl = `https://en.wikipedia.org/w/index.php?search=${encodeURIComponent(searchQuery)}`;
+
+  useEffect(() => {
+    if (!searchName) return;
+
+    const controller = new AbortController();
+    const query = `${searchName} Epstein file`;
+    const url = new URL("https://en.wikipedia.org/w/api.php");
+    url.search = new URLSearchParams({
+      action: "query",
+      list: "search",
+      format: "json",
+      origin: "*",
+      srlimit: "8",
+      srsearch: query,
+    }).toString();
+
+    void fetch(url, { signal: controller.signal })
+      .then((response) => {
+        if (!response.ok) throw new Error("Wikipedia search failed");
+        return response.json() as Promise<{
+          query?: {
+            search?: Array<{ pageid: number; title: string; snippet: string }>;
+          };
+        }>;
+      })
+      .then((data) => {
+        const parser = new DOMParser();
+        const results = (data.query?.search ?? []).map((result) => ({
+          pageId: result.pageid,
+          title: result.title,
+          excerpt:
+            parser.parseFromString(result.snippet, "text/html").body
+              .textContent ?? "",
+        }));
+
+        setSearchResponse({ query, state: "ready", results });
+      })
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        setSearchResponse({ query, state: "error", results: [] });
+      });
+
+    return () => controller.abort();
+  }, [searchName]);
+
+  function openSearch(name: string) {
+    const query = `${name} Epstein file`;
+    setSearchName(name);
+    setSearchResponse({ query, state: "loading", results: [] });
+  }
+
   return (
     <main className={styles.desktop}>
       <section
-        aria-label="Mythic marketing menu bars"
+        aria-label="Names appearing in the Epstein files"
         className={styles.rowStack}
         style={{
           gridTemplateRows: `repeat(${stackLayout.rowCount}, minmax(0, 1fr))`,
         }}
       >
-        {macosSloganRows.slice(0, stackLayout.rowCount).map((row, rowIndex) => (
+        {macosSloganRows.slice(0, stackLayout.rowCount).map((row) => (
           <MenuBarRow
             key={row.id}
             row={row}
-            virtualMinute={simulation.virtualMinute}
-            runtimeStatus={simulation.statuses[rowIndex] ?? row.status}
+            virtualMinute={virtualMinute}
+            runtimeStatus={sharedStatus}
+            onOpenSearch={openSearch}
           />
         ))}
       </section>
+      {searchName ? (
+        <aside className={styles.searchWindow} aria-label={`${searchQuery} search results`}>
+          <header className={styles.searchWindowBar}>
+            <span className={styles.searchWindowTitle}>{searchQuery}</span>
+            <div className={styles.searchWindowActions}>
+              <a
+                className={styles.searchWindowLink}
+                href={wikipediaSearchUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Open in Wikipedia
+              </a>
+              <button
+                type="button"
+                className={styles.searchWindowClose}
+                aria-label="Close search results"
+                onClick={() => setSearchName(null)}
+              >
+                ×
+              </button>
+            </div>
+          </header>
+          <iframe
+            key={searchResponse.query}
+            className={styles.searchFrame}
+            srcDoc={createSearchDocument(searchResponse)}
+            title={`${searchQuery} Wikipedia search results`}
+            sandbox="allow-popups allow-popups-to-escape-sandbox"
+          />
+        </aside>
+      ) : null}
     </main>
   );
 }

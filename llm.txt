@@ -18,6 +18,7 @@ Per-experiment documentation:
 - `docs/cv.md`
 - `docs/dj.md`
 - `docs/network-system-macro-economy.md`
+- `docs/network-system-cycle.md`
 - `docs/moma.md`
 - `docs/sns.md`
 - `docs/stock.md`
