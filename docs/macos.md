@@ -2,8 +2,8 @@
 
 - Route group: `/macos`
 - Current variant: `/macos/1`
-- Implementation: `components/macos/1`
-- Shared copy: `components/macos/copy.ts`
+- Implementation: `components/standalone/macos/1`
+- Shared copy: `components/standalone/macos/copy.ts`
 
 The first variant renders a responsive vertical stack of desktop menu-bar rows.
 Each row takes one exact phrase from the reusable mythic-marketing phrase set in

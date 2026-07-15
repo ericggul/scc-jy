@@ -7,11 +7,11 @@ Routes:
 
 Files:
 
-- `app/table/page.tsx`
-- `app/table/[experiment]/page.tsx`
-- `components/table/experiments.ts`
-- `components/table/1/index.tsx`
-- `components/table/1/data.ts`
+- `app/(standalone)/table/page.tsx`
+- `app/(standalone)/table/[experiment]/page.tsx`
+- `components/standalone/table/experiments.ts`
+- `components/standalone/table/1/index.tsx`
+- `components/standalone/table/1/data.ts`
 
 Intent:
 
@@ -28,4 +28,4 @@ Current verification target:
 Logo data:
 
 - Uses `simple-icons` package paths where available.
-- Uses a custom embedded SVG path only when explicitly present in `components/table/1/data.ts`.
+- Uses a custom embedded SVG path only when explicitly present in `components/standalone/table/1/data.ts`.

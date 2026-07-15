@@ -1,5 +1,4 @@
 export const stockExperiments = [
-  { slug: "1", label: "stock/1" },
   { slug: "2", label: "stock/2" },
 ] as const;
 
@@ -26,7 +25,7 @@ export function isStockMultiDeviceExperimentSlug(
   );
 }
 
-export const stockDirectRoutes = ["default", "1", "2"] as const;
+export const stockDirectRoutes = ["default", "2"] as const;
 export type StockDirectRoute = (typeof stockDirectRoutes)[number];
 
 export function isStockDirectRoute(value: string): value is StockDirectRoute {

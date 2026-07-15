@@ -218,7 +218,7 @@ old `+9/−3` display coordinates.
 
 ## Isolation and implementation consequences
 
-- Add `network-system-cycle-model.mjs`; it must not import the macro-economy model.
+- Add `socket/experiments/network-system/cycle/model.mjs`; it must not import the macro-economy model.
 - Add cycle-owned TypeScript snapshot, node, edge and intervention types.
 - Replace the cycle wrapper around the macro controller with a cycle controller
   built from its nine-node registry.
@@ -227,7 +227,7 @@ old `+9/−3` display coordinates.
 - Preserve `network-system-cycle:*` events and
   `experiment:network-system:cycle` room.
 - Do not change any file under `components/network-system/macro-economy/` or
-  `socket/experiments/network-system-macro-economy*` during model replacement.
+  `socket/experiments/network-system/macro-economy/*` during model replacement.
 
 ## Verification requirements
 

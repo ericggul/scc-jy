@@ -78,6 +78,7 @@ function getViewportRows() {
 export default function FingerSkatingTwoMobile() {
   const { sendSignal } = useExperimentSocket({
     experimentId: EXPERIMENT_ID,
+    experimentSlug: "2",
     role: "mobile",
   });
   const frameRef = useRef<number | null>(null);

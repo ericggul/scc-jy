@@ -66,6 +66,7 @@ const Range = styled.input`
 export default function FingerSkatingOneMobile() {
   const { connected, connectionError, presence, sendSignal } = useExperimentSocket({
     experimentId: EXPERIMENT_ID,
+    experimentSlug: "1",
     role: "mobile",
   });
   const [hue, setHue] = useState(12);

@@ -19,7 +19,7 @@ Files:
 - `components/finger-skating/2/mobile.tsx`
 - `components/finger-skating/2/screen.tsx`
 - `hooks/use-experiment-socket.ts`
-- `socket/experiments/finger-skating.mjs`
+- `socket/experiments/finger-skating/index.mjs`
 
 Intent:
 
@@ -103,7 +103,7 @@ Add future variants under `components/finger-skating/[number]/`, register the sl
 Socket contract:
 
 - Local transport: same hostname as the app, Socket.IO HTTPS port `4000`, path `/socket.io`.
-- Room: `experiment:finger-skating`
+- Rooms: `experiment:finger-skating:1` and `experiment:finger-skating:2`
 - Events:
   - `finger-skating:join`
   - `finger-skating:hello`
@@ -113,4 +113,5 @@ Socket contract:
 
 Rule:
 
-`finger-skating` state and events must not be shared with future socket experiments.
+Each `finger-skating` variant has isolated room state. Its state and events must
+not be shared with other variants or future socket experiments.

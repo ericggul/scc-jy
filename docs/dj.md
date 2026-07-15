@@ -20,7 +20,7 @@ Files:
 - `components/dj/1/controller.tsx`
 - `components/dj/1/screen.tsx`
 - `components/dj/1/use-dj-socket.ts`
-- `socket/experiments/dj.mjs`
+- `socket/experiments/dj/index.mjs`
 
 Intent:
 

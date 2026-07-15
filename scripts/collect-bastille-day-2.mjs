@@ -161,7 +161,7 @@ async function downloadPool({
 
 const goodDirectory = path.join(ROOT, "public/images/bastille-day-2-good");
 const darkDirectory = path.join(ROOT, "public/images/bastille-day-2-dark");
-const componentDirectory = path.join(ROOT, "components/bastille-day/2");
+const componentDirectory = path.join(ROOT, "components/standalone/bastille-day/2");
 await mkdir(componentDirectory, { recursive: true });
 
 let goodRecords;

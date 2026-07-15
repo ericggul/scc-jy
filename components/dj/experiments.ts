@@ -17,10 +17,6 @@ export function isDjScreenId(value: string): value is DjScreenId {
   return djScreenIds.some((screenId) => screenId === value);
 }
 
-export function isDjScreenRoute(value: string): value is DjScreenRoute {
-  return value === "whole" || isDjScreenId(value);
-}
-
 export function getDjExperimentScreenIds(experimentSlug: DjExperimentSlug) {
   return djExperiments.find((experiment) => experiment.slug === experimentSlug)
     ?.screenIds;

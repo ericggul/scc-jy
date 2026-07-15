@@ -5,12 +5,9 @@
 - `/calendar/default`: the original single-device calendar, preserved unchanged.
 - `/calendar/mobile/1`: the mobile five-column life-profile directory.
 - `/calendar/screen/1`: the synchronized calendar display.
-- `/calendar/1/mobile`: compatibility alias for the mobile field.
-- `/calendar/1/screen`: compatibility alias for the synchronized display.
-- `/calendar/1`: compatibility alias for the variant 1 screen.
 
 The mobile viewport is intentionally defined by `VISIBLE_COLUMNS` and
-`VISIBLE_ROWS` in `components/calendar/1/data.ts`. It currently selects 3 × 30
+`VISIBLE_ROWS` in `components/realtime/calendar/1/data.ts`. It currently selects 3 × 30
 profiles. The full 2,500-profile directory is three columns by 834 rows and only
 scrolls vertically. Each record is divided into name and synthetic resident
 registration-number fields and styled as a monochrome Korean administrative

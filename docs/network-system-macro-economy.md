@@ -125,8 +125,8 @@ The system and its visual wrappers are separate:
 3. `presenter.ts` translates normalized values into wrapper-facing labels, rates, indices, and traces.
 4. `wrappers/registry.ts` maps each institution to a replaceable React wrapper.
 5. Individual files under `wrappers/` define the visual language of each screen.
-6. `network-system-macro-economy-model.mjs` owns the continuously running server-side dynamics and applies interventions.
-7. `network-system-macro-economy.mjs` owns the clock, room, intervention validation, and state broadcast.
+6. `socket/experiments/network-system/macro-economy/model.mjs` owns the continuously running server-side dynamics and applies interventions.
+7. `socket/experiments/network-system/macro-economy/index.mjs` owns the clock, room, intervention validation, and state broadcast.
 8. `screen.tsx` only observes socket state, selects the wrapper, and applies the shared scaling mechanism.
 
 A wrapper may be redesigned, détourned, or replaced without changing graph propagation or the socket contract. Conversely, relation weights may change without rewriting the institutional screens.
@@ -304,5 +304,5 @@ The controller is also an observer. Node values, 12 directional weights, and 12 
 - `components/network-system/macro-economy/wrappers/registry.ts`
 - `components/network-system/macro-economy/wrappers/*.tsx`
 - `components/network-system/macro-economy/wrappers/wrappers.module.css`
-- `socket/experiments/network-system-macro-economy.mjs`
-- `socket/experiments/network-system-macro-economy-model.mjs`
+- `socket/experiments/network-system/macro-economy/index.mjs`
+- `socket/experiments/network-system/macro-economy/model.mjs`

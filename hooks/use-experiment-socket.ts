@@ -8,6 +8,7 @@ export type ExperimentRole = "mobile" | "screen";
 export type ExperimentSignal = {
   id: string;
   experimentId: string;
+  variantId: string;
   from: string;
   role: ExperimentRole | "unknown";
   sentAt: number;
@@ -23,6 +24,7 @@ export type ExperimentSignal = {
 
 export type ExperimentPresence = {
   experimentId: string;
+  variantId: string;
   total: number;
   mobiles: number;
   screens: number;
@@ -42,6 +44,7 @@ type OutgoingSignal = Pick<
 
 type ExperimentSocketOptions = {
   experimentId: string;
+  experimentSlug: string;
   role: ExperimentRole;
   onSignal?: (signal: ExperimentSignal) => void;
 };
@@ -73,6 +76,7 @@ function getEvents(experimentId: string) {
 
 export function useExperimentSocket({
   experimentId,
+  experimentSlug,
   role,
   onSignal,
 }: ExperimentSocketOptions) {
@@ -108,7 +112,7 @@ export function useExperimentSocket({
       setConnected(true);
       setConnectionError(null);
       setSocketId(socket.id ?? null);
-      socket.emit(events.join, { role });
+      socket.emit(events.join, { role, experimentSlug });
     });
 
     socket.on("disconnect", () => {
@@ -146,7 +150,7 @@ export function useExperimentSocket({
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [events, role]);
+  }, [events, experimentSlug, role]);
 
   const sendSignal = useCallback(
     (signal: OutgoingSignal) => {

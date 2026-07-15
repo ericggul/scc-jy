@@ -95,7 +95,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 - Before changing routing, config, image handling, styling setup, or server behavior, read the relevant local guide in `node_modules/next/dist/docs/`.
 - This app uses App Router, Next 16.2.10, React 19, Tailwind CSS 4, and styled-components 6.
-- `app/` route files should stay thin. Put experiment implementation, data, and variant registries under `components/[experiment]/...`.
+- `app/` route files should stay thin. Put experiment implementation, data, and variant registries under the matching `components/` family.
 
 ## Experiment Structure
 
@@ -118,11 +118,16 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - For a concrete failure analysis and preservation checklist, read
   `docs/stock-ui-preservation-postmortem.md`.
 
-- Single-device experiment groups use:
-  - `app/[group]/page.tsx` as a minimal index.
-  - `app/[group]/[experiment]/page.tsx` as dynamic routing.
-  - `components/[group]/[experiment]/...` for implementation and data.
-- Do not create literal numbered route folders such as `app/[group]/1/page.tsx`
+- Standalone experiment groups use matching filesystem families without changing
+  their public URLs:
+  - `app/(standalone)/[group]/page.tsx` as a minimal index.
+  - `app/(standalone)/[group]/[experiment]/page.tsx` as dynamic routing.
+  - `components/standalone/[group]/[experiment]/...` for implementation and data.
+- Smaller socket-backed experiments use `app/(realtime)/[group]/...` and
+  `components/realtime/[group]/...`.
+- Important or complex experiments (`dj`, `finger-skating`, `network-system`,
+  `sns`, and `stock`) remain directly under both `app/` and `components/`.
+- Do not create literal numbered route folders such as `app/(standalone)/[group]/1/page.tsx`
   for single-device experiment variants. Numbered variants must go through
   `app/[group]/[experiment]/page.tsx`.
 - Multi-device experiments use:
@@ -131,7 +136,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
   - `app/[group]/screen/[experiment]/page.tsx` as dynamic screen routing.
   - `components/[group]/experiments.ts` as the shared variant registry.
   - `components/[group]/[experiment]/mobile.tsx` and `components/[group]/[experiment]/screen.tsx` for implementation.
-  - dedicated socket modules under `socket/experiments/[group].mjs`.
+  - dedicated socket modules under `socket/experiments/[group]/index.mjs`.
 - Do not add decorative labels, footers, captions, archive text, mode badges, or explanatory chrome unless the user explicitly asks.
 - If a page is specified as non-scrollable, visible content must actually fit inside the viewport.
 - Fixed-format experiments such as A4 pages, boards, grids, and instrument

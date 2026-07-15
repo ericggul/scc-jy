@@ -12,7 +12,7 @@
 
 ## Source policy
 
-The sixty records are gathered from Wikimedia Commons using `Fête nationale`, `Défilé du 14 juillet à Paris`, `Révolution française`, `Prise de la Bastille`, and `Vive la France`, with recent parade material prioritized from 2025, 2024, and 2023. Each 640-pixel derivative is stored under `public/images/bastille-day/`, while `components/bastille-day/1/images.ts` retains the corresponding Commons description page so licensing and attribution remain reachable.
+The sixty records are gathered from Wikimedia Commons using `Fête nationale`, `Défilé du 14 juillet à Paris`, `Révolution française`, `Prise de la Bastille`, and `Vive la France`, with recent parade material prioritized from 2025, 2024, and 2023. Each 640-pixel derivative is stored under `public/images/bastille-day/`, while `components/standalone/bastille-day/1/images.ts` retains the corresponding Commons description page so licensing and attribution remain reachable.
 
 ## Experiment 2
 

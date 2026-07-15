@@ -101,6 +101,7 @@ export default function FingerSkatingOneScreen() {
 
   const { connected, connectionError, presence } = useExperimentSocket({
     experimentId: EXPERIMENT_ID,
+    experimentSlug: "1",
     role: "screen",
     onSignal: handleSignal,
   });

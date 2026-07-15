@@ -8,13 +8,13 @@ Routes:
 
 Files:
 
-- `app/moma/page.tsx`
-- `app/moma/[experiment]/page.tsx`
-- `components/moma/experiments.ts`
-- `components/moma/1/index.tsx`
-- `components/moma/1/data.ts`
-- `components/moma/2/index.tsx`
-- `components/moma/2/data.ts`
+- `app/(standalone)/moma/page.tsx`
+- `app/(standalone)/moma/[experiment]/page.tsx`
+- `components/standalone/moma/experiments.ts`
+- `components/standalone/moma/1/index.tsx`
+- `components/standalone/moma/1/data.ts`
+- `components/standalone/moma/2/index.tsx`
+- `components/standalone/moma/2/data.ts`
 
 Intent:
 
@@ -24,5 +24,5 @@ Intent:
 
 Implementation rule:
 
-- Keep `app/moma` route files thin.
-- Put variant UI and data under `components/moma`.
+- Keep `app/(standalone)/moma` route files thin.
+- Put variant UI and data under `components/standalone/moma`.

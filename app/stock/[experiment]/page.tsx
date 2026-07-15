@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import type { ComponentType } from "react";
-import StockOneScreen from "@/components/stock/1/screen";
 import StockTwo from "@/components/stock/2";
 import StockDefault from "@/components/stock/default";
 import {
@@ -12,7 +11,6 @@ import {
 
 const components: Record<StockDirectRoute, ComponentType> = {
   default: StockDefault,
-  "1": StockOneScreen,
   "2": StockTwo,
 };
 

@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 
 const root = process.cwd();
-const countryDataPath = path.join(root, "components/swarm/2/countries.json");
+const countryDataPath = path.join(root, "components/standalone/swarm/2/countries.json");
 const outputDirectory = path.join(root, "public/audio/swarm-campaigns");
 const temporaryDirectory = fs.mkdtempSync(
   path.join(os.tmpdir(), "scc-swarm-campaign-audio-"),

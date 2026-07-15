@@ -7,9 +7,6 @@ Routes:
 
 - `/stock`
 - `/stock/default`
-- `/stock/1`
-- `/stock/1/mobile`
-- `/stock/1/screen`
 - `/stock/mobile/1`
 - `/stock/screen/1`
 - `/stock/2`
@@ -18,7 +15,6 @@ Routes:
 
 - `app/stock/page.tsx` is the minimal experiment index.
 - `app/stock/[experiment]/page.tsx` owns direct/default routing only.
-- `app/stock/[experiment]/mobile/page.tsx` and `screen/page.tsx` are compatibility aliases.
 - `app/stock/mobile/[experiment]/page.tsx` and `screen/[experiment]/page.tsx` are the expandable role routes.
 - `components/stock/experiments.ts` is the route registry.
 - `components/stock/default/dashboard.tsx` and `historical-data.ts` preserve the original standalone graph stack and data.
@@ -27,7 +23,7 @@ Routes:
 - `components/stock/default/dashboard.tsx` also exposes the reusable graph surface consumed by the live screen.
 - `components/stock/1/axis-model.ts` owns the exact axis-to-slope integration and rolling samples.
 - `components/stock/1/use-stock-socket.ts` owns the client socket contract.
-- `socket/experiments/stock.mjs` owns the isolated `stock:*` room and events.
+- `socket/experiments/stock/index.mjs` owns the isolated `stock:*` room and events.
 - `components/stock/2/index.tsx` is the interactive Bloomberg-inspired terminal.
 - `components/stock/2/data.ts` owns stable market, index, and headline records.
 - `components/stock/2/terminal.module.css` owns the fixed-format responsive workstation styling.

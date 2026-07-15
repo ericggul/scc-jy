@@ -35,7 +35,7 @@ export default function StockIndexPage() {
             screen/{experiment.slug}
           </Link>,
         ])}
-        {stockExperiments.filter(({ slug }) => slug !== "1").map((experiment) => (
+        {stockExperiments.map((experiment) => (
           <Link
             key={experiment.slug}
             href={`/stock/${experiment.slug}`}

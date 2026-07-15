@@ -1,20 +1,23 @@
 # Experiment Structure
 
-Single-device experiment groups use this shape:
+Standalone experiment groups use this shape:
 
 ```txt
-app/[group]/page.tsx
-app/[group]/[experiment]/page.tsx
-components/[group]/experiments.ts
-components/[group]/[experiment]/index.tsx
-components/[group]/[experiment]/data.ts
+app/(standalone)/[group]/page.tsx
+app/(standalone)/[group]/[experiment]/page.tsx
+components/standalone/[group]/experiments.ts
+components/standalone/[group]/[experiment]/index.tsx
+components/standalone/[group]/[experiment]/data.ts
 ```
 
 `app/[group]/page.tsx` should be a minimal index linking to numbered variants. Do not add explanatory chrome unless asked.
 
 `app/[group]/[experiment]/page.tsx` should route dynamically and import the selected component.
 
-Multi-device experiments use this shape:
+Smaller realtime experiments use the matching `(realtime)` family. Complex
+system experiments remain directly under `app/` and `components/`.
+
+Multi-device experiments use this route shape within their assigned family:
 
 ```txt
 app/[group]/page.tsx
@@ -23,7 +26,7 @@ app/[group]/screen/[experiment]/page.tsx
 components/[group]/experiments.ts
 components/[group]/[experiment]/mobile.tsx
 components/[group]/[experiment]/screen.tsx
-socket/experiments/[group].mjs
+socket/experiments/[group]/index.mjs
 ```
 
 `app/[group]/page.tsx` should be a minimal index linking to role-specific numbered variants, for example `/finger-skating/mobile/1` and `/finger-skating/screen/1`.
@@ -33,6 +36,8 @@ socket/experiments/[group].mjs
 Rules:
 
 - Implementation and data belong under `components/`.
+- The `app` and `components` family assignment must match.
+- Route groups organize the filesystem only and must not change public URLs.
 - `app/` should mostly route/import.
 - Non-scrollable pages must fit all required visible content inside the viewport.
 - Avoid decorative AI-looking labels, badges, footers, subtitles, or explanatory UI not requested by the user.
