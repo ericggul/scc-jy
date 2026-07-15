@@ -16,17 +16,17 @@ export default function FingerSkatingPage() {
         {fingerSkatingExperiments.flatMap((experiment) => [
           <Link
             key={`mobile-${experiment.slug}`}
-            href={`/finger-skating/mobile/${experiment.slug}`}
+            href={`/finger-skating/${experiment.slug}/mobile`}
             className="border-b border-black py-4 text-[clamp(28px,7vw,72px)] font-black leading-none tracking-[-0.06em] hover:bg-black hover:text-white"
           >
-            mobile/{experiment.slug}
+            {experiment.slug}/mobile
           </Link>,
           <Link
             key={`screen-${experiment.slug}`}
-            href={`/finger-skating/screen/${experiment.slug}`}
+            href={`/finger-skating/${experiment.slug}/screen`}
             className="border-b border-black py-4 text-[clamp(28px,7vw,72px)] font-black leading-none tracking-[-0.06em] hover:bg-black hover:text-white"
           >
-            screen/{experiment.slug}
+            {experiment.slug}/screen
           </Link>,
         ])}
       </nav>

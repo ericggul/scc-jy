@@ -16,28 +16,28 @@ export default function NetworkSystemPage() {
         {networkSystemExperiments.map((experiment) => (
           <Link
             key={`controller-${experiment.slug}`}
-            href={`/network-system/controller/${experiment.slug}`}
+            href={`/network-system/${experiment.slug}/controller`}
             className="border-b border-[#f7f4ec] py-4 text-[clamp(28px,7vw,72px)] font-black leading-none hover:bg-[#f7f4ec] hover:text-[#050505]"
           >
-            controller/{experiment.slug}
+            {experiment.slug}/controller
           </Link>
         ))}
         {networkSystemExperiments.flatMap((experiment) => [
           ...experiment.screenIds.map((screenId) => (
             <Link
               key={`screen-${experiment.slug}-${screenId}`}
-              href={`/network-system/screen/${experiment.slug}/${screenId}`}
+              href={`/network-system/${experiment.slug}/screen/${screenId}`}
               className="border-b border-[#f7f4ec] py-4 text-[clamp(28px,7vw,72px)] font-black leading-none hover:bg-[#f7f4ec] hover:text-[#050505]"
             >
-              screen/{experiment.slug}/{screenId}
+              {experiment.slug}/screen/{screenId}
             </Link>
           )),
           <Link
             key={`screen-${experiment.slug}-whole`}
-            href={`/network-system/screen/${experiment.slug}/whole`}
+            href={`/network-system/${experiment.slug}/screen/whole`}
             className="border-b border-[#f7f4ec] py-4 text-[clamp(28px,7vw,72px)] font-black leading-none hover:bg-[#f7f4ec] hover:text-[#050505]"
           >
-            screen/{experiment.slug}/whole
+            {experiment.slug}/screen/whole
           </Link>,
         ])}
       </nav>

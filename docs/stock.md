@@ -7,15 +7,15 @@ Routes:
 
 - `/stock`
 - `/stock/default`
-- `/stock/mobile/1`
-- `/stock/screen/1`
+- `/stock/1/mobile`
+- `/stock/1/screen`
 - `/stock/2`
 
 ## Structure
 
 - `app/stock/page.tsx` is the minimal experiment index.
 - `app/stock/[experiment]/page.tsx` owns direct/default routing only.
-- `app/stock/mobile/[experiment]/page.tsx` and `screen/[experiment]/page.tsx` are the expandable role routes.
+- `app/stock/[experiment]/mobile/page.tsx` and `screen/[experiment]/page.tsx` are the expandable role routes.
 - `components/stock/experiments.ts` is the route registry.
 - `components/stock/default/dashboard.tsx` and `historical-data.ts` preserve the original standalone graph stack and data.
 - `components/stock/1/mobile.tsx` captures device orientation and emits stock-only signals.

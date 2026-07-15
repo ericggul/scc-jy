@@ -3,8 +3,8 @@
 ## Routes
 
 - `/calendar/default`: the original single-device calendar, preserved unchanged.
-- `/calendar/mobile/1`: the mobile five-column life-profile directory.
-- `/calendar/screen/1`: the synchronized calendar display.
+- `/calendar/1/mobile`: the mobile five-column life-profile directory.
+- `/calendar/1/screen`: the synchronized calendar display.
 
 The mobile viewport is intentionally defined by `VISIBLE_COLUMNS` and
 `VISIBLE_ROWS` in `components/realtime/calendar/1/data.ts`. It currently selects 3 × 30

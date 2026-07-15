@@ -132,8 +132,11 @@ This version has breaking changes — APIs, conventions, and file structure may 
   `app/[group]/[experiment]/page.tsx`.
 - Multi-device experiments use:
   - `app/[group]/page.tsx` as a minimal role/variant index.
-  - `app/[group]/mobile/[experiment]/page.tsx` as dynamic mobile routing.
-  - `app/[group]/screen/[experiment]/page.tsx` as dynamic screen routing.
+  - `app/[group]/[experiment]/mobile/page.tsx` as dynamic mobile routing.
+  - `app/[group]/[experiment]/screen/page.tsx` as dynamic screen routing.
+  - controller/multi-screen systems use
+    `app/[group]/[experiment]/controller/page.tsx` and
+    `app/[group]/[experiment]/screen/[screen]/page.tsx`.
   - `components/[group]/experiments.ts` as the shared variant registry.
   - `components/[group]/[experiment]/mobile.tsx` and `components/[group]/[experiment]/screen.tsx` for implementation.
   - dedicated socket modules under `socket/experiments/[group]/index.mjs`.

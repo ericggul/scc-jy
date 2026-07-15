@@ -21,17 +21,17 @@ Multi-device experiments use this route shape within their assigned family:
 
 ```txt
 app/[group]/page.tsx
-app/[group]/mobile/[experiment]/page.tsx
-app/[group]/screen/[experiment]/page.tsx
+app/[group]/[experiment]/mobile/page.tsx
+app/[group]/[experiment]/screen/page.tsx
 components/[group]/experiments.ts
 components/[group]/[experiment]/mobile.tsx
 components/[group]/[experiment]/screen.tsx
 socket/experiments/[group]/index.mjs
 ```
 
-`app/[group]/page.tsx` should be a minimal index linking to role-specific numbered variants, for example `/finger-skating/mobile/1` and `/finger-skating/screen/1`.
+`app/[group]/page.tsx` should be a minimal index linking to role-specific numbered variants, for example `/finger-skating/1/mobile` and `/finger-skating/1/screen`.
 
-`app/[group]/mobile/[experiment]/page.tsx` and `app/[group]/screen/[experiment]/page.tsx` should route dynamically from the same `components/[group]/experiments.ts` registry.
+`app/[group]/[experiment]/mobile/page.tsx` and `app/[group]/[experiment]/screen/page.tsx` should route dynamically from the same `components/[group]/experiments.ts` registry.
 
 Rules:
 

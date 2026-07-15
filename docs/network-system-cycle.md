@@ -99,11 +99,11 @@ one `drawImage` call per cell.
 
 ## Routes and socket isolation
 
-- `/network-system/controller/cycle`
-- `/network-system/screen/cycle/1`–`4`
-- `/network-system/screen/cycle/left`
-- `/network-system/screen/cycle/right`
-- `/network-system/screen/cycle/whole`
+- `/network-system/cycle/controller`
+- `/network-system/cycle/screen/1`–`4`
+- `/network-system/cycle/screen/left`
+- `/network-system/cycle/screen/right`
+- `/network-system/cycle/screen/whole`
 
 Numbered screens show four key network observables (demand, production, credit,
 inflation) and the shared GDP result. `whole` contains only the equal-width

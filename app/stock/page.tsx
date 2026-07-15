@@ -22,17 +22,17 @@ export default function StockIndexPage() {
         {stockMultiDeviceExperiments.flatMap((experiment) => [
           <Link
             key={`mobile-${experiment.slug}`}
-            href={`/stock/mobile/${experiment.slug}`}
+            href={`/stock/${experiment.slug}/mobile`}
             className="border-b border-white/[0.075] px-5 py-5 text-[28px] font-semibold leading-none hover:bg-white/[0.06]"
           >
-            mobile/{experiment.slug}
+            {experiment.slug}/mobile
           </Link>,
           <Link
             key={`screen-${experiment.slug}`}
-            href={`/stock/screen/${experiment.slug}`}
+            href={`/stock/${experiment.slug}/screen`}
             className="border-b border-white/[0.075] px-5 py-5 text-[28px] font-semibold leading-none hover:bg-white/[0.06]"
           >
-            screen/{experiment.slug}
+            {experiment.slug}/screen
           </Link>,
         ])}
         {stockExperiments.map((experiment) => (

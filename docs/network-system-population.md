@@ -60,6 +60,6 @@ Screen mapping is `1 juvenile`, `2 single`, `3 deceased`, and `4 partnered`. Scr
 
 Routes:
 
-- `/network-system/controller/population`
-- `/network-system/screen/population/1` through `/4`
-- `/network-system/screen/population/whole`
+- `/network-system/population/controller`
+- `/network-system/population/screen/1` through `/4`
+- `/network-system/population/screen/whole`

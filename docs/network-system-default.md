@@ -24,6 +24,6 @@ Each screen is a white field filled upward from the bottom by a black plane whos
 
 Routes:
 
-- `/network-system/controller/default`
-- `/network-system/screen/default/1` through `/4`
-- `/network-system/screen/default/whole`
+- `/network-system/default/controller`
+- `/network-system/default/screen/1` through `/4`
+- `/network-system/default/screen/whole`

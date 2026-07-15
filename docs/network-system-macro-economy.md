@@ -13,12 +13,12 @@
 
 Routes:
 
-- `/network-system/controller/macro-economy`
-- `/network-system/screen/macro-economy/1`
-- `/network-system/screen/macro-economy/2`
-- `/network-system/screen/macro-economy/3`
-- `/network-system/screen/macro-economy/4`
-- `/network-system/screen/macro-economy/whole`
+- `/network-system/macro-economy/controller`
+- `/network-system/macro-economy/screen/1`
+- `/network-system/macro-economy/screen/2`
+- `/network-system/macro-economy/screen/3`
+- `/network-system/macro-economy/screen/4`
+- `/network-system/macro-economy/screen/whole`
 
 The work is **not a calibrated economic simulation, forecast, policy model, or educational replica**. It is a signed system-dynamics experiment for testing whether a state change at one node can be experienced as it reappears—changed in sign, magnitude, and timing—through the other nodes. Values are normalized system coordinates, not empirical rates or indices.
 

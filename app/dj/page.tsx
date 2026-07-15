@@ -16,28 +16,28 @@ export default function DjPage() {
         {djExperiments.map((experiment) => (
           <Link
             key={`controller-${experiment.slug}`}
-            href={`/dj/controller/${experiment.slug}`}
+            href={`/dj/${experiment.slug}/controller`}
             className="border-b border-[#f7f4ec] py-4 text-[clamp(28px,7vw,72px)] font-black leading-none hover:bg-[#f7f4ec] hover:text-[#050505]"
           >
-            controller/{experiment.slug}
+            {experiment.slug}/controller
           </Link>
         ))}
         {djExperiments.flatMap((experiment) => [
           ...experiment.screenIds.map((screenId) => (
             <Link
               key={`screen-${experiment.slug}-${screenId}`}
-              href={`/dj/screen/${experiment.slug}/${screenId}`}
+              href={`/dj/${experiment.slug}/screen/${screenId}`}
               className="border-b border-[#f7f4ec] py-4 text-[clamp(28px,7vw,72px)] font-black leading-none hover:bg-[#f7f4ec] hover:text-[#050505]"
             >
-              screen/{experiment.slug}/{screenId}
+              {experiment.slug}/screen/{screenId}
             </Link>
           )),
           <Link
             key={`screen-${experiment.slug}-whole`}
-            href={`/dj/screen/${experiment.slug}/whole`}
+            href={`/dj/${experiment.slug}/screen/whole`}
             className="border-b border-[#f7f4ec] py-4 text-[clamp(28px,7vw,72px)] font-black leading-none hover:bg-[#f7f4ec] hover:text-[#050505]"
           >
-            screen/{experiment.slug}/whole
+            {experiment.slug}/screen/whole
           </Link>,
         ])}
       </nav>

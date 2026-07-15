@@ -3,16 +3,16 @@
 Routes:
 
 - `/finger-skating`
-- `/finger-skating/mobile/1`
-- `/finger-skating/mobile/2`
-- `/finger-skating/screen/1`
-- `/finger-skating/screen/2`
+- `/finger-skating/1/mobile`
+- `/finger-skating/2/mobile`
+- `/finger-skating/1/screen`
+- `/finger-skating/2/screen`
 
 Files:
 
 - `app/finger-skating/page.tsx`
-- `app/finger-skating/mobile/[experiment]/page.tsx`
-- `app/finger-skating/screen/[experiment]/page.tsx`
+- `app/finger-skating/[experiment]/mobile/page.tsx`
+- `app/finger-skating/[experiment]/screen/page.tsx`
 - `components/finger-skating/experiments.ts`
 - `components/finger-skating/1/mobile.tsx`
 - `components/finger-skating/1/screen.tsx`
@@ -90,7 +90,7 @@ iterative testing reveals a failure or correction, record the generalized cause
 and durable rule here, while keeping experiment-specific details in that
 experiment's document.
 
-`/finger-skating/mobile/2` is a non-scrollable finger-skating grid. The viewport width is divided by the `gridColumnCount` value in `components/finger-skating/2/mobile.tsx`; rows are generated from the viewport height. The mobile sends the same x/y signal shape as experiment 1, with fixed hue and intensity values.
+`/finger-skating/2/mobile` is a non-scrollable finger-skating grid. The viewport width is divided by the `gridColumnCount` value in `components/finger-skating/2/mobile.tsx`; rows are generated from the viewport height. The mobile sends the same x/y signal shape as experiment 1, with fixed hue and intensity values.
 
 Multi-touch behavior for experiment 2 is stream-aware while preserving the original pulse visual. Each finger has a stable `streamId` from pointer down to pointer up/cancel. The screen keeps a separate pulse trail per `streamId`, so a single finger still looks like experiment 1's pulse accumulation/fade, while two or more fingers get independent trails instead of competing for one global pulse list.
 
