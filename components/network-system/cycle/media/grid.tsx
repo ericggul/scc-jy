@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import styled from "styled-components";
-import { cycleRowMajorOrder } from "@/components/network-system/cycle/grid-order";
-import { cycleVideoSegments } from "@/components/network-system/cycle/video-config";
+import { cycleRowMajorOrder } from "@/components/network-system/cycle/media/order";
+import { cycleVideoSegments } from "@/components/network-system/cycle/media/config";
 import type { CycleMediaScreenId } from "@/components/network-system/experiments";
 
 const GridFrame = styled.div`

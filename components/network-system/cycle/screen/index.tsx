@@ -3,14 +3,23 @@
 import { useState } from "react";
 import styled from "styled-components";
 import {
+  CycleVideoGrid,
   presentCycleVideoLayout,
   type CycleVideoLayout,
-} from "@/components/network-system/cycle/growth";
-import { createInitialCycleSnapshot, type CycleSnapshot } from "@/components/network-system/cycle/model";
-import { CycleNodeWrapper } from "@/components/network-system/cycle/node-screen";
-import { useCycleSocket } from "@/components/network-system/cycle/use-cycle-socket";
-import CycleVideoGrid from "@/components/network-system/cycle/video-grid";
-import type { CycleMediaScreenId, NetworkSystemScreenId } from "@/components/network-system/experiments";
+} from "@/components/network-system/cycle/media";
+import { createInitialCycleSnapshot } from "@/components/network-system/cycle/model";
+import CycleEmploymentScreen from "@/components/network-system/cycle/employment";
+import CycleEmploymentEmojiScreen from "@/components/network-system/cycle/employment/emoji";
+import CycleGraphsScreen from "@/components/network-system/cycle/graphs";
+import CycleTerminalGraphsScreen from "@/components/network-system/cycle/graphs/terminal";
+import CycleNewsScreen from "@/components/network-system/cycle/news";
+import { useCycleSocket } from "@/components/network-system/cycle/transport";
+import type {
+  CycleMediaScreenId,
+  CycleEmploymentScreenId,
+  CycleGraphScreenId,
+  CycleNewsScreenId,
+} from "@/components/network-system/experiments";
 
 const Page = styled.main`
   position: fixed;
@@ -36,13 +45,6 @@ const Pane = styled.div`
   overflow: hidden;
 `;
 
-const DesignCanvas = styled.div`
-  position: absolute;
-  inset: 0;
-  container-name: network-system-screen;
-  container-type: size;
-`;
-
 function VideoPane({ side, layout }: { side: CycleMediaScreenId; layout: CycleVideoLayout }) {
   const activeCount = side === "left" ? layout.leftCount : layout.rightCount;
   const dimension = side === "left" ? layout.leftDimension : layout.rightDimension;
@@ -64,15 +66,31 @@ export function CycleVideoScreenExperience({ sides }: { sides: readonly CycleMed
   return <Page><WholeStage>{sides.map((side) => <VideoPane key={side} side={side} layout={layout} />)}</WholeStage></Page>;
 }
 
-function CycleNodeScreen({ screenId }: { screenId: NetworkSystemScreenId }) {
-  const [snapshot, setSnapshot] = useState<CycleSnapshot>(() => createInitialCycleSnapshot());
-  useCycleSocket({ role: "screen", onState: setSnapshot });
-  return <Page><DesignCanvas><CycleNodeWrapper screenId={screenId} snapshot={snapshot} /></DesignCanvas></Page>;
-}
-
-export default function CycleScreen({ screenId }: { screenId: NetworkSystemScreenId | CycleMediaScreenId }) {
+export default function CycleScreen({
+  screenId,
+}: {
+  screenId:
+    | CycleNewsScreenId
+    | CycleEmploymentScreenId
+    | CycleGraphScreenId
+    | CycleMediaScreenId;
+}) {
+  if (screenId === "news") {
+    return <CycleNewsScreen />;
+  }
+  if (screenId === "employment") {
+    return <CycleEmploymentScreen />;
+  }
+  if (screenId === "employment-2") {
+    return <CycleEmploymentEmojiScreen />;
+  }
+  if (screenId === "graphs") {
+    return <CycleGraphsScreen />;
+  }
+  if (screenId === "graphs-2") {
+    return <CycleTerminalGraphsScreen />;
+  }
   if (screenId === "left" || screenId === "right") {
     return <CycleVideoScreenExperience sides={[screenId]} />;
   }
-  return <CycleNodeScreen screenId={screenId} />;
 }

@@ -4,10 +4,10 @@ import {
   cycleDimensionFromCount,
   cycleVideoCountsFromGrowth,
   presentCycleVideoLayout,
-} from "./growth.ts";
-import { createInitialCycleSnapshot } from "./model.ts";
-import { cycleVideoSegments } from "./video-config.ts";
-import { cycleRowMajorOrder } from "./grid-order.ts";
+} from "./presenter.ts";
+import { createInitialCycleSnapshot } from "../model/index.ts";
+import { cycleVideoSegments } from "./config.ts";
+import { cycleRowMajorOrder } from "./order.ts";
 
 test("absolute GDP growth determines the exact video count", () => {
   assert.deepEqual(cycleVideoCountsFromGrowth(0), {

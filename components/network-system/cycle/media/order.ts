@@ -1,4 +1,7 @@
-export type GridCell = { column: number; row: number };
+export type GridCell = {
+  column: number;
+  row: number;
+};
 
 export function cycleRowMajorOrder(dimension: number): GridCell[] {
   const size = Math.max(1, Math.floor(dimension));

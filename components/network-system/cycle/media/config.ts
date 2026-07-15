@@ -1,3 +1,4 @@
+// Segment timing is media configuration, separate from grid presentation.
 import type { CycleMediaScreenId } from "@/components/network-system/experiments";
 
 export type CycleVideoSegment = {

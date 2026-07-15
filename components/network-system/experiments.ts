@@ -12,7 +12,15 @@ export const networkSystemExperiments = [
   {
     slug: "cycle",
     label: "network-system/cycle",
-    screenIds: ["1", "2", "3", "4", "left", "right"],
+    screenIds: [
+      "news",
+      "employment",
+      "employment-2",
+      "graphs",
+      "graphs-2",
+      "left",
+      "right",
+    ],
   },
   {
     slug: "population",
@@ -32,12 +40,22 @@ export type NetworkSystemExperimentSlug =
 export const networkSystemScreenIds = ["1", "2", "3", "4"] as const;
 
 export const cycleMediaScreenIds = ["left", "right"] as const;
+export const cycleNewsScreenIds = ["news"] as const;
+export const cycleEmploymentScreenIds = ["employment", "employment-2"] as const;
+export const cycleGraphScreenIds = ["graphs", "graphs-2"] as const;
 
 export type NetworkSystemScreenId = (typeof networkSystemScreenIds)[number];
 export type CycleMediaScreenId = (typeof cycleMediaScreenIds)[number];
+export type CycleNewsScreenId = (typeof cycleNewsScreenIds)[number];
+export type CycleEmploymentScreenId =
+  (typeof cycleEmploymentScreenIds)[number];
+export type CycleGraphScreenId = (typeof cycleGraphScreenIds)[number];
 export type NetworkSystemScreenRoute =
   | NetworkSystemScreenId
   | CycleMediaScreenId
+  | CycleNewsScreenId
+  | CycleEmploymentScreenId
+  | CycleGraphScreenId
   | "whole";
 
 export function isNetworkSystemExperimentSlug(
@@ -58,6 +76,24 @@ export function isCycleMediaScreenId(
   value: string,
 ): value is CycleMediaScreenId {
   return cycleMediaScreenIds.some((screenId) => screenId === value);
+}
+
+export function isCycleNewsScreenId(
+  value: string,
+): value is CycleNewsScreenId {
+  return cycleNewsScreenIds.some((screenId) => screenId === value);
+}
+
+export function isCycleEmploymentScreenId(
+  value: string,
+): value is CycleEmploymentScreenId {
+  return cycleEmploymentScreenIds.some((screenId) => screenId === value);
+}
+
+export function isCycleGraphScreenId(
+  value: string,
+): value is CycleGraphScreenId {
+  return cycleGraphScreenIds.some((screenId) => screenId === value);
 }
 
 export function getNetworkSystemScreenIds(

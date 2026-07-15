@@ -9,7 +9,7 @@ It is not bound directly to one arbitrary node and it does not use the old
 
 The causal chain is:
 
-`directed edge weights → nine-node economic dynamics → production path → annual GDP growth → video count`
+`directed edge weights → nine-node economic dynamics → production path → annual GDP growth → video count / headline feed`
 
 The original `network-system/macro-economy` model, UI, socket events, room, and
 runtime are unchanged.
@@ -100,18 +100,114 @@ one `drawImage` call per cell.
 ## Routes and socket isolation
 
 - `/network-system/cycle/controller`
-- `/network-system/cycle/screen/1`–`4`
+- `/network-system/cycle/screen/news`
+- `/network-system/cycle/screen/employment`
+- `/network-system/cycle/screen/employment-2`
+- `/network-system/cycle/screen/graphs`
+- `/network-system/cycle/screen/graphs-2`
 - `/network-system/cycle/screen/left`
 - `/network-system/cycle/screen/right`
 - `/network-system/cycle/screen/whole`
 
-Numbered screens show four key network observables (demand, production, credit,
-inflation) and the shared GDP result. `whole` contains only the equal-width
-left/right video panes.
+`news` is one of the non-video Cycle screens. It is a full-height stack of
+moving headline rows, not a conventional news page: no masthead, cards, source
+labels, timestamps, or market chrome. It derives all nine model sectors directly
+from each abstract Cycle snapshot. Each sector owns fifty pre-written English
+economic-daily headline templates: ten each for surging, rising, steady, falling,
+and plunging conditions (450 total). The presenter calculates the recent
+percentage change for each sector, resolves the matching template's
+`{{pct}}` value, and rotates only within that sector and regime. A row changes
+when a sector crosses a motion band; headline cadence becomes faster as combined
+current movement intensity increases. This browser-side presenter is modular and
+does not add presentation state to the socket server. `whole` contains only
+the equal-width left/right video panes.
+
+`employment` is a second independent non-video screen. It shows a fixed field
+of 112 family glyphs in an 8×14 portrait grid (transposed to 14×8 in landscape).
+It binds directly and only to the fourth Cycle node, `employment`. The browser
+uses the current absolute model state from every snapshot, with the model's
+initial `0.03` state as the normal baseline. A value at or above that baseline
+leaves every family happy. A lower current value changes families into a
+laid-off, crying state in row-major order:
+
+`distressedCount = ceil(clamp((0.03 − currentEmployment) / 0.58, 0, 1) × 112)`
+
+`0.03` or higher means exactly zero distressed families; `−0.26` means 56;
+`−0.55` or lower fills the field. Recovery returns the same stable family slots
+to their happy state. This mapping is presentation logic only and does not
+change the Cycle socket payload.
+
+The employment screen's participant observes families as the network moves.
+Its primary parameter is the employment drawdown, and its perceptual job is to
+make job loss and recovery immediately countable without a metric dashboard.
+There is no direct interaction on this screen; controller edge changes remain
+the cause. The neutral surface, black glyphs, typography-free field, and short
+state transition keep it in the same restrained system family as the news and
+video outputs. Removing the grid or the two family states would remove the
+employment relation; labels, badges, legends, borders, and decorative status
+elements are intentionally absent.
+
+`graphs` observes all nine current Cycle node values in one responsive 3×3
+field. It follows the established `macro-economy/whole` family: one dark stage,
+nine equal neutral panes, shared type and semantic trend colors, and graphics
+that scale from each pane's own container. Each pane contains only its full node
+name, current absolute model value, centered zero reference, and the latest 96
+history samples plus the newest 100ms snapshot value. Its vertical domain is
+symmetrical around zero and independently expands to contain that node's recent
+extremes, including abnormal values. The participant's perceptual job is to see
+phase, sign, amplitude, and propagation across the nine-node network at once;
+there is no interaction or presentation state on the server. Removing labels,
+current values, zero references, or traces would reduce that comparison; other
+dashboard furniture is intentionally absent. `whole` remains the existing
+left/right video composition and is not changed by this route.
+
+`employment-2` replaces the family illustration with a 40×40 field of 1,600
+native 🙂 and 😢 emoji. It uses the current `employment` node directly and is
+balanced at zero: 800 smile and 800 cry. Positive employment converts crying
+faces to smiles; negative employment converts smiles to crying faces. The
+display reaches all smiles at `+2.00` and all crying at `−2.00`, keeping the
+normal default oscillation within a partial, legible range. It does
+not mount 1,600 React elements. The browser rasterizes each emoji once into an
+offscreen canvas, draws the full field on resize, and redraws only the slots
+whose state changed. Every 100ms snapshot is reflected immediately with no
+rate limiter, delay, moving average, or history window. At `0` exactly 800 cry;
+at `+0.50` 600 cry; at `−0.50` 1,000 cry. The
+40×40 field sits in a centered `min(100vw, 100vh)` square: horizontal displays
+therefore use a centered `100vh × 100vh` field instead of stretching emojis
+across the viewport. The surrounding surface uses the same warm-white color as
+the field, with no black background.
+
+`graphs-2` preserves the same nine nodes, current snapshot cadence, history,
+and controller-spatial 3×3 order as v1 while applying the functional grammar
+of `stock/2`: compact fixed-width numbers, stable panel alignment, orange series
+codes, cyan traces, semantic one-second changes, readable period high/low rows,
+and a chart-dominant panel proportion. Its terminal shell now follows the same
+operational hierarchy: menu/reset-selection control, loaded monitor label,
+functional series command field and GO action, nine-series quote ribbon, actual
+history range/interval toolbar, selectable panels, and the 3×3 chart field. It
+contains no connection state or snapshot label. Each internal node is translated into a recognizable economic
+observable: household consumption growth, industrial production growth,
+business inventories growth, hourly earnings growth, payroll employment
+growth, business fixed investment growth, CPI inflation, policy interest rate,
+and private credit growth. This wrapper is justified because the participant's
+task is dense simultaneous comparison of nine economic series, not because the
+subject merely suggests a terminal. Removing current value, change, history,
+or high/low range would reduce that comparison; command inputs, fake sessions,
+news, badges, and unrelated terminal functions are intentionally absent.
 
 Cycle uses room `experiment:network-system:cycle`; every event begins with
 `network-system-cycle:`. It imports only the Cycle model and never the original
 macro-economy model.
+
+## Component boundaries
+
+Cycle keeps abstract state in `model/`, the browser socket boundary in
+`transport/`, controller graph interaction in `controller/`, video code in
+`media/`, the headline feed in `news/`, the family field in `employment/`, the
+emoji field in `employment/emoji/`, both nine-node trace fields in `graphs/`,
+and route-facing screen composition in
+`screen/`. This leaves each device and media concern independently
+replaceable without changing public routes.
 
 ## Video contract
 

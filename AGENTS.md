@@ -127,6 +127,15 @@ This version has breaking changes — APIs, conventions, and file structure may 
   `components/realtime/[group]/...`.
 - Important or complex experiments (`dj`, `finger-skating`, `network-system`,
   `sns`, and `stock`) remain directly under both `app/` and `components/`.
+- Keep component families layered by responsibility rather than accumulating
+  flat files in an experiment root. Named capabilities belong in a matching
+  feature folder such as `news/`, `media/`, or `controller/`; domain data
+  belongs in `model/`; browser transport belongs in `transport/`; and route
+  composition belongs in `screen/` or `mobile/`. Each folder's `index`
+  is its public entry point. When touching an existing flat family, move the
+  relevant files into this structure instead of adding another root-level file.
+- Co-locate pure tests with the feature or presenter they exercise. Do not use
+  a generic `utils/` folder as an escape hatch for feature-specific logic.
 - Do not create literal numbered route folders such as `app/(standalone)/[group]/1/page.tsx`
   for single-device experiment variants. Numbered variants must go through
   `app/[group]/[experiment]/page.tsx`.

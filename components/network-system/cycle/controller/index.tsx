@@ -2,9 +2,13 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import styled from "styled-components";
-import { cycleEdges, cycleNodes, getCycleNode } from "@/components/network-system/cycle/graph";
+import {
+  cycleEdges,
+  cycleNodes,
+  getCycleNode,
+} from "@/components/network-system/cycle/controller/graph";
 import { createInitialCycleSnapshot, cycleNodeLabels, type CycleNodeId } from "@/components/network-system/cycle/model";
-import { useCycleSocket } from "@/components/network-system/cycle/use-cycle-socket";
+import { useCycleSocket } from "@/components/network-system/cycle/transport";
 
 const Page=styled.main`position:fixed;inset:0;overflow:hidden;background:#f2f1ed;color:#11110f;font-family:Arial,Helvetica,sans-serif;touch-action:none;`;
 const Graph=styled.svg`position:absolute;inset:0;width:100%;height:100%;pointer-events:none;`;

@@ -1,5 +1,4 @@
-import type { NetworkSystemScreenId } from "@/components/network-system/experiments";
-
+// Client-side mirror of the Cycle domain snapshot.
 export const cycleNodeIds = [
   "household-demand",
   "production",
@@ -78,13 +77,6 @@ export const cycleNodeLabels: Record<CycleNodeId, string> = {
   credit: "CREDIT",
   inflation: "INFLATION",
   "policy-rate": "POLICY RATE",
-};
-
-export const cycleScreenNodeMap: Record<NetworkSystemScreenId, CycleNodeId> = {
-  "1": "household-demand",
-  "2": "production",
-  "3": "credit",
-  "4": "inflation",
 };
 
 const initialValues: Record<CycleNodeId, number> = {

@@ -17,7 +17,10 @@ import CycleScreen, {
 } from "@/components/network-system/cycle/screen";
 import {
   cycleMediaScreenIds,
+  isCycleEmploymentScreenId,
+  isCycleGraphScreenId,
   isCycleMediaScreenId,
+  isCycleNewsScreenId,
   isNetworkSystemExperimentSlug,
   isNetworkSystemScreenId,
   isNetworkSystemScreenRoute,
@@ -61,7 +64,12 @@ export default async function NetworkSystemScreenPage({
     if (screen === "whole") {
       return <CycleVideoScreenExperience sides={cycleMediaScreenIds} />;
     }
-    if (!isNetworkSystemScreenId(screen) && !isCycleMediaScreenId(screen)) {
+    if (
+      !isCycleNewsScreenId(screen) &&
+      !isCycleEmploymentScreenId(screen) &&
+      !isCycleGraphScreenId(screen) &&
+      !isCycleMediaScreenId(screen)
+    ) {
       notFound();
     }
     return <CycleScreen screenId={screen} />;

@@ -1,5 +1,6 @@
 "use client";
 
+// Cycle's sole browser transport boundary.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { io, type Socket } from "socket.io-client";
 import type {
@@ -49,9 +50,11 @@ function getSocketOrigin() {
 export function useCycleSocket({
   role,
   onState,
+  retainState = true,
 }: {
   role: CycleRole;
   onState?: (state: CycleSnapshot) => void;
+  retainState?: boolean;
 }) {
   const socketRef = useRef<Socket | null>(null);
   const onStateRef = useRef(onState);
@@ -78,7 +81,7 @@ export function useCycleSocket({
     socketRef.current = socket;
 
     const receiveState = (nextState: CycleSnapshot) => {
-      setState(nextState);
+      if (retainState) setState(nextState);
       onStateRef.current?.(nextState);
     };
 
@@ -101,7 +104,7 @@ export function useCycleSocket({
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [role]);
+  }, [role, retainState]);
 
   const sendIntervention = useCallback((input: CycleInterventionInput) => {
     socketRef.current?.emit(events.interventionIn, input);

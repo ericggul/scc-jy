@@ -1,3 +1,4 @@
+// Presentation mapping from the abstract GDP result to video grid state.
 import type { CycleSnapshot } from "@/components/network-system/cycle/model";
 
 export type CycleVideoCounts = {

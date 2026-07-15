@@ -1,4 +1,7 @@
-import type { CycleEdgeId, CycleNodeId } from "@/components/network-system/cycle/model";
+import type {
+  CycleEdgeId,
+  CycleNodeId,
+} from "@/components/network-system/cycle/model";
 
 export const cycleNodes: Array<{
   id: CycleNodeId;
