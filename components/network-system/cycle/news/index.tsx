@@ -3,13 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { keyframes } from "styled-components";
 import styled from "styled-components";
-import {
-  changedCycleNewsSignals,
-  cycleNewsCadence,
-  presentCycleNewsDigest,
-  type CycleNewsDigest,
-  type CycleNewsSignal,
-} from "@/components/network-system/cycle/news/presenter";
+import { changedCycleNewsSignals, cycleNewsCadence, presentCycleNewsDigest, type CycleNewsDigest, type CycleNewsSignal } from "@/components/network-system/cycle/news/presenter";
 import { createInitialCycleSnapshot } from "@/components/network-system/cycle/model";
 import { useCycleSocket } from "@/components/network-system/cycle/transport";
 
@@ -88,18 +82,10 @@ const Headline = styled.span<{ $phase: HeadlinePhase }>`
   display: block;
   flex: 0 0 auto;
   min-width: ${100 / HEADLINE_DENSITY}vw;
-  padding-inline: clamp(
-    ${12 / HEADLINE_DENSITY}px,
-    ${2.25 / HEADLINE_DENSITY}vw,
-    ${34 / HEADLINE_DENSITY}px
-  );
+  padding-inline: clamp(${12 / HEADLINE_DENSITY}px, ${2.25 / HEADLINE_DENSITY}vw, ${34 / HEADLINE_DENSITY}px);
   overflow: hidden;
   color: inherit;
-  font-size: clamp(
-    ${15 / HEADLINE_DENSITY}px,
-    min(${2.8 / HEADLINE_DENSITY}vw, ${4.5 / HEADLINE_DENSITY}dvh),
-    ${52 / HEADLINE_DENSITY}px
-  );
+  font-size: clamp(${15 / HEADLINE_DENSITY}px, min(${2.8 / HEADLINE_DENSITY}vw, ${4.5 / HEADLINE_DENSITY}dvh), ${52 / HEADLINE_DENSITY}px);
   font-weight: 700;
   letter-spacing: -0.045em;
   line-height: 0.9;
@@ -115,19 +101,10 @@ const Headline = styled.span<{ $phase: HeadlinePhase }>`
 function rowCountForViewport() {
   if (typeof window === "undefined") return 10;
   const height = window.visualViewport?.height ?? window.innerHeight;
-  return Math.max(
-    9 * HEADLINE_DENSITY,
-    Math.min(
-      26 * HEADLINE_DENSITY,
-      Math.round(height / (80 / HEADLINE_DENSITY)),
-    ),
-  );
+  return Math.max(9 * HEADLINE_DENSITY, Math.min(26 * HEADLINE_DENSITY, Math.round(height / (80 / HEADLINE_DENSITY))));
 }
 
-function makeRows(
-  signals: readonly CycleNewsSignal[],
-  rowCount: number,
-) {
+function makeRows(signals: readonly CycleNewsSignal[], rowCount: number) {
   const fallback: CycleNewsSignal = {
     id: "production",
     headline: "ECONOMIC CONDITIONS HOLD",
@@ -144,43 +121,23 @@ function makeRows(
   });
 }
 
-function appendLatestSignals(
-  current: readonly CycleNewsSignal[],
-  incoming: readonly CycleNewsSignal[],
-) {
+function appendLatestSignals(current: readonly CycleNewsSignal[], incoming: readonly CycleNewsSignal[]) {
   const incomingIds = new Set(incoming.map((signal) => signal.id));
-  return [
-    ...current.filter((signal) => !incomingIds.has(signal.id)),
-    ...incoming,
-  ].slice(-MAX_PENDING_HEADLINES);
+  return [...current.filter((signal) => !incomingIds.has(signal.id)), ...incoming].slice(-MAX_PENDING_HEADLINES);
 }
 
-function resizeRows(
-  rows: readonly FeedRow[],
-  rowCount: number,
-  signals: readonly CycleNewsSignal[],
-) {
+function resizeRows(rows: readonly FeedRow[], rowCount: number, signals: readonly CycleNewsSignal[]) {
   if (rows.length === rowCount) return [...rows];
   if (rows.length > rowCount) return rows.slice(rows.length - rowCount);
 
-  const extension = makeRows(signals, rowCount - rows.length).map(
-    (row, index) => ({
-      ...row,
-      key: `slot-${rows.length + index}`,
-    }),
-  );
+  const extension = makeRows(signals, rowCount - rows.length).map((row, index) => ({
+    ...row,
+    key: `slot-${rows.length + index}`,
+  }));
   return [...rows, ...extension];
 }
 
-function TypewriterHeadline({
-  headline,
-  transitionKey,
-  previousHeadline,
-}: {
-  headline: string;
-  transitionKey?: string;
-  previousHeadline?: string;
-}) {
+function TypewriterHeadline({ headline, transitionKey, previousHeadline }: { headline: string; transitionKey?: string; previousHeadline?: string }) {
   const [typedHeadline, setTypedHeadline] = useState(headline);
   const [phase, setPhase] = useState<HeadlinePhase>("rest");
   const [completedTransitionKey, setCompletedTransitionKey] = useState<string>();
@@ -202,10 +159,7 @@ function TypewriterHeadline({
       const duration = Math.max(260, Math.min(680, headline.length * 13));
       const type = (now: number) => {
         if (cancelled) return;
-        const characterCount = Math.min(
-          headline.length,
-          Math.ceil(((now - startedAt) / duration) * headline.length),
-        );
+        const characterCount = Math.min(headline.length, Math.ceil(((now - startedAt) / duration) * headline.length));
         setTypedHeadline(headline.slice(0, characterCount));
         if (characterCount < headline.length) {
           frame = window.requestAnimationFrame(type);
@@ -225,16 +179,8 @@ function TypewriterHeadline({
     };
   }, [headline, transitionKey]);
 
-  const isEntering =
-    transitionKey !== undefined && transitionKey !== completedTransitionKey;
-  const visibleHeadline =
-    !transitionKey
-      ? headline
-      : phase === "typing"
-        ? typedHeadline
-        : isEntering || phase === "clearing"
-          ? (previousHeadline ?? typedHeadline)
-          : typedHeadline;
+  const isEntering = transitionKey !== undefined && transitionKey !== completedTransitionKey;
+  const visibleHeadline = !transitionKey ? headline : phase === "typing" ? typedHeadline : isEntering || phase === "clearing" ? (previousHeadline ?? typedHeadline) : typedHeadline;
   const visiblePhase = transitionKey ? phase : "rest";
 
   return (
@@ -249,9 +195,7 @@ function TypewriterHeadline({
 
 export default function CycleNewsScreen() {
   const [rowCount, setRowCount] = useState(INITIAL_ROW_COUNT);
-  const [rows, setRows] = useState<FeedRow[]>(() =>
-    makeRows(initialDigest.signals, INITIAL_ROW_COUNT),
-  );
+  const [rows, setRows] = useState<FeedRow[]>(() => makeRows(initialDigest.signals, INITIAL_ROW_COUNT));
   const digestRef = useRef<CycleNewsDigest>(initialDigest);
   const signalsRef = useRef<readonly CycleNewsSignal[]>(initialDigest.signals);
   const pendingRef = useRef<CycleNewsSignal[]>([]);
@@ -290,27 +234,15 @@ export default function CycleNewsScreen() {
       const nextDigest = presentCycleNewsDigest(snapshot);
       const previousCadence = cycleNewsCadence(activityRef.current);
       const nextCadence = cycleNewsCadence(nextDigest.activity);
-      const isNewRun =
-        runIdRef.current !== null && runIdRef.current !== snapshot.runId;
+      const isNewRun = runIdRef.current !== null && runIdRef.current !== snapshot.runId;
       let shouldFlush = false;
 
       if (runIdRef.current === null || isNewRun) {
         pendingRef.current = [...nextDigest.signals];
-        setRows(
-          makeRows(
-            nextDigest.signals,
-            rowCountRef.current,
-          ),
-        );
+        setRows(makeRows(nextDigest.signals, rowCountRef.current));
       } else {
-        const changedSignals = changedCycleNewsSignals(
-          digestRef.current,
-          nextDigest,
-        );
-        pendingRef.current = appendLatestSignals(
-          pendingRef.current,
-          changedSignals,
-        );
+        const changedSignals = changedCycleNewsSignals(digestRef.current, nextDigest);
+        pendingRef.current = appendLatestSignals(pendingRef.current, changedSignals);
 
         shouldFlush = changedSignals.length > 0;
       }
@@ -340,9 +272,7 @@ export default function CycleNewsScreen() {
       if (cancelled) return;
       const signals = signalsRef.current;
       const updates = Array.from({ length: HEADLINE_DENSITY }, () => {
-        const next =
-          pendingRef.current.shift() ??
-          signals[signalCursorRef.current++ % Math.max(1, signals.length)];
+        const next = pendingRef.current.shift() ?? signals[signalCursorRef.current++ % Math.max(1, signals.length)];
         return next
           ? {
               signal: next,
@@ -356,12 +286,7 @@ export default function CycleNewsScreen() {
         rowCursorRef.current += updates.length;
         setRows((current) => {
           if (current.length === 0) return current;
-          const updatesByRowIndex = new Map(
-            updates.map((update, index) => [
-              (firstRowIndex + index) % current.length,
-              update,
-            ]),
-          );
+          const updatesByRowIndex = new Map(updates.map((update, index) => [(firstRowIndex + index) % current.length, update]));
           return current.map((row, index) =>
             updatesByRowIndex.has(index)
               ? {
@@ -396,18 +321,9 @@ export default function CycleNewsScreen() {
     <Stage aria-label="Economic conditions headline feed">
       <Feed $rowCount={rowCount}>
         {rows.map((row, index) => (
-          <HeadlineRow
-            key={row.key}
-            $intensity={row.intensity}
-          >
-            <HeadlineTrack
-              $duration={(14 + (index % 5) * 1.25) / HEADLINE_DENSITY}
-            >
-              <TypewriterHeadline
-                headline={row.headline}
-                transitionKey={row.transitionKey}
-                previousHeadline={row.previousHeadline}
-              />
+          <HeadlineRow key={row.key} $intensity={row.intensity}>
+            <HeadlineTrack $duration={(14 + (index % 5) * 1.25) / HEADLINE_DENSITY}>
+              <TypewriterHeadline headline={row.headline} transitionKey={row.transitionKey} previousHeadline={row.previousHeadline} />
             </HeadlineTrack>
           </HeadlineRow>
         ))}

@@ -28,6 +28,10 @@ body {
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
 
+.sns-viewport-lock {
+  touch-action: pan-x pan-y;
+}
+
 * {
   box-sizing: border-box;
 }

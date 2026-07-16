@@ -1,0 +1,106 @@
+# SNS YouTube 1
+
+Route: `/sns/youtube/1`
+
+## Intent
+
+This is a mobile-first, responsive long-form video platform built from
+YouTube's information hierarchy. It is not a generic media dashboard or a
+vertical short-video viewer: discovery, playback, channel context, comments,
+queueing, and personal library actions remain connected so a viewer can move
+from a recommendation to a sustained viewing session without losing their
+place.
+
+### Design procedure
+
+1. **Participant situation:** a person is deciding whether to begin, continue,
+   save, discuss, or queue a video while moving between a phone and a larger
+   browser.
+2. **Primary parameter:** the viewer's current video context — especially what
+   is playing, how much has been watched, and what can follow it.
+3. **Perceptual job:** make the distinction between a new recommendation, an
+   unfinished video, an active video, and an item saved for later immediately
+   legible.
+4. **Interaction job:** provide direct paths to play, pause, search, save,
+   subscribe, comment, share, add to queue, and resume.
+5. **Wrapper justification:** a video platform's established grammar is
+   appropriate because the participant is navigating time-based media, its
+   source, its queue, and its discussion — not because "video" needs a
+   media-themed dashboard.
+6. **System family:** the phone home screen is one continuous stream of full
+   width 16:9 previews and compact metadata rows. Wide screens use that exact
+   record structure in a recommendation grid. White content surface, dense
+   black type, neutral action pills, a red playback/progress signal, and the
+   same channel identity remain consistent across views.
+7. **Removal test:** there are no promotional hero cards, decorative metrics,
+   fake live indicators, or ornamental dividers. Red remains only for the play
+   mark, live state, and watched-time progress; removing any of those would
+   reduce playback legibility.
+
+The only expressive gesture is the real time-axis: a thin red progress line
+appears where it helps the viewer resume or control a video. It is not used as
+a generic accent.
+
+## Screen and interaction map
+
+The route deliberately combines the following YouTube-derived navigation and
+viewing states rather than presenting a single static feed:
+
+1. Continuous home recommendation feed
+2. Mobile bottom navigation
+3. Desktop expanded and collapsed sidebar
+4. Mobile slide-out navigation
+5. Explore category previews and trending feed
+6. Subscribed-channel avatar row and latest feed
+7. Search entry, recent-search fallback, working video/channel/recent-upload filters, and channel results
+8. Video overflow menu
+9. Watch player: autoplay, pause/play, mute, elapsed time, direct scrubber, speed settings, download feedback, and full screen
+10. Description collapsed and expanded
+11. Mutual-exclusion like/dislike, save-to-Watch-later, share, download, and subscription states
+12. Share sheet with clipboard link copying; comment sorting, likes, composer, and persistent threaded replies
+13. Continuous up-next feed and queue
+14. Notification and account popovers
+15. Desktop create menu with upload, live, and post actions
+16. Channel Home, Videos, Playlists, and interactive Community tabs
+17. Personal library, history, watch-later list, and playlist detail
+18. Persistent mini-player with independent pause/play after leaving the watch view
+
+## Performance and data
+
+- All creators, videos, comments, collections, and playlists are deterministic
+  local model data. There are no video, social, or search API calls.
+- Remote media uses configured Unsplash image optimization, `next/image`,
+  accurate alt text for thumbnails, lazy loading for recommendation imagery,
+  and responsive `sizes` values.
+- IDs are stable in the model layer and are used as React keys. User-created
+  comments receive a monotonic local ID.
+- The player is a visual interaction model, not a media fetcher; its progress,
+  state, queue, comments, likes, subscriptions, saves, and overlays remain
+  client-local.
+- Selecting a video resets the document to the top and starts its local
+  playback state immediately. Playback time is tracked as seconds, rendered as
+  a real `m:ss` or `h:mm:ss` value, and can be changed through the player
+  scrubber.
+- Both home and watch-page recommendations begin with a local batch and extend
+  in further batches as the viewer approaches the document bottom, reusing
+  deterministic records with stable per-item keys. The mobile bottom
+  navigation is hidden while watching so it cannot cover the continuous
+  recommendation feed.
+- The `/sns` route layout emits its own static viewport configuration with
+  `maximumScale: 1` and `userScalable: false`; its wrapper also sets
+  `touch-action: pan-x pan-y`. Pinch-to-zoom is therefore disabled for every
+  SNS route without changing the rest of the app.
+
+## Files
+
+- `components/sns/youtube/1/model/types.ts`
+- `components/sns/youtube/1/model/data.ts`
+- `components/sns/youtube/1/screen/icons.tsx`
+- `components/sns/youtube/1/screen/navigation.tsx`
+- `components/sns/youtube/1/screen/video-card.tsx`
+- `components/sns/youtube/1/screen/index.tsx`
+- `components/sns/youtube/1/index.ts`
+
+The dynamic SNS route remains a thin registry/switch. The interface stays in
+the YouTube component family and does not change the existing feed or
+navigation experiments.

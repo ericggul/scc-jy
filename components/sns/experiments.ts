@@ -12,6 +12,7 @@ export const snsExperiments = [
     slug: "1",
     label: "sns/navigation/1",
   },
+  { key: "youtube/1", category: "youtube", slug: "1", label: "sns/youtube/1" },
 ] as const;
 
 export type SnsExperiment = (typeof snsExperiments)[number];

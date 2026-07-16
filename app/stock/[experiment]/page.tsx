@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import type { ComponentType } from "react";
 import StockTwo from "@/components/stock/2";
+import StockThree from "@/components/stock/3";
 import StockDefault from "@/components/stock/default";
 import {
   isStockDirectRoute,
@@ -12,6 +13,7 @@ import {
 const components: Record<StockDirectRoute, ComponentType> = {
   default: StockDefault,
   "2": StockTwo,
+  "3": StockThree,
 };
 
 export function generateStaticParams() {

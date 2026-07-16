@@ -6,6 +6,7 @@ Routes:
 - `/sns/feed/1`
 - `/sns/navigation/default`
 - `/sns/navigation/1`
+- `/sns/youtube/1`
 
 Files:
 
@@ -16,6 +17,8 @@ Files:
 - `components/sns/feed/1/data.ts`
 - `components/sns/navigation/default/index.tsx`
 - `components/sns/navigation/1/index.tsx`
+- `components/sns/youtube/1/`
+- `docs/sns-youtube.md`
 
 Intent:
 
@@ -38,6 +41,12 @@ modern worker's lifetime to birth, education, work, hospital, and death. Its
 bottom-left `24h / Life` switch preserves separate interaction state for both
 timescales so they can be compared without leaving the route.
 
+`/sns/youtube/1` is a mobile-first long-form video platform experiment. It
+uses YouTube's navigation and viewing grammar across discovery, search, watch,
+comments, channel, library, queue, and account states while avoiding a
+short-video-only interaction. Its model, interaction map, and visual rationale
+are documented in `docs/sns-youtube.md`.
+
 The icon system must communicate these cycles without visible explanatory
 text. At the rendered 28-pixel size, prefer established universal pictograms
 and reduce each stage to its strongest recognition cue: a baby bottle, open
@@ -53,6 +62,9 @@ Interaction:
 
 - Vertical scroll extends the feed in batches and wraps through the 100-post
   dataset.
+- Every `/sns` route uses the nested `app/sns/layout.tsx` viewport policy:
+  `maximumScale: 1`, `userScalable: false`, and a `touch-action: pan-x pan-y`
+  wrapper prevent two-finger page zoom without changing routes outside SNS.
 - Each post has a horizontally snapping media carousel with two to five images.
 - The active media index is tracked per carousel and shown as progress dots.
 - Like, save, comment, and send are present as direct feed controls.

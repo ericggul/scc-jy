@@ -12,6 +12,10 @@ It starts:
 - Socket.IO over HTTPS on port 4000.
 - Root CA download from the Socket.IO HTTPS server at `/cert`.
 
+Before starting either process, the runner checks that both ports are available.
+This prevents a failed second launch from briefly starting a relay whose paired
+Next process cannot start.
+
 This mirrors the local Banpo-Xism shape: the app and socket relay are separate
 local HTTPS processes, with the client connecting to the same hostname and the
 socket port.
