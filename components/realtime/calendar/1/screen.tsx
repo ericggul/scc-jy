@@ -24,28 +24,19 @@ type CalendarDay = {
   isToday: boolean;
 };
 
-type CalendarViewMode = "compact" | "cell";
 type AudibleEventKind = Extract<LifeEventKind, "birthday" | "memorial">;
 
-// Experimental switch: keep the compact-card animation implementation intact
-// so it can be restored without rebuilding the event presentation.
-const ENABLE_COMPACT_EVENT_ANIMATION = false;
+type EventGroup = {
+  kind: LifeEventKind;
+  events: MaterializedLifeEvent[];
+};
+
+type ScreenPresentation = "almanac" | "compact" | "cell";
 
 const rapidRegister = keyframes`
-  0% {
-    opacity: 0;
-    transform: translate3d(0, -4px, 0);
-  }
-
-  72% {
-    opacity: 0.96;
-    transform: translate3d(0, 0, 0);
-  }
-
-  100% {
-    opacity: 1;
-    transform: translate3d(0, 0, 0);
-  }
+  0% { opacity: 0; transform: translate3d(0, -4px, 0); }
+  72% { opacity: 0.96; transform: translate3d(0, 0, 0); }
+  100% { opacity: 1; transform: translate3d(0, 0, 0); }
 `;
 
 const EventCard = styled.div<{ $animate: boolean }>`
@@ -53,10 +44,9 @@ const EventCard = styled.div<{ $animate: boolean }>`
   width: calc(100% - 1px);
   min-width: 0;
   justify-self: start;
-  border-width: 1px;
-  border-style: solid;
-  border-radius: 4px;
   overflow: hidden;
+  border: 1px solid;
+  border-radius: 4px;
   animation: ${({ $animate }) =>
     $animate
       ? css`${rapidRegister} 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both`
@@ -106,12 +96,7 @@ function AnimatedCalendarCell({
   useEffect(() => {
     const layers = colorRefs.current;
     if (!layers[0] || !layers[1]) return;
-    // Copy the mounted nodes instead of retaining the mutable ref tuple.
-    // React writes null into that tuple while calendar cells unmount.
-    const concreteLayers: [HTMLDivElement, HTMLDivElement] = [
-      layers[0],
-      layers[1],
-    ];
+    const concreteLayers: [HTMLDivElement, HTMLDivElement] = [layers[0], layers[1]];
     const currentOpacities = concreteLayers.map((layer) => {
       const opacity = Number.parseFloat(getComputedStyle(layer).opacity);
       layer.style.opacity = String(opacity);
@@ -178,11 +163,10 @@ function AnimatedCalendarCell({
         easing: "cubic-bezier(0.2, 0.8, 0.2, 1)",
       },
     );
+
     return () => {
       concreteLayers.forEach((layer) => {
-        if (layer.isConnected) {
-          layer.style.opacity = getComputedStyle(layer).opacity;
-        }
+        if (layer.isConnected) layer.style.opacity = getComputedStyle(layer).opacity;
         layer.getAnimations().forEach((animation) => animation.cancel());
       });
     };
@@ -226,93 +210,27 @@ const monthFormatter = new Intl.DateTimeFormat("en", {
   month: "long",
   year: "numeric",
 });
+const eventKindOrder: readonly LifeEventKind[] = [
+  "birth",
+  "birthday",
+  "death",
+  "memorial",
+];
 const eventLabels: Record<LifeEventKind, string> = {
   birth: "태어남",
   birthday: "생일",
   death: "죽음",
   memorial: "기일",
 };
-const eventToneClasses: Record<LifeEventKind, string> = {
-  birth: "border-[#4f8df6] bg-[#eef5ff] text-[#174ea6]",
-  birthday: "border-[#50a46f] bg-[#effaf3] text-[#137333]",
-  death: "border-[#222222] bg-[#f3f4f4] text-[#202124]",
-  memorial: "border-[#9871f2] bg-[#f5f0ff] text-[#5f3dc4]",
+const presentationLabels: Record<ScreenPresentation, string> = {
+  almanac: "Record",
+  compact: "Event",
+  cell: "Cell",
 };
-const darkEventToneClasses: Record<LifeEventKind, string> = {
-  birth: "border-[#2f66c8] bg-[#101b2c] text-[#8ab4f8]",
-  birthday: "border-[#2e7d4f] bg-[#102118] text-[#81c995]",
-  death: "border-[#5f6368] bg-[#202124] text-[#e8eaed]",
-  memorial: "border-[#6f55c9] bg-[#1e1831] text-[#c3b4ff]",
-};
-
-const cellColors: Record<"light" | "dark", Record<LifeEventKind, string>> = {
-  light: {
-    birth: "#d8e8ff",
-    birthday: "#d9f2e2",
-    death: "#cfd3d6",
-    memorial: "#ece5f7",
-  },
-  dark: {
-    birth: "#17345c",
-    birthday: "#173c27",
-    death: "#34383d",
-    memorial: "#382c50",
-  },
-};
-
-const cellKindPriority: readonly LifeEventKind[] = [
-  "death",
-  "birth",
-  "birthday",
-  "memorial",
-];
-
-function createBandGradient(colors: readonly string[]) {
-  if (colors.length === 1) return colors[0]!;
-
-  const transitionWidth = Math.min(6, 18 / colors.length);
-  const stops: string[] = [`${colors[0]} 0%`];
-
-  for (let index = 0; index < colors.length - 1; index += 1) {
-    const boundary = ((index + 1) / colors.length) * 100;
-    stops.push(`${colors[index]} ${boundary - transitionWidth}%`);
-    stops.push(`${colors[index + 1]} ${boundary + transitionWidth}%`);
-  }
-
-  stops.push(`${colors[colors.length - 1]} 100%`);
-  return `linear-gradient(135deg, ${stops.join(", ")})`;
-}
-
-function EventIcon({ kind }: { kind: LifeEventKind }) {
-  if (kind === "birth") {
-    return (
-      <svg aria-hidden="true" className="size-3.5 shrink-0 overflow-visible" viewBox="0 0 20 20">
-        <circle cx="10" cy="10" r="2.5" fill="currentColor" />
-        <path d="M10 1v4M10 15v4M1 10h4M15 10h4M3.6 3.6l2.8 2.8M13.6 13.6l2.8 2.8M16.4 3.6l-2.8 2.8M6.4 13.6l-2.8 2.8" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.5" />
-      </svg>
-    );
-  }
-
-  if (kind === "birthday") {
-    return (
-      <svg aria-hidden="true" className="size-3.5 shrink-0 overflow-visible" viewBox="0 0 20 20">
-        <path d="M4 9.5h12v7H4zM4 12h12M10 5.5v4" fill="none" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.5" />
-        <path d="M10 1.8c1.35 1.35 1.6 2.35 0 3.7-1.6-1.35-1.35-2.35 0-3.7Z" fill="currentColor" />
-      </svg>
-    );
-  }
-
-  return (
-    <svg aria-hidden="true" className="size-3.5 shrink-0 overflow-visible" viewBox="0 0 20 20">
-      <path d="M5 17V8.2a5 5 0 0 1 10 0V17H5ZM3 17h14" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" />
-      <path d="M8 10h4" stroke="currentColor" strokeLinecap="round" strokeWidth="1.5" />
-    </svg>
-  );
-}
 
 function SoundIcon({ enabled }: { enabled: boolean }) {
   return (
-    <svg aria-hidden="true" className="size-3.5 shrink-0" viewBox="0 0 20 20">
+    <svg aria-hidden="true" className="size-3.5" viewBox="0 0 20 20">
       <path d="M3 8h3l4-3v10l-4-3H3V8Z" fill="currentColor" />
       {enabled ? (
         <path d="M13 7c1.4 1.1 1.4 4.9 0 6M15.5 4.5c3.2 2.8 3.2 8.2 0 11" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.4" />
@@ -321,43 +239,6 @@ function SoundIcon({ enabled }: { enabled: boolean }) {
       )}
     </svg>
   );
-}
-
-function getCellAppearance({
-  events,
-  isCurrentMonth,
-  isDark,
-  viewMode,
-}: {
-  events: readonly MaterializedLifeEvent[];
-  isCurrentMonth: boolean;
-  isDark: boolean;
-  viewMode: CalendarViewMode;
-}) {
-  const baseBackground = isCurrentMonth
-    ? isDark ? "#0f1115" : "#ffffff"
-    : isDark ? "#13171d" : "#fafafa";
-
-  if (viewMode === "compact" || events.length === 0) {
-    return {
-      baseBackground,
-      eventBackground: null,
-      foreground: isDark ? "#e8eaed" : "#3c4043",
-    };
-  }
-
-  const kinds = cellKindPriority.filter((kind) =>
-    events.some((event) => event.kind === kind),
-  );
-  const palette = cellColors[isDark ? "dark" : "light"];
-  const colors = kinds.map((kind) => palette[kind]);
-  const background = createBandGradient(colors);
-
-  return {
-    baseBackground,
-    eventBackground: background,
-    foreground: isDark ? "#ffffff" : "#202124",
-  };
 }
 
 function toIsoDate(date: Date) {
@@ -394,6 +275,18 @@ function getEventsByDate(events: readonly MaterializedLifeEvent[]) {
     dates[event.date] = [...(dates[event.date] ?? []), event];
     return dates;
   }, {});
+}
+
+function groupEvents(events: readonly MaterializedLifeEvent[]): EventGroup[] {
+  return eventKindOrder.flatMap((kind) => {
+    const matchingEvents = events.filter((event) => event.kind === kind);
+    return matchingEvents.length > 0 ? [{ kind, events: matchingEvents }] : [];
+  });
+}
+
+function getNameColumnCount(eventCount: number) {
+  if (eventCount >= 2) return 2;
+  return 1;
 }
 
 function getEventYearLabel(event: MaterializedLifeEvent) {
@@ -444,13 +337,227 @@ function IconButton({
   );
 }
 
+const legacyEventToneClasses: Record<LifeEventKind, string> = {
+  birth: "border-[#4f8df6] bg-[#eef5ff] text-[#174ea6]",
+  birthday: "border-[#50a46f] bg-[#effaf3] text-[#137333]",
+  death: "border-[#222222] bg-[#f3f4f4] text-[#202124]",
+  memorial: "border-[#9871f2] bg-[#f5f0ff] text-[#5f3dc4]",
+};
+
+const legacyDarkEventToneClasses: Record<LifeEventKind, string> = {
+  birth: "border-[#2f66c8] bg-[#101b2c] text-[#8ab4f8]",
+  birthday: "border-[#2e7d4f] bg-[#102118] text-[#81c995]",
+  death: "border-[#5f6368] bg-[#202124] text-[#e8eaed]",
+  memorial: "border-[#6f55c9] bg-[#1e1831] text-[#c3b4ff]",
+};
+
+const legacyCellColors: Record<"light" | "dark", Record<LifeEventKind, string>> = {
+  light: {
+    birth: "#d8e8ff",
+    birthday: "#d9f2e2",
+    death: "#cfd3d6",
+    memorial: "#ece5f7",
+  },
+  dark: {
+    birth: "#17345c",
+    birthday: "#173c27",
+    death: "#34383d",
+    memorial: "#382c50",
+  },
+};
+
+const legacyCellKindPriority: readonly LifeEventKind[] = [
+  "death",
+  "birth",
+  "birthday",
+  "memorial",
+];
+
+function createLegacyBandGradient(colors: readonly string[]) {
+  if (colors.length === 1) return colors[0]!;
+
+  const transitionWidth = Math.min(6, 18 / colors.length);
+  const stops: string[] = [`${colors[0]} 0%`];
+
+  for (let index = 0; index < colors.length - 1; index += 1) {
+    const boundary = ((index + 1) / colors.length) * 100;
+    stops.push(`${colors[index]} ${boundary - transitionWidth}%`);
+    stops.push(`${colors[index + 1]} ${boundary + transitionWidth}%`);
+  }
+
+  stops.push(`${colors[colors.length - 1]} 100%`);
+  return `linear-gradient(135deg, ${stops.join(", ")})`;
+}
+
+function EventIcon({ kind }: { kind: LifeEventKind }) {
+  if (kind === "birth") {
+    return (
+      <svg aria-hidden="true" className="size-3.5 shrink-0 overflow-visible" viewBox="0 0 20 20">
+        <circle cx="10" cy="10" r="2.5" fill="currentColor" />
+        <path d="M10 1v4M10 15v4M1 10h4M15 10h4M3.6 3.6l2.8 2.8M13.6 13.6l2.8 2.8M16.4 3.6l-2.8 2.8M6.4 13.6l-2.8 2.8" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.5" />
+      </svg>
+    );
+  }
+
+  if (kind === "birthday") {
+    return (
+      <svg aria-hidden="true" className="size-3.5 shrink-0 overflow-visible" viewBox="0 0 20 20">
+        <path d="M4 9.5h12v7H4zM4 12h12M10 5.5v4" fill="none" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.5" />
+        <path d="M10 1.8c1.35 1.35 1.6 2.35 0 3.7-1.6-1.35-1.35-2.35 0-3.7Z" fill="currentColor" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg aria-hidden="true" className="size-3.5 shrink-0 overflow-visible" viewBox="0 0 20 20">
+      <path d="M5 17V8.2a5 5 0 0 1 10 0V17H5ZM3 17h14" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" />
+      <path d="M8 10h4" stroke="currentColor" strokeLinecap="round" strokeWidth="1.5" />
+    </svg>
+  );
+}
+
+function getLegacyCellAppearance({
+  events,
+  isCurrentMonth,
+  isDark,
+  mode,
+}: {
+  events: readonly MaterializedLifeEvent[];
+  isCurrentMonth: boolean;
+  isDark: boolean;
+  mode: Extract<ScreenPresentation, "compact" | "cell">;
+}) {
+  const baseBackground = isCurrentMonth
+    ? isDark ? "#0f1115" : "#ffffff"
+    : isDark ? "#13171d" : "#fafafa";
+  if (mode === "compact" || events.length === 0) {
+    return {
+      baseBackground,
+      eventBackground: null,
+      foreground: isDark ? "#e8eaed" : "#3c4043",
+    };
+  }
+
+  const palette = legacyCellColors[isDark ? "dark" : "light"];
+  const kinds = legacyCellKindPriority.filter((kind) =>
+    events.some((event) => event.kind === kind),
+  );
+  const colors = kinds.map((kind) => palette[kind]);
+  const eventBackground = createLegacyBandGradient(colors);
+  return {
+    baseBackground,
+    eventBackground,
+    foreground: isDark ? "#ffffff" : "#202124",
+  };
+}
+
+function LegacyCalendarSurface({
+  eventsByDate,
+  isDark,
+  mode,
+  monthDays,
+  selectionRevision,
+}: {
+  eventsByDate: Record<string, MaterializedLifeEvent[]>;
+  isDark: boolean;
+  mode: Extract<ScreenPresentation, "compact" | "cell">;
+  monthDays: readonly CalendarDay[];
+  selectionRevision: number;
+}) {
+  const activeEventToneClasses = isDark
+    ? legacyDarkEventToneClasses
+    : legacyEventToneClasses;
+
+  return (
+    <div className="grid min-h-0 grid-cols-7 grid-rows-6">
+      {monthDays.map((day) => {
+        const dayEvents = eventsByDate[day.isoDate] ?? [];
+        const cellAppearance = getLegacyCellAppearance({
+          events: dayEvents,
+          isCurrentMonth: day.isCurrentMonth,
+          isDark,
+          mode,
+        });
+        return (
+          <AnimatedCalendarCell
+            key={day.id}
+            baseBackground={cellAppearance.baseBackground}
+            eventBackground={cellAppearance.eventBackground}
+            foreground={cellAppearance.foreground}
+            transitionToken={`${selectionRevision}:${mode}:${dayEvents.map((event) => event.id).join("|")}`}
+            className={`min-h-0 overflow-hidden border-b border-r p-1.5 sm:p-2 ${
+              isDark ? "border-[#252a31]" : "border-[#e8eaed]"
+            }`}
+          >
+            <div className="mb-1 flex justify-center sm:justify-start">
+              <time
+                dateTime={day.isoDate}
+                className={`grid h-7 w-7 place-items-center rounded-full text-sm leading-none ${
+                  day.isToday
+                    ? "bg-[#1a73e8] font-medium text-white"
+                    : mode === "cell" && dayEvents.length > 0
+                      ? "text-inherit"
+                      : day.isCurrentMonth
+                        ? isDark
+                          ? "text-[#e8eaed]"
+                          : "text-[#3c4043]"
+                        : isDark
+                          ? "text-[#6f747d]"
+                          : "text-[#9aa0a6]"
+                }`}
+              >
+                {day.dayNumber}
+              </time>
+            </div>
+
+            <div className="grid min-w-0 gap-1 overflow-hidden">
+              {dayEvents.slice(0, 3).map((event) => {
+                const yearLabel = getEventYearLabel(event);
+                return (
+                  <EventCard
+                    key={`${selectionRevision}-${event.id}`}
+                    $animate={false}
+                    className={`flex min-w-0 items-center gap-1 rounded border px-1.5 py-1 text-[10px] leading-tight sm:text-xs ${activeEventToneClasses[event.kind]}`}
+                  >
+                    <EventIcon kind={event.kind} />
+                    <span className="hidden font-medium sm:inline">
+                      {eventLabels[event.kind]}{" "}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate">{event.name}</span>
+                    {yearLabel ? (
+                      <span className="shrink-0 whitespace-nowrap text-[9px] font-medium tabular-nums opacity-65 sm:text-[10px]">
+                        {yearLabel}
+                      </span>
+                    ) : null}
+                  </EventCard>
+                );
+              })}
+              {dayEvents.length > 3 ? (
+                <div className={`truncate px-1.5 text-[10px] leading-tight sm:text-xs ${
+                  mode === "cell"
+                    ? "text-inherit opacity-70"
+                    : isDark
+                      ? "text-[#9aa0a6]"
+                      : "text-[#5f6368]"
+                }`}>
+                  +{dayEvents.length - 3} more
+                </div>
+              ) : null}
+            </div>
+          </AnimatedCalendarCell>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function CalendarOneScreen() {
   const [today] = useState(() => new Date());
   const [visibleMonth, setVisibleMonth] = useState(
     () => new Date(today.getFullYear(), today.getMonth(), 1),
   );
   const [isDark, setIsDark] = useState(false);
-  const [viewMode, setViewMode] = useState<CalendarViewMode>("cell");
+  const [presentation, setPresentation] = useState<ScreenPresentation>("almanac");
   const [includeMemorials, setIncludeMemorials] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(false);
   const [profileIds, setProfileIds] = useState<readonly string[]>(initialProfileIds);
@@ -589,9 +696,6 @@ export default function CalendarOneScreen() {
     }
     if (addedKinds.size > 0) queueSoundCue(addedKinds);
   }, [audibleEvents, queueSoundCue, soundEnabled]);
-  const activeEventToneClasses = isDark
-    ? darkEventToneClasses
-    : eventToneClasses;
 
   function goToMonth(offset: number) {
     setVisibleMonth((current) =>
@@ -626,17 +730,18 @@ export default function CalendarOneScreen() {
     playSoundCue(new Set<AudibleEventKind>(["birthday", "memorial"]));
   }
 
+  const shellClasses = isDark
+    ? "bg-[#0f1115] text-[#e8eaed]"
+    : "bg-white text-[#202124]";
+  const ruleClasses = isDark ? "border-[#2b2f36]" : "border-[#dadce0]";
+  const mutedTextClasses = isDark ? "text-[#9aa0a6]" : "text-[#5f6368]";
+  const quietTextClasses = isDark ? "text-[#6f747d]" : "text-[#9aa0a6]";
+
   return (
-    <main
-      className={`h-dvh overflow-hidden ${
-        isDark ? "bg-[#0f1115] text-[#e8eaed]" : "bg-white text-[#202124]"
-      }`}
-    >
+    <main className={`h-dvh overflow-hidden ${shellClasses}`}>
       <div className="flex h-full flex-col">
         <header
-          className={`flex min-h-16 items-center justify-between gap-3 border-b px-3 py-3 sm:px-5 ${
-            isDark ? "border-[#2b2f36]" : "border-[#dadce0]"
-          }`}
+          className={`flex min-h-16 items-center justify-between gap-3 border-b px-3 py-3 sm:px-5 ${ruleClasses}`}
         >
           <div className="flex min-w-0 items-center gap-2 sm:gap-3">
             <button
@@ -684,14 +789,14 @@ export default function CalendarOneScreen() {
                 isDark ? "border-[#3c4043] bg-[#202124]" : "border-[#dadce0] bg-[#f8fafd]"
               }`}
             >
-              {(["compact", "cell"] as const).map((mode) => {
-                const selected = viewMode === mode;
+              {(["almanac", "compact", "cell"] as const).map((mode) => {
+                const selected = presentation === mode;
                 return (
                   <button
                     key={mode}
                     type="button"
                     aria-pressed={selected}
-                    className={`grid min-w-6 place-items-center rounded-full px-1 text-[10px] font-semibold uppercase tracking-[0.04em] transition sm:min-w-0 sm:px-3 sm:text-[11px] ${
+                    className={`grid min-w-6 place-items-center rounded-full px-1 text-[10px] font-semibold tracking-[0.04em] transition sm:min-w-0 sm:px-3 sm:text-[11px] ${
                       selected
                         ? isDark
                           ? "bg-[#e8eaed] text-[#202124]"
@@ -700,19 +805,18 @@ export default function CalendarOneScreen() {
                           ? "text-[#9aa0a6] hover:text-white"
                           : "text-[#5f6368] hover:text-black"
                     }`}
-                    onClick={() => setViewMode(mode)}
+                    onClick={() => setPresentation(mode)}
                   >
                     <span className="sm:hidden" aria-hidden="true">
-                      {mode === "compact" ? "▭" : "■"}
+                      {mode === "almanac" ? "≡" : mode === "compact" ? "▭" : "■"}
                     </span>
                     <span className="hidden sm:inline">
-                      {mode === "compact" ? "Event" : "Cell"}
+                      {presentationLabels[mode]}
                     </span>
                   </button>
                 );
               })}
             </div>
-
             <button
               type="button"
               aria-label="기일 포함"
@@ -732,7 +836,6 @@ export default function CalendarOneScreen() {
               <EventIcon kind="memorial" />
               <span className="hidden sm:inline">기일</span>
             </button>
-
             <button
               type="button"
               aria-label={soundEnabled ? "이벤트 사운드 끄기" : "이벤트 사운드 켜기"}
@@ -752,7 +855,6 @@ export default function CalendarOneScreen() {
               <SoundIcon enabled={soundEnabled} />
               <span className="hidden sm:inline">Sound</span>
             </button>
-
             <button
               type="button"
               aria-label="Toggle dark mode"
@@ -776,107 +878,102 @@ export default function CalendarOneScreen() {
         </header>
 
         <section className="grid min-h-0 flex-1 grid-rows-[auto_1fr]">
-          <div
-            className={`grid grid-cols-7 border-b ${
-              isDark ? "border-[#2b2f36] bg-[#0f1115]" : "border-[#dadce0] bg-white"
-            }`}
-          >
+          <div className={`grid grid-cols-7 border-b ${
+            isDark ? "border-[#2b2f36] bg-[#0f1115]" : "border-[#dadce0] bg-white"
+          }`}>
             {weekdayLabels.map((weekday) => (
               <div
-                key={`weekday-${weekday}`}
-                className={`px-1 py-2 text-center text-[11px] font-medium uppercase tracking-normal sm:text-xs ${
-                  isDark ? "text-[#9aa0a6]" : "text-[#5f6368]"
-                }`}
+                key={weekday}
+                className={`px-1 py-2 text-center text-[11px] font-medium uppercase tracking-normal sm:text-xs ${mutedTextClasses}`}
               >
                 {weekday}
               </div>
             ))}
           </div>
 
-          <div className="grid min-h-0 grid-cols-7 grid-rows-6">
-            {monthDays.map((day) => {
+          {presentation === "almanac" ? (
+            <div className="grid min-h-0 grid-cols-7 grid-rows-6">
+              {monthDays.map((day) => {
               const dayEvents = eventsByDate[day.isoDate] ?? [];
-              const cellAppearance = getCellAppearance({
-                events: dayEvents,
-                isCurrentMonth: day.isCurrentMonth,
-                isDark,
-                viewMode,
-              });
+              const eventGroups = groupEvents(dayEvents);
+              const nameColumnCount = getNameColumnCount(dayEvents.length);
+              const dayTextClasses = day.isCurrentMonth
+                ? isDark ? "text-[#f0eee8]" : "text-[#1d1d1a]"
+                : quietTextClasses;
+
               return (
-                <AnimatedCalendarCell
+                <article
                   key={day.id}
-                  baseBackground={cellAppearance.baseBackground}
-                  eventBackground={cellAppearance.eventBackground}
-                  foreground={cellAppearance.foreground}
-                  transitionToken={`${selectionRevision}:${viewMode}:${dayEvents.map((event) => event.id).join("|")}`}
-                  className={`min-h-0 border-b border-r p-1.5 sm:p-2 ${
-                    isDark ? "border-[#252a31]" : "border-[#e8eaed]"
-                  }`}
+                  aria-label={`${day.isoDate}, ${dayEvents.length}개의 생애 사건`}
+                  className={`group flex min-h-0 flex-col border-b border-r px-1.5 py-1.5 sm:px-2 sm:py-2 ${ruleClasses} ${dayTextClasses}`}
                 >
-                  <div className="mb-1 flex justify-center sm:justify-start">
-                    <span
-                      className={`grid h-7 w-7 place-items-center rounded-full text-sm leading-none ${
-                        day.isToday
-                          ? "bg-[#1a73e8] font-medium text-white"
-                          : viewMode === "cell" && dayEvents.length > 0
-                            ? "text-inherit"
-                          : day.isCurrentMonth
-                            ? isDark
-                              ? "text-[#e8eaed]"
-                              : "text-[#3c4043]"
-                            : isDark
-                              ? "text-[#6f747d]"
-                              : "text-[#9aa0a6]"
+                  <div className="flex shrink-0 items-start justify-between">
+                    <time
+                      dateTime={day.isoDate}
+                      className={`text-[clamp(15px,1.6vw,26px)] font-normal leading-none tracking-[-0.06em] ${
+                        day.isToday ? "underline decoration-[1.5px] underline-offset-4" : ""
                       }`}
+                      style={{ fontFamily: '"Iowan Old Style", "AppleMyungjo", serif' }}
                     >
                       {day.dayNumber}
-                    </span>
-                  </div>
-
-                  <div className="grid min-w-0 gap-1 overflow-visible">
-                    {dayEvents.slice(0, 3).map((event) => {
-                      const yearLabel = getEventYearLabel(event);
-                      return (
-                        <EventCard
-                          key={`${selectionRevision}-${event.id}`}
-                          $animate={
-                            ENABLE_COMPACT_EVENT_ANIMATION && viewMode === "compact"
-                          }
-                          className={`flex max-w-full items-center gap-1 px-1.5 py-1 text-[10px] leading-tight sm:text-xs ${activeEventToneClasses[event.kind]}`}
-                        >
-                          <EventIcon kind={event.kind} />
-                          <span className="hidden font-medium sm:inline">
-                            {eventLabels[event.kind]}{" "}
-                          </span>
-                          <span className="min-w-0 flex-1 truncate">
-                            {event.name}
-                          </span>
-                          {yearLabel ? (
-                            <span className="shrink-0 whitespace-nowrap text-[9px] font-medium tabular-nums opacity-65 sm:text-[10px]">
-                              {yearLabel}
-                            </span>
-                          ) : null}
-                        </EventCard>
-                      );
-                    })}
-                    {dayEvents.length > 3 ? (
-                      <div
-                        className={`truncate px-1.5 text-[10px] leading-tight sm:text-xs ${
-                          viewMode === "cell"
-                            ? "text-inherit opacity-70"
-                            : isDark
-                              ? "text-[#9aa0a6]"
-                              : "text-[#5f6368]"
-                        }`}
-                      >
-                        +{dayEvents.length - 3} more
-                      </div>
+                    </time>
+                    {dayEvents.length > 0 ? (
+                      <span className={`pt-0.5 text-[8px] tracking-[0.12em] ${mutedTextClasses}`}>
+                        {dayEvents.length}
+                      </span>
                     ) : null}
                   </div>
-                </AnimatedCalendarCell>
+
+                  <div className="mt-1.5 grid min-h-0 content-start gap-y-1 sm:mt-2 sm:gap-y-1.5">
+                    {eventGroups.map((group) => (
+                      <div
+                        key={group.kind}
+                        className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-start gap-x-1"
+                      >
+                        <span className={`pt-px text-[7px] font-medium tracking-[-0.06em] sm:text-[8px] ${mutedTextClasses}`}>
+                          {eventLabels[group.kind]}
+                        </span>
+                        <div
+                          className="grid min-w-0 gap-x-1 gap-y-0.5"
+                          style={{
+                            gridTemplateColumns: `repeat(${nameColumnCount}, minmax(0, 1fr))`,
+                          }}
+                        >
+                          {group.events.map((event) => {
+                            const yearLabel = getEventYearLabel(event);
+                            return (
+                              <span
+                                key={event.id}
+                                className="flex min-w-0 items-baseline gap-x-0.5 text-[clamp(8px,0.68vw,11px)] leading-[1.2] tracking-[-0.08em]"
+                                title={`${eventLabels[event.kind]} ${event.name}${yearLabel ? ` ${yearLabel}` : ""}`}
+                                style={{ fontFamily: '"AppleMyungjo", serif' }}
+                              >
+                                <span className="min-w-0 truncate">{event.name}</span>
+                                {yearLabel ? (
+                                  <span className={`shrink-0 text-[0.86em] font-medium tracking-[-0.06em] tabular-nums ${mutedTextClasses}`}>
+                                    {yearLabel}
+                                  </span>
+                                ) : null}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </article>
               );
-            })}
-          </div>
+              })}
+            </div>
+          ) : (
+            <LegacyCalendarSurface
+              eventsByDate={eventsByDate}
+              isDark={isDark}
+              mode={presentation}
+              monthDays={monthDays}
+              selectionRevision={selectionRevision}
+            />
+          )}
         </section>
       </div>
     </main>

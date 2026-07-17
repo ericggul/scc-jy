@@ -37,10 +37,12 @@ the non-negotiable visual grammar.
   Subscriptions, You. The mobile brand is intentionally the play mark only;
   the full wordmark remains on desktop.
 - Watch: a dark media player with tap-revealed controls, a slim scrubber,
-  exact `m:ss`/`h:mm:ss` display, mute, full screen, channel subscribe action,
-  large mobile-only circular action controls, an expandable description,
-  interactive comments sheet/composer, and an Up next list. Desktop retains
-  compact labelled action pills where horizontal room is available.
+  exact `m:ss`/`h:mm:ss` display, chapter marker, full screen, mobile Cast/CC/
+  settings controls, channel subscribe action, large mobile-only circular
+  action controls, an interactive comments sheet/composer, and an Up next
+  list. On a phone the recommendations remain full-width 16:9 feed cards;
+  only the desktop Watch Next column uses compact horizontal rows. Desktop
+  retains compact labelled action pills where horizontal room is available.
   It removes the mobile feed header, and its down control returns to browsing
   through the mini-player rather than leaving the viewer at a stale scroll
   position.
@@ -51,6 +53,12 @@ the non-negotiable visual grammar.
   sets `?v=<video-id>`. Direct links and browser history restore the watch
   view. Leaving it exposes a working mini-player that can be dragged and
   double-clicked between compact and expanded widths.
+  Home and Watch recommendations append deterministic eight-item batches when
+  the reader approaches the page end; each newly selected video begins its Up
+  next list at the top.
+  Its compact state deliberately contains only the video surface and its
+  pause/close overlays, matching the mobile reference rather than adding an
+  unrelated title toolbar.
 - The implementation models UI state locally. It makes no claim to stream
   remote YouTube videos, fetch user data, or reproduce service-side ranking.
 

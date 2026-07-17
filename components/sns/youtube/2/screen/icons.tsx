@@ -4,7 +4,9 @@ export type YoutubeTwoIcon =
   | "add"
   | "arrow-left"
   | "bell"
+  | "bell-off"
   | "cast"
+  | "captions"
   | "chevron-down"
   | "close"
   | "comment"
@@ -15,6 +17,7 @@ export type YoutubeTwoIcon =
   | "like"
   | "like-filled"
   | "menu"
+  | "music"
   | "more"
   | "mute"
   | "pause"
@@ -38,7 +41,9 @@ export function YoutubeTwoIcon({ name, ...props }: SVGProps<SVGSVGElement> & { n
       {name === "menu" ? <path {...stroke} d="M4 7h16M4 12h16M4 17h16" /> : null}
       {name === "search" ? <path {...stroke} d="m20 20-4.35-4.35m2.1-4.9a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z" /> : null}
       {name === "bell" ? <path {...stroke} d="M18 10.1c0-3.5-2.15-6-6-6s-6 2.5-6 6c0 5.65-2.1 6.6-2.1 7.55h16.2C20.1 16.7 18 15.75 18 10.1ZM9.55 20.15h4.9" /> : null}
+      {name === "bell-off" ? <><path {...stroke} d="M18 10.1c0-3.5-2.15-6-6-6a5.9 5.9 0 0 0-3.35 1.03M6.1 8.6c-.1.48-.1.98-.1 1.5 0 5.65-2.1 6.6-2.1 7.55h12.3M9.55 20.15h4.9" /><path {...stroke} d="m4 4 16 16" /></> : null}
       {name === "cast" ? <><path {...stroke} d="M4 17.5v-3.25A2.25 2.25 0 0 1 6.25 12H19a2 2 0 0 0 2-2V6.25A2.25 2.25 0 0 0 18.75 4H6.25A2.25 2.25 0 0 0 4 6.25v1" /><path {...stroke} d="M4 19.5v-3.2A3.3 3.3 0 0 1 7.2 19.5M4 14.2a5.8 5.8 0 0 1 5.8 5.8" /></> : null}
+      {name === "captions" ? <><rect {...stroke} x="3.6" y="5.2" width="16.8" height="13.6" rx="1.9" /><path {...stroke} d="M10 10.1c-.5-.45-1.05-.7-1.65-.7-1.35 0-2.35 1.07-2.35 2.6s1 2.6 2.35 2.6c.6 0 1.15-.25 1.65-.7m8-3.8c-.5-.45-1.05-.7-1.65-.7-1.35 0-2.35 1.07-2.35 2.6s1 2.6 2.35 2.6c.6 0 1.15-.25 1.65-.7" /></> : null}
       {name === "chevron-down" ? <path {...stroke} d="m5.5 8.5 6.5 6.5 6.5-6.5" /> : null}
       {name === "home" ? <path {...stroke} d="m3.8 11.15 8.2-7.05 8.2 7.05v8.3a.95.95 0 0 1-.95.95h-4.7v-5.8h-5.1v5.8h-4.7a.95.95 0 0 1-.95-.95v-8.3Z" /> : null}
       {name === "shorts" ? <path {...stroke} d="M9.3 3.8c2.1-1.2 5.1.3 5.1 2.75 0 1.1-.65 2.1-1.65 2.55l2.95 1.7c2.1 1.2 2.1 4.2 0 5.4l-5.1 2.95c-2.1 1.2-4.7-.3-4.7-2.7 0-1.1.6-2.1 1.55-2.6L10.3 12 7.45 10.35A3 3 0 0 1 5.9 7.7c0-2.4 1.3-3.05 3.4-3.9Z" /> : null}
@@ -46,6 +51,7 @@ export function YoutubeTwoIcon({ name, ...props }: SVGProps<SVGSVGElement> & { n
       {name === "user" ? <><circle {...stroke} cx="12" cy="8.1" r="3.4" /><path {...stroke} d="M4.8 20c.95-3.35 3.35-5 7.2-5s6.25 1.65 7.2 5" /></> : null}
       {name === "add" ? <path {...stroke} d="M12 5v14M5 12h14" /> : null}
       {name === "more" ? <path d="M5.4 12h.01M12 12h.01M18.6 12h.01" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="3.2" /> : null}
+      {name === "music" ? <><path {...stroke} d="M9 18.5V6.2l8-1.7v11.8" /><circle {...stroke} cx="6.8" cy="18.2" r="2.2" /><circle {...stroke} cx="14.8" cy="16.3" r="2.2" /></> : null}
       {name === "play" ? <path d="m8 5 11 7-11 7V5Z" fill="currentColor" /> : null}
       {name === "pause" ? <path d="M7 5h3.5v14H7zm6.5 0H17v14h-3.5z" fill="currentColor" /> : null}
       {name === "volume" ? <><path {...stroke} d="M4.2 10.1h3.3l4-3.25v10.3l-4-3.25H4.2v-3.8Z" /><path {...stroke} d="M15.2 9.1a4.15 4.15 0 0 1 0 5.8m2.2-8.05a7.25 7.25 0 0 1 0 10.3" /></> : null}

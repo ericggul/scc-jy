@@ -6,10 +6,14 @@ export const GRID_COLUMNS = 3;
 // mobile directory changed from a square grid to a vertical ledger.
 export const GRID_SIZE = GRID_COLUMNS;
 export const GRID_ROWS = Math.ceil(POPULATION_SIZE / GRID_COLUMNS);
+export const MOBILE_GRID_COLUMNS = 7;
+export const MOBILE_GRID_ROWS = Math.ceil(
+  POPULATION_SIZE / MOBILE_GRID_COLUMNS,
+);
 export const VISIBLE_COLUMNS = GRID_COLUMNS;
-export const VISIBLE_ROWS = 30;
+export const VISIBLE_ROWS = 48;
 export const VISIBLE_PROFILE_COUNT = VISIBLE_COLUMNS * VISIBLE_ROWS;
-export const SELECTION_ROWS = VISIBLE_ROWS * 10;
+export const SELECTION_ROWS = 300;
 export const SELECTED_PROFILE_COUNT = VISIBLE_COLUMNS * SELECTION_ROWS;
 export const POPULATION_REFERENCE_DATE = "2024-11-01";
 
@@ -106,6 +110,57 @@ const givenNames = {
   },
 } as const;
 
+type GivenNameSyllables = {
+  first: readonly string[];
+  second: readonly string[];
+};
+
+const givenNameSyllables: Record<
+  "senior" | "middle" | "young" | "child",
+  Record<ProfileSex, GivenNameSyllables>
+> = {
+  senior: {
+    male: {
+      first: ["영", "정", "상", "동", "병", "태", "기", "광", "종", "철", "재", "성", "용", "창", "진", "경", "승", "명", "호", "규"],
+      second: ["수", "호", "철", "식", "태", "기", "남", "진", "석", "재", "원", "영", "준", "환", "규", "봉", "길", "룡", "민", "옥"],
+    },
+    female: {
+      first: ["영", "정", "순", "미", "경", "명", "옥", "춘", "현", "선", "금", "인", "혜", "복", "은", "숙", "지", "연", "진", "화"],
+      second: ["숙", "자", "희", "순", "경", "임", "화", "연", "미", "옥", "월", "덕", "금", "나", "선", "영", "주", "림", "아", "정"],
+    },
+  },
+  middle: {
+    male: {
+      first: ["민", "준", "성", "현", "정", "재", "동", "승", "영", "태", "경", "진", "상", "시", "건", "우", "윤", "도", "기", "호"],
+      second: ["수", "호", "민", "우", "훈", "현", "성", "진", "석", "재", "원", "영", "준", "식", "규", "태", "철", "범", "환", "욱"],
+    },
+    female: {
+      first: ["지", "수", "미", "은", "현", "혜", "민", "선", "영", "경", "정", "유", "소", "연", "윤", "서", "주", "채", "다", "예"],
+      second: ["영", "진", "정", "수", "혜", "미", "주", "경", "아", "은", "지", "연", "희", "선", "원", "빈", "림", "인", "이", "하"],
+    },
+  },
+  young: {
+    male: {
+      first: ["민", "서", "도", "예", "시", "하", "주", "지", "준", "현", "건", "우", "선", "연", "재", "태", "은", "이", "윤", "한"],
+      second: ["준", "윤", "우", "호", "원", "후", "재", "빈", "하", "민", "성", "현", "진", "겸", "찬", "율", "담", "혁", "환", "규"],
+    },
+    female: {
+      first: ["서", "지", "하", "윤", "민", "채", "수", "예", "소", "다", "아", "유", "이", "연", "주", "나", "은", "가", "로", "시"],
+      second: ["연", "윤", "우", "현", "서", "은", "아", "원", "빈", "린", "하", "주", "지", "희", "나", "이", "경", "영", "랑", "민"],
+    },
+  },
+  child: {
+    male: {
+      first: ["도", "서", "하", "이", "주", "시", "지", "유", "로", "태", "민", "건", "우", "윤", "준", "현", "은", "아", "연", "라"],
+      second: ["준", "윤", "우", "호", "원", "후", "재", "빈", "하", "민", "성", "현", "진", "겸", "찬", "율", "담", "혁", "환", "규"],
+    },
+    female: {
+      first: ["서", "이", "하", "지", "아", "유", "로", "채", "다", "나", "예", "윤", "소", "가", "시", "연", "주", "은", "라", "민"],
+      second: ["아", "윤", "우", "현", "서", "은", "연", "원", "빈", "린", "하", "주", "지", "희", "나", "이", "경", "영", "랑", "민"],
+    },
+  },
+};
+
 const remainingLifeByAge: Record<ProfileSex, readonly [number, number][]> = {
   male: [
     [0, 80.8], [15, 66.1], [20, 61.2], [25, 56.3], [30, 51.5],
@@ -172,6 +227,28 @@ function getNamePool(age: number, sex: ProfileSex): readonly string[] {
   if (age >= 40) return givenNames.middle[sex];
   if (age >= 15) return givenNames.young[sex];
   return givenNames.child[sex];
+}
+
+function getNameSyllables(age: number, sex: ProfileSex): GivenNameSyllables {
+  if (age >= 65) return givenNameSyllables.senior[sex];
+  if (age >= 40) return givenNameSyllables.middle[sex];
+  if (age >= 15) return givenNameSyllables.young[sex];
+  return givenNameSyllables.child[sex];
+}
+
+function createGivenName(age: number, sex: ProfileSex, random: () => number) {
+  const preferredNames = getNamePool(age, sex);
+  if (random() < 0.08) {
+    return preferredNames[Math.floor(random() * preferredNames.length)]!;
+  }
+
+  const { first, second } = getNameSyllables(age, sex);
+  const firstSyllable = first[Math.floor(random() * first.length)]!;
+  let secondIndex = Math.floor(random() * second.length);
+  if (second[secondIndex] === firstSyllable) {
+    secondIndex = (secondIndex + 1) % second.length;
+  }
+  return `${firstSyllable}${second[secondIndex]!}`;
 }
 
 function daysInMonth(year: number, month: number) {
@@ -264,20 +341,31 @@ function createSyntheticRegistrationNumber(
 function createProfiles(): LifeProfile[] {
   const random = mulberry32(0x5cc2024);
   const records: LifeProfile[] = [];
+  const usedNames = new Set<string>();
 
   for (const cohort of cohortTargets) {
     for (let index = 0; index < cohort.count; index += 1) {
       const age = pickAge(cohort.minAge, cohort.maxAge, random);
       const sex = pickSex(age, random);
-      const surname = pickWeighted(surnames, random);
-      const pool = getNamePool(age, sex);
-      const givenName = pool[Math.floor(random() * pool.length)]!;
+      let name = "";
+      for (let attempt = 0; attempt < 500; attempt += 1) {
+        const surname = pickWeighted(surnames, random);
+        const givenName = createGivenName(age, sex, random);
+        const candidate = `${surname}${givenName}`;
+        if (usedNames.has(candidate)) continue;
+        usedNames.add(candidate);
+        name = candidate;
+        break;
+      }
+      if (!name) {
+        throw new Error("Unable to create a unique synthetic profile name");
+      }
       const birthDate = createBirthDate(age, random);
       const registrationRandom = mulberry32(0x7aa0000 + records.length);
 
       records.push({
         id: `npc-${String(records.length + 1).padStart(4, "0")}`,
-        name: `${surname}${givenName}`,
+        name,
         sex,
         birthDate,
         deathDate: createDeathDate(age, sex, random),
@@ -304,14 +392,14 @@ const koreanNameCollator = new Intl.Collator("ko-KR", {
   usage: "sort",
 });
 
-const profilesSortedByName = [...lifeProfiles].sort(
+export const lifeProfilesSortedByName = [...lifeProfiles].sort(
   (a, b) => koreanNameCollator.compare(a.name, b.name) || a.id.localeCompare(b.id),
 );
 
 export const lifeProfilesInSnakeOrder: readonly LifeProfile[] = Array.from(
   { length: GRID_ROWS },
   (_, rowIndex) => {
-    const row = profilesSortedByName.slice(
+    const row = lifeProfilesSortedByName.slice(
       rowIndex * GRID_COLUMNS,
       (rowIndex + 1) * GRID_COLUMNS,
     );

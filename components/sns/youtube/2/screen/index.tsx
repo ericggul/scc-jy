@@ -8,6 +8,7 @@ import {
   youtubeTwoComments,
   youtubeTwoCreator,
   youtubeTwoCreators,
+  repeatYoutubeTwoVideos,
   youtubeTwoVideo,
   youtubeTwoVideos,
 } from "../model/data";
@@ -84,8 +85,8 @@ function Avatar({ creatorId, size = 38 }: { creatorId: string; size?: number }) 
 
 function DurationBadge({ video }: { video: YoutubeTwoVideo }) {
   return (
-    <span className={`absolute bottom-1.5 right-1.5 rounded-[4px] px-1.5 py-0.5 text-[12px] font-semibold leading-none text-white ${video.live ? "bg-[#cc0000]" : "bg-black/80"}`}>
-      {video.live ? "LIVE" : video.duration}
+    <span className={`absolute bottom-1.5 right-1.5 inline-flex items-center gap-1 rounded-[4px] px-1.5 py-0.5 text-[12px] font-semibold leading-none text-white ${video.live ? "bg-[#cc0000]" : "bg-black/80"}`}>
+      {video.live ? "LIVE" : <><YoutubeTwoIcon className="h-3.5 w-3.5" name="music" />{video.duration}</>}
     </span>
   );
 }
@@ -321,9 +322,9 @@ function WatchActions({
   onMore: () => void;
 }) {
   const action = (icon: YoutubeTwoIconName, label: string, onClick: () => void, pressed?: boolean) => (
-    <button aria-label={label} aria-pressed={pressed} className={`grid h-12 w-12 shrink-0 place-items-center rounded-full bg-[#272727] text-[#f1f1f1] outline-none hover:bg-[#3f3f3f] focus-visible:ring-2 focus-visible:ring-[#3ea6ff] md:inline-flex md:h-9 md:w-auto md:gap-2 md:px-3 md:text-[14px] md:font-medium md:bg-[#f2f2f2] md:text-[#0f0f0f] md:hover:bg-[#e5e5e5]`} key={label} onClick={onClick} type="button"><YoutubeTwoIcon className="h-6 w-6 md:h-5 md:w-5" name={icon} /><span className="hidden md:inline">{label}</span></button>
+    <button aria-label={label} aria-pressed={pressed} className={`grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#272727] text-[#f1f1f1] outline-none hover:bg-[#3f3f3f] focus-visible:ring-2 focus-visible:ring-[#3ea6ff] md:inline-flex md:h-9 md:w-auto md:gap-2 md:px-3 md:text-[14px] md:font-medium md:bg-[#f2f2f2] md:text-[#0f0f0f] md:hover:bg-[#e5e5e5]`} key={label} onClick={onClick} type="button"><YoutubeTwoIcon className="h-[22px] w-[22px] md:h-5 md:w-5" name={icon} /><span className="hidden md:inline">{label}</span></button>
   );
-  return <div className="flex gap-3 overflow-x-auto pb-1 [scrollbar-width:none] md:gap-2">{action(liked ? "like-filled" : "like", liked ? "1.2K" : "1.1K", onLike, liked)}{action("dislike", "Dislike", onDislike, disliked)}{action("share", "Share", onShare)}{action("save", saved ? "Saved" : "Save", onSave, saved)}{action("more", "More", onMore)}</div>;
+  return <div className="flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] md:gap-2">{action(liked ? "like-filled" : "like", liked ? "1.2K" : "1.1K", onLike, liked)}{action("dislike", "Dislike", onDislike, disliked)}{action("share", "Share", onShare)}{action("save", saved ? "Saved" : "Save", onSave, saved)}{action("more", "More", onMore)}</div>;
 }
 
 function Player({
@@ -367,16 +368,25 @@ function Player({
       <Image alt={video.alt} className="object-cover opacity-95" fill priority sizes="(max-width: 1023px) 100vw, 72vw" src={video.thumbnail} />
       <button aria-label={playing ? "Pause video" : "Play video"} className="absolute inset-0 cursor-default" onClick={() => setControls((value) => !value)} type="button" />
       <div className={`absolute inset-0 bg-gradient-to-b from-black/45 via-transparent to-black/75 transition-opacity ${controls ? "opacity-100" : "pointer-events-none opacity-0"}`}>
-        <div className="flex items-center justify-between p-3 text-white">
-          <IconButton className="hover:bg-white/[.18]" icon="chevron-down" label="Minimize player" onClick={onMinimize} />
-          <div className="flex gap-1"><IconButton className="hover:bg-white/[.18]" icon="cast" label="Cast" /><IconButton className="hover:bg-white/[.18]" icon="settings" label="Settings" /></div>
+        <div className="flex items-center justify-between px-3 pt-3 text-white md:hidden">
+          <IconButton className="h-11 w-11 hover:bg-white/[.18]" icon="chevron-down" label="Minimize player" onClick={onMinimize} />
+          <div className="flex items-center gap-1"><IconButton className="h-11 w-11 hover:bg-white/[.18]" icon="cast" label="Cast" /><IconButton className="h-11 w-11 hover:bg-white/[.18]" icon="captions" label="Captions" /><IconButton className="h-11 w-11 hover:bg-white/[.18]" icon="settings" label="Settings" /></div>
         </div>
-        <div className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-8 text-white sm:gap-12">
-          <button aria-label="Rewind 10 seconds" className="grid h-14 w-14 place-items-center rounded-full bg-black/55 outline-none hover:bg-black/70 focus-visible:ring-2 focus-visible:ring-white" onClick={() => onPosition(Math.max(0, position - 10))} type="button"><YoutubeTwoIcon className="h-7 w-7" name="rewind" /></button>
-          <button aria-label={playing ? "Pause video" : "Play video"} className="grid h-20 w-20 place-items-center rounded-full bg-black/55 outline-none hover:bg-black/70 focus-visible:ring-2 focus-visible:ring-white" onClick={onTogglePlay} type="button"><YoutubeTwoIcon className="h-9 w-9" name={playing ? "pause" : "play"} /></button>
-          <button aria-label="Forward 10 seconds" className="grid h-14 w-14 place-items-center rounded-full bg-black/55 outline-none hover:bg-black/70 focus-visible:ring-2 focus-visible:ring-white" onClick={() => onPosition(Math.min(duration, position + 10))} type="button"><YoutubeTwoIcon className="h-7 w-7" name="forward" /></button>
+        <div className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-7 text-white md:hidden">
+          <button aria-label="Rewind 10 seconds" className="grid h-[62px] w-[62px] place-items-center rounded-full bg-[#4b4b4b]/95 outline-none hover:bg-[#606060] focus-visible:ring-2 focus-visible:ring-white" onClick={() => onPosition(Math.max(0, position - 10))} type="button"><YoutubeTwoIcon className="h-8 w-8" name="rewind" /></button>
+          <button aria-label={playing ? "Pause video" : "Play video"} className="grid h-[88px] w-[88px] place-items-center rounded-full bg-[#4b4b4b]/95 outline-none hover:bg-[#606060] focus-visible:ring-2 focus-visible:ring-white" onClick={onTogglePlay} type="button"><YoutubeTwoIcon className="h-10 w-10" name={playing ? "pause" : "play"} /></button>
+          <button aria-label="Forward 10 seconds" className="grid h-[62px] w-[62px] place-items-center rounded-full bg-[#4b4b4b]/95 outline-none hover:bg-[#606060] focus-visible:ring-2 focus-visible:ring-white" onClick={() => onPosition(Math.min(duration, position + 10))} type="button"><YoutubeTwoIcon className="h-8 w-8" name="forward" /></button>
         </div>
-        <div className="absolute inset-x-0 bottom-0 px-3 pb-3 text-white">
+        <div className="absolute inset-x-0 bottom-0 text-white md:hidden">
+          <div className="flex items-center gap-2 px-3 pb-5">
+            <span className="shrink-0 rounded-full bg-[#4b4b4b]/95 px-2.5 py-1.5 text-[13px] font-semibold">{timestamp(position)} / {video.duration}</span>
+            <button className="min-w-0 flex-1 truncate rounded-full bg-[#4b4b4b]/95 px-3 py-1.5 text-left text-[13px] font-semibold" onClick={() => onPosition(Math.min(duration, position + 60))} type="button">Movement II · Hold to seek precisely</button>
+            <button aria-label="Full screen" className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#4b4b4b]/95 outline-none hover:bg-[#606060]" onClick={enterFullscreen} type="button"><YoutubeTwoIcon className="h-6 w-6" name="fullscreen" /></button>
+          </div>
+          <input aria-label="Video progress" className="youtube-two-scrubber block w-full cursor-pointer" max={duration} min="0" onChange={(event) => onPosition(Number(event.target.value))} step="1" style={{ background: `linear-gradient(to right, #ff0033 ${ratio}%, rgba(255,255,255,.55) ${ratio}%)` }} type="range" value={position} />
+          <span aria-hidden="true" className="pointer-events-none absolute bottom-0 left-[22%] h-[3px] w-[2px] bg-black/55" /><span aria-hidden="true" className="pointer-events-none absolute bottom-0 left-[39%] h-[3px] w-[2px] bg-black/55" /><span aria-hidden="true" className="pointer-events-none absolute bottom-0 left-[64%] h-[3px] w-[2px] bg-black/55" />
+        </div>
+        <div className="absolute inset-x-0 bottom-0 hidden px-3 pb-3 text-white md:block">
           <input aria-label="Video progress" className="youtube-two-scrubber block w-full cursor-pointer accent-[#ff0033]" max={duration} min="0" onChange={(event) => onPosition(Number(event.target.value))} step="1" style={{ background: `linear-gradient(to right, #ff0033 ${ratio}%, rgba(255,255,255,.55) ${ratio}%)` }} type="range" value={position} />
           <div className="mt-2 flex items-center gap-1">
             <IconButton className="hover:bg-white/[.18]" icon={playing ? "pause" : "play"} label={playing ? "Pause" : "Play"} onClick={onTogglePlay} />
@@ -415,9 +425,9 @@ function FeedInlinePlayer({ video, onOpen }: { video: YoutubeTwoVideo; onOpen: (
       <button aria-label="Show player controls" className="absolute inset-0" onClick={() => setControls((value) => !value)} type="button" />
       <span className="absolute bottom-0 left-0 h-[3px] bg-[#ff0033]" style={{ width: `${ratio}%` }} />
       <div className={`absolute inset-0 bg-gradient-to-b from-black/45 via-transparent to-black/70 transition-opacity ${controls ? "opacity-100" : "pointer-events-none opacity-0"}`}>
-        <div className="flex items-center justify-between p-3 text-white"><IconButton className="hover:bg-white/[.18]" icon="chevron-down" label="Collapse player" onClick={() => setControls(false)} /><div className="flex gap-1"><IconButton className="hover:bg-white/[.18]" icon="cast" label="Cast" /><IconButton className="hover:bg-white/[.18]" icon="settings" label="Settings" /></div></div>
-        <div className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-7 text-white"><button aria-label="Rewind 10 seconds" className="grid h-12 w-12 place-items-center rounded-full bg-black/55" onClick={() => setPosition((current) => Math.max(0, current - 10))} type="button"><YoutubeTwoIcon className="h-6 w-6" name="rewind" /></button><button aria-label={playing ? "Pause inline playback" : "Play inline playback"} className="grid h-[72px] w-[72px] place-items-center rounded-full bg-black/55" onClick={() => setPlaying((value) => !value)} type="button"><YoutubeTwoIcon className="h-8 w-8" name={playing ? "pause" : "play"} /></button><button aria-label="Forward 10 seconds" className="grid h-12 w-12 place-items-center rounded-full bg-black/55" onClick={() => setPosition((current) => Math.min(duration, current + 10))} type="button"><YoutubeTwoIcon className="h-6 w-6" name="forward" /></button></div>
-        <div className="absolute inset-x-0 bottom-0 px-3 pb-3 text-white"><input aria-label="Inline video progress" className="youtube-two-scrubber block w-full cursor-pointer" max={duration} min="0" onChange={(event) => setPosition(Number(event.target.value))} step="1" style={{ background: `linear-gradient(to right, #ff0033 ${ratio}%, rgba(255,255,255,.55) ${ratio}%)` }} type="range" value={position} /><div className="mt-2 flex items-center"><span className="rounded-full bg-black/55 px-2 py-1 text-[13px] font-medium">{timestamp(position)} / {video.duration}</span><button className="ml-auto rounded-full bg-black/55 px-3 py-1.5 text-[13px] font-semibold" onClick={() => onOpen(video)} type="button">Watch page</button></div></div>
+        <div className="flex items-center justify-between px-3 pt-3 text-white"><IconButton className="h-11 w-11 hover:bg-white/[.18]" icon="chevron-down" label="Collapse player" onClick={() => setControls(false)} /><div className="flex gap-1"><IconButton className="h-11 w-11 hover:bg-white/[.18]" icon="cast" label="Cast" /><IconButton className="h-11 w-11 hover:bg-white/[.18]" icon="captions" label="Captions" /><IconButton className="h-11 w-11 hover:bg-white/[.18]" icon="settings" label="Settings" /></div></div>
+        <div className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-7 text-white"><button aria-label="Rewind 10 seconds" className="grid h-[62px] w-[62px] place-items-center rounded-full bg-[#4b4b4b]/95" onClick={() => setPosition((current) => Math.max(0, current - 10))} type="button"><YoutubeTwoIcon className="h-8 w-8" name="rewind" /></button><button aria-label={playing ? "Pause inline playback" : "Play inline playback"} className="grid h-[88px] w-[88px] place-items-center rounded-full bg-[#4b4b4b]/95" onClick={() => setPlaying((value) => !value)} type="button"><YoutubeTwoIcon className="h-10 w-10" name={playing ? "pause" : "play"} /></button><button aria-label="Forward 10 seconds" className="grid h-[62px] w-[62px] place-items-center rounded-full bg-[#4b4b4b]/95" onClick={() => setPosition((current) => Math.min(duration, current + 10))} type="button"><YoutubeTwoIcon className="h-8 w-8" name="forward" /></button></div>
+        <div className="absolute inset-x-0 bottom-0 text-white"><div className="flex items-center gap-2 px-3 pb-5"><span className="shrink-0 rounded-full bg-[#4b4b4b]/95 px-2.5 py-1.5 text-[13px] font-semibold">{timestamp(position)} / {video.duration}</span><button className="min-w-0 flex-1 truncate rounded-full bg-[#4b4b4b]/95 px-3 py-1.5 text-left text-[13px] font-semibold" onClick={() => onOpen(video)} type="button">Movement II · Hold to seek precisely</button><span className="grid h-11 w-11 place-items-center rounded-full bg-[#4b4b4b]/95"><YoutubeTwoIcon className="h-6 w-6" name="fullscreen" /></span></div><input aria-label="Inline video progress" className="youtube-two-scrubber block w-full cursor-pointer" max={duration} min="0" onChange={(event) => setPosition(Number(event.target.value))} step="1" style={{ background: `linear-gradient(to right, #ff0033 ${ratio}%, rgba(255,255,255,.55) ${ratio}%)` }} type="range" value={position} /></div>
       </div>
     </section>
   );
@@ -465,8 +475,22 @@ function WatchPage({
   const [expanded, setExpanded] = useState(false);
   const [subscribed, setSubscribed] = useState(false);
   const [autoplay, setAutoplay] = useState(true);
+  const [visibleRecommendations, setVisibleRecommendations] = useState(10);
   const creator = youtubeTwoCreator(video.creatorId);
   const recommendations = youtubeTwoVideos.filter((candidate) => candidate.id !== video.id);
+  const recommendationEntries = useMemo(
+    () => repeatYoutubeTwoVideos(recommendations, visibleRecommendations, `watch-next-${video.id}`),
+    [recommendations, video.id, visibleRecommendations],
+  );
+
+  useEffect(() => {
+    const extendRecommendations = () => {
+      const remaining = document.documentElement.scrollHeight - window.scrollY - window.innerHeight;
+      if (remaining < 960) setVisibleRecommendations((count) => count + 8);
+    };
+    window.addEventListener("scroll", extendRecommendations, { passive: true });
+    return () => window.removeEventListener("scroll", extendRecommendations);
+  }, []);
 
   return (
     <main className="bg-[#0f0f0f] pb-24 text-[#f1f1f1] md:min-h-[calc(100dvh-56px)] md:bg-white md:px-6 md:py-6 md:text-[#0f0f0f]">
@@ -474,29 +498,36 @@ function WatchPage({
         <section className="min-w-0">
           <Player muted={muted} onMinimize={onMinimize} onPosition={onPosition} onToggleMute={onToggleMute} onTogglePlay={onTogglePlay} playing={playing} position={position} video={video} />
           <div className="px-3 pt-3 md:px-0">
-            <h1 className="text-[18px] font-semibold leading-[1.28] tracking-[-.02em] md:text-[20px]">{video.title}</h1>
-            <p className="mt-1 text-[14px] text-[#aaa] md:text-[#606060]">{video.views} <span aria-hidden="true">•</span> {video.published}</p>
-            <div className="mt-3 flex items-center gap-3">
+            <h1 className="line-clamp-2 text-[21px] font-semibold leading-[1.24] tracking-[-.035em] md:text-[20px]">{video.title}</h1>
+            <p className="mt-1 truncate text-[15px] text-[#aaa] md:text-[#606060]"><span className="md:hidden">{creator.handle} <span aria-hidden="true">•</span> 3.7K likes <span aria-hidden="true">•</span> </span>{video.views} <span aria-hidden="true">•</span> {video.published} <button aria-expanded={expanded} className="ml-1 font-semibold text-[#f1f1f1] md:hidden" onClick={() => setExpanded((value) => !value)} type="button">…more</button></p>
+            <div className="mt-4 flex items-center gap-2 overflow-hidden md:hidden">
+              <Avatar creatorId={creator.id} size={42} />
+              <button aria-label={subscribed ? "Subscription options" : "Subscribe"} className="inline-flex h-11 shrink-0 items-center gap-1 rounded-full bg-[#272727] px-3 text-[#f1f1f1] outline-none hover:bg-[#3f3f3f]" onClick={() => setSubscribed((value) => !value)} type="button"><YoutubeTwoIcon className="h-6 w-6" name="bell-off" /><YoutubeTwoIcon className="h-4 w-4" name="chevron-down" /></button>
+              <WatchActions disliked={disliked} liked={liked} onDislike={onDislike} onLike={onLike} onMore={() => onMore(video)} onSave={onSave} onShare={onShare} saved={saved} />
+            </div>
+            <div className="mt-3 hidden items-center gap-3 md:flex">
               <Avatar creatorId={creator.id} size={40} />
               <div className="min-w-0 flex-1"><span className="block truncate text-[14px] font-semibold">{creator.name}</span><span className="block text-[12px] text-[#aaa] md:text-[#606060]">{creator.subscribers}</span></div>
               <button className={`h-9 rounded-full px-4 text-[14px] font-semibold outline-none transition focus-visible:ring-2 focus-visible:ring-[#3ea6ff] ${subscribed ? "bg-[#272727] text-white md:bg-[#f2f2f2] md:text-[#0f0f0f]" : "bg-white text-[#0f0f0f] md:bg-[#0f0f0f] md:text-white"}`} onClick={() => setSubscribed((value) => !value)} type="button">{subscribed ? "Subscribed" : "Subscribe"}</button>
             </div>
-            <div className="mt-4"><WatchActions disliked={disliked} liked={liked} onDislike={onDislike} onLike={onLike} onMore={() => onMore(video)} onSave={onSave} onShare={onShare} saved={saved} /></div>
-            <button aria-expanded={expanded} className="mt-3 block w-full rounded-xl bg-[#272727] px-3 py-3 text-left text-[14px] leading-5 outline-none hover:bg-[#3a3a3a] focus-visible:ring-2 focus-visible:ring-[#3ea6ff] md:bg-[#f2f2f2] md:hover:bg-[#e6e6e6]" onClick={() => setExpanded((value) => !value)} type="button">
+            <div className="mt-4 hidden md:block"><WatchActions disliked={disliked} liked={liked} onDislike={onDislike} onLike={onLike} onMore={() => onMore(video)} onSave={onSave} onShare={onShare} saved={saved} /></div>
+            <button aria-expanded={expanded} className="mt-3 hidden w-full rounded-xl bg-[#272727] px-3 py-3 text-left text-[14px] leading-5 outline-none hover:bg-[#3a3a3a] focus-visible:ring-2 focus-visible:ring-[#3ea6ff] md:block md:bg-[#f2f2f2] md:hover:bg-[#e6e6e6]" onClick={() => setExpanded((value) => !value)} type="button">
               <span className="font-semibold">{video.views} views</span> <span className="font-semibold">{video.published}</span>
               <span className={`mt-1 block ${expanded ? "" : "line-clamp-2"}`}>{video.description}</span>
               <span className="mt-1 block font-semibold">{expanded ? "Show less" : "…more"}</span>
             </button>
-            <button className="mt-3 flex w-full items-center justify-between rounded-xl bg-[#272727] px-3 py-3 text-left outline-none hover:bg-[#3a3a3a] focus-visible:ring-2 focus-visible:ring-[#3ea6ff] md:bg-[#f2f2f2] md:hover:bg-[#e6e6e6]" onClick={onOpenComments} type="button">
-              <span><span className="font-semibold">Comments</span><span className="ml-2 text-[#aaa] md:text-[#606060]">1,264</span></span>
-              <span className="text-[#aaa]">••</span>
+            <button className="mt-5 block w-full rounded-2xl bg-[#202020] px-3 py-3 text-left outline-none hover:bg-[#2b2b2b] focus-visible:ring-2 focus-visible:ring-[#3ea6ff] md:bg-[#f2f2f2] md:hover:bg-[#e6e6e6]" onClick={onOpenComments} type="button">
+              <span className="flex items-center justify-between"><span><span className="text-[18px] font-semibold">Comments</span><span className="ml-2 text-[18px] text-[#aaa] md:text-[#606060]">265</span></span><span className="text-[20px] text-[#aaa]">••</span></span>
+              <span className="mt-4 flex gap-3"><Image alt="" className="h-11 w-11 shrink-0 rounded-full object-cover" height={88} src={youtubeTwoComments[0].avatar} width={88} /><span className="min-w-0"><span className="block text-[14px] font-semibold">{youtubeTwoComments[0].author}</span><span className="mt-1 line-clamp-2 block text-[15px] leading-5 text-[#ddd] md:text-[#0f0f0f]">{youtubeTwoComments[0].body}</span></span></span>
             </button>
-            <article className="mt-2 flex gap-3 px-1 py-2"><Image alt="" className="h-8 w-8 rounded-full object-cover" height={64} src={youtubeTwoComments[0].avatar} width={64} /><div className="min-w-0"><span className="text-[13px] font-semibold">{youtubeTwoComments[0].author}</span><p className="line-clamp-2 text-[14px] leading-5 text-[#ddd] md:text-[#0f0f0f]">{youtubeTwoComments[0].body}</p></div></article>
           </div>
         </section>
-        <aside className="mt-6 px-3 md:mt-0 md:px-0">
+        <section className="mt-6 grid gap-y-7 md:hidden">
+          {recommendationEntries.map((entry) => <VideoCard key={entry.id} onMore={onMore} onOpen={onOpen} video={entry.video} />)}
+        </section>
+        <aside className="mt-0 hidden px-0 md:mt-0 md:block">
           <div className="mb-3 flex items-center justify-between"><h2 className="text-[18px] font-semibold">Up next</h2><button aria-pressed={autoplay} className="text-[13px] text-[#aaa] md:text-[#606060]" onClick={() => setAutoplay((value) => !value)} type="button">Autoplay <span className={`ml-1 inline-block h-3 w-6 rounded-full align-middle ${autoplay ? "bg-[#065fd4]" : "bg-[#777]"}`}><span className={`block h-3 w-3 rounded-full bg-white transition-transform ${autoplay ? "translate-x-3" : "translate-x-0"}`} /></span></button></div>
-          <div className="grid gap-3">{recommendations.map((candidate) => <VideoCard compact key={candidate.id} onMore={onMore} onOpen={onOpen} video={candidate} />)}</div>
+          <div className="grid gap-3">{recommendationEntries.map((entry) => <VideoCard compact key={entry.id} onMore={onMore} onOpen={onOpen} video={entry.video} />)}</div>
         </aside>
       </div>
     </main>
@@ -518,7 +549,7 @@ function HomePage({
   const videos = useMemo(() => {
     const eligible = activeChip === "All" ? youtubeTwoVideos : youtubeTwoVideos.filter((video) => video.topic === activeChip);
     const source = eligible.length ? eligible : youtubeTwoVideos;
-    return Array.from({ length: visible }, (_, index) => source[index % source.length]);
+    return repeatYoutubeTwoVideos(source, visible, "home");
   }, [activeChip, visible]);
 
   useEffect(() => {
@@ -534,7 +565,7 @@ function HomePage({
       <div className="md:hidden"><FeedInlinePlayer onOpen={onOpen} video={youtubeTwoVideos[0]} /></div>
       <TopicRail active={activeChip} onChoose={onChooseChip} />
       <section className="grid gap-y-7 md:grid-cols-2 md:gap-x-4 md:gap-y-9 md:px-6 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-        {videos.map((video, index) => <VideoCard key={`${video.id}-${index}`} onMore={onMore} onOpen={onOpen} video={video} />)}
+        {videos.map((entry) => <VideoCard key={entry.id} onMore={onMore} onOpen={onOpen} video={entry.video} />)}
       </section>
     </main>
   );
@@ -625,7 +656,17 @@ function MiniPlayer({ video, playing, onTogglePlay, onOpen, onDismiss }: { video
     const y = Math.max(-520, Math.min(80, drag.current.y + event.clientY - drag.current.pointerY));
     setOffset({ x, y });
   };
-  return <aside aria-label="Miniplayer" className="fixed bottom-[calc(70px+env(safe-area-inset-bottom))] right-2 z-35 overflow-hidden rounded-xl bg-[#202020] text-white shadow-[0_12px_36px_rgba(0,0,0,.48)] md:bottom-5 md:right-5" style={{ transform: `translate3d(${offset.x}px, ${offset.y}px, 0)`, width: `min(${expanded ? 390 : 300}px, calc(100vw - 24px))` }}><button className="relative block aspect-video w-full text-left" onClick={onOpen} type="button"><Image alt={video.alt} className="object-cover" fill sizes="390px" src={video.thumbnail} /><span className="absolute bottom-0 left-0 h-[3px] bg-[#ff0033]" style={{ width: `${video.progress ?? 18}%` }} /></button><div className="flex h-12 items-center gap-1 px-2"><div className="min-w-0 flex-1 cursor-grab touch-none active:cursor-grabbing" onDoubleClick={() => setExpanded((value) => !value)} onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={() => { drag.current = null; }} role="presentation"><p className="truncate text-[13px] font-medium">{video.title}</p></div><IconButton className="hover:bg-white/[.14]" icon={playing ? "pause" : "play"} label={playing ? "Pause" : "Play"} onClick={onTogglePlay} /><IconButton className="hover:bg-white/[.14]" icon="close" label="Dismiss miniplayer" onClick={onDismiss} /></div></aside>;
+  return (
+    <aside aria-label="Miniplayer" className={`fixed bottom-[calc(70px+env(safe-area-inset-bottom))] right-2 z-35 overflow-hidden rounded-2xl bg-black text-white shadow-[0_12px_36px_rgba(0,0,0,.48)] md:bottom-5 md:right-5 md:w-[320px] md:max-w-none ${expanded ? "w-[min(390px,calc(100vw-24px))]" : "w-[47vw] max-w-[220px]"}`} style={{ transform: `translate3d(${offset.x}px, ${offset.y}px, 0)` }}>
+      <div className="relative aspect-video w-full cursor-grab touch-none active:cursor-grabbing" onClick={onOpen} onDoubleClick={() => setExpanded((value) => !value)} onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={() => { drag.current = null; }} role="button" tabIndex={0}>
+        <Image alt={video.alt} className="object-cover" fill sizes="390px" src={video.thumbnail} />
+        <div className="absolute inset-x-0 top-0 flex items-start justify-between bg-gradient-to-b from-black/55 to-transparent p-2">
+          <button aria-label={playing ? "Pause" : "Play"} className="grid h-10 w-10 place-items-center rounded-full bg-black/35 outline-none hover:bg-black/55" onClick={(event) => { event.stopPropagation(); onTogglePlay(); }} onPointerDown={(event) => event.stopPropagation()} type="button"><YoutubeTwoIcon className="h-6 w-6" name={playing ? "pause" : "play"} /></button>
+          <button aria-label="Dismiss miniplayer" className="grid h-10 w-10 place-items-center rounded-full bg-black/35 outline-none hover:bg-black/55" onClick={(event) => { event.stopPropagation(); onDismiss(); }} onPointerDown={(event) => event.stopPropagation()} type="button"><YoutubeTwoIcon className="h-7 w-7" name="close" /></button>
+        </div>
+      </div>
+    </aside>
+  );
 }
 
 export function YoutubeTwoScreen() {
@@ -716,7 +757,7 @@ export function YoutubeTwoScreen() {
   };
 
   const content: ReactNode = view === "watch" ? (
-    <WatchPage disliked={disliked} liked={liked} muted={muted} onDislike={() => { setDisliked((value) => !value); setLiked(false); }} onLike={() => { setLiked((value) => !value); setDisliked(false); }} onMinimize={() => navigate("home")} onMore={setMenuVideo} onOpen={openVideo} onOpenComments={() => setCommentsOpen(true)} onPosition={setPosition} onSave={() => { setSaved((value) => !value); announce(saved ? "Removed from Watch later" : "Saved to Watch later"); }} onShare={share} onToggleMute={() => setMuted((value) => !value)} onTogglePlay={() => setPlaying((value) => !value)} playing={playing} position={position} saved={saved} video={selected} />
+    <WatchPage key={selected.id} disliked={disliked} liked={liked} muted={muted} onDislike={() => { setDisliked((value) => !value); setLiked(false); }} onLike={() => { setLiked((value) => !value); setDisliked(false); }} onMinimize={() => navigate("home")} onMore={setMenuVideo} onOpen={openVideo} onOpenComments={() => setCommentsOpen(true)} onPosition={setPosition} onSave={() => { setSaved((value) => !value); announce(saved ? "Removed from Watch later" : "Saved to Watch later"); }} onShare={share} onToggleMute={() => setMuted((value) => !value)} onTogglePlay={() => setPlaying((value) => !value)} playing={playing} position={position} saved={saved} video={selected} />
   ) : view === "subscriptions" ? <SubscriptionsPage onMore={setMenuVideo} onOpen={openVideo} />
     : view === "you" ? <YouPage onOpen={openVideo} />
       : view === "search" ? <SearchPage onMore={setMenuVideo} onOpen={openVideo} query={query} />

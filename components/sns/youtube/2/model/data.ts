@@ -168,3 +168,20 @@ export function youtubeTwoCreator(id: string) {
 export function youtubeTwoVideo(id: string) {
   return youtubeTwoVideos.find((video) => video.id === id) ?? youtubeTwoVideos[0];
 }
+
+export type YoutubeTwoFeedEntry = {
+  id: string;
+  video: YoutubeTwoVideo;
+};
+
+export function repeatYoutubeTwoVideos(
+  records: YoutubeTwoVideo[],
+  count: number,
+  context: string,
+): YoutubeTwoFeedEntry[] {
+  if (!records.length) return [];
+  return Array.from({ length: count }, (_, index) => {
+    const video = records[index % records.length];
+    return { id: `${context}-${video.id}-${index}`, video };
+  });
+}
