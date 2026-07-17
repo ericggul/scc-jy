@@ -4,6 +4,7 @@ import type { ComponentType } from "react";
 import SnsFeedOne from "@/components/sns/feed/1";
 import SnsNavigationOne from "@/components/sns/navigation/1";
 import SnsNavigationDefault from "@/components/sns/navigation/default";
+import SnsLinkedinOne from "@/components/sns/linkedin/1";
 import SnsYoutubeOne from "@/components/sns/youtube/1";
 import SnsYoutubeTwo from "@/components/sns/youtube/2";
 import {
@@ -16,6 +17,7 @@ const components: Record<SnsExperimentKey, ComponentType> = {
   "feed/1": SnsFeedOne,
   "navigation/default": SnsNavigationDefault,
   "navigation/1": SnsNavigationOne,
+  "linkedin/1": SnsLinkedinOne,
   "youtube/1": SnsYoutubeOne,
   "youtube/2": SnsYoutubeTwo,
 };

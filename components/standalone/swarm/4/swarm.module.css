@@ -1,0 +1,143 @@
+.page {
+  position: relative;
+  min-height: 100svh;
+  overflow: hidden;
+  background: #f4f4f1;
+  color: #11110f;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.backgroundCanvas,
+.cursorCanvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.backgroundCanvas {
+  pointer-events: none;
+}
+
+.cursorCanvas {
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.cursorCanvas:focus-visible {
+  outline: none;
+}
+
+.controlBar {
+  position: absolute;
+  z-index: 1;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: clamp(1.5rem, 5vw, 4rem);
+  border-top: 1px solid rgba(17, 17, 15, 0.3);
+  padding: 0.7rem clamp(1rem, 3vw, 2.75rem);
+  background: #f4f4f1;
+  font-size: 0.72rem;
+}
+
+.cursorCountControl {
+  display: grid;
+  grid-template-columns: max-content minmax(10rem, 28vw);
+  align-items: center;
+  gap: 0.85rem;
+  color: rgba(17, 17, 15, 0.68);
+}
+
+.cursorCountControl output {
+  color: #11110f;
+  font-variant-numeric: tabular-nums;
+}
+
+.cursorCountControl input {
+  width: 100%;
+  height: 0.9rem;
+  margin: 0;
+  cursor: ew-resize;
+  appearance: none;
+  background: transparent;
+}
+
+.cursorCountControl input::-webkit-slider-runnable-track {
+  height: 1px;
+  background: rgba(17, 17, 15, 0.38);
+}
+
+.cursorCountControl input::-webkit-slider-thumb {
+  width: 0.68rem;
+  height: 0.68rem;
+  margin-top: -0.31rem;
+  appearance: none;
+  border: 1px solid #11110f;
+  border-radius: 50%;
+  background: #f4f4f1;
+}
+
+.cursorCountControl input::-moz-range-track {
+  height: 1px;
+  background: rgba(17, 17, 15, 0.38);
+}
+
+.cursorCountControl input::-moz-range-thumb {
+  width: 0.68rem;
+  height: 0.68rem;
+  border: 1px solid #11110f;
+  border-radius: 50%;
+  background: #f4f4f1;
+}
+
+.collisionControl {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: rgba(17, 17, 15, 0.68);
+  cursor: pointer;
+}
+
+.collisionControl input {
+  width: 0.72rem;
+  height: 0.72rem;
+  margin: 0;
+  cursor: pointer;
+  appearance: none;
+  border: 1px solid #11110f;
+  border-radius: 0;
+  background: #f4f4f1;
+}
+
+.collisionControl input:checked {
+  background: #11110f;
+  box-shadow: inset 0 0 0 2px #f4f4f1;
+}
+
+.cursorCountControl input:focus-visible,
+.collisionControl input:focus-visible {
+  outline: 1px solid #11110f;
+  outline-offset: 4px;
+}
+
+@media (max-width: 620px) {
+  .controlBar {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 0.7rem;
+  }
+
+  .cursorCountControl {
+    grid-template-columns: max-content minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cursorCanvas {
+    cursor: default;
+  }
+}

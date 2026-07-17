@@ -1,11 +1,14 @@
 # Swarm experiment
 
-Route: `/swarm/1`, registered through the shared swarm experiment registry.
+Routes: `/swarm/1`, `/swarm/2`, `/swarm/3`, `/swarm/4`, and `/swarm/5`, registered through the shared swarm experiment registry.
 
 Variants:
 
 - `/swarm/1`: neutral movement field.
 - `/swarm/2`: the same field and interaction, with a full-viewport coastline map and curved latitude/longitude graticule defining the swarm's entire movement space as the world.
+- `/swarm/3`: the world field becomes a launch field. Every valid map click is a missile origin: it sends a twenty-missile salvo toward twenty distinct, randomly selected countries, while the immigrant flock treats every origin as a persistent local danger and steers away from it.
+- `/swarm/4`: a 200-cursor field with larger marks and cells around persistently selected forbidden cells.
+- `/swarm/5`: the denser 1000-cursor, half-scale counterpart of `swarm/4`.
 
 ## Interface premise
 
@@ -31,3 +34,29 @@ The implementation follows the reference model's three local rules—separation,
 Country clicks activate a `M×GA` campaign derived from the country's slogan keyword—for example `MAGA`, `MKGA`, or `MEGA`. Ocean clicks activate `MFGA`, “Make Fishes Great Again.” Only the four-letter campaign code is centered horizontally and vertically on its exact attention coordinate, with no dot marker. The unlabeled campaign ledger occupies a shallow three-column strip at the bottom. Every campaign fits on one row—code, full name, and assigned `immigrants` count—and repeated clicks are grouped by campaign. `swarm/2` owns its model, map, styles, and interaction component independently; these features do not enter the `swarm/1` module graph.
 
 Each of the 177 countries plus the ocean campaign has a dedicated mono AAC/M4A voice file under `public/audio/swarm-campaigns/`. Clicking a campaign point stops the previous voice and immediately plays its corresponding “Make ___ Great Again” recording. The generated manifest records the voice, campaign identity, path, and encoded byte size; the generator is retained at `scripts/generate-swarm-campaign-audio.mjs` for deterministic regeneration.
+
+## Swarm/3 interface premise
+
+1. **Participant situation:** one person marks a location on a world map and observes a rapid outward salvo alongside the collective movement it displaces.
+2. **Primary parameter:** the launch origin's position, which is simultaneously the source of twenty directed trajectories and a repulsion field for the flock.
+3. **Perceptual job:** make the relation between a local act, geographically distributed destinations, and nearby collective avoidance immediately visible.
+4. **Interaction job:** click anywhere inside the Robinson world outline to create a launch. A land click excludes the origin country from the twenty distinct destinations; an ocean click draws from all countries. `clear launches` removes both the visible origins and their avoidance fields.
+5. **Wrapper justification:** the established full-world field is retained because source, destination, path, and avoidance need a common spatial surface; the muted rust trajectory is reserved for the new directed act, while the swarm remains the existing open dark mark.
+6. **System family:** the paper ground, line map, viewport canvas, three swarm controls, pause/reset actions, and compact hairline panel are shared with `swarm/2`; there are no dashboards, campaign metadata, labels, or destination lists competing with the map.
+7. **Removal test:** the launch crosshair, arrival impact burst, persistent destroyed-target mark, directed trajectories, and the flock's origin avoidance are necessary. Country labels, counts, a target ledger, impact statistics, and simulated command metadata are omitted because they would not make the interaction more legible.
+
+## Swarm/4 interface premise
+
+1. **Participant situation:** one person encounters a full-screen field and designates multiple locations by clicking or press-dragging through them.
+2. **Primary parameter:** the persistent set of selected grid cells, each represented only by a black fill; in `swarm/4`, cursor count and inter-cursor collision prevention are direct secondary parameters.
+3. **Perceptual job:** notice cursor groups tightening around every selected cell while each black square remains empty, and compare the field's density with and without enforced cursor spacing.
+4. **Interaction job:** every click adds another implied cell without removing prior selections; press-drag selects every crossed cell as one continuous trace. Stable cursor IDs distribute the groups across the complete target list. Enter or Space adds the central cell, and Escape clears every selection. `swarm/4`'s persistent bottom bar changes cursor count in 50-agent steps and toggles only cursor-to-cursor collision prevention.
+5. **Wrapper justification:** small plus marks make the discrete cells perceptible without turning the surface into a drawn grid. A single hairline bottom bar gives the two directly manipulable simulation parameters a stable place without obscuring the field. Black-cell exclusion remains a hard spatial constraint in either collision mode.
+6. **System family:** full-viewport field, neutral paper, dark marks, canvas motion, and direct clicking remain shared with the other swarm experiments.
+7. **Removal test:** visible grid lines, labels, and legends are absent because none help locate or operate the selected cells. The cross marks, cursor agents, selected cells, exclusion constraint, and the two-parameter `swarm/4` control bar remain necessary.
+
+`swarm/4` uses 200 stable cursor-agent IDs, 40–60px cells, full-scale cursor glyphs, a 16px cursor-spacing target, and a 6px black-cell exclusion clearance. Its bottom bar starts with cursor-to-cursor collision prevention off, can toggle it on, and can change the active count from 50 to 1000 in 50-agent steps. `swarm/5` keeps collision prevention on and uses 1000 IDs, 20–30px cells, half-scale glyphs, an 8px spacing target, and a 3px clearance. Both variants use the same spatial-neighbour, separation, alignment, cohesion, edge, and arrival rules as `swarm/1` and `swarm/2`, changing only the glyph, density, and target boundary. Every selected cell is retained as an attention target; each cursor is assigned by `id % targetCount` and receives a moving perimeter destination around that cell. Each group fills outward perimeter bands, so a dense target remains legible rather than collapsing into one mark. The cursor glyph's arrow tip is rotated to the current velocity vector.
+
+## Swarm/5 interface premise
+
+`swarm/5` preserves `swarm/4`'s movement and cell-selection language, but omits its configuration bar. It exists only as the denser performance variant: the smaller cell and glyph scale maintain the same relative spacing while allowing one thousand cursor agents to remain distinct.

@@ -534,3 +534,10 @@ export const majorCountryCoordinates = countries
     longitude: country.label[0],
     latitude: country.label[1],
   }));
+
+export const countryCoordinates = countries.map((country) => ({
+  id: country.id,
+  name: country.name,
+  longitude: country.label[0],
+  latitude: country.label[1],
+}));
