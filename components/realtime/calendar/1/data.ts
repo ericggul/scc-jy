@@ -1,6 +1,6 @@
 import type { LifeProfile, ProfileSex } from "./types";
 
-export const POPULATION_SIZE = 2_500;
+export const POPULATION_SIZE = 25_000;
 export const GRID_COLUMNS = 3;
 // Compatibility alias for an in-flight Turbopack graph compiled before the
 // mobile directory changed from a square grid to a vertical ledger.
@@ -9,6 +9,8 @@ export const GRID_ROWS = Math.ceil(POPULATION_SIZE / GRID_COLUMNS);
 export const VISIBLE_COLUMNS = GRID_COLUMNS;
 export const VISIBLE_ROWS = 30;
 export const VISIBLE_PROFILE_COUNT = VISIBLE_COLUMNS * VISIBLE_ROWS;
+export const SELECTION_ROWS = VISIBLE_ROWS * 10;
+export const SELECTED_PROFILE_COUNT = VISIBLE_COLUMNS * SELECTION_ROWS;
 export const POPULATION_REFERENCE_DATE = "2024-11-01";
 
 export const demographicBasis = {
@@ -118,10 +120,10 @@ const remainingLifeByAge: Record<ProfileSex, readonly [number, number][]> = {
 };
 
 const cohortTargets = [
-  { count: 268, minAge: 0, maxAge: 14 },
-  { count: 723, minAge: 15, maxAge: 39 },
-  { count: 1_007, minAge: 40, maxAge: 64 },
-  { count: 502, minAge: 65, maxAge: 103 },
+  { count: 2_680, minAge: 0, maxAge: 14 },
+  { count: 7_230, minAge: 15, maxAge: 39 },
+  { count: 10_070, minAge: 40, maxAge: 64 },
+  { count: 5_020, minAge: 65, maxAge: 103 },
 ] as const;
 
 function mulberry32(seed: number) {
@@ -318,5 +320,5 @@ export const lifeProfilesInSnakeOrder: readonly LifeProfile[] = Array.from(
 ).flat();
 
 export const initialProfileIds = lifeProfilesInSnakeOrder
-  .slice(0, VISIBLE_PROFILE_COUNT)
+  .slice(0, SELECTED_PROFILE_COUNT)
   .map((profile) => profile.id);

@@ -5,6 +5,7 @@ import SnsFeedOne from "@/components/sns/feed/1";
 import SnsNavigationOne from "@/components/sns/navigation/1";
 import SnsNavigationDefault from "@/components/sns/navigation/default";
 import SnsYoutubeOne from "@/components/sns/youtube/1";
+import SnsYoutubeTwo from "@/components/sns/youtube/2";
 import {
   findSnsExperiment,
   snsExperiments,
@@ -16,6 +17,7 @@ const components: Record<SnsExperimentKey, ComponentType> = {
   "navigation/default": SnsNavigationDefault,
   "navigation/1": SnsNavigationOne,
   "youtube/1": SnsYoutubeOne,
+  "youtube/2": SnsYoutubeTwo,
 };
 
 export function generateStaticParams() {

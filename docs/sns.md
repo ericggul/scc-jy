@@ -7,6 +7,7 @@ Routes:
 - `/sns/navigation/default`
 - `/sns/navigation/1`
 - `/sns/youtube/1`
+- `/sns/youtube/2`
 
 Files:
 
@@ -18,7 +19,9 @@ Files:
 - `components/sns/navigation/default/index.tsx`
 - `components/sns/navigation/1/index.tsx`
 - `components/sns/youtube/1/`
+- `components/sns/youtube/2/`
 - `docs/sns-youtube.md`
+- `docs/sns-youtube-2.md`
 
 Intent:
 
@@ -46,6 +49,11 @@ uses YouTube's navigation and viewing grammar across discovery, search, watch,
 comments, channel, library, queue, and account states while avoiding a
 short-video-only interaction. Its model, interaction map, and visual rationale
 are documented in `docs/sns-youtube.md`.
+
+`/sns/youtube/2` is an independent current-pattern YouTube reconstruction.
+It preserves the supplied dark mobile viewing grammar, adds a separate desktop
+guide/search/watch-next composition, and documents its 56-source research
+ledger in `docs/sns-youtube-2.md`.
 
 The icon system must communicate these cycles without visible explanatory
 text. At the rendered 28-pixel size, prefer established universal pictograms

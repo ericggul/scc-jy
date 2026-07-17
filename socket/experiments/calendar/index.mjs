@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 const id = "calendar";
-const maxProfiles = 2_500;
+const maxProfiles = 25_000;
 const maxGridColumns = 50;
 const variants = new Set(["1"]);
 const clients = new Map();
@@ -29,15 +29,15 @@ function defaultSelection(variantId) {
     experimentId: id,
     variantId,
     profileIds: Array.from(
-      { length: 90 },
+      { length: 900 },
       (_, index) => `npc-${String(index + 1).padStart(4, "0")}`,
     ),
     viewport: {
       row: 0,
       column: 0,
-      rows: 30,
+      rows: 300,
       columns: 3,
-      totalRows: 834,
+      totalRows: Math.ceil(maxProfiles / 3),
       totalColumns: 3,
     },
     revision: 0,
@@ -64,7 +64,7 @@ function integerOr(value, fallback, minimum, maximum) {
 }
 
 function isProfileId(value) {
-  if (typeof value !== "string" || !/^npc-\d{4}$/.test(value)) return false;
+  if (typeof value !== "string" || !/^npc-\d+$/.test(value)) return false;
   const number = Number(value.slice(4));
   return number >= 1 && number <= maxProfiles;
 }

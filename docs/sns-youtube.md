@@ -64,6 +64,7 @@ viewing states rather than presenting a single static feed:
 16. Channel Home, Videos, Playlists, and interactive Community tabs
 17. Personal library, history, watch-later list, and playlist detail
 18. Persistent mini-player with independent pause/play after leaving the watch view
+19. Video deep links through `?v=<video-id>`, with browser back/forward restoration
 
 ## Performance and data
 
@@ -77,10 +78,12 @@ viewing states rather than presenting a single static feed:
 - The player is a visual interaction model, not a media fetcher; its progress,
   state, queue, comments, likes, subscriptions, saves, and overlays remain
   client-local.
-- Selecting a video resets the document to the top and starts its local
-  playback state immediately. Playback time is tracked as seconds, rendered as
-  a real `m:ss` or `h:mm:ss` value, and can be changed through the player
-  scrubber.
+- Selecting a video writes `?v=<video-id>` to the current route, resets the
+  document to the top, and starts its local playback state immediately. Direct
+  links and browser back/forward restore the selected video; leaving the watch
+  view removes the parameter. Shared links use that current URL. Playback time
+  is tracked as seconds, rendered as a real `m:ss` or `h:mm:ss` value, and can
+  be changed through the player scrubber.
 - Both home and watch-page recommendations begin with a local batch and extend
   in further batches as the viewer approaches the document bottom, reusing
   deterministic records with stable per-item keys. The mobile bottom
