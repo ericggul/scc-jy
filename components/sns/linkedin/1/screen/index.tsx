@@ -12,6 +12,7 @@ import {
 } from "../model/data";
 import type { LinkedinPost } from "../model/types";
 import { LinkedinIcon } from "./icons";
+import { LinkedinJobsScreen } from "./jobs";
 import styles from "./linkedin.module.css";
 
 type NavItem = "home" | "network" | "jobs" | "messaging" | "notifications";
@@ -227,7 +228,7 @@ export default function LinkedinOneScreen() {
 
   return <main className={styles.linkedinShell}>
     <TopBar activeNav={activeNav} onNavigate={(view) => { setActiveNav(view); if (view !== "home") announce(`${navigation.find((item) => item.id === view)?.label} selected`); }} onSearch={(value) => { setSearch(value); setVisiblePostCount(6); }} query={search} />
-    <div className={styles.pageGrid}>
+    {activeNav === "jobs" ? <LinkedinJobsScreen onQueryChange={setSearch} onToast={announce} query={search} /> : <div className={styles.pageGrid}>
       <LeftRail />
       <section className={styles.feed} aria-label="LinkedIn feed">
         <Composer onOpen={() => setComposerOpen(true)} />
@@ -235,7 +236,7 @@ export default function LinkedinOneScreen() {
         {posts.length ? posts.map((entry) => <PostCard liked={Boolean(liked[entry.id])} key={entry.id} onComment={() => announce("Comment box opened")} onLike={() => setLiked((current) => ({ ...current, [entry.id]: !current[entry.id] }))} onRepost={() => setReposted((current) => ({ ...current, [entry.id]: !current[entry.id] }))} onSend={() => announce("Share options opened")} post={entry.post} reposted={Boolean(reposted[entry.id])} />) : <section className={`${styles.card} ${styles.emptyFeed}`}><strong>No posts found</strong><span>Try another search.</span></section>}
       </section>
       <RightRail onConnect={(name) => announce(`Invitation sent to ${name}`)} />
-    </div>
+    </div>}
     <MessageDock onSend={announce} />
     <MobileNav activeNav={activeNav} onNavigate={setActiveNav} onPost={() => setComposerOpen(true)} />
     {composerOpen ? <PostDialog onClose={() => setComposerOpen(false)} onPublish={publish} /> : null}

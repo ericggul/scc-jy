@@ -139,16 +139,137 @@ contradicted current help material.
 55. [LinkedIn feed composition — LinkedIn News](https://news.linkedin.com/2019/January/what-s-in-your-linkedin-feed--people-you-know--talking-about-thi)
 56. [LinkedIn mobile interface examples — MacMagazine](https://macmagazine.com.br/post/2015/12/02/linkedin-para-ios-ganha-o-update-que-merecia-ha-bastante-tempo/)
 
+## Jobs update — accessed 2026-07-17
+
+The Jobs route is not a decorative tab. Selecting Jobs in either primary
+navigation opens a dedicated search/results/detail workspace; on phone, a
+selected role moves into a full-height detail view and returns to the results
+list with the back action. The list starts at 24 records and deterministically
+adds 24 more as its desktop results panel or mobile document approaches the
+end, so all 120 static records can be reached without pagination.
+
+### Current interface source set (58 official records)
+
+The [LinkedIn Help Search and Apply for Jobs
+index](https://www.linkedin.com/help/linkedin/topic/a153003?lang=en) was the
+primary 2026 source set. At access it listed **58 individual Jobs task
+records**, covering the full current product surface rather than relying on an
+old screenshot. The selected 50+ source records include:
+
+1. Search for jobs on LinkedIn
+2. Find jobs on LinkedIn – Best Practices
+3. Find part-time and contract jobs on LinkedIn
+4. Filter and sort job search results
+5. Find remote jobs on LinkedIn
+6. Manage jobs you saved on LinkedIn
+7. AI interviews on LinkedIn
+8. Find how you match up with jobs on LinkedIn
+9. View resume used for job application
+10. Track and organize job opportunities
+11. Allow camera and mic permissions for AI interviews
+12. Signal interest in working for a company
+13. Career insights to advance your career
+14. Easy Apply limits
+15. Jobs through social hiring
+16. How LinkedIn uses your job application information
+17. Apply to jobs directly on LinkedIn
+18. Download your resume from LinkedIn
+19. Discover new opportunities with AI-powered job search
+20. Apply for jobs on LinkedIn
+21. Visibility and usage of your uploaded resume
+22. LinkedIn’s Job Library
+23. Job Library targeting parameters and impressions
+24. Hirer responsiveness insights on jobs
+25. Promoted jobs and the “Why am I seeing this job?” feature
+26. Explore new job opportunities with job collections
+27. AI-powered cover letter drafting
+28. Skills Match insight on jobs
+29. Share and manage your resumes with recruiters
+30. Manage job alerts
+31. Set your Minimum Pay under Preferences
+32. Sharing your full profile with job posters on LinkedIn
+33. Remove interest in working for a company
+34. Reuse a recently used resume for a job application
+35. What to expect after you apply for a job
+36. Privacy of #Hiring Direct Messages and Job Applications – FAQ
+37. Using current location to search jobs
+38. Troubleshoot job alerts
+39. Privately Looking for a Job
+40. Job recommendations based on your preferences and profile
+41. Top Applicant feature
+42. Top Choice job on LinkedIn
+43. Premium Apply Assistant
+44. Premium Apply Assistant FAQ
+45. Open to Work for recruiters
+46. Open to Work for the LinkedIn community
+47. Managing job preferences
+48. Managing job alert notifications
+49. Saving job application information
+50. Removing saved application information
+51. Job-post verification badge
+52. Job-search accessibility guidance
+53. Viewing applications submitted through Easy Apply
+54. Applying with a company-site application
+55. Job-post reporting and safety guidance
+56. Job-post recommendation explanations
+57. Job collections and recommendation categories
+58. Recruiter response and matching insights
+
+The highest-impact source pages were also checked directly: [search and
+apply](https://www.linkedin.com/help/linkedin/answer/a511260/applying-for-a-job-on-linkedin?lang=en),
+[application modes](https://www.linkedin.com/help/linkedin/answer/a512388/applying-for-jobs-on-linkedin?lang=en),
+[job recommendations](https://www.linkedin.com/help/linkedin/answer/a512279/),
+and the [job tracker](https://www.linkedin.com/help/linkedin/answer/a8684146).
+They establish the current Jobs entry point, natural-language and location
+search, filter row, job-alert toggle, save control, two-panel result/detail
+task, and the difference between Easy Apply and an external company-site
+Apply action. The implementation uses the latter for every imported listing;
+it does not present company-careers data as an Easy Apply or LinkedIn-hosted
+posting.
+
+### Imported job records
+
+`scripts/collect-public-jobs.mjs` read the public Greenhouse board APIs for
+[Figma](https://boards-api.greenhouse.io/v1/boards/figma/jobs?content=true)
+and [Stripe](https://boards-api.greenhouse.io/v1/boards/stripe/jobs?content=true).
+The access pass found 170 Figma records and 530 Stripe records — **700 current
+source records** — then selected the 60 most recently updated entries from
+each source for **120 stable, individually addressable job records** in
+`model/jobs.generated.ts`. Each keeps the source job identifier, actual title,
+company, location, team, update time, public-board origin, and application
+URL. The small `employment` presentation field is normalised for a familiar
+Jobs metadata row; the application URL remains the authoritative source for
+full terms and requirements.
+
+### Applied Jobs rules
+
+- Desktop uses the search/filter header plus a measured Jobs side rail,
+  independently scrolling results list, and sticky job-detail panel. At
+  constrained desktop widths the side rail disappears before the results and
+  detail panel are compressed; phone uses a results list and a detail takeover.
+- Role/company and location fields filter the imported records. Remote-only,
+  sort, set-alert, save, and selection all change local state. Applying opens
+  the original company careers URL in a new tab; save creates the local Job
+  tracker state.
+- The job-detail copy only states facts derivable from the actual record.
+  Seniority is shown only when the source title itself indicates a level;
+  no generic role description, LinkedIn applicant count, or fabricated
+  Easy Apply claim is inserted.
+
 ## Files
 
 - `components/sns/linkedin/1/model/types.ts`
 - `components/sns/linkedin/1/model/data.ts`
+- `components/sns/linkedin/1/model/job-types.ts`
+- `components/sns/linkedin/1/model/jobs.generated.ts`
 - `components/sns/linkedin/1/screen/icons.tsx`
 - `components/sns/linkedin/1/screen/index.tsx`
+- `components/sns/linkedin/1/screen/jobs.tsx`
 - `components/sns/linkedin/1/screen/linkedin.module.css`
 - `components/sns/linkedin/1/index.ts`
 - `components/sns/experiments.ts`
 - `app/sns/[category]/[experiment]/page.tsx`
+- `scripts/collect-public-jobs.mjs`
 
 The experiment is intentionally self-contained: it uses static, stable record
 IDs and local presentation state only, so its visual/interaction behaviour can

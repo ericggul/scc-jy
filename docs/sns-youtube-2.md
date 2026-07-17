@@ -59,6 +59,30 @@ the non-negotiable visual grammar.
   Its compact state deliberately contains only the video surface and its
   pause/close overlays, matching the mobile reference rather than adding an
   unrelated title toolbar.
+
+### Desktop reconstruction — 2026-07-17
+
+- **Participant situation:** a desktop viewer scans several recommendations at
+  once, then opens a video without losing the sense of what is next.
+- **Primary parameter:** the current selection remains dominant; the home grid
+  is a scan surface and the Watch Next column is a continuation surface.
+- **Desktop family:** retain the same near-black YouTube viewing surface as
+  the accepted phone interface, with a 56px command header, left navigation,
+  topic rail, responsive recommendation grid, and black player. Do not
+  stretch the accepted phone layout into a desktop page or introduce a white
+  desktop theme.
+- **Home contract:** the header has centred search, voice search, Create,
+  notifications, and account controls; the expanded guide has primary,
+  personal, and subscription groups; the video grid grows from three to six
+  columns as usable content width increases.
+- **Watch contract:** the player and metadata form a broad primary column; the
+  right column uses filter chips and short horizontal recommendation rows.
+  Player controls expose playback, volume, time, captions, settings,
+  miniplayer, and full screen. Channel, subscribe, action, description, and comments
+  follow beneath in that order.
+- **Removal test:** no summary dashboard, decorative footer, invented status,
+  or visual separator is added. Every desktop element is a familiar browsing,
+  playback, or account action.
 - The implementation models UI state locally. It makes no claim to stream
   remote YouTube videos, fetch user data, or reproduce service-side ranking.
 

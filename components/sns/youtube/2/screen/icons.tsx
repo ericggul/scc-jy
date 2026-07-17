@@ -19,6 +19,7 @@ export type YoutubeTwoIcon =
   | "menu"
   | "music"
   | "more"
+  | "miniplayer"
   | "mute"
   | "pause"
   | "play"
@@ -51,6 +52,7 @@ export function YoutubeTwoIcon({ name, ...props }: SVGProps<SVGSVGElement> & { n
       {name === "user" ? <><circle {...stroke} cx="12" cy="8.1" r="3.4" /><path {...stroke} d="M4.8 20c.95-3.35 3.35-5 7.2-5s6.25 1.65 7.2 5" /></> : null}
       {name === "add" ? <path {...stroke} d="M12 5v14M5 12h14" /> : null}
       {name === "more" ? <path d="M5.4 12h.01M12 12h.01M18.6 12h.01" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="3.2" /> : null}
+      {name === "miniplayer" ? <><rect {...stroke} x="3.5" y="5.1" width="17" height="13.8" rx="1.8" /><path d="M13.4 12.5h5.1v4h-5.1z" fill="currentColor" /></> : null}
       {name === "music" ? <><path {...stroke} d="M9 18.5V6.2l8-1.7v11.8" /><circle {...stroke} cx="6.8" cy="18.2" r="2.2" /><circle {...stroke} cx="14.8" cy="16.3" r="2.2" /></> : null}
       {name === "play" ? <path d="m8 5 11 7-11 7V5Z" fill="currentColor" /> : null}
       {name === "pause" ? <path d="M7 5h3.5v14H7zm6.5 0H17v14h-3.5z" fill="currentColor" /> : null}

@@ -49,7 +49,7 @@ function IconButton({
     <button
       aria-label={label}
       aria-pressed={pressed}
-      className={`grid h-10 w-10 shrink-0 place-items-center rounded-full outline-none transition hover:bg-black/[.08] active:scale-95 focus-visible:ring-2 focus-visible:ring-[#065fd4] dark:hover:bg-white/[.14] ${className}`}
+      className={`grid h-10 w-10 shrink-0 place-items-center rounded-full outline-none transition hover:bg-white/[.14] active:scale-95 focus-visible:ring-2 focus-visible:ring-[#3ea6ff] ${className}`}
       onClick={onClick}
       type="button"
     >
@@ -60,7 +60,7 @@ function IconButton({
 
 function Logo({ compact = false }: { compact?: boolean }) {
   return (
-    <span aria-label="YouTube" className="inline-flex items-center gap-1.5 text-[#0f0f0f] dark:text-white">
+    <span aria-label="YouTube" className="inline-flex items-center gap-1.5 text-[#f1f1f1]">
       <span className="relative grid h-[19px] w-[28px] place-items-center rounded-[5px] bg-[#ff0033] text-white">
         <YoutubeTwoIcon className="ml-px h-3.5 w-3.5" name="play" />
       </span>
@@ -106,16 +106,16 @@ function VideoCard({
 
   if (compact) {
     return (
-      <article className="grid grid-cols-[minmax(146px,44%)_1fr] gap-3 text-[#0f0f0f] dark:text-[#f1f1f1]">
+      <article className="grid grid-cols-[minmax(146px,44%)_1fr] gap-3 text-[#f1f1f1] md:grid-cols-[168px_minmax(0,1fr)] md:gap-2.5">
         <button className="relative aspect-video overflow-hidden rounded-xl bg-[#272727] text-left outline-none focus-visible:ring-2 focus-visible:ring-[#3ea6ff]" onClick={() => onOpen(video)} type="button">
-          <Image alt={video.alt} className="object-cover" fill sizes="(max-width: 767px) 44vw, 230px" src={video.thumbnail} />
+          <Image alt={video.alt} className="object-cover" fill sizes="(max-width: 767px) 44vw, 168px" src={video.thumbnail} />
           {video.progress ? <span className="absolute bottom-0 left-0 h-[3px] bg-[#ff0033]" style={{ width: `${video.progress}%` }} /> : null}
           <DurationBadge video={video} />
         </button>
         <div className="relative min-w-0 pr-5">
           <button className="line-clamp-2 text-left text-[14px] font-semibold leading-[1.32] outline-none focus-visible:ring-2 focus-visible:ring-[#3ea6ff]" onClick={() => onOpen(video)} type="button">{video.title}</button>
-          <p className="mt-1 truncate text-[12px] text-[#606060] dark:text-[#aaa]">{creator.name}</p>
-          <p className="text-[12px] text-[#606060] dark:text-[#aaa]">{video.views} <span aria-hidden="true">•</span> {video.published}</p>
+          <p className="mt-1 truncate text-[12px] text-[#aaa]">{creator.name}</p>
+          <p className="text-[12px] text-[#aaa]">{video.views} <span aria-hidden="true">•</span> {video.published}</p>
           <IconButton className="absolute -right-2 -top-2" icon="more" label={`More options for ${video.title}`} onClick={() => onMore(video)} />
         </div>
       </article>
@@ -123,9 +123,9 @@ function VideoCard({
   }
 
   return (
-    <article className="group min-w-0 text-[#0f0f0f] dark:text-[#f1f1f1]">
+    <article className="group min-w-0 text-[#f1f1f1]">
       <button className="relative block aspect-video w-full overflow-hidden bg-[#272727] text-left outline-none focus-visible:ring-2 focus-visible:ring-[#3ea6ff] md:rounded-xl" onClick={() => onOpen(video)} type="button">
-        <Image alt={video.alt} className="object-cover transition duration-300 md:group-hover:scale-[1.018]" fill loading="lazy" sizes="(max-width: 767px) 100vw, (max-width: 1100px) 33vw, 25vw" src={video.thumbnail} />
+        <Image alt={video.alt} className="object-cover transition duration-300 md:group-hover:scale-[1.018]" fill loading="lazy" sizes="(max-width: 767px) 100vw, (max-width: 1023px) 31vw, (max-width: 1535px) 24vw, 18vw" src={video.thumbnail} />
         {video.progress ? <span className="absolute bottom-0 left-0 h-[3px] bg-[#ff0033]" style={{ width: `${video.progress}%` }} /> : null}
         <DurationBadge video={video} />
       </button>
@@ -133,10 +133,10 @@ function VideoCard({
         <Avatar creatorId={video.creatorId} />
         <div className="min-w-0 flex-1">
           <button className="block w-full text-left text-[16px] font-semibold leading-[1.3] outline-none focus-visible:ring-2 focus-visible:ring-[#3ea6ff] md:text-[15px]" onClick={() => onOpen(video)} type="button">{video.title}</button>
-          <p className="mt-1 truncate text-[14px] text-[#606060] dark:text-[#aaa] md:text-[13px]">{creator.name}</p>
-          <p className="text-[14px] text-[#606060] dark:text-[#aaa] md:text-[13px]">{video.views} <span aria-hidden="true">•</span> {video.published}</p>
+          <p className="mt-1 truncate text-[14px] text-[#aaa] md:text-[13px]">{creator.name}</p>
+          <p className="text-[14px] text-[#aaa] md:text-[13px]">{video.views} <span aria-hidden="true">•</span> {video.published}</p>
         </div>
-        <IconButton className="-mr-2 -mt-1 dark:hover:bg-white/[.14]" icon="more" label={`More options for ${video.title}`} onClick={() => onMore(video)} />
+        <IconButton className="-mr-2 -mt-1" icon="more" label={`More options for ${video.title}`} onClick={() => onMore(video)} />
       </div>
     </article>
   );
@@ -144,11 +144,11 @@ function VideoCard({
 
 function TopicRail({ active, onChoose }: { active: string; onChoose: (chip: string) => void }) {
   return (
-    <div className="sticky top-14 z-20 overflow-hidden bg-[#0f0f0f] px-3 py-2.5 md:top-14 md:bg-white md:px-6 dark:md:bg-white">
+    <div className="sticky top-14 z-20 overflow-hidden bg-[#0f0f0f] px-3 py-2.5 md:top-14 md:px-6 md:py-3 lg:px-8">
       <div className="flex gap-2 overflow-x-auto [scrollbar-width:none]">
         {youtubeTwoChips.map((chip) => (
           <button
-            className={`h-8 shrink-0 rounded-lg px-3 text-[14px] font-medium outline-none transition focus-visible:ring-2 focus-visible:ring-[#3ea6ff] ${active === chip ? "bg-white text-[#0f0f0f] md:bg-[#0f0f0f] md:text-white" : "bg-[#272727] text-[#f1f1f1] hover:bg-[#3f3f3f] md:bg-[#f2f2f2] md:text-[#0f0f0f] md:hover:bg-[#e5e5e5]"}`}
+            className={`h-8 shrink-0 rounded-lg px-3 text-[14px] font-medium outline-none transition focus-visible:ring-2 focus-visible:ring-[#3ea6ff] ${active === chip ? "bg-[#f1f1f1] text-[#0f0f0f]" : "bg-[#272727] text-[#f1f1f1] hover:bg-[#3f3f3f]"}`}
             key={chip}
             onClick={() => onChoose(chip)}
             type="button"
@@ -224,18 +224,21 @@ function DesktopHeader({
   onToast: (message: string) => void;
 }) {
   return (
-    <header className="sticky top-0 z-40 hidden h-14 items-center gap-2 bg-white px-4 text-[#0f0f0f] md:flex">
-      <IconButton icon="menu" label="Open guide" onClick={onMenu} />
-      <button aria-label="Go to Home" className="px-1 outline-none focus-visible:ring-2 focus-visible:ring-[#065fd4]" onClick={onHome} type="button"><Logo /></button>
-      <form className="mx-auto flex w-full max-w-[728px] items-center gap-3" onSubmit={onSearch}>
-        <div className="flex h-10 min-w-0 flex-1 overflow-hidden rounded-full border border-[#c6c6c6] bg-white focus-within:border-[#065fd4] focus-within:shadow-[0_0_0_1px_#065fd4]">
-          <input aria-label="Search" className="min-w-0 flex-1 px-4 text-[16px] outline-none placeholder:text-[#606060]" onChange={(event) => setQuery(event.target.value)} placeholder="Search" value={query} />
-          <button aria-label="Search" className="grid w-16 place-items-center border-l border-[#d3d3d3] bg-[#f8f8f8] hover:bg-[#f0f0f0]" type="submit"><YoutubeTwoIcon className="h-5 w-5" name="search" /></button>
+    <header className="sticky top-0 z-40 hidden h-14 items-center gap-3 bg-[#0f0f0f] px-4 text-[#f1f1f1] md:flex lg:px-5">
+      <div className="flex shrink-0 items-center gap-2">
+        <IconButton icon="menu" label="Open guide" onClick={onMenu} />
+        <button aria-label="Go to Home" className="px-1 outline-none focus-visible:ring-2 focus-visible:ring-[#065fd4]" onClick={onHome} type="button"><Logo /></button>
+      </div>
+      <form className="mx-auto flex w-full max-w-[690px] min-w-[220px] items-center gap-3 xl:max-w-[732px]" onSubmit={onSearch}>
+        <div className="flex h-10 min-w-0 flex-1 overflow-hidden rounded-full border border-[#303030] bg-[#121212] focus-within:border-[#3ea6ff] focus-within:shadow-[0_0_0_1px_#3ea6ff]">
+          <input aria-label="Search" className="min-w-0 flex-1 px-4 text-[16px] outline-none placeholder:text-[#aaa]" onChange={(event) => setQuery(event.target.value)} placeholder="Search" value={query} />
+          <button aria-label="Search" className="grid w-16 place-items-center border-l border-[#303030] bg-[#222] transition hover:bg-[#303030]" type="submit"><YoutubeTwoIcon className="h-5 w-5" name="search" /></button>
         </div>
         <IconButton icon="search" label="Search with your voice" onClick={() => onToast("Voice search is ready")} />
       </form>
-      <div className="flex items-center gap-1">
-        <IconButton icon="add" label="Create" onClick={() => onToast("Choose a file to upload")} />
+      <div className="flex shrink-0 items-center gap-1">
+        <button className="hidden h-9 items-center gap-1.5 rounded-full bg-[#272727] px-3 text-[14px] font-medium outline-none transition hover:bg-[#3f3f3f] focus-visible:ring-2 focus-visible:ring-[#3ea6ff] lg:inline-flex" onClick={() => onToast("Choose a file to upload")} type="button"><YoutubeTwoIcon className="h-5 w-5" name="add" />Create</button>
+        <IconButton className="lg:hidden" icon="add" label="Create" onClick={() => onToast("Choose a file to upload")} />
         <IconButton icon="bell" label="Notifications" onClick={() => onToast("No new notifications")} />
         <Image alt="Your account" className="ml-1 h-8 w-8 rounded-full object-cover" height={64} src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=96&h=96&q=80" width={64} />
       </div>
@@ -251,14 +254,22 @@ const desktopNav: { view: View; label: string; icon: YoutubeTwoIconName }[] = [
   { view: "you", label: "You", icon: "user" },
 ];
 
+const desktopLibrary: { label: string; icon: YoutubeTwoIconName }[] = [
+  { label: "History", icon: "user" },
+  { label: "Playlists", icon: "save" },
+  { label: "Your videos", icon: "subscriptions" },
+  { label: "Watch later", icon: "save" },
+  { label: "Liked videos", icon: "like" },
+];
+
 function DesktopGuide({ active, expanded, onNavigate }: { active: View; expanded: boolean; onNavigate: (view: View) => void }) {
   return (
-    <aside className={`sticky top-14 hidden h-[calc(100dvh-56px)] shrink-0 overflow-y-auto bg-white px-3 py-3 text-[#0f0f0f] md:block ${expanded ? "w-[240px]" : "w-[88px]"}`}>
+    <aside className={`sticky top-14 hidden h-[calc(100dvh-56px)] shrink-0 overflow-y-auto bg-[#0f0f0f] px-3 py-3 text-[#f1f1f1] transition-[width] duration-200 md:block ${expanded ? "w-[80px] xl:w-[240px]" : "w-[80px]"}`}>
       <nav className="grid gap-1" aria-label="Primary navigation">
         {desktopNav.map((item) => (
           <button
             aria-current={active === item.view ? "page" : undefined}
-            className={`flex min-h-11 items-center rounded-[10px] outline-none transition hover:bg-[#f2f2f2] focus-visible:ring-2 focus-visible:ring-[#065fd4] ${active === item.view ? "bg-[#f2f2f2] font-semibold" : "font-medium"} ${expanded ? "gap-6 px-3 text-[14px]" : "mx-auto w-full flex-col justify-center gap-0.5 text-[10px]"}`}
+            className={`flex min-h-11 items-center rounded-[10px] outline-none transition hover:bg-[#272727] focus-visible:ring-2 focus-visible:ring-[#3ea6ff] ${active === item.view ? "bg-[#272727] font-semibold" : "font-medium"} ${expanded ? "mx-auto w-full flex-col justify-center gap-0.5 text-[10px] xl:mx-0 xl:w-auto xl:flex-row xl:justify-start xl:gap-6 xl:px-3 xl:text-[14px]" : "mx-auto w-full flex-col justify-center gap-0.5 text-[10px]"}`}
             key={item.view}
             onClick={() => onNavigate(item.view)}
             type="button"
@@ -268,21 +279,25 @@ function DesktopGuide({ active, expanded, onNavigate }: { active: View; expanded
           </button>
         ))}
       </nav>
-      {expanded ? (
-        <>
-          <section className="mt-5 px-3">
-            <h2 className="mb-2 text-[16px] font-semibold">Subscriptions</h2>
-            <div className="grid gap-1">
-              {youtubeTwoCreators.slice(0, 5).map((creator) => (
-                <button className="flex h-10 items-center gap-3 rounded-lg px-1 text-left text-[14px] hover:bg-[#f2f2f2]" key={creator.id} onClick={() => onNavigate("subscriptions")} type="button">
-                  <Image alt="" className="h-6 w-6 rounded-full object-cover" height={48} src={creator.avatar} width={48} />
-                  <span className="min-w-0 flex-1 truncate">{creator.name}</span>
-                </button>
-              ))}
-            </div>
-          </section>
-        </>
-      ) : null}
+      {expanded ? <div className="hidden xl:block">
+        <section className="mt-6 px-3">
+          <h2 className="mb-2 text-[16px] font-semibold">You</h2>
+          <div className="grid gap-1">
+            {desktopLibrary.map((item) => <button className="flex h-10 items-center gap-5 rounded-lg px-1 text-left text-[14px] hover:bg-[#272727]" key={item.label} onClick={() => onNavigate("you")} type="button"><YoutubeTwoIcon className="h-5 w-5" name={item.icon} /><span className="min-w-0 flex-1 truncate">{item.label}</span></button>)}
+          </div>
+        </section>
+        <section className="mt-6 px-3">
+          <h2 className="mb-2 text-[16px] font-semibold">Subscriptions</h2>
+          <div className="grid gap-1">
+            {youtubeTwoCreators.slice(0, 6).map((creator) => (
+              <button className="flex h-10 items-center gap-3 rounded-lg px-1 text-left text-[14px] hover:bg-[#272727]" key={creator.id} onClick={() => onNavigate("subscriptions")} type="button">
+                <Image alt="" className="h-6 w-6 rounded-full object-cover" height={48} src={creator.avatar} width={48} />
+                <span className="min-w-0 flex-1 truncate">{creator.name}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+      </div> : null}
     </aside>
   );
 }
@@ -321,10 +336,9 @@ function WatchActions({
   onSave: () => void;
   onMore: () => void;
 }) {
-  const action = (icon: YoutubeTwoIconName, label: string, onClick: () => void, pressed?: boolean) => (
-    <button aria-label={label} aria-pressed={pressed} className={`grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#272727] text-[#f1f1f1] outline-none hover:bg-[#3f3f3f] focus-visible:ring-2 focus-visible:ring-[#3ea6ff] md:inline-flex md:h-9 md:w-auto md:gap-2 md:px-3 md:text-[14px] md:font-medium md:bg-[#f2f2f2] md:text-[#0f0f0f] md:hover:bg-[#e5e5e5]`} key={label} onClick={onClick} type="button"><YoutubeTwoIcon className="h-[22px] w-[22px] md:h-5 md:w-5" name={icon} /><span className="hidden md:inline">{label}</span></button>
-  );
-  return <div className="flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] md:gap-2">{action(liked ? "like-filled" : "like", liked ? "1.2K" : "1.1K", onLike, liked)}{action("dislike", "Dislike", onDislike, disliked)}{action("share", "Share", onShare)}{action("save", saved ? "Saved" : "Save", onSave, saved)}{action("more", "More", onMore)}</div>;
+  const mobileAction = (icon: YoutubeTwoIconName, label: string, onClick: () => void, pressed?: boolean) => <button aria-label={label} aria-pressed={pressed} className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#272727] text-[#f1f1f1] outline-none hover:bg-[#3f3f3f] focus-visible:ring-2 focus-visible:ring-[#3ea6ff]" key={label} onClick={onClick} type="button"><YoutubeTwoIcon className="h-[22px] w-[22px]" name={icon} /></button>;
+  const desktopAction = (icon: YoutubeTwoIconName, label: string, onClick: () => void, pressed?: boolean) => <button aria-label={label} aria-pressed={pressed} className="inline-flex h-9 items-center gap-2 rounded-full bg-[#272727] px-3 text-[14px] font-medium text-[#f1f1f1] outline-none transition hover:bg-[#3f3f3f] focus-visible:ring-2 focus-visible:ring-[#3ea6ff]" onClick={onClick} type="button"><YoutubeTwoIcon className="h-5 w-5" name={icon} /><span>{label}</span></button>;
+  return <div className="overflow-x-auto pb-1 [scrollbar-width:none]"><div className="flex gap-1.5 md:hidden">{mobileAction(liked ? "like-filled" : "like", liked ? "1.2K" : "1.1K", onLike, liked)}{mobileAction("dislike", "Dislike", onDislike, disliked)}{mobileAction("share", "Share", onShare)}{mobileAction("save", saved ? "Saved" : "Save", onSave, saved)}{mobileAction("more", "More", onMore)}</div><div className="hidden gap-2 md:flex"><span className="inline-flex h-9 overflow-hidden rounded-full bg-[#272727]"><button aria-label={liked ? "1.2K likes" : "1.1K likes"} aria-pressed={liked} className="inline-flex items-center gap-2 px-3 text-[14px] font-medium outline-none hover:bg-[#3f3f3f] focus-visible:ring-2 focus-visible:ring-[#3ea6ff]" onClick={onLike} type="button"><YoutubeTwoIcon className="h-5 w-5" name={liked ? "like-filled" : "like"} />{liked ? "1.2K" : "1.1K"}</button><span aria-hidden="true" className="my-2 w-px bg-[#555]" /><button aria-label="Dislike" aria-pressed={disliked} className="grid w-11 place-items-center outline-none hover:bg-[#3f3f3f] focus-visible:ring-2 focus-visible:ring-[#3ea6ff]" onClick={onDislike} type="button"><YoutubeTwoIcon className="h-5 w-5" name="dislike" /></button></span>{desktopAction("share", "Share", onShare)}{desktopAction("save", saved ? "Saved" : "Save", onSave)}{desktopAction("more", "More", onMore)}</div></div>;
 }
 
 function Player({
@@ -347,6 +361,8 @@ function Player({
   onMinimize: () => void;
 }) {
   const [controls, setControls] = useState(true);
+  const [captions, setCaptions] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const duration = secondsFromDuration(video.duration);
   const ratio = duration ? (position / duration) * 100 : 0;
@@ -392,9 +408,15 @@ function Player({
             <IconButton className="hover:bg-white/[.18]" icon={playing ? "pause" : "play"} label={playing ? "Pause" : "Play"} onClick={onTogglePlay} />
             <IconButton className="hover:bg-white/[.18]" icon={muted ? "mute" : "volume"} label={muted ? "Unmute" : "Mute"} onClick={onToggleMute} />
             <span className="ml-1 text-[13px] font-medium">{timestamp(position)} / {video.duration}</span>
-            <IconButton className="ml-auto hover:bg-white/[.18]" icon="fullscreen" label="Full screen" onClick={enterFullscreen} />
+            <div className="ml-auto flex items-center gap-1">
+              <IconButton className={`hover:bg-white/[.18] ${captions ? "bg-white/20" : ""}`} icon="captions" label="Captions" onClick={() => setCaptions((value) => !value)} pressed={captions} />
+              <IconButton className={`hover:bg-white/[.18] ${settingsOpen ? "bg-white/20" : ""}`} icon="settings" label="Settings" onClick={() => setSettingsOpen((value) => !value)} pressed={settingsOpen} />
+              <IconButton className="hover:bg-white/[.18]" icon="miniplayer" label="Miniplayer" onClick={onMinimize} />
+              <IconButton className="hover:bg-white/[.18]" icon="fullscreen" label="Full screen" onClick={enterFullscreen} />
+            </div>
           </div>
         </div>
+        {settingsOpen ? <div className="absolute bottom-[66px] right-3 hidden w-56 rounded-xl bg-[#272727] p-2 text-[14px] text-white shadow-2xl md:block"><button className="flex h-10 w-full items-center justify-between rounded-lg px-3 text-left hover:bg-white/[.1]" onClick={() => setSettingsOpen(false)} type="button"><span>Playback speed</span><span className="text-[#aaa]">Normal</span></button><button className="flex h-10 w-full items-center justify-between rounded-lg px-3 text-left hover:bg-white/[.1]" onClick={() => setSettingsOpen(false)} type="button"><span>Quality</span><span className="text-[#aaa]">Auto</span></button></div> : null}
       </div>
     </div>
   );
@@ -475,12 +497,23 @@ function WatchPage({
   const [expanded, setExpanded] = useState(false);
   const [subscribed, setSubscribed] = useState(false);
   const [autoplay, setAutoplay] = useState(true);
+  const [recommendationFilter, setRecommendationFilter] = useState("All");
   const [visibleRecommendations, setVisibleRecommendations] = useState(10);
   const creator = youtubeTwoCreator(video.creatorId);
-  const recommendations = youtubeTwoVideos.filter((candidate) => candidate.id !== video.id);
+  const recommendations = useMemo(() => youtubeTwoVideos.filter((candidate) => candidate.id !== video.id), [video.id]);
+  const filteredRecommendations = useMemo(() => {
+    const filtered = recommendationFilter === "From channel"
+      ? recommendations.filter((candidate) => candidate.creatorId === video.creatorId)
+      : recommendationFilter === "Related"
+        ? recommendations.filter((candidate) => candidate.topic === video.topic)
+        : recommendationFilter === "Recently uploaded"
+          ? [...recommendations].reverse()
+          : recommendations;
+    return filtered.length ? filtered : recommendations;
+  }, [recommendationFilter, recommendations, video.creatorId, video.topic]);
   const recommendationEntries = useMemo(
-    () => repeatYoutubeTwoVideos(recommendations, visibleRecommendations, `watch-next-${video.id}`),
-    [recommendations, video.id, visibleRecommendations],
+    () => repeatYoutubeTwoVideos(filteredRecommendations, visibleRecommendations, `watch-next-${video.id}-${recommendationFilter}`),
+    [filteredRecommendations, recommendationFilter, video.id, visibleRecommendations],
   );
 
   useEffect(() => {
@@ -493,40 +526,44 @@ function WatchPage({
   }, []);
 
   return (
-    <main className="bg-[#0f0f0f] pb-24 text-[#f1f1f1] md:min-h-[calc(100dvh-56px)] md:bg-white md:px-6 md:py-6 md:text-[#0f0f0f]">
-      <div className="mx-auto max-w-[1800px] md:grid md:grid-cols-[minmax(0,1fr)_390px] md:gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
+    <main className="bg-[#0f0f0f] pb-24 text-[#f1f1f1] md:min-h-[calc(100dvh-56px)] md:min-w-0 md:flex-1 md:px-6 md:py-6">
+      <div className="mx-auto max-w-[1780px] md:grid md:grid-cols-[minmax(0,1fr)_340px] md:gap-6 xl:grid-cols-[minmax(0,1fr)_400px] xl:gap-7">
         <section className="min-w-0">
           <Player muted={muted} onMinimize={onMinimize} onPosition={onPosition} onToggleMute={onToggleMute} onTogglePlay={onTogglePlay} playing={playing} position={position} video={video} />
-          <div className="px-3 pt-3 md:px-0">
-            <h1 className="line-clamp-2 text-[21px] font-semibold leading-[1.24] tracking-[-.035em] md:text-[20px]">{video.title}</h1>
-            <p className="mt-1 truncate text-[15px] text-[#aaa] md:text-[#606060]"><span className="md:hidden">{creator.handle} <span aria-hidden="true">•</span> 3.7K likes <span aria-hidden="true">•</span> </span>{video.views} <span aria-hidden="true">•</span> {video.published} <button aria-expanded={expanded} className="ml-1 font-semibold text-[#f1f1f1] md:hidden" onClick={() => setExpanded((value) => !value)} type="button">…more</button></p>
+          <div className="px-3 pt-3 md:px-0 md:pt-4">
+            <h1 className="line-clamp-2 text-[21px] font-semibold leading-[1.24] tracking-[-.035em] md:text-[20px] md:leading-[1.3]">{video.title}</h1>
+            <p className="mt-1 truncate text-[15px] text-[#aaa] md:hidden"><span>{creator.handle} <span aria-hidden="true">•</span> 3.7K likes <span aria-hidden="true">•</span> </span>{video.views} <span aria-hidden="true">•</span> {video.published} <button aria-expanded={expanded} className="ml-1 font-semibold text-[#f1f1f1]" onClick={() => setExpanded((value) => !value)} type="button">…more</button></p>
             <div className="mt-4 flex items-center gap-2 overflow-hidden md:hidden">
               <Avatar creatorId={creator.id} size={42} />
               <button aria-label={subscribed ? "Subscription options" : "Subscribe"} className="inline-flex h-11 shrink-0 items-center gap-1 rounded-full bg-[#272727] px-3 text-[#f1f1f1] outline-none hover:bg-[#3f3f3f]" onClick={() => setSubscribed((value) => !value)} type="button"><YoutubeTwoIcon className="h-6 w-6" name="bell-off" /><YoutubeTwoIcon className="h-4 w-4" name="chevron-down" /></button>
               <WatchActions disliked={disliked} liked={liked} onDislike={onDislike} onLike={onLike} onMore={() => onMore(video)} onSave={onSave} onShare={onShare} saved={saved} />
             </div>
-            <div className="mt-3 hidden items-center gap-3 md:flex">
+            <div className="mt-4 hidden items-center gap-3 md:flex">
               <Avatar creatorId={creator.id} size={40} />
-              <div className="min-w-0 flex-1"><span className="block truncate text-[14px] font-semibold">{creator.name}</span><span className="block text-[12px] text-[#aaa] md:text-[#606060]">{creator.subscribers}</span></div>
-              <button className={`h-9 rounded-full px-4 text-[14px] font-semibold outline-none transition focus-visible:ring-2 focus-visible:ring-[#3ea6ff] ${subscribed ? "bg-[#272727] text-white md:bg-[#f2f2f2] md:text-[#0f0f0f]" : "bg-white text-[#0f0f0f] md:bg-[#0f0f0f] md:text-white"}`} onClick={() => setSubscribed((value) => !value)} type="button">{subscribed ? "Subscribed" : "Subscribe"}</button>
+              <div className="min-w-0 flex-1"><span className="block truncate text-[14px] font-semibold">{creator.name}</span><span className="block text-[12px] text-[#aaa]">{creator.subscribers}</span></div>
+              <button className={`h-9 rounded-full px-4 text-[14px] font-semibold outline-none transition focus-visible:ring-2 focus-visible:ring-[#3ea6ff] ${subscribed ? "bg-[#272727] text-white" : "bg-[#f1f1f1] text-[#0f0f0f]"}`} onClick={() => setSubscribed((value) => !value)} type="button">{subscribed ? "Subscribed" : "Subscribe"}</button>
             </div>
             <div className="mt-4 hidden md:block"><WatchActions disliked={disliked} liked={liked} onDislike={onDislike} onLike={onLike} onMore={() => onMore(video)} onSave={onSave} onShare={onShare} saved={saved} /></div>
-            <button aria-expanded={expanded} className="mt-3 hidden w-full rounded-xl bg-[#272727] px-3 py-3 text-left text-[14px] leading-5 outline-none hover:bg-[#3a3a3a] focus-visible:ring-2 focus-visible:ring-[#3ea6ff] md:block md:bg-[#f2f2f2] md:hover:bg-[#e6e6e6]" onClick={() => setExpanded((value) => !value)} type="button">
+            <button aria-expanded={expanded} className="mt-4 hidden w-full rounded-xl bg-[#272727] px-3 py-3 text-left text-[14px] leading-5 outline-none hover:bg-[#3a3a3a] focus-visible:ring-2 focus-visible:ring-[#3ea6ff] md:block" onClick={() => setExpanded((value) => !value)} type="button">
               <span className="font-semibold">{video.views} views</span> <span className="font-semibold">{video.published}</span>
               <span className={`mt-1 block ${expanded ? "" : "line-clamp-2"}`}>{video.description}</span>
               <span className="mt-1 block font-semibold">{expanded ? "Show less" : "…more"}</span>
             </button>
-            <button className="mt-5 block w-full rounded-2xl bg-[#202020] px-3 py-3 text-left outline-none hover:bg-[#2b2b2b] focus-visible:ring-2 focus-visible:ring-[#3ea6ff] md:bg-[#f2f2f2] md:hover:bg-[#e6e6e6]" onClick={onOpenComments} type="button">
-              <span className="flex items-center justify-between"><span><span className="text-[18px] font-semibold">Comments</span><span className="ml-2 text-[18px] text-[#aaa] md:text-[#606060]">265</span></span><span className="text-[20px] text-[#aaa]">••</span></span>
-              <span className="mt-4 flex gap-3"><Image alt="" className="h-11 w-11 shrink-0 rounded-full object-cover" height={88} src={youtubeTwoComments[0].avatar} width={88} /><span className="min-w-0"><span className="block text-[14px] font-semibold">{youtubeTwoComments[0].author}</span><span className="mt-1 line-clamp-2 block text-[15px] leading-5 text-[#ddd] md:text-[#0f0f0f]">{youtubeTwoComments[0].body}</span></span></span>
+            <button className="mt-5 block w-full rounded-2xl bg-[#202020] px-3 py-3 text-left outline-none hover:bg-[#2b2b2b] focus-visible:ring-2 focus-visible:ring-[#3ea6ff]" onClick={onOpenComments} type="button">
+              <span className="flex items-center justify-between"><span><span className="text-[18px] font-semibold">Comments</span><span className="ml-2 text-[18px] text-[#aaa]">265</span></span><span className="text-[20px] text-[#aaa]">••</span></span>
+              <span className="mt-4 flex gap-3"><Image alt="" className="h-11 w-11 shrink-0 rounded-full object-cover" height={88} src={youtubeTwoComments[0].avatar} width={88} /><span className="min-w-0"><span className="block text-[14px] font-semibold">{youtubeTwoComments[0].author}</span><span className="mt-1 line-clamp-2 block text-[15px] leading-5 text-[#ddd]">{youtubeTwoComments[0].body}</span></span></span>
             </button>
           </div>
         </section>
         <section className="mt-6 grid gap-y-7 md:hidden">
           {recommendationEntries.map((entry) => <VideoCard key={entry.id} onMore={onMore} onOpen={onOpen} video={entry.video} />)}
         </section>
-        <aside className="mt-0 hidden px-0 md:mt-0 md:block">
-          <div className="mb-3 flex items-center justify-between"><h2 className="text-[18px] font-semibold">Up next</h2><button aria-pressed={autoplay} className="text-[13px] text-[#aaa] md:text-[#606060]" onClick={() => setAutoplay((value) => !value)} type="button">Autoplay <span className={`ml-1 inline-block h-3 w-6 rounded-full align-middle ${autoplay ? "bg-[#065fd4]" : "bg-[#777]"}`}><span className={`block h-3 w-3 rounded-full bg-white transition-transform ${autoplay ? "translate-x-3" : "translate-x-0"}`} /></span></button></div>
+        <aside className="mt-0 hidden px-0 md:sticky md:top-20 md:block md:self-start">
+          <h2 className="sr-only">Up next</h2>
+          <div className="mb-3 flex items-center gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
+            {[{ id: "All", label: "All" }, { id: "From channel", label: `From ${creator.name}` }, { id: "Related", label: "Related" }, { id: "Recently uploaded", label: "Recently uploaded" }].map((filter) => <button aria-pressed={recommendationFilter === filter.id} className={`h-8 shrink-0 rounded-lg px-3 text-[13px] font-medium outline-none transition focus-visible:ring-2 focus-visible:ring-[#3ea6ff] ${recommendationFilter === filter.id ? "bg-[#f1f1f1] text-[#0f0f0f]" : "bg-[#272727] text-[#f1f1f1] hover:bg-[#3f3f3f]"}`} key={filter.id} onClick={() => setRecommendationFilter(filter.id)} type="button">{filter.label}</button>)}
+          </div>
+          <div className="mb-3 flex items-center justify-between"><span className="text-[15px] font-semibold">Up next</span><button aria-pressed={autoplay} className="text-[13px] text-[#aaa]" onClick={() => setAutoplay((value) => !value)} type="button">Autoplay <span className={`ml-1 inline-block h-3 w-6 rounded-full align-middle ${autoplay ? "bg-[#3ea6ff]" : "bg-[#777]"}`}><span className={`block h-3 w-3 rounded-full bg-white transition-transform ${autoplay ? "translate-x-3" : "translate-x-0"}`} /></span></button></div>
           <div className="grid gap-3">{recommendationEntries.map((entry) => <VideoCard compact key={entry.id} onMore={onMore} onOpen={onOpen} video={entry.video} />)}</div>
         </aside>
       </div>
@@ -561,10 +598,10 @@ function HomePage({
   }, []);
 
   return (
-    <main className="min-h-screen bg-[#0f0f0f] pb-24 md:bg-white md:pb-10">
+    <main className="min-h-screen bg-[#0f0f0f] pb-24 md:min-w-0 md:flex-1 md:pb-16">
       <div className="md:hidden"><FeedInlinePlayer onOpen={onOpen} video={youtubeTwoVideos[0]} /></div>
       <TopicRail active={activeChip} onChoose={onChooseChip} />
-      <section className="grid gap-y-7 md:grid-cols-2 md:gap-x-4 md:gap-y-9 md:px-6 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+      <section className="grid gap-y-7 md:grid-cols-3 md:gap-x-4 md:gap-y-10 md:px-6 lg:grid-cols-4 lg:px-8 2xl:grid-cols-5 min-[1900px]:grid-cols-6">
         {videos.map((entry) => <VideoCard key={entry.id} onMore={onMore} onOpen={onOpen} video={entry.video} />)}
       </section>
     </main>
@@ -573,7 +610,7 @@ function HomePage({
 
 function SubscriptionsPage({ onOpen, onMore }: { onOpen: (video: YoutubeTwoVideo) => void; onMore: (video: YoutubeTwoVideo) => void }) {
   return (
-    <main className="min-h-screen bg-[#0f0f0f] pb-24 text-[#f1f1f1] md:bg-white md:px-6 md:py-5 md:text-[#0f0f0f]">
+    <main className="min-h-screen bg-[#0f0f0f] pb-24 text-[#f1f1f1] md:min-w-0 md:flex-1 md:px-6 md:py-5">
       <div className="flex items-center justify-between px-3 pt-4 md:px-0 md:pt-0"><h1 className="text-[22px] font-bold">Subscriptions</h1><button className="text-[14px] font-medium text-[#3ea6ff] md:text-[#065fd4]" type="button">All</button></div>
       <div className="mt-4 flex gap-4 overflow-x-auto px-3 pb-3 [scrollbar-width:none] md:px-0">
         {youtubeTwoCreators.map((creator) => <button className="w-[68px] shrink-0 text-center outline-none focus-visible:ring-2 focus-visible:ring-[#3ea6ff]" key={creator.id} type="button"><Image alt="" className="mx-auto h-14 w-14 rounded-full object-cover" height={112} src={creator.avatar} width={112} /><span className="mt-1.5 block truncate text-[11px] font-medium">{creator.name}</span></button>)}
@@ -586,9 +623,9 @@ function SubscriptionsPage({ onOpen, onMore }: { onOpen: (video: YoutubeTwoVideo
 
 function YouPage({ onOpen }: { onOpen: (video: YoutubeTwoVideo) => void }) {
   return (
-    <main className="min-h-screen bg-[#0f0f0f] px-3 pb-24 pt-5 text-[#f1f1f1] md:bg-white md:px-6 md:py-6 md:text-[#0f0f0f]">
-      <div className="flex items-center gap-3"><Image alt="Your account" className="h-16 w-16 rounded-full object-cover" height={128} src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=160&h=160&q=80" width={128} /><div><h1 className="text-[20px] font-bold">Your channel</h1><p className="text-[14px] text-[#aaa] md:text-[#606060]">@you</p></div></div>
-      <section className="mt-6 grid gap-1">{["History", "Playlists", "Your videos", "Downloads", "Your clips"].map((item) => <button className="flex h-12 items-center rounded-lg px-3 text-left text-[15px] font-medium hover:bg-white/[.08] md:hover:bg-[#f2f2f2]" key={item} onClick={() => item === "History" && onOpen(youtubeTwoVideos[0])} type="button">{item}</button>)}</section>
+    <main className="min-h-screen bg-[#0f0f0f] px-3 pb-24 pt-5 text-[#f1f1f1] md:min-w-0 md:flex-1 md:px-6 md:py-6">
+      <div className="flex items-center gap-3"><Image alt="Your account" className="h-16 w-16 rounded-full object-cover" height={128} src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=160&h=160&q=80" width={128} /><div><h1 className="text-[20px] font-bold">Your channel</h1><p className="text-[14px] text-[#aaa]">@you</p></div></div>
+      <section className="mt-6 grid gap-1">{["History", "Playlists", "Your videos", "Downloads", "Your clips"].map((item) => <button className="flex h-12 items-center rounded-lg px-3 text-left text-[15px] font-medium hover:bg-white/[.08]" key={item} onClick={() => item === "History" && onOpen(youtubeTwoVideos[0])} type="button">{item}</button>)}</section>
       <h2 className="mt-7 text-[18px] font-semibold">Watch later</h2>
       <div className="mt-3 grid gap-3 md:max-w-[680px]">{youtubeTwoVideos.slice(2, 5).map((video) => <VideoCard compact key={video.id} onMore={() => undefined} onOpen={onOpen} video={video} />)}</div>
     </main>
@@ -598,16 +635,16 @@ function YouPage({ onOpen }: { onOpen: (video: YoutubeTwoVideo) => void }) {
 function SearchPage({ query, onOpen, onMore }: { query: string; onOpen: (video: YoutubeTwoVideo) => void; onMore: (video: YoutubeTwoVideo) => void }) {
   const results = youtubeTwoVideos.filter((video) => `${video.title} ${video.topic} ${youtubeTwoCreator(video.creatorId).name}`.toLowerCase().includes(query.toLowerCase()));
   return (
-    <main className="min-h-screen bg-[#0f0f0f] px-3 pb-24 text-[#f1f1f1] md:bg-white md:px-6 md:py-6 md:text-[#0f0f0f]">
-      <div className="mb-5 flex items-center justify-between"><h1 className="text-[20px] font-semibold">{query ? `Results for “${query}”` : "Search YouTube"}</h1><button className="rounded-full bg-[#272727] px-3 py-2 text-[13px] font-medium md:bg-[#f2f2f2]" type="button">Filters</button></div>
-      {results.length ? <div className="grid max-w-[1100px] gap-4">{results.map((video) => <VideoCard compact key={video.id} onMore={onMore} onOpen={onOpen} video={video} />)}</div> : <p className="text-[14px] text-[#aaa] md:text-[#606060]">Try a different search.</p>}
+    <main className="min-h-screen bg-[#0f0f0f] px-3 pb-24 text-[#f1f1f1] md:min-w-0 md:flex-1 md:px-6 md:py-6">
+      <div className="mb-5 flex items-center justify-between"><h1 className="text-[20px] font-semibold">{query ? `Results for “${query}”` : "Search YouTube"}</h1><button className="rounded-full bg-[#272727] px-3 py-2 text-[13px] font-medium" type="button">Filters</button></div>
+      {results.length ? <div className="grid max-w-[1100px] gap-4">{results.map((video) => <VideoCard compact key={video.id} onMore={onMore} onOpen={onOpen} video={video} />)}</div> : <p className="text-[14px] text-[#aaa]">Try a different search.</p>}
     </main>
   );
 }
 
 function ShortsPage({ onOpen }: { onOpen: (video: YoutubeTwoVideo) => void }) {
   return (
-    <main className="min-h-screen bg-[#0f0f0f] px-3 pb-24 pt-4 text-[#f1f1f1] md:bg-white md:px-6 md:pt-6 md:text-[#0f0f0f]"><h1 className="text-[22px] font-bold">Shorts</h1><div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">{youtubeTwoVideos.slice(0, 10).map((video) => <button className="relative aspect-[9/16] overflow-hidden rounded-xl text-left outline-none focus-visible:ring-2 focus-visible:ring-[#3ea6ff]" key={video.id} onClick={() => onOpen(video)} type="button"><Image alt={video.alt} className="object-cover" fill sizes="(max-width: 640px) 48vw, 18vw" src={video.thumbnail} /><span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent px-2 pb-2 pt-8 text-[13px] font-semibold leading-4 text-white">{video.title}</span></button>)}</div></main>
+    <main className="min-h-screen bg-[#0f0f0f] px-3 pb-24 pt-4 text-[#f1f1f1] md:min-w-0 md:flex-1 md:px-6 md:pt-6"><h1 className="text-[22px] font-bold">Shorts</h1><div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">{youtubeTwoVideos.slice(0, 10).map((video) => <button className="relative aspect-[9/16] overflow-hidden rounded-xl text-left outline-none focus-visible:ring-2 focus-visible:ring-[#3ea6ff]" key={video.id} onClick={() => onOpen(video)} type="button"><Image alt={video.alt} className="object-cover" fill sizes="(max-width: 640px) 48vw, 18vw" src={video.thumbnail} /><span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent px-2 pb-2 pt-8 text-[13px] font-semibold leading-4 text-white">{video.title}</span></button>)}</div></main>
   );
 }
 
@@ -765,7 +802,7 @@ export function YoutubeTwoScreen() {
           : <HomePage activeChip={activeChip} onChooseChip={setActiveChip} onMore={setMenuVideo} onOpen={openVideo} />;
 
   return (
-    <div className="min-h-dvh bg-[#0f0f0f] font-sans text-[#f1f1f1] md:bg-white md:text-[#0f0f0f]">
+    <div className="min-h-dvh bg-[#0f0f0f] font-sans text-[#f1f1f1]">
       {view !== "watch" ? <MobileHeader onBack={() => navigate("home")} onHome={() => navigate("home")} onMenu={() => setDrawerOpen(true)} onOpenSearch={() => { setView("search"); window.scrollTo({ top: 0, behavior: "instant" }); }} onSearch={submitSearch} onToast={announce} query={query} setQuery={setQuery} view={view} /> : null}
       <DesktopHeader onHome={() => navigate("home")} onMenu={() => setGuideExpanded((value) => !value)} onSearch={submitSearch} onToast={announce} query={query} setQuery={setQuery} view={view} />
       <div className="md:flex"><DesktopGuide active={view} expanded={guideExpanded} onNavigate={navigate} />{content}</div>

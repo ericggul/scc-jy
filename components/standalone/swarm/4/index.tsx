@@ -39,7 +39,30 @@ type TracePoint = {
   y: number;
 };
 
+type FieldTheme = "light" | "dark";
+
+type FieldPalette = {
+  paper: string;
+  ink: string;
+  selectedCell: string;
+  grid: string;
+};
+
 const CURSOR_TIP_ANGLE = Math.atan2(-8.4, -5.2);
+const FIELD_PALETTES: Record<FieldTheme, FieldPalette> = {
+  light: {
+    paper: "#f4f4f1",
+    ink: "#11110f",
+    selectedCell: "#11110f",
+    grid: "rgba(17, 17, 15, 0.58)",
+  },
+  dark: {
+    paper: "#0d0e0d",
+    ink: "#eceee8",
+    selectedCell: "#eceee8",
+    grid: "rgba(236, 238, 232, 0.52)",
+  },
+};
 
 function drawCursor(
   context: CanvasRenderingContext2D,
@@ -71,13 +94,14 @@ function drawField(
   height: number,
   grid: Grid,
   anchors: readonly CellAnchor[],
+  palette: FieldPalette,
 ) {
-  context.fillStyle = "#f4f4f1";
+  context.fillStyle = palette.paper;
   context.fillRect(0, 0, width, height);
 
   const selectedCells = getAnchoredCells(anchors, grid, width, height);
   if (selectedCells.length > 0) {
-    context.fillStyle = "#11110f";
+    context.fillStyle = palette.selectedCell;
     for (const selectedCell of selectedCells) {
       context.fillRect(
         selectedCell.x,
@@ -88,7 +112,7 @@ function drawField(
     }
   }
 
-  context.strokeStyle = "rgba(17, 17, 15, 0.58)";
+  context.strokeStyle = palette.grid;
   context.lineWidth = 1;
   context.beginPath();
 
@@ -146,14 +170,22 @@ export function CursorSwarm({
   const selectionRef = useRef<CellAnchor[]>([]);
   const tracePointRef = useRef<TracePoint | null>(null);
   const collisionPreventionRef = useRef(initialCollisionPrevention);
+  const themeRef = useRef<FieldTheme>("dark");
   const [activeCursorCount, setActiveCursorCount] = useState(cursorCount);
   const [collisionPrevention, setCollisionPrevention] = useState(
     initialCollisionPrevention,
   );
+  const [theme, setTheme] = useState<FieldTheme>("dark");
 
   const updateCollisionPrevention = (enabled: boolean) => {
     collisionPreventionRef.current = enabled;
     setCollisionPrevention(enabled);
+  };
+
+  const updateTheme = (darkMode: boolean) => {
+    const nextTheme: FieldTheme = darkMode ? "dark" : "light";
+    themeRef.current = nextTheme;
+    setTheme(nextTheme);
   };
 
   const selectTrace = useCallback(
@@ -214,6 +246,7 @@ export function CursorSwarm({
           canvas.clientHeight,
           grid,
           nextSelections,
+          FIELD_PALETTES[themeRef.current],
         );
       }
     },
@@ -274,6 +307,7 @@ export function CursorSwarm({
         bounds.height,
         grid,
         selectionRef.current,
+        FIELD_PALETTES[themeRef.current],
       );
     };
 
@@ -305,7 +339,7 @@ export function CursorSwarm({
       }
 
       context.clearRect(0, 0, width, height);
-      context.fillStyle = "#11110f";
+      context.fillStyle = FIELD_PALETTES[themeRef.current].ink;
       for (const cursor of cursorsRef.current) {
         drawCursor(context, cursor, cursorScale);
       }
@@ -324,6 +358,23 @@ export function CursorSwarm({
     };
   }, [activeCursorCount, cursorScale, settings]);
 
+  useEffect(() => {
+    const canvas = cursorCanvasRef.current;
+    const backgroundCanvas = backgroundCanvasRef.current;
+    const grid = gridRef.current;
+    const backgroundContext = backgroundCanvas?.getContext("2d");
+    if (!canvas || !grid || !backgroundContext) return;
+
+    drawField(
+      backgroundContext,
+      canvas.clientWidth,
+      canvas.clientHeight,
+      grid,
+      selectionRef.current,
+      FIELD_PALETTES[theme],
+    );
+  }, [theme]);
+
   const finishTrace = (event: PointerEvent<HTMLCanvasElement>) => {
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
@@ -332,7 +383,7 @@ export function CursorSwarm({
   };
 
   return (
-    <main className={styles.page}>
+    <main className={styles.page} data-theme={theme}>
       <canvas
         ref={backgroundCanvasRef}
         className={styles.backgroundCanvas}
@@ -392,6 +443,7 @@ export function CursorSwarm({
                 event.currentTarget.clientHeight,
                 grid,
                 [],
+                FIELD_PALETTES[themeRef.current],
               );
             }
             return;
@@ -407,32 +459,46 @@ export function CursorSwarm({
           ]);
         }}
       />
-      {controls ? (
-        <section className={styles.controlBar} aria-label="Cursor configuration">
-          <label className={styles.cursorCountControl}>
-            <span>
-              cursors <output>{activeCursorCount}</output>
-            </span>
-            <input
-              aria-label="Cursor count"
-              max={controls.maxCursorCount}
-              min={controls.minCursorCount}
-              onChange={(event) => setActiveCursorCount(Number(event.target.value))}
-              step={controls.cursorCountStep}
-              type="range"
-              value={activeCursorCount}
-            />
-          </label>
-          <label className={styles.collisionControl}>
-            <input
-              checked={collisionPrevention}
-              onChange={(event) => updateCollisionPrevention(event.target.checked)}
-              type="checkbox"
-            />
-            <span>avoid overlap</span>
-          </label>
-        </section>
-      ) : null}
+      <section className={styles.controlBar} aria-label="Field controls">
+        {controls ? (
+          <>
+            <label className={styles.cursorCountControl}>
+              <span>
+                cursors <output>{activeCursorCount}</output>
+              </span>
+              <input
+                aria-label="Cursor count"
+                max={controls.maxCursorCount}
+                min={controls.minCursorCount}
+                onChange={(event) =>
+                  setActiveCursorCount(Number(event.target.value))
+                }
+                step={controls.cursorCountStep}
+                type="range"
+                value={activeCursorCount}
+              />
+            </label>
+            <label className={styles.collisionControl}>
+              <input
+                checked={collisionPrevention}
+                onChange={(event) =>
+                  updateCollisionPrevention(event.target.checked)
+                }
+                type="checkbox"
+              />
+              <span>avoid overlap</span>
+            </label>
+          </>
+        ) : null}
+        <label className={styles.themeControl}>
+          <input
+            checked={theme === "dark"}
+            onChange={(event) => updateTheme(event.target.checked)}
+            type="checkbox"
+          />
+          <span>dark mode</span>
+        </label>
+      </section>
     </main>
   );
 }
