@@ -52,9 +52,13 @@
   padding: 0.7rem clamp(1rem, 3vw, 2.75rem);
   background: var(--paper);
   font-size: 0.72rem;
+  min-width: 0;
   overflow-x: auto;
+  overflow-y: hidden;
   overscroll-behavior-x: contain;
   scrollbar-width: none;
+  touch-action: pan-x;
+  -webkit-overflow-scrolling: touch;
 }
 
 .controlBar::-webkit-scrollbar {
