@@ -139,14 +139,14 @@ contradicted current help material.
 55. [LinkedIn feed composition — LinkedIn News](https://news.linkedin.com/2019/January/what-s-in-your-linkedin-feed--people-you-know--talking-about-thi)
 56. [LinkedIn mobile interface examples — MacMagazine](https://macmagazine.com.br/post/2015/12/02/linkedin-para-ios-ganha-o-update-que-merecia-ha-bastante-tempo/)
 
-## Jobs update — accessed 2026-07-17
+## Jobs update — accessed 2026-07-19
 
 The Jobs route is not a decorative tab. Selecting Jobs in either primary
 navigation opens a dedicated search/results/detail workspace; on phone, a
 selected role moves into a full-height detail view and returns to the results
 list with the back action. The list starts at 24 records and deterministically
 adds 24 more as its desktop results panel or mobile document approaches the
-end, so all 120 static records can be reached without pagination.
+end, so all 1,000 static records can be reached without pagination.
 
 ### Current interface source set (58 official records)
 
@@ -229,32 +229,70 @@ posting.
 
 ### Imported job records
 
-`scripts/collect-public-jobs.mjs` read the public Greenhouse board APIs for
-[Figma](https://boards-api.greenhouse.io/v1/boards/figma/jobs?content=true)
-and [Stripe](https://boards-api.greenhouse.io/v1/boards/stripe/jobs?content=true).
-The access pass found 170 Figma records and 530 Stripe records — **700 current
-source records** — then selected the 60 most recently updated entries from
-each source for **120 stable, individually addressable job records** in
-`model/jobs.generated.ts`. Each keeps the source job identifier, actual title,
-company, location, team, update time, public-board origin, and application
-URL. The small `employment` presentation field is normalised for a familiar
-Jobs metadata row; the application URL remains the authoritative source for
-full terms and requirements.
+`scripts/collect-public-jobs.mjs` read **2,841 current source records** from
+16 public Greenhouse boards and selected up to 80 recent roles per company,
+interleaving the selected records so the initial list is not dominated by one
+company. The sources are [Figma](https://boards-api.greenhouse.io/v1/boards/figma/jobs?content=true),
+[Stripe](https://boards-api.greenhouse.io/v1/boards/stripe/jobs?content=true),
+[Airtable](https://boards-api.greenhouse.io/v1/boards/airtable/jobs?content=true),
+[Asana](https://boards-api.greenhouse.io/v1/boards/asana/jobs?content=true),
+[Brex](https://boards-api.greenhouse.io/v1/boards/brex/jobs?content=true),
+[Cloudflare](https://boards-api.greenhouse.io/v1/boards/cloudflare/jobs?content=true),
+[Coinbase](https://boards-api.greenhouse.io/v1/boards/coinbase/jobs?content=true),
+[Datadog](https://boards-api.greenhouse.io/v1/boards/datadog/jobs?content=true),
+[Discord](https://boards-api.greenhouse.io/v1/boards/discord/jobs?content=true),
+[Duolingo](https://boards-api.greenhouse.io/v1/boards/duolingo/jobs?content=true),
+[Intercom](https://boards-api.greenhouse.io/v1/boards/intercom/jobs?content=true),
+[Lyft](https://boards-api.greenhouse.io/v1/boards/lyft/jobs?content=true),
+[Reddit](https://boards-api.greenhouse.io/v1/boards/reddit/jobs?content=true),
+[Scale AI](https://boards-api.greenhouse.io/v1/boards/scaleai/jobs?content=true),
+[Vercel](https://boards-api.greenhouse.io/v1/boards/vercel/jobs?content=true),
+and [Webflow](https://boards-api.greenhouse.io/v1/boards/webflow/jobs?content=true).
+
+The result is **1,000 stable, individually addressable roles** in
+`model/jobs.generated.ts`. Every record keeps the source job identifier,
+actual title, company, location, department/team, update time, public-board
+origin, application URL, and a bounded text excerpt from that role's original
+JD. The detail panel renders that source JD excerpt rather than generated role
+copy. Employment type is retained as a presentation normalisation because the
+public API does not supply a structured employment-type field; the original
+application URL remains the source of truth for full terms and requirements.
 
 ### Applied Jobs rules
 
-- Desktop uses the search/filter header plus a measured Jobs side rail,
-  independently scrolling results list, and sticky job-detail panel. At
-  constrained desktop widths the side rail disappears before the results and
-  detail panel are compressed; phone uses a results list and a detail takeover.
-- Role/company and location fields filter the imported records. Remote-only,
-  sort, set-alert, save, and selection all change local state. Applying opens
-  the original company careers URL in a new tab; save creates the local Job
-  tracker state.
-- The job-detail copy only states facts derivable from the actual record.
-  Seniority is shown only when the source title itself indicates a level;
-  no generic role description, LinkedIn applicant count, or fabricated
-  Easy Apply claim is inserted.
+- Desktop uses the current Jobs grammar: a search/filter bar, an independently
+  scrolling results list, and a sticky detail panel. The fabricated third
+  navigation rail was removed. On a phone, result cards stay in the list and
+  the selected role takes over the screen with a back action.
+- Role/company, location, date, experience, company, workplace, sort,
+  set-alert, save, selection, and clear-filter controls all change local
+  state. Applying opens the exact original company careers URL in a new tab.
+  The visible Easy Apply filter correctly returns no rows because every
+  imported record is an external company-site application rather than an
+  invented LinkedIn-hosted application.
+- Result cards and detail panels contain only source-backed job metadata and
+  original-JD text excerpts. No applicant count, match score, recruiter
+  activity, salary, Easy Apply flag, or generic job-description prose is
+  fabricated.
+- **Live-job testing:** the initial Jobs state runs a local, explicitly
+  controllable arrival stream. It moves the next record from the fixed
+  1,000-role corpus to the top of the results, accents that arrival, and
+  selects it so the right-side detail changes with every arrival. The stream
+  starts at **50ms** for an intentionally overwhelming market-update effect.
+  Its Start/Pause and **20ms–200ms** arrival-slider live in a collapsible,
+  lower-right **auxiliary control**, outside the LinkedIn Jobs interface and
+  patterned after the Swarm control treatment. It is a performance/performative
+  test of a volatile job market, not a claim that a production LinkedIn feed is
+  receiving these jobs live from the network.
+- Each arrival uses only a short row-insertion cue; its duration is 70% of the
+  selected interval (with a 16ms floor), so it accelerates with the stream.
+  The right detail updates directly to the same incoming role without a
+  decorative transition. Reduced-motion settings disable the row cue.
+- The stream changes a cursor and orders references from the static corpus;
+  it does not append duplicate records or reconstruct all job cards. The
+  results surface begins with 24 rendered cards, then expands in 24-card
+  batches on scroll. This keeps the high-frequency mode bounded while still
+  allowing the whole 1,000-role corpus to be explored.
 
 ## Files
 

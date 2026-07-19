@@ -8,6 +8,7 @@ export type LinkedinJob = {
   employment: "Full-time";
   team: string;
   postedAt: string;
+  description: string;
   sourceBoard: string;
   applicationUrl: string;
 };

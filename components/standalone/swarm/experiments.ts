@@ -4,6 +4,7 @@ export const swarmExperiments = [
   { slug: "3", label: "swarm/3" },
   { slug: "4", label: "swarm/4" },
   { slug: "5", label: "swarm/5" },
+  { slug: "6", label: "swarm/6" },
 ] as const;
 
 export type SwarmExperimentSlug = (typeof swarmExperiments)[number]["slug"];

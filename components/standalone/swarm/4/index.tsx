@@ -13,12 +13,14 @@ import {
   createGrid,
   getAnchoredCells,
   getCellAtPoint,
+  scaleCursorFieldSettings,
   settleCursorField,
   stepCursorField,
   SWARM_FOUR_SETTINGS,
   type CellAnchor,
   type CursorAgent,
   type CursorFieldSettings,
+  type CursorMotionProfile,
   type Grid,
 } from "./model";
 
@@ -27,6 +29,9 @@ type CursorSwarmProps = {
   cursorScale: number;
   settings: CursorFieldSettings;
   initialCollisionPrevention?: boolean;
+  initialGoldfish?: boolean;
+  sideGoldfishView?: boolean;
+  motionProfile?: CursorMotionProfile;
   controls?: {
     minCursorCount: number;
     maxCursorCount: number;
@@ -40,12 +45,15 @@ type TracePoint = {
 };
 
 type FieldTheme = "light" | "dark";
+type AgentGlyph = "cursor" | "goldfish";
+type GridMark = "dot" | "cross";
 
 type FieldPalette = {
   paper: string;
   ink: string;
   selectedCell: string;
   grid: string;
+  goldfish: string;
 };
 
 const CURSOR_TIP_ANGLE = Math.atan2(-8.4, -5.2);
@@ -55,12 +63,14 @@ const FIELD_PALETTES: Record<FieldTheme, FieldPalette> = {
     ink: "#11110f",
     selectedCell: "#11110f",
     grid: "rgba(17, 17, 15, 0.58)",
+    goldfish: "#9e782e",
   },
   dark: {
     paper: "#0d0e0d",
     ink: "#eceee8",
     selectedCell: "#eceee8",
     grid: "rgba(236, 238, 232, 0.52)",
+    goldfish: "#d8b66a",
   },
 };
 
@@ -88,6 +98,58 @@ function drawCursor(
   context.restore();
 }
 
+function drawGoldfish(
+  context: CanvasRenderingContext2D,
+  cursor: CursorAgent,
+  cursorScale: number,
+  palette: FieldPalette,
+  sideView = false,
+) {
+  const angle = Math.atan2(cursor.vy, cursor.vx);
+  const sideTilt = Math.max(
+    -0.28,
+    Math.min(0.28, Math.atan2(cursor.vy, Math.max(18, Math.abs(cursor.vx)))),
+  );
+  const sideYawScale =
+    0.04 + Math.min(1, Math.abs(cursor.vx) / 24) * 0.96;
+
+  context.save();
+  context.translate(cursor.x, cursor.y);
+  if (sideView) {
+    context.scale(
+      (cursor.vx >= 0 ? 1 : -1) * cursorScale * sideYawScale,
+      cursorScale,
+    );
+    context.rotate(sideTilt);
+  } else {
+    context.rotate(angle);
+    context.scale(cursorScale, cursorScale);
+  }
+  context.fillStyle = palette.goldfish;
+
+  context.beginPath();
+  context.moveTo(6.4, 0);
+  context.bezierCurveTo(4.1, -3.9, -1.9, -4.45, -5.45, -1.7);
+  context.quadraticCurveTo(-6.25, 0, -5.45, 1.7);
+  context.bezierCurveTo(-1.9, 4.45, 4.1, 3.9, 6.4, 0);
+  context.fill();
+
+  context.beginPath();
+  context.moveTo(-5.15, -1.62);
+  context.lineTo(-10.3, -5.15);
+  context.lineTo(-8.55, 0);
+  context.lineTo(-10.3, 5.15);
+  context.lineTo(-5.15, 1.62);
+  context.closePath();
+  context.fill();
+
+  context.fillStyle = palette.paper;
+  context.beginPath();
+  context.arc(4.05, -1.05, 0.58, 0, Math.PI * 2);
+  context.fill();
+  context.restore();
+}
+
 function drawField(
   context: CanvasRenderingContext2D,
   width: number,
@@ -95,6 +157,7 @@ function drawField(
   grid: Grid,
   anchors: readonly CellAnchor[],
   palette: FieldPalette,
+  gridMark: GridMark,
 ) {
   context.fillStyle = palette.paper;
   context.fillRect(0, 0, width, height);
@@ -110,6 +173,21 @@ function drawField(
         selectedCell.height,
       );
     }
+  }
+
+  if (gridMark === "dot") {
+    context.fillStyle = palette.grid;
+
+    for (let column = 0; column <= grid.columns; column += 1) {
+      const x = Math.round(grid.originX + column * grid.cellSize);
+
+      for (let row = 0; row <= grid.rows; row += 1) {
+        const y = Math.round(grid.originY + row * grid.cellSize);
+        context.fillRect(x, y, 1, 1);
+      }
+    }
+
+    return;
   }
 
   context.strokeStyle = palette.grid;
@@ -160,6 +238,9 @@ export function CursorSwarm({
   cursorScale,
   settings,
   initialCollisionPrevention = true,
+  initialGoldfish = false,
+  sideGoldfishView = false,
+  motionProfile = "cursor",
   controls,
 }: CursorSwarmProps) {
   const backgroundCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -171,11 +252,22 @@ export function CursorSwarm({
   const tracePointRef = useRef<TracePoint | null>(null);
   const collisionPreventionRef = useRef(initialCollisionPrevention);
   const themeRef = useRef<FieldTheme>("dark");
+  const agentGlyphRef = useRef<AgentGlyph>(
+    initialGoldfish ? "goldfish" : "cursor",
+  );
+  const gridMarkRef = useRef<GridMark>("dot");
+  const agentScaleRef = useRef(1);
+  const constraintSettingsRef = useRef(scaleCursorFieldSettings(settings, 1));
   const [activeCursorCount, setActiveCursorCount] = useState(cursorCount);
   const [collisionPrevention, setCollisionPrevention] = useState(
     initialCollisionPrevention,
   );
   const [theme, setTheme] = useState<FieldTheme>("dark");
+  const [agentGlyph, setAgentGlyph] = useState<AgentGlyph>(
+    initialGoldfish ? "goldfish" : "cursor",
+  );
+  const [agentScale, setAgentScale] = useState(1);
+  const [gridMark, setGridMark] = useState<GridMark>("dot");
 
   const updateCollisionPrevention = (enabled: boolean) => {
     collisionPreventionRef.current = enabled;
@@ -186,6 +278,24 @@ export function CursorSwarm({
     const nextTheme: FieldTheme = darkMode ? "dark" : "light";
     themeRef.current = nextTheme;
     setTheme(nextTheme);
+  };
+
+  const updateAgentGlyph = (goldfish: boolean) => {
+    const nextGlyph: AgentGlyph = goldfish ? "goldfish" : "cursor";
+    agentGlyphRef.current = nextGlyph;
+    setAgentGlyph(nextGlyph);
+  };
+
+  const updateAgentScale = (nextScale: number) => {
+    agentScaleRef.current = nextScale;
+    constraintSettingsRef.current = scaleCursorFieldSettings(settings, nextScale);
+    setAgentScale(nextScale);
+  };
+
+  const updateGridMark = (crossMark: boolean) => {
+    const nextMark: GridMark = crossMark ? "cross" : "dot";
+    gridMarkRef.current = nextMark;
+    setGridMark(nextMark);
   };
 
   const selectTrace = useCallback(
@@ -233,8 +343,9 @@ export function CursorSwarm({
         canvas.clientWidth,
         canvas.clientHeight,
         selectedCells,
-        settings,
+        constraintSettingsRef.current,
         collisionPreventionRef.current,
+        motionProfile,
       );
 
       const backgroundCanvas = backgroundCanvasRef.current;
@@ -247,10 +358,11 @@ export function CursorSwarm({
           grid,
           nextSelections,
           FIELD_PALETTES[themeRef.current],
+          gridMarkRef.current,
         );
       }
     },
-    [settings],
+    [motionProfile],
   );
 
   useEffect(() => {
@@ -283,7 +395,8 @@ export function CursorSwarm({
         activeCursorCount,
         bounds.width,
         bounds.height,
-        settings,
+        constraintSettingsRef.current,
+        motionProfile,
       );
       const selectedCells = getAnchoredCells(
         selectionRef.current,
@@ -297,8 +410,9 @@ export function CursorSwarm({
         bounds.width,
         bounds.height,
         selectedCells,
-        settings,
+        constraintSettingsRef.current,
         collisionPreventionRef.current,
+        motionProfile,
       );
 
       drawField(
@@ -308,6 +422,7 @@ export function CursorSwarm({
         grid,
         selectionRef.current,
         FIELD_PALETTES[themeRef.current],
+        gridMarkRef.current,
       );
     };
 
@@ -333,15 +448,29 @@ export function CursorSwarm({
           deltaSeconds,
           elapsedSeconds,
           selectedCells,
-          settings,
+          constraintSettingsRef.current,
           collisionPreventionRef.current,
+          agentScaleRef.current,
+          motionProfile,
         );
       }
 
       context.clearRect(0, 0, width, height);
-      context.fillStyle = FIELD_PALETTES[themeRef.current].ink;
+      const palette = FIELD_PALETTES[themeRef.current];
+      const effectiveCursorScale = cursorScale * agentScaleRef.current;
+      context.fillStyle = palette.ink;
       for (const cursor of cursorsRef.current) {
-        drawCursor(context, cursor, cursorScale);
+        if (agentGlyphRef.current === "goldfish") {
+          drawGoldfish(
+            context,
+            cursor,
+            effectiveCursorScale,
+            palette,
+            sideGoldfishView,
+          );
+        } else {
+          drawCursor(context, cursor, effectiveCursorScale);
+        }
       }
 
       frameRef.current = requestAnimationFrame(render);
@@ -356,7 +485,13 @@ export function CursorSwarm({
       resizeObserver.disconnect();
       if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
     };
-  }, [activeCursorCount, cursorScale, settings]);
+  }, [
+    activeCursorCount,
+    cursorScale,
+    motionProfile,
+    settings,
+    sideGoldfishView,
+  ]);
 
   useEffect(() => {
     const canvas = cursorCanvasRef.current;
@@ -372,8 +507,9 @@ export function CursorSwarm({
       grid,
       selectionRef.current,
       FIELD_PALETTES[theme],
+      gridMark,
     );
-  }, [theme]);
+  }, [theme, gridMark]);
 
   const finishTrace = (event: PointerEvent<HTMLCanvasElement>) => {
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
@@ -444,6 +580,7 @@ export function CursorSwarm({
                 grid,
                 [],
                 FIELD_PALETTES[themeRef.current],
+                gridMarkRef.current,
               );
             }
             return;
@@ -490,6 +627,20 @@ export function CursorSwarm({
             </label>
           </>
         ) : null}
+        <label className={styles.glyphSizeControl}>
+          <span>
+            scale <output>{agentScale.toFixed(2)}×</output>
+          </span>
+          <input
+            aria-label="Agent scale"
+            max="2"
+            min="0.5"
+            onChange={(event) => updateAgentScale(Number(event.target.value))}
+            step="0.05"
+            type="range"
+            value={agentScale}
+          />
+        </label>
         <label className={styles.themeControl}>
           <input
             checked={theme === "dark"}
@@ -497,6 +648,22 @@ export function CursorSwarm({
             type="checkbox"
           />
           <span>dark mode</span>
+        </label>
+        <label className={styles.glyphControl}>
+          <input
+            checked={agentGlyph === "goldfish"}
+            onChange={(event) => updateAgentGlyph(event.target.checked)}
+            type="checkbox"
+          />
+          <span>goldfish</span>
+        </label>
+        <label className={styles.gridMarkControl}>
+          <input
+            checked={gridMark === "cross"}
+            onChange={(event) => updateGridMark(event.target.checked)}
+            type="checkbox"
+          />
+          <span>corner +</span>
         </label>
       </section>
     </main>

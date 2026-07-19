@@ -419,3 +419,307 @@ Before reporting completion:
 The final test is perceptual: at a glance the screen should feel occupied by
 coherent market information, not by empty panels decorated to resemble a
 terminal.
+
+## 13. Removed stock/4 live-animation attempt — failure postmortem
+
+On 2026-07-19, an animated `/stock/4` variant was implemented and then rejected
+by the user as fundamentally unsuccessful. The entire variant, its route
+registration, and its scoped documentation were subsequently removed.
+
+This section is intentionally preserved here because a similar live-market
+task may be requested again. Do not recover or imitate the deleted
+implementation. The static `/stock/3` screen remains the accepted visual
+baseline; the failed variant is evidence about what a future implementation
+must do differently.
+
+### 13.1 The requested experience
+
+The request was not merely “change quote data every second.” It required all of
+the following at once:
+
+- the exact `/stock/3` interface, density, typography, and responsive behavior;
+- visible one-second market updates;
+- stochastic behavior that is financially and mathematically convincing;
+- movement large enough to be perceived, with one real second representing
+  roughly one market hour or one market day rather than one exchange second;
+- sophisticated, performative update choreography resembling a sequential
+  information-system refresh;
+- changing text and news that make the market state feel current;
+- a coherent causal experience in which prices, heatmaps, breadth, charts,
+  volume, and headlines appear to describe the same market event.
+
+The rejected implementation satisfied only fragments of this list and treated
+its internal model quality as proof of the overall experience. That was the
+central error.
+
+### 13.2 Why the implementation failed
+
+#### It optimized mathematical stability instead of visible experience
+
+The first model used per-exchange-second volatility. That was defensible as a
+micro-return process, but most rounded prices and two-decimal percentage fields
+did not visibly change. A terminal can be updating internally while appearing
+completely frozen. The user correctly experienced this as “nothing updates.”
+
+The implementation then reported deterministic seeds, positive prices,
+high/low containment, bid/ask ordering, and plausible correlations. Those are
+useful model invariants, but none proves that a person can perceive an update or
+find it compelling. Numerical validity was incorrectly used as a substitute
+for perceptual evidence.
+
+**Future rule:** define the visible magnitude contract before choosing the
+stochastic timestep. For every displayed precision, calculate whether a normal
+tick changes the rendered string. A successful tick must move a meaningful
+fraction of visible quotes, heat cells, range markers, and charts.
+
+#### The temporal scale was chosen after implementation, not before it
+
+The relation between one real second and simulated market time was initially
+undefined. Only after rejection was it changed from one exchange second to one
+market hour. That late change altered volatility, volume, session clocks, news
+cadence, and narrative meaning all at once.
+
+**Future rule:** make time mapping an explicit product requirement before
+writing the model. Examples include:
+
+- `1 real second = 1 market hour` for an intraday performance;
+- `1 real second = 1 market day` for a more dramatic regime sequence;
+- a deliberately authored mixture of quiet periods and event shocks.
+
+Every calculation and animation duration must derive from that choice.
+
+#### CSS delays were mistaken for sequential state updates
+
+The rejected UI updated the entire React snapshot at once and then applied
+different CSS animation delays to rows. Although flashes appeared at different
+times, the new text and values already existed in the DOM. This is not a true
+information cascade; it is simultaneous replacement covered by delayed
+decoration. It could not create the requested sense that information was being
+received, processed, and propagated across the workstation.
+
+**Future rule:** maintain separate `currentFrame` and `nextFrame` states. Commit
+each panel or information group to the visible frame only when its choreography
+phase begins. CSS may interpolate the committed change, but CSS delay must not
+be responsible for pretending that an already-applied state has not arrived.
+
+#### The “Jarvis-like” request was translated into generic scan effects
+
+A one-pixel sweep line, opacity flashes, and row translations were added. These
+effects were technically animated but conceptually generic. They did not arise
+from Bloomberg terminal behavior, market microstructure, or the relationship
+between panels. The scan could have been placed on any sci-fi dashboard.
+
+The user asked for a sophisticated sequential update, not for a decorative
+scanner.
+
+**Future rule:** translate performative sequencing into domain behavior:
+
+1. a catalyst or trade arrives;
+2. primary instruments update;
+3. correlated indices and sectors respond;
+4. breadth and heatmaps recalculate;
+5. charts append the new interval;
+6. a headline and short interpretation arrive;
+7. the workstation settles before the next event.
+
+The sequence should communicate causality. Do not add a sweep, glow, pulse, or
+HUD effect unless it represents a specific stage of that causal process.
+
+#### Text updates were either absent or disconnected
+
+The first version left the story and most text static, so even changing numbers
+did not make the screen feel current. A later patch inserted rotating headlines
+and article packages, but they came from a small template pool and were not
+authored from the same event that moved the market. Repetition and semantic
+disconnection made the text feel synthetic.
+
+**Future rule:** headlines and commentary must be derived from the market event
+and the resulting values. If rates rise, the affected equity factors, FX move,
+breadth change, and headline must agree. Stable IDs belong to the generated
+event record; display text must never be used as a React key.
+
+#### The model described correlated noise, not a legible market event
+
+The deleted model included shared shocks, signed betas, idiosyncratic noise,
+volatility clustering, mean reversion, jumps, and cumulative volume. These are
+reasonable ingredients, but their combined output was still an undirected
+random field. A user could not tell why a movement occurred or what to watch
+next.
+
+**Future rule:** the top-level generator should produce an event with an
+explicit catalyst and factor shocks. Stochastic noise should add variation
+inside that event, not replace it.
+
+A better abstract model is:
+
+```ts
+type MarketEvent = {
+  id: string;
+  simulatedAt: number;
+  horizon: "hour" | "day";
+  catalyst: "rates" | "earnings" | "energy" | "fx" | "risk-on" | "risk-off";
+  factorShocks: {
+    equity: number;
+    growth: number;
+    rates: number;
+    dollar: number;
+    energy: number;
+    volatility: number;
+  };
+  affectedSymbols: string[];
+  headline: string;
+  interpretation: string;
+};
+
+type MarketFrame = {
+  event: MarketEvent;
+  assets: Record<string, AssetQuote>;
+  breadth: BreadthState;
+  news: NewsRecord[];
+};
+```
+
+Asset prices can still use a factor model, covariance structure, stochastic
+volatility, and idiosyncratic residuals. The event determines the dominant
+direction and narrative; randomness makes individual responses non-uniform.
+
+#### Smooth chart interpolation did not create meaningful chart behavior
+
+SVG polylines were interpolated between normalized arrays. This made lines move
+smoothly but did not necessarily read as a new bar, new hour, or new trade.
+Because normalization could rescale the entire path, old history appeared to
+move when only the latest point should have arrived.
+
+**Future rule:** charts need a defined temporal grammar. Append a new interval,
+shift the window only when full, preserve the y-domain for the duration of the
+transition, and then ease any domain change separately. The viewer should be
+able to identify the new observation.
+
+#### Volume and quote microstructure were added without a perceptual role
+
+Bid/ask, cumulative volume, high/low, and a separate volume series were modeled,
+but most were too small, too dense, or updated without clear coordination. More
+fields did not automatically produce more realism.
+
+**Future rule:** decide which microstructure signals the user can actually
+notice. Examples include a widening spread during a shock, a volume burst that
+precedes price continuation, or a range marker that expands after a jump. Each
+visual change must have an observable job.
+
+#### The implementation skipped a small experiential prototype
+
+The full 50-asset model, all panels, animations, news, clocks, and responsive
+behavior were built before proving that one update cycle felt convincing. This
+made the work complex while leaving its central experience unvalidated.
+
+**Future rule:** first prototype one complete 8–12 second sequence using only:
+
+- one market catalyst;
+- three primary instruments;
+- one heatmap group;
+- one chart;
+- one generated headline.
+
+Verify the timing, magnitude, causality, and aesthetic fit. Only then apply the
+same event grammar to the full `/stock/3` density.
+
+### 13.3 Required design for a future live variant
+
+Before coding, write a short sequence specification containing:
+
+1. **Time mapping:** what simulated horizon one real second represents.
+2. **Event grammar:** which catalysts exist and how often regimes change.
+3. **Magnitude envelope:** normal, elevated, and shock moves by asset class.
+4. **Update phases:** the exact order and duration of visible panel commits.
+5. **Text cadence:** which text changes every event and which stories persist.
+6. **Chart grammar:** append, window shift, y-domain behavior, and transition.
+7. **Settling period:** when the workstation becomes quiet enough to read.
+
+An example one-second choreography could be:
+
+| Phase | Time | Visible commitment |
+| --- | ---: | --- |
+| Event receipt | 0–100ms | simulated clock and primary catalyst record |
+| Primary quotes | 100–260ms | directly affected futures, rates, FX, or lead stock |
+| Correlated response | 260–480ms | indices, sectors, and related securities in clusters |
+| Market internals | 480–650ms | breadth, heat cells, ranges, and volume |
+| Historical view | 650–820ms | append chart point and shift window if required |
+| Interpretation | 820–1000ms | headline/news row derived from the completed event |
+
+This is a state-commit schedule, not merely an animation-delay table.
+
+### 13.4 Data and financial requirements
+
+A future model should include, in this order:
+
+- a factor-based return model with an explicit correlation or loading matrix;
+- asset-class volatility calibrated to the chosen hour/day horizon;
+- stochastic volatility or regime-dependent variance;
+- event-conditioned factor shocks;
+- idiosyncratic residuals smaller than the dominant event for affected assets;
+- coherent open, previous close, high, low, volume, bid, and ask;
+- trading-session rollover and weekend handling;
+- deterministic seeds for repeatable verification;
+- hard bounds and invariants preventing invalid prices or crossed quotes.
+
+The key perceptual checks are equally important:
+
+- a normal tick changes enough rounded price strings to be visible;
+- a shock tick is dramatic but does not make every asset move identically;
+- positively and negatively loaded assets visibly diverge;
+- the headline accurately summarizes the realized frame;
+- quiet ticks and event ticks have distinguishable rhythms;
+- the screen has a readable pause before the next event.
+
+### 13.5 Visual requirements
+
+- Preserve `/stock/3` geometry by sharing or exactly reusing its presentation
+  primitives; do not redesign the panels.
+- Use existing terminal mechanisms—cell color, quote direction, range markers,
+  row insertion, chart append, and tabular alignment—as the animation language.
+- Animate only changed information. Do not fade or translate whole panels on
+  every tick.
+- Avoid a global scan line, glow, radar sweep, HUD overlay, or generic sci-fi
+  effect. “Performative” must come from causal information propagation.
+- Keep text readable during transitions. Do not conceal new values with long
+  opacity fades.
+- Respect `prefers-reduced-motion` with an instantaneous but still correctly
+  phased fallback where practical.
+
+### 13.6 Verification required before presenting the next attempt
+
+Static lint and TypeScript checks remain necessary, but they are insufficient.
+A future agent must verify the experience itself when the user authorizes
+browser testing:
+
+1. Capture a continuous 20–30 second sequence, not one still screenshot.
+2. Inspect at least one quiet event, one correlated event, and one shock event.
+3. Confirm the actual rendered strings change at the intended cadence.
+4. Confirm panel commits occur in the authored order rather than simultaneously.
+5. Confirm chart history behaves as time history, not as a morphing ornament.
+6. Confirm headline numbers and directions match the final market frame.
+7. Confirm the original `/stock/3` remains visually and behaviorally static.
+8. Verify desktop first, then confirm that the same event grammar survives the
+   tablet and phone reflow.
+
+If runtime verification requires a server, follow the repository's exact server
+request wording and never start, restart, or kill the user's server directly.
+
+### 13.7 Explicit anti-patterns from the removed variant
+
+Do not repeat any of the following:
+
+- per-second volatility that rounds to an unchanged display;
+- claiming realism from correlations or invariants without perceptual proof;
+- updating all React data simultaneously and disguising it with CSS delays;
+- global scan lines or “Jarvis” decoration without market semantics;
+- rotating generic text independently of the price event;
+- interpolating an entire normalized chart when only one interval arrived;
+- building the complete multi-panel system before validating one sequence;
+- treating more stochastic mechanisms as equivalent to a better experience;
+- reporting the implementation as successful before observing it in motion.
+
+The decisive lesson is that a live market interface is a temporal composition,
+not a static dashboard plus random numbers and CSS animation. The next attempt
+must design the event, causality, staged state commitment, and reading rhythm as
+one system before scaling it to the full workstation.

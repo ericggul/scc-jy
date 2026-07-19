@@ -6,6 +6,8 @@ export type CursorAgent = {
   vy: number;
 };
 
+export type CursorMotionProfile = "cursor" | "sideFish";
+
 export type Grid = {
   cellSize: number;
   originX: number;
@@ -41,9 +43,9 @@ export type CursorFieldSettings = {
 };
 
 export const SWARM_FOUR_SETTINGS: CursorFieldSettings = {
-  cellMin: 40,
-  cellMax: 60,
-  cellDivisor: 15,
+  cellMin: 20,
+  cellMax: 30,
+  cellDivisor: 30,
   clearance: 6,
   minDistance: 16,
   collisionBuffer: 2,
@@ -60,11 +62,29 @@ export const SWARM_FIVE_SETTINGS: CursorFieldSettings = {
   collisionPasses: 8,
 };
 
+export function scaleCursorFieldSettings(
+  settings: CursorFieldSettings,
+  agentScale: number,
+): CursorFieldSettings {
+  return {
+    ...settings,
+    clearance: settings.clearance * agentScale,
+    minDistance: settings.minDistance * agentScale,
+    collisionBuffer: settings.collisionBuffer * agentScale,
+  };
+}
+
 const PERCEPTION_RADIUS = 72;
 const SEPARATION_RADIUS = 24;
 const MAX_SPEED = 86;
 const MIN_SPEED = 30;
 const EDGE_MARGIN = 56;
+const SIDE_FISH_CRUISE_SPEED = 40;
+const SIDE_FISH_MIN_SPEED = 26;
+const SIDE_FISH_MAX_SPEED = 54;
+const SIDE_FISH_MAX_TURN_RATE = 1.4;
+const SIDE_FISH_EDGE_LOOKAHEAD = 112;
+const SIDE_FISH_CELL_LOOKAHEAD = 68;
 
 function seededUnit(index: number, salt: number) {
   const value = Math.sin(index * 12.9898 + salt * 78.233) * 43758.5453;
@@ -80,6 +100,17 @@ function limitVector(x: number, y: number, maximum: number) {
 
   const scale = maximum / magnitude;
   return { x: x * scale, y: y * scale };
+}
+
+function clamp(value: number, minimum: number, maximum: number) {
+  return Math.min(maximum, Math.max(minimum, value));
+}
+
+function angleDifference(target: number, current: number) {
+  return Math.atan2(
+    Math.sin(target - current),
+    Math.cos(target - current),
+  );
 }
 
 export function createGrid(
@@ -146,6 +177,7 @@ export function createCursorField(
   width: number,
   height: number,
   settings: CursorFieldSettings,
+  motionProfile: CursorMotionProfile = "cursor",
 ): CursorAgent[] {
   const centerX = width / 2;
   const centerY = height / 2;
@@ -188,13 +220,20 @@ export function createCursorField(
     const row = Math.floor(index / columns);
     const angle = seededUnit(index, 3) * Math.PI * 2;
     const speed = 34 + seededUnit(index, 4) * 26;
+    const fishSpeed = 30 + seededUnit(index, 4) * 12;
 
     return {
       id: index,
       x: centerX - spreadX / 2 + gapX * (column + 1),
       y: centerY - spreadY / 2 + gapY * (row + 1),
-      vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed,
+      vx:
+        motionProfile === "sideFish"
+          ? fishSpeed
+          : Math.cos(angle) * speed,
+      vy:
+        motionProfile === "sideFish"
+          ? (seededUnit(index, 9) - 0.5) * 5
+          : Math.sin(angle) * speed,
     };
   });
 }
@@ -342,6 +381,7 @@ function resolveCursorCollisions(
   height: number,
   selectedCells: readonly SelectedCell[],
   settings: CursorFieldSettings,
+  motionProfile: CursorMotionProfile,
 ) {
   let resolved = cursors.map((cursor) => ({ ...cursor }));
   const collisionDistance = settings.minDistance + settings.collisionBuffer;
@@ -399,16 +439,19 @@ function resolveCursorCollisions(
             const directionX = dx / distance;
             const directionY = dy / distance;
             const overlap = (collisionDistance - distance) / 2 + 0.01;
-            const impulse = overlap * 9;
 
             cursor.x -= directionX * overlap;
             cursor.y -= directionY * overlap;
-            cursor.vx -= directionX * impulse;
-            cursor.vy -= directionY * impulse;
             other.x += directionX * overlap;
             other.y += directionY * overlap;
-            other.vx += directionX * impulse;
-            other.vy += directionY * impulse;
+
+            if (motionProfile === "cursor") {
+              const impulse = overlap * 9;
+              cursor.vx -= directionX * impulse;
+              cursor.vy -= directionY * impulse;
+              other.vx += directionX * impulse;
+              other.vy += directionY * impulse;
+            }
           }
         }
       }
@@ -438,6 +481,7 @@ export function settleCursorField(
   selectedCells: readonly SelectedCell[],
   settings: CursorFieldSettings,
   preventCursorCollisions = true,
+  motionProfile: CursorMotionProfile = "cursor",
 ) {
   const evacuatedCursors = evacuateSelectedCells(
     cursors,
@@ -455,6 +499,236 @@ export function settleCursorField(
     height,
     selectedCells,
     settings,
+    motionProfile,
+  );
+}
+
+function getSideFishBoundaryAvoidance(
+  cursor: CursorAgent,
+  width: number,
+  height: number,
+) {
+  let x = 0;
+  let y = 0;
+  const rightDistance = width - cursor.x;
+  const bottomDistance = height - cursor.y;
+
+  if (cursor.x < SIDE_FISH_EDGE_LOOKAHEAD) {
+    x +=
+      ((SIDE_FISH_EDGE_LOOKAHEAD - cursor.x) / SIDE_FISH_EDGE_LOOKAHEAD) *
+      112;
+  }
+  if (rightDistance < SIDE_FISH_EDGE_LOOKAHEAD) {
+    x -=
+      ((SIDE_FISH_EDGE_LOOKAHEAD - rightDistance) / SIDE_FISH_EDGE_LOOKAHEAD) *
+      112;
+  }
+  if (cursor.y < SIDE_FISH_EDGE_LOOKAHEAD) {
+    y +=
+      ((SIDE_FISH_EDGE_LOOKAHEAD - cursor.y) / SIDE_FISH_EDGE_LOOKAHEAD) *
+      96;
+  }
+  if (bottomDistance < SIDE_FISH_EDGE_LOOKAHEAD) {
+    y -=
+      ((SIDE_FISH_EDGE_LOOKAHEAD - bottomDistance) / SIDE_FISH_EDGE_LOOKAHEAD) *
+      96;
+  }
+
+  return { x, y };
+}
+
+function getSideFishCellAvoidance(
+  cursor: CursorAgent,
+  cells: readonly SelectedCell[],
+  settings: CursorFieldSettings,
+) {
+  let x = 0;
+  let y = 0;
+  const lookahead = SIDE_FISH_CELL_LOOKAHEAD + settings.clearance;
+
+  for (const cell of cells) {
+    const nearestX = clamp(cursor.x, cell.x, cell.x + cell.width);
+    const nearestY = clamp(cursor.y, cell.y, cell.y + cell.height);
+    let offsetX = cursor.x - nearestX;
+    let offsetY = cursor.y - nearestY;
+    let distance = Math.hypot(offsetX, offsetY);
+
+    if (distance >= lookahead) continue;
+
+    if (distance < 0.001) {
+      const centerX = cursor.x - cell.centerX;
+      const centerY = cursor.y - cell.centerY;
+      const centerDistance = Math.hypot(centerX, centerY) || 1;
+      offsetX = centerX / centerDistance;
+      offsetY = centerY / centerDistance;
+      distance = 0;
+    } else {
+      offsetX /= distance;
+      offsetY /= distance;
+    }
+
+    const strength = ((lookahead - distance) / lookahead) * 340;
+    x += offsetX * strength;
+    y += offsetY * strength;
+  }
+
+  return { x, y };
+}
+
+function getSideFishSteering(
+  cursor: CursorAgent,
+  width: number,
+  height: number,
+  selectedCells: readonly SelectedCell[],
+  settings: CursorFieldSettings,
+  elapsedSeconds: number,
+) {
+  const currentHeading = Math.atan2(cursor.vy, cursor.vx);
+  let steeringX = Math.cos(currentHeading);
+  let steeringY = Math.sin(currentHeading);
+  let desiredSpeed = SIDE_FISH_CRUISE_SPEED;
+  const attentionCell =
+    selectedCells.length > 0
+      ? selectedCells[cursor.id % selectedCells.length]
+      : null;
+
+  if (attentionCell) {
+    const targetRank = Math.floor(cursor.id / selectedCells.length);
+    const targetIndex = cursor.id % selectedCells.length;
+    const orbitPoint = getPerimeterTarget(
+      attentionCell,
+      targetRank,
+      targetIndex,
+      elapsedSeconds,
+      settings,
+    );
+    const toOrbitX = orbitPoint.x - cursor.x;
+    const toOrbitY = orbitPoint.y - cursor.y;
+    const orbitDistance = Math.hypot(toOrbitX, toOrbitY) || 1;
+    const orbitUnitX = toOrbitX / orbitDistance;
+    const orbitUnitY = toOrbitY / orbitDistance;
+    const targetRadiusX = orbitPoint.x - attentionCell.centerX;
+    const targetRadiusY = orbitPoint.y - attentionCell.centerY;
+    const targetRadius = Math.hypot(targetRadiusX, targetRadiusY) || 1;
+    const tangentDirection = targetIndex % 2 === 0 ? 1 : -1;
+    const tangentX = (-targetRadiusY / targetRadius) * tangentDirection;
+    const tangentY = (targetRadiusX / targetRadius) * tangentDirection;
+    const approach = clamp(orbitDistance / 112, 0.12, 1);
+
+    steeringX = orbitUnitX * approach + tangentX * (1 - approach);
+    steeringY = orbitUnitY * approach + tangentY * (1 - approach);
+    desiredSpeed = orbitDistance < 76 ? 34 : SIDE_FISH_CRUISE_SPEED;
+  }
+
+  const boundaryAvoidance = getSideFishBoundaryAvoidance(
+    cursor,
+    width,
+    height,
+  );
+  steeringX += (boundaryAvoidance.x / 112) * 1.6;
+  steeringY += (boundaryAvoidance.y / 112) * 1.6;
+
+  const cellAvoidance = getSideFishCellAvoidance(
+    cursor,
+    selectedCells,
+    settings,
+  );
+  const cellAvoidanceMagnitude = Math.hypot(
+    cellAvoidance.x,
+    cellAvoidance.y,
+  );
+  if (cellAvoidanceMagnitude > 0) {
+    steeringX =
+      steeringX * 0.18 + (cellAvoidance.x / cellAvoidanceMagnitude) * 2.6;
+    steeringY =
+      steeringY * 0.18 + (cellAvoidance.y / cellAvoidanceMagnitude) * 2.6;
+  }
+
+  return {
+    heading: Math.atan2(steeringY, steeringX),
+    speed: desiredSpeed,
+  };
+}
+
+function integrateSideFishVelocity(
+  cursor: CursorAgent,
+  desiredHeading: number,
+  desiredSpeed: number,
+  deltaSeconds: number,
+) {
+  const currentSpeed = Math.max(
+    SIDE_FISH_MIN_SPEED,
+    Math.hypot(cursor.vx, cursor.vy),
+  );
+  const currentHeading = Math.atan2(cursor.vy, cursor.vx);
+  const heading =
+    currentHeading +
+    clamp(
+      angleDifference(desiredHeading, currentHeading),
+      -SIDE_FISH_MAX_TURN_RATE * deltaSeconds,
+      SIDE_FISH_MAX_TURN_RATE * deltaSeconds,
+    );
+  const speed = clamp(
+    currentSpeed +
+      (desiredSpeed - currentSpeed) * Math.min(1, deltaSeconds * 0.8),
+    SIDE_FISH_MIN_SPEED,
+    SIDE_FISH_MAX_SPEED,
+  );
+
+  return {
+    vx: Math.cos(heading) * speed,
+    vy: Math.sin(heading) * speed,
+  };
+}
+
+function stepSideFishField(
+  cursors: CursorAgent[],
+  width: number,
+  height: number,
+  deltaSeconds: number,
+  elapsedSeconds: number,
+  selectedCells: readonly SelectedCell[],
+  settings: CursorFieldSettings,
+  preventCursorCollisions: boolean,
+) {
+  const movedFish = cursors.map((cursor) => {
+    const steering = getSideFishSteering(
+      cursor,
+      width,
+      height,
+      selectedCells,
+      settings,
+      elapsedSeconds,
+    );
+    const { vx, vy } = integrateSideFishVelocity(
+      cursor,
+      steering.heading,
+      steering.speed,
+      deltaSeconds,
+    );
+    const constrained = keepOutsideCells(
+      Math.min(width, Math.max(0, cursor.x + vx * deltaSeconds)),
+      Math.min(height, Math.max(0, cursor.y + vy * deltaSeconds)),
+      vx,
+      vy,
+      selectedCells,
+      settings,
+    );
+
+    return { ...cursor, x: constrained.x, y: constrained.y, vx, vy };
+  });
+
+  if (!preventCursorCollisions) {
+    return movedFish;
+  }
+
+  return resolveCursorCollisions(
+    movedFish,
+    width,
+    height,
+    selectedCells,
+    settings,
+    "sideFish",
   );
 }
 
@@ -467,9 +741,25 @@ export function stepCursorField(
   selectedCells: readonly SelectedCell[],
   settings: CursorFieldSettings,
   preventCursorCollisions = true,
+  agentScale = 1,
+  motionProfile: CursorMotionProfile = "cursor",
 ) {
+  if (motionProfile === "sideFish") {
+    return stepSideFishField(
+      cursors,
+      width,
+      height,
+      deltaSeconds,
+      elapsedSeconds,
+      selectedCells,
+      settings,
+      preventCursorCollisions,
+    );
+  }
+
   const perceptionSquared = PERCEPTION_RADIUS * PERCEPTION_RADIUS;
-  const separationSquared = SEPARATION_RADIUS * SEPARATION_RADIUS;
+  const separationRadius = SEPARATION_RADIUS * agentScale;
+  const separationSquared = separationRadius * separationRadius;
   const columnCount = Math.ceil(width / PERCEPTION_RADIUS) + 1;
   const spatialGrid = new Map<number, CursorAgent[]>();
 
@@ -611,5 +901,12 @@ export function stepCursorField(
     return movedCursors;
   }
 
-  return resolveCursorCollisions(movedCursors, width, height, selectedCells, settings);
+  return resolveCursorCollisions(
+    movedCursors,
+    width,
+    height,
+    selectedCells,
+    settings,
+    motionProfile,
+  );
 }
