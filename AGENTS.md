@@ -35,10 +35,13 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 - `AGENTS.md` is the active operational rule file for coding agents.
 - `llm.txt` is an index for LLM/harness documentation, not a dumping ground.
-- Durable explanations live under `docs/`; per-experiment notes live at `docs/[experiment].md`.
+- Durable explanations live under `docs/`. The documentation map is
+  `docs/README.md`; per-experiment notes mirror the code families under
+  `docs/experiments/`.
 - `AGENTS.md` is repository-wide only. Do not add experiment-specific,
   feature-specific, or one-off implementation notes to `AGENTS.md`; put those
-  in the relevant `docs/[experiment].md` or another scoped file under `docs/`.
+  in the matching `docs/experiments/` family or another scoped file under
+  `docs/`.
 - When the user says to update "memory", "memory.md", or "remember" for this
   repository, update `AGENTS.md` and/or files under `docs/` as appropriate.
   Do not write to Codex-global memory files unless the user explicitly names
@@ -54,13 +57,13 @@ This version has breaking changes — APIs, conventions, and file structure may 
 ## Visual Design
 
 - Before creating a new interface or materially redesigning an existing one,
-  read and follow `docs/design-guidelines.md`.
+  read and follow `docs/foundations/design-guidelines.md`.
 - Do not translate a subject, institution, role, dataset, or system node into a
   themed dashboard by default. A visual wrapper must be derived from the
   participant's perceptual and interaction task, not from surface associations
   with the subject.
 - When the interaction and visual language are not yet proven, begin with the
-  minimal shared wrapper described in `docs/design-guidelines.md`. Add visual
+  minimal shared wrapper described in `docs/foundations/design-guidelines.md`. Add visual
   elements only when each one has a specific informational or interactive job.
 - The generic AI concept-dashboard formula is prohibited: faux technical
   chrome, arbitrary dark/neon themes, glow, gradients, giant metrics surrounded
@@ -116,7 +119,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
   model must inhabit an established interface. Do not recreate an approximate
   version from memory and do not introduce explanatory chrome as a substitute.
 - For a concrete failure analysis and preservation checklist, read
-  `docs/stock-ui-preservation-postmortem.md`.
+  `docs/experiments/dashboard/stock/1.md`.
 
 - Standalone experiment groups use matching filesystem families without changing
   their public URLs:
@@ -125,8 +128,10 @@ This version has breaking changes — APIs, conventions, and file structure may 
   - `components/standalone/[group]/[experiment]/...` for implementation and data.
 - Smaller socket-backed experiments use `app/(realtime)/[group]/...` and
   `components/realtime/[group]/...`.
+- Dashboard workstations use `app/(dashboard)/[group]/...` and
+  `components/dashboard/[group]/...`.
 - Important or complex experiments (`dj`, `finger-skating`, `network-system`,
-  `sns`, and `stock`) remain directly under both `app/` and `components/`.
+  and `sns`) remain directly under both `app/` and `components/`.
 - Keep component families layered by responsibility rather than accumulating
   flat files in an experiment root. Named capabilities belong in a matching
   feature folder such as `news/`, `media/`, or `controller/`; domain data

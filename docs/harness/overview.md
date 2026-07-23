@@ -5,14 +5,23 @@ SCC is a Next.js creative experiment harness. It supports single-device studies 
 The documentation split is:
 
 - `AGENTS.md`: active instructions for coding agents.
-- `llm.txt`: index of LLM/harness docs and external references.
+- `CLAUDE.md`: delegates to `AGENTS.md`; it is not a second rule set.
+- `llm.txt`: compact LLM documentation index.
+- `docs/README.md`: complete documentation and experiment map.
 - `docs/harness/*`: repo-wide engineering patterns.
-- `docs/[experiment].md`: per-experiment notes.
+- `docs/foundations/*`: shared visual and artwork theory.
+- `docs/experiments/*`: notes aligned with `app/` and `components/` families.
 
-Keep operational instructions short and enforceable. When an agent repeats a mistake, update `AGENTS.md` or the relevant harness doc with the concrete rule.
+Keep operational instructions short and enforceable. Put a repeated
+repository-wide failure in `AGENTS.md` or a harness document. Put a
+variant-specific contract, source ledger, or postmortem in that experiment's
+documentation folder.
 
 Verification defaults:
 
 - Use `pnpm lint`.
 - Use `pnpm exec tsc --noEmit`.
-- Do not run `pnpm build` unless explicitly requested.
+- Never run `pnpm build`.
+- Do not start a development server.
+- Do not run browser or runtime interaction checks unless the user explicitly
+  requests them.

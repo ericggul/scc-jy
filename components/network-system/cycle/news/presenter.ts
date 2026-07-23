@@ -77,8 +77,9 @@ function presentSignal(
 ): CycleNewsSignal {
   const percent = percentageChange(snapshot, nodeId);
   const regime = regimeForPercent(percent);
+  const displayedPercent = formatPercent(percent);
   const selection = hash(
-    `${snapshot.runId}:${snapshot.revision}:${nodeId}:${regime}:${Math.round(percent * 10)}`,
+    `${snapshot.runId}:${nodeId}:${regime}:${displayedPercent}`,
   );
 
   return {
@@ -87,9 +88,9 @@ function presentSignal(
       nodeId,
       regime,
       selection,
-      formatPercent(percent),
+      displayedPercent,
     ),
-    signature: `${nodeId}:${regime}`,
+    signature: `${nodeId}:${regime}:${displayedPercent}`,
     intensity: clamp(Math.abs(percent) / 12, 0, 1),
     percent,
     regime,
@@ -121,5 +122,10 @@ export function changedCycleNewsSignals(
 }
 
 export function cycleNewsCadence(activity: number) {
-  return Math.round(3000 - clamp(finite(activity), 0, 1) * 2520);
+  return Math.round(3000 - clamp(finite(activity), 0, 1) * 2100);
+}
+
+export function cycleNewsMarqueeDuration(intensity: number) {
+  const movement = clamp(finite(intensity), 0, 1);
+  return 24 - movement * 18;
 }

@@ -1,12 +1,12 @@
 # HTTPS and Sockets
 
-The default local development command is HTTPS-first:
+The user-owned local development workflow is HTTPS-first:
 
 ```bash
 pnpm dev
 ```
 
-It starts:
+When the user runs it, it starts:
 
 - Next dev over HTTPS on port 3000.
 - Socket.IO over HTTPS on port 4000.

@@ -10,4 +10,6 @@ Current setup:
 - compiler flag: `next.config.ts`
 - app shell: `app/layout.tsx`
 
-Route files should stay minimal. For numbered experiment variants, route files import from `components/[group]/...` and should not hold substantial UI/data code.
+Route files should stay minimal. Numbered variants import from the matching
+`components/[family]/[group]/...` assignment and should not hold substantial
+UI or data code.

@@ -5,31 +5,25 @@ This file is the LLM/harness index for the SCC repo.
 Active coding rules:
 - `AGENTS.md`
 
-Harness documentation:
+Complete documentation map:
+- `docs/README.md`
+
+Repository-wide engineering documentation:
 - `docs/harness/overview.md`
 - `docs/harness/nextjs.md`
 - `docs/harness/experiments.md`
 - `docs/harness/https-and-sockets.md`
 
-Common design documentation:
-- `docs/design-guidelines.md`
+Shared foundations:
+- `docs/foundations/design-guidelines.md`
+- `docs/foundations/mdwa.md`
+- `docs/foundations/parametric-detournement.md`
 
 Per-experiment documentation:
-- `docs/cv.md`
-- `docs/dj.md`
-- `docs/network-system-macro-economy.md`
-- `docs/network-system-cycle.md`
-- `docs/moma.md`
-- `docs/sns.md`
-- `docs/stock.md`
-- `docs/table.md`
-- `docs/translate.md`
-- `docs/w1.md`
-
-External references checked:
-- OpenAI Codex best practices: https://developers.openai.com/codex/learn/best-practices
-- OpenAI Codex AGENTS.md guide: https://developers.openai.com/codex/guides/agents-md
-- OpenAI Codex prompting guide: https://developers.openai.com/codex/prompting
-- Anthropic Claude Code memory guide: https://code.claude.com/docs/en/memory
-- Anthropic Claude Code common workflows: https://code.claude.com/docs/en/common-workflows
-- Anthropic Building Effective AI Agents: https://www.anthropic.com/engineering/building-effective-agents
+- `docs/experiments/dashboard/`
+- `docs/experiments/realtime/`
+- `docs/experiments/standalone/`
+- `docs/experiments/dj/`
+- `docs/experiments/finger-skating/`
+- `docs/experiments/network-system/`
+- `docs/experiments/sns/`
