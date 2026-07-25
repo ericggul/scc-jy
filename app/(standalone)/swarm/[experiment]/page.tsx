@@ -4,8 +4,6 @@ import type { ComponentType } from "react";
 import SwarmOne from "@/components/standalone/swarm/1";
 import SwarmTwo from "@/components/standalone/swarm/2";
 import SwarmThree from "@/components/standalone/swarm/3";
-import SwarmFour from "@/components/standalone/swarm/4";
-import SwarmFive from "@/components/standalone/swarm/5";
 import {
   isSwarmExperimentSlug,
   swarmExperiments,
@@ -16,8 +14,6 @@ const components: Record<SwarmExperimentSlug, ComponentType> = {
   "1": SwarmOne,
   "2": SwarmTwo,
   "3": SwarmThree,
-  "4": SwarmFour,
-  "5": SwarmFive,
 };
 
 export function generateStaticParams() {
@@ -34,10 +30,7 @@ export async function generateMetadata({
   const { experiment } = await params;
   return {
     title: `swarm ${experiment}`,
-    description:
-      experiment === "4" || experiment === "5"
-        ? "A minimal interactive field of cursor marks around a forbidden cell."
-        : "A minimal, interactive Boids swarm simulation.",
+    description: "A minimal, interactive Boids swarm simulation.",
   };
 }
 

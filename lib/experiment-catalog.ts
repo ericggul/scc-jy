@@ -11,6 +11,11 @@ export const experimentCatalog = [
     description: "Minimal Boids study of separation, alignment, and cohesion.",
   },
   {
+    href: "/goldfishes",
+    label: "goldfishes",
+    description: "Two-dimensional and 2.5D interactive goldfish fields.",
+  },
+  {
     href: "/calendar",
     label: "calendar",
     description: "Minimal Google Calendar-like month grid experiment.",
@@ -66,8 +71,8 @@ export const experimentCatalog = [
     description: "Hundred-language translation grid interface study.",
   },
   {
-    href: "/videos",
-    label: "videos",
+    href: "/grid",
+    label: "grid",
     description:
       "Portrait media fields fragmented across independent speeds and phases.",
   },
