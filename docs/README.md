@@ -34,9 +34,10 @@ get a dedicated document.
 | `components/standalone/cv` | `1`, `2`, `3` | [cv](./experiments/standalone/cv/README.md) |
 | `components/standalone/macos` | `1` | [macos](./experiments/standalone/macos/README.md) |
 | `components/standalone/moma` | `1`, `2` | [moma](./experiments/standalone/moma/README.md) |
-| `components/standalone/swarm` | `1`–`6` | [swarm](./experiments/standalone/swarm/README.md) |
+| `components/standalone/swarm` | `1`–`5` | [swarm](./experiments/standalone/swarm/README.md) |
 | `components/standalone/table` | `1`, `2` | [table](./experiments/standalone/table/README.md) |
 | `components/standalone/translate` | `1` | [translate](./experiments/standalone/translate/README.md) |
+| `components/standalone/videos` | `1` | [videos](./experiments/standalone/videos/README.md) |
 | `components/dj` | `1` | [dj](./experiments/dj/README.md) |
 | `components/finger-skating` | `1`, `2` | [finger-skating](./experiments/finger-skating/README.md) |
 | `components/network-system` | `default`, `macro-economy`, `cycle`, `population`, `competitive-firms` | [network-system index](./experiments/network-system/README.md) |

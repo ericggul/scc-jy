@@ -7,6 +7,7 @@ import {
   useState,
   type PointerEvent,
 } from "react";
+import { folder, LevaPanel, useControls, useCreateStore } from "leva";
 import styles from "./swarm.module.css";
 import {
   createCursorField,
@@ -20,7 +21,6 @@ import {
   type CellAnchor,
   type CursorAgent,
   type CursorFieldSettings,
-  type CursorMotionProfile,
   type Grid,
 } from "./model";
 
@@ -30,8 +30,6 @@ type CursorSwarmProps = {
   settings: CursorFieldSettings;
   initialCollisionPrevention?: boolean;
   initialGoldfish?: boolean;
-  sideGoldfishView?: boolean;
-  motionProfile?: CursorMotionProfile;
   controls?: {
     minCursorCount: number;
     maxCursorCount: number;
@@ -45,7 +43,13 @@ type TracePoint = {
 };
 
 type FieldTheme = "light" | "dark";
-type AgentGlyph = "cursor" | "goldfish";
+type AgentGlyph =
+  | "cursor"
+  | "goldfish1"
+  | "goldfish2"
+  | "goldfish3"
+  | "goldfish4"
+  | "goldfish5";
 type GridMark = "dot" | "cross";
 
 type FieldPalette = {
@@ -57,6 +61,11 @@ type FieldPalette = {
 };
 
 const CURSOR_TIP_ANGLE = Math.atan2(-8.4, -5.2);
+const GOLDFISH_SILHOUETTE_SRC =
+  "/images/swarm/common-goldfish-silhouette.svg";
+const GOLDFISH_SILHOUETTE_WIDTH = 24;
+const GOLDFISH_SILHOUETTE_HEIGHT =
+  GOLDFISH_SILHOUETTE_WIDTH * (1480 / 2644);
 const FIELD_PALETTES: Record<FieldTheme, FieldPalette> = {
   light: {
     paper: "#f4f4f1",
@@ -98,34 +107,20 @@ function drawCursor(
   context.restore();
 }
 
-function drawGoldfish(
+function drawLegacyGoldfish(
   context: CanvasRenderingContext2D,
   cursor: CursorAgent,
   cursorScale: number,
-  palette: FieldPalette,
-  sideView = false,
+  color: string,
+  paperColor: string,
 ) {
   const angle = Math.atan2(cursor.vy, cursor.vx);
-  const sideTilt = Math.max(
-    -0.28,
-    Math.min(0.28, Math.atan2(cursor.vy, Math.max(18, Math.abs(cursor.vx)))),
-  );
-  const sideYawScale =
-    0.04 + Math.min(1, Math.abs(cursor.vx) / 24) * 0.96;
 
   context.save();
   context.translate(cursor.x, cursor.y);
-  if (sideView) {
-    context.scale(
-      (cursor.vx >= 0 ? 1 : -1) * cursorScale * sideYawScale,
-      cursorScale,
-    );
-    context.rotate(sideTilt);
-  } else {
-    context.rotate(angle);
-    context.scale(cursorScale, cursorScale);
-  }
-  context.fillStyle = palette.goldfish;
+  context.rotate(angle);
+  context.scale(cursorScale, cursorScale);
+  context.fillStyle = color;
 
   context.beginPath();
   context.moveTo(6.4, 0);
@@ -143,10 +138,172 @@ function drawGoldfish(
   context.closePath();
   context.fill();
 
-  context.fillStyle = palette.paper;
+  context.fillStyle = paperColor;
   context.beginPath();
   context.arc(4.05, -1.05, 0.58, 0, Math.PI * 2);
   context.fill();
+  context.restore();
+}
+
+function drawSilhouetteGoldfish(
+  context: CanvasRenderingContext2D,
+  cursor: CursorAgent,
+  cursorScale: number,
+  silhouette: CanvasImageSource,
+) {
+  const angle = Math.atan2(cursor.vy, cursor.vx);
+  const width = GOLDFISH_SILHOUETTE_WIDTH * cursorScale;
+  const height = GOLDFISH_SILHOUETTE_HEIGHT * cursorScale;
+
+  context.save();
+  context.translate(cursor.x, cursor.y);
+  context.rotate(angle);
+  context.scale(-1, 1);
+  context.drawImage(silhouette, -width / 2, -height / 2, width, height);
+  context.restore();
+}
+
+function beginGoldfish(
+  context: CanvasRenderingContext2D,
+  cursor: CursorAgent,
+  cursorScale: number,
+  color: string,
+) {
+  context.save();
+  context.translate(cursor.x, cursor.y);
+  context.rotate(Math.atan2(cursor.vy, cursor.vx));
+  context.scale(cursorScale, cursorScale);
+  context.fillStyle = color;
+  context.strokeStyle = color;
+  context.lineCap = "round";
+  context.lineJoin = "round";
+}
+
+function drawGoldfishEye(
+  context: CanvasRenderingContext2D,
+  paperColor: string,
+  x: number,
+  y: number,
+  radius = 0.58,
+) {
+  context.fillStyle = paperColor;
+  context.beginPath();
+  context.arc(x, y, radius, 0, Math.PI * 2);
+  context.fill();
+}
+
+function drawHighBackGoldfish(
+  context: CanvasRenderingContext2D,
+  cursor: CursorAgent,
+  cursorScale: number,
+  color: string,
+  paperColor: string,
+) {
+  beginGoldfish(context, cursor, cursorScale, color);
+
+  context.beginPath();
+  context.moveTo(6.65, 0);
+  context.bezierCurveTo(5.5, -2.7, 2.1, -4.35, -1.15, -4.15);
+  context.bezierCurveTo(-3.55, -4, -5.05, -2.45, -5.45, -1.35);
+  context.quadraticCurveTo(-6.05, 0, -5.35, 1.65);
+  context.bezierCurveTo(-3.55, 4.75, 1.5, 4.8, 4.65, 2.65);
+  context.quadraticCurveTo(6.05, 1.55, 6.65, 0);
+  context.fill();
+
+  context.beginPath();
+  context.moveTo(-5.15, -1.45);
+  context.bezierCurveTo(-7.2, -3.65, -9.95, -5.35, -11.65, -4.65);
+  context.bezierCurveTo(-11.25, -2.45, -9.6, -0.85, -7.45, 0);
+  context.bezierCurveTo(-9.6, 0.85, -11.25, 2.45, -11.65, 4.65);
+  context.bezierCurveTo(-9.95, 5.35, -7.2, 3.65, -5.15, 1.45);
+  context.closePath();
+  context.fill();
+
+  context.beginPath();
+  context.moveTo(-1.15, -4.1);
+  context.quadraticCurveTo(0.45, -6.05, 2.2, -3.7);
+  context.closePath();
+  context.fill();
+
+  drawGoldfishEye(context, paperColor, 4.45, -0.95, 0.6);
+  context.restore();
+}
+
+function drawVeilGoldfish(
+  context: CanvasRenderingContext2D,
+  cursor: CursorAgent,
+  cursorScale: number,
+  color: string,
+  paperColor: string,
+) {
+  beginGoldfish(context, cursor, cursorScale, color);
+
+  context.beginPath();
+  context.moveTo(6.5, 0);
+  context.bezierCurveTo(5.05, -3.05, 1.7, -4.6, -1.75, -4.25);
+  context.bezierCurveTo(-4.15, -3.95, -5.45, -2.15, -5.4, -0.8);
+  context.bezierCurveTo(-5.25, 2.35, -2.55, 4.75, 0.8, 4.55);
+  context.bezierCurveTo(3.8, 4.35, 5.75, 2.2, 6.5, 0);
+  context.fill();
+
+  context.beginPath();
+  context.moveTo(-5.1, -1.45);
+  context.bezierCurveTo(-7.45, -4.2, -10.1, -6.25, -11.8, -5.35);
+  context.bezierCurveTo(-12.15, -3.2, -10.3, -1.1, -7.55, -0.1);
+  context.bezierCurveTo(-10.55, 0.8, -12.8, 3.35, -12.45, 6.35);
+  context.bezierCurveTo(-9.7, 6.8, -6.65, 3.75, -5, 1.4);
+  context.closePath();
+  context.fill();
+
+  context.beginPath();
+  context.moveTo(-1.45, -4.2);
+  context.bezierCurveTo(-0.55, -6.1, 1.55, -6.35, 2.55, -4);
+  context.closePath();
+  context.fill();
+
+  drawGoldfishEye(context, paperColor, 4.3, -1.05, 0.61);
+  context.restore();
+}
+
+function drawFlowingGoldfish(
+  context: CanvasRenderingContext2D,
+  cursor: CursorAgent,
+  cursorScale: number,
+  color: string,
+  paperColor: string,
+) {
+  beginGoldfish(context, cursor, cursorScale, color);
+
+  context.beginPath();
+  context.moveTo(6.8, 0);
+  context.bezierCurveTo(5.25, -2.85, 1.6, -4.15, -1.85, -3.65);
+  context.bezierCurveTo(-4.15, -3.3, -5.25, -1.85, -5.5, -0.75);
+  context.bezierCurveTo(-5.15, 2.65, -1.9, 4.35, 1.3, 3.95);
+  context.bezierCurveTo(4.05, 3.6, 5.9, 1.85, 6.8, 0);
+  context.fill();
+
+  context.beginPath();
+  context.moveTo(-5.15, -1.2);
+  context.bezierCurveTo(-8.15, -2.6, -11.75, -4.65, -14.15, -4.3);
+  context.bezierCurveTo(-13.35, -2.15, -11.15, -0.65, -8.25, 0);
+  context.bezierCurveTo(-11.15, 0.65, -13.35, 2.15, -14.15, 4.3);
+  context.bezierCurveTo(-11.75, 4.65, -8.15, 2.6, -5.05, 1.25);
+  context.closePath();
+  context.fill();
+
+  context.beginPath();
+  context.moveTo(-0.85, -3.8);
+  context.quadraticCurveTo(0.6, -5.35, 2.2, -3.55);
+  context.closePath();
+  context.fill();
+
+  context.beginPath();
+  context.moveTo(-0.1, 3.95);
+  context.quadraticCurveTo(1.3, 5.35, 2.45, 3.55);
+  context.closePath();
+  context.fill();
+
+  drawGoldfishEye(context, paperColor, 4.55, -0.85, 0.58);
   context.restore();
 }
 
@@ -239,12 +396,11 @@ export function CursorSwarm({
   settings,
   initialCollisionPrevention = true,
   initialGoldfish = false,
-  sideGoldfishView = false,
-  motionProfile = "cursor",
   controls,
 }: CursorSwarmProps) {
   const backgroundCanvasRef = useRef<HTMLCanvasElement>(null);
   const cursorCanvasRef = useRef<HTMLCanvasElement>(null);
+  const controlStore = useCreateStore();
   const frameRef = useRef<number | null>(null);
   const cursorsRef = useRef<CursorAgent[]>([]);
   const gridRef = useRef<Grid | null>(null);
@@ -253,25 +409,22 @@ export function CursorSwarm({
   const collisionPreventionRef = useRef(initialCollisionPrevention);
   const themeRef = useRef<FieldTheme>("dark");
   const agentGlyphRef = useRef<AgentGlyph>(
-    initialGoldfish ? "goldfish" : "cursor",
+    initialGoldfish ? "goldfish2" : "cursor",
   );
+  const goldfishColorRef = useRef(FIELD_PALETTES.dark.goldfish);
+  const goldfishSilhouetteRef = useRef<HTMLCanvasElement | null>(null);
   const gridMarkRef = useRef<GridMark>("dot");
   const agentScaleRef = useRef(1);
   const constraintSettingsRef = useRef(scaleCursorFieldSettings(settings, 1));
   const [activeCursorCount, setActiveCursorCount] = useState(cursorCount);
-  const [collisionPrevention, setCollisionPrevention] = useState(
-    initialCollisionPrevention,
-  );
   const [theme, setTheme] = useState<FieldTheme>("dark");
-  const [agentGlyph, setAgentGlyph] = useState<AgentGlyph>(
-    initialGoldfish ? "goldfish" : "cursor",
+  const [goldfishColor, setGoldfishColor] = useState(
+    FIELD_PALETTES.dark.goldfish,
   );
-  const [agentScale, setAgentScale] = useState(1);
   const [gridMark, setGridMark] = useState<GridMark>("dot");
 
   const updateCollisionPrevention = (enabled: boolean) => {
     collisionPreventionRef.current = enabled;
-    setCollisionPrevention(enabled);
   };
 
   const updateTheme = (darkMode: boolean) => {
@@ -280,16 +433,18 @@ export function CursorSwarm({
     setTheme(nextTheme);
   };
 
-  const updateAgentGlyph = (goldfish: boolean) => {
-    const nextGlyph: AgentGlyph = goldfish ? "goldfish" : "cursor";
+  const updateAgentGlyph = (nextGlyph: AgentGlyph) => {
     agentGlyphRef.current = nextGlyph;
-    setAgentGlyph(nextGlyph);
+  };
+
+  const updateGoldfishColor = (color: string) => {
+    goldfishColorRef.current = color;
+    setGoldfishColor(color);
   };
 
   const updateAgentScale = (nextScale: number) => {
     agentScaleRef.current = nextScale;
     constraintSettingsRef.current = scaleCursorFieldSettings(settings, nextScale);
-    setAgentScale(nextScale);
   };
 
   const updateGridMark = (crossMark: boolean) => {
@@ -297,6 +452,73 @@ export function CursorSwarm({
     gridMarkRef.current = nextMark;
     setGridMark(nextMark);
   };
+
+  useControls(
+    () => ({
+      Agents: folder({
+        ...(controls
+          ? {
+              count: {
+                value: cursorCount,
+                min: controls.minCursorCount,
+                max: controls.maxCursorCount,
+                step: controls.cursorCountStep,
+                onChange: (value: number) => setActiveCursorCount(value),
+              },
+              "avoid overlap": {
+                value: initialCollisionPrevention,
+                onChange: updateCollisionPrevention,
+              },
+            }
+          : {}),
+        scale: {
+          value: 1,
+          min: 0.5,
+          max: 2,
+          step: 0.05,
+          onChange: updateAgentScale,
+        },
+      }),
+      Field: folder({
+        "corner +": {
+          value: false,
+          onChange: updateGridMark,
+        },
+      }),
+      Appearance: folder({
+        glyph: {
+          value: initialGoldfish ? "goldfish2" : "cursor",
+          options: {
+            Cursor: "cursor",
+            "Goldfish 1": "goldfish1",
+            "Goldfish 2": "goldfish2",
+            "Goldfish 3": "goldfish3",
+            "Goldfish 4": "goldfish4",
+            "Goldfish 5": "goldfish5",
+          },
+          onChange: (value: AgentGlyph) => updateAgentGlyph(value),
+        },
+        "fish colour": {
+          value: FIELD_PALETTES.dark.goldfish,
+          render: (get) => get("Appearance.glyph") !== "cursor",
+          onChange: updateGoldfishColor,
+        },
+        "dark mode": {
+          value: true,
+          onChange: updateTheme,
+        },
+      }),
+    }),
+    { store: controlStore },
+    [
+      controlStore,
+      controls,
+      cursorCount,
+      initialCollisionPrevention,
+      initialGoldfish,
+      settings,
+    ],
+  );
 
   const selectTrace = useCallback(
     (points: readonly TracePoint[]) => {
@@ -345,7 +567,6 @@ export function CursorSwarm({
         selectedCells,
         constraintSettingsRef.current,
         collisionPreventionRef.current,
-        motionProfile,
       );
 
       const backgroundCanvas = backgroundCanvasRef.current;
@@ -362,8 +583,34 @@ export function CursorSwarm({
         );
       }
     },
-    [motionProfile],
+    [],
   );
+
+  useEffect(() => {
+    let cancelled = false;
+    const image = new Image();
+
+    image.onload = () => {
+      if (cancelled) return;
+
+      const silhouette = document.createElement("canvas");
+      silhouette.width = 528;
+      silhouette.height = 296;
+      const context = silhouette.getContext("2d");
+      if (!context) return;
+
+      context.drawImage(image, 0, 0, silhouette.width, silhouette.height);
+      context.globalCompositeOperation = "source-in";
+      context.fillStyle = goldfishColor;
+      context.fillRect(0, 0, silhouette.width, silhouette.height);
+      goldfishSilhouetteRef.current = silhouette;
+    };
+
+    image.src = GOLDFISH_SILHOUETTE_SRC;
+    return () => {
+      cancelled = true;
+    };
+  }, [goldfishColor]);
 
   useEffect(() => {
     const canvas = cursorCanvasRef.current;
@@ -396,7 +643,6 @@ export function CursorSwarm({
         bounds.width,
         bounds.height,
         constraintSettingsRef.current,
-        motionProfile,
       );
       const selectedCells = getAnchoredCells(
         selectionRef.current,
@@ -412,7 +658,6 @@ export function CursorSwarm({
         selectedCells,
         constraintSettingsRef.current,
         collisionPreventionRef.current,
-        motionProfile,
       );
 
       drawField(
@@ -451,7 +696,6 @@ export function CursorSwarm({
           constraintSettingsRef.current,
           collisionPreventionRef.current,
           agentScaleRef.current,
-          motionProfile,
         );
       }
 
@@ -460,16 +704,63 @@ export function CursorSwarm({
       const effectiveCursorScale = cursorScale * agentScaleRef.current;
       context.fillStyle = palette.ink;
       for (const cursor of cursorsRef.current) {
-        if (agentGlyphRef.current === "goldfish") {
-          drawGoldfish(
-            context,
-            cursor,
-            effectiveCursorScale,
-            palette,
-            sideGoldfishView,
-          );
-        } else {
-          drawCursor(context, cursor, effectiveCursorScale);
+        switch (agentGlyphRef.current) {
+          case "goldfish1":
+            drawLegacyGoldfish(
+              context,
+              cursor,
+              effectiveCursorScale,
+              goldfishColorRef.current,
+              palette.paper,
+            );
+            break;
+          case "goldfish2":
+            if (goldfishSilhouetteRef.current) {
+              drawSilhouetteGoldfish(
+                context,
+                cursor,
+                effectiveCursorScale,
+                goldfishSilhouetteRef.current,
+              );
+            } else {
+              drawLegacyGoldfish(
+                context,
+                cursor,
+                effectiveCursorScale,
+                goldfishColorRef.current,
+                palette.paper,
+              );
+            }
+            break;
+          case "goldfish3":
+            drawHighBackGoldfish(
+              context,
+              cursor,
+              effectiveCursorScale,
+              goldfishColorRef.current,
+              palette.paper,
+            );
+            break;
+          case "goldfish4":
+            drawVeilGoldfish(
+              context,
+              cursor,
+              effectiveCursorScale,
+              goldfishColorRef.current,
+              palette.paper,
+            );
+            break;
+          case "goldfish5":
+            drawFlowingGoldfish(
+              context,
+              cursor,
+              effectiveCursorScale,
+              goldfishColorRef.current,
+              palette.paper,
+            );
+            break;
+          default:
+            drawCursor(context, cursor, effectiveCursorScale);
         }
       }
 
@@ -488,9 +779,7 @@ export function CursorSwarm({
   }, [
     activeCursorCount,
     cursorScale,
-    motionProfile,
     settings,
-    sideGoldfishView,
   ]);
 
   useEffect(() => {
@@ -596,76 +885,71 @@ export function CursorSwarm({
           ]);
         }}
       />
-      <section className={styles.controlBar} aria-label="Field controls">
-        {controls ? (
-          <>
-            <label className={styles.cursorCountControl}>
-              <span>
-                cursors <output>{activeCursorCount}</output>
-              </span>
-              <input
-                aria-label="Cursor count"
-                max={controls.maxCursorCount}
-                min={controls.minCursorCount}
-                onChange={(event) =>
-                  setActiveCursorCount(Number(event.target.value))
-                }
-                step={controls.cursorCountStep}
-                type="range"
-                value={activeCursorCount}
-              />
-            </label>
-            <label className={styles.collisionControl}>
-              <input
-                checked={collisionPrevention}
-                onChange={(event) =>
-                  updateCollisionPrevention(event.target.checked)
-                }
-                type="checkbox"
-              />
-              <span>avoid overlap</span>
-            </label>
-          </>
-        ) : null}
-        <label className={styles.glyphSizeControl}>
-          <span>
-            scale <output>{agentScale.toFixed(2)}×</output>
-          </span>
-          <input
-            aria-label="Agent scale"
-            max="2"
-            min="0.5"
-            onChange={(event) => updateAgentScale(Number(event.target.value))}
-            step="0.05"
-            type="range"
-            value={agentScale}
-          />
-        </label>
-        <label className={styles.themeControl}>
-          <input
-            checked={theme === "dark"}
-            onChange={(event) => updateTheme(event.target.checked)}
-            type="checkbox"
-          />
-          <span>dark mode</span>
-        </label>
-        <label className={styles.glyphControl}>
-          <input
-            checked={agentGlyph === "goldfish"}
-            onChange={(event) => updateAgentGlyph(event.target.checked)}
-            type="checkbox"
-          />
-          <span>goldfish</span>
-        </label>
-        <label className={styles.gridMarkControl}>
-          <input
-            checked={gridMark === "cross"}
-            onChange={(event) => updateGridMark(event.target.checked)}
-            type="checkbox"
-          />
-          <span>corner +</span>
-        </label>
-      </section>
+      <aside className={styles.parameterPanel} aria-label="Field parameters">
+        <LevaPanel
+          collapsed
+          flat
+          hideCopyButton
+          store={controlStore}
+          theme={{
+            colors: {
+              elevation1: FIELD_PALETTES[theme].paper,
+              elevation2: FIELD_PALETTES[theme].paper,
+              elevation3: theme === "dark" ? "#272925" : "#dfdfda",
+              accent1: FIELD_PALETTES[theme].ink,
+              accent2: FIELD_PALETTES[theme].ink,
+              accent3: FIELD_PALETTES[theme].ink,
+              highlight1: FIELD_PALETTES[theme].ink,
+              highlight2: FIELD_PALETTES[theme].ink,
+              highlight3: FIELD_PALETTES[theme].ink,
+              folderWidgetColor: FIELD_PALETTES[theme].ink,
+              folderTextColor: FIELD_PALETTES[theme].ink,
+            },
+            radii: {
+              xs: "0px",
+              sm: "0px",
+              lg: "0px",
+            },
+            fonts: {
+              mono: "Arial, Helvetica, sans-serif",
+              sans: "Arial, Helvetica, sans-serif",
+            },
+            fontSizes: {
+              root: "12px",
+            },
+            sizes: {
+              rootWidth: "min(280px, calc(100vw - 24px))",
+              controlWidth: "142px",
+              rowHeight: "28px",
+              folderTitleHeight: "26px",
+              checkboxSize: "18px",
+              titleBarHeight: "42px",
+            },
+            shadows: {
+              level1: "none",
+              level2: "none",
+            },
+            borderWidths: {
+              root: "1px",
+              input: "1px",
+              focus: "2px",
+              hover: "1px",
+              active: "2px",
+              folder: "1px",
+            },
+            fontWeights: {
+              label: "500",
+              folder: "600",
+              button: "500",
+            },
+          }}
+          titleBar={{
+            title: "Parameters",
+            drag: false,
+            filter: false,
+          }}
+        />
+      </aside>
     </main>
   );
 }

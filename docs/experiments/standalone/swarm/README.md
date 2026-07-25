@@ -1,6 +1,6 @@
 # Swarm experiment
 
-Routes: `/swarm/1`, `/swarm/2`, `/swarm/3`, `/swarm/4`, `/swarm/5`, and `/swarm/6`, registered through the shared swarm experiment registry.
+Routes: `/swarm/1`, `/swarm/2`, `/swarm/3`, `/swarm/4`, and `/swarm/5`, registered through the shared swarm experiment registry.
 
 Variants:
 
@@ -9,7 +9,6 @@ Variants:
 - `/swarm/3`: the world field becomes a launch field. Every valid map click is a missile origin: it sends a twenty-missile salvo toward twenty distinct, randomly selected countries, while the immigrant flock treats every origin as a persistent local danger and steers away from it.
 - `/swarm/4`: a 200-cursor field with larger marks and cells around persistently selected forbidden cells.
 - `/swarm/5`: the denser 1000-cursor, half-scale counterpart of `swarm/4`.
-- `/swarm/6`: the complete `swarm/4` cursor-cell field, rendered by default as side-view filled goldfish rather than top-down cursor marks.
 
 ## Interface premise
 
@@ -51,19 +50,98 @@ Each of the 177 countries plus the ocean campaign has a dedicated mono AAC/M4A v
 1. **Participant situation:** one person encounters a full-screen field and designates multiple locations by clicking or press-dragging through them.
 2. **Primary parameter:** the persistent set of selected grid cells, each represented only by a high-contrast fill; in `swarm/4`, cursor count and inter-cursor collision prevention are direct secondary parameters.
 3. **Perceptual job:** notice cursor groups tightening around every selected cell while each selected square remains empty, compare the field's density with and without enforced cursor spacing, and view the same relations against light or dark contrast.
-4. **Interaction job:** every click adds another implied cell without removing prior selections; press-drag selects every crossed cell as one continuous trace. Stable cursor IDs distribute the groups across the complete target list. Enter or Space adds the central cell, and Escape clears every selection. Both variants begin in dark mode and have persistent bottom controls for theme, cursor glyph, and a 0.5–2× glyph scale. The scale multiplies each variant's own baseline equally for mouse-cursor and goldfish forms, and proportionally updates hard collision distance, soft separation radius, black-cell clearance, and attention-perimeter spacing. `swarm/4` also changes cursor count in 50-agent steps and toggles only cursor-to-cursor collision prevention.
-5. **Wrapper justification:** small corner dots make the discrete cells perceptible without turning the surface into a drawn grid; an optional corner-cross toggle restores the more visible `+` mark when needed. A single hairline bottom bar gives the directly manipulable parameters a stable place without obscuring the field. Dark mode inverts paper, cursor, grid, and selected-cell contrast together. The optional goldfish glyph is a filled muted-gold, vector-drawn body and fan tail with a single negative-space eye that remains aligned to the agent's velocity; black-cell exclusion remains a hard spatial constraint in either collision mode.
+4. **Interaction job:** every click adds another implied cell without removing prior selections; press-drag selects every crossed cell as one continuous trace. Stable cursor IDs distribute the groups across the complete target list. Enter or Space adds the central cell, and Escape clears every selection. Both variants begin in dark mode and expose a collapsed parameter panel for theme, glyph, colour, corner mark, and a 0.5–2× glyph scale. The scale multiplies each variant's own baseline equally for mouse-cursor and goldfish forms, and proportionally updates hard collision distance, soft separation radius, black-cell clearance, and attention-perimeter spacing. `swarm/4` also changes cursor count in 50-agent steps and toggles only cursor-to-cursor collision prevention.
+5. **Wrapper justification:** small corner dots make the discrete cells perceptible without turning the surface into a drawn grid; an optional corner-cross toggle restores the more visible `+` mark when needed. A restrained Leva panel replaces the horizontal bottom bar so future parameters can be grouped without consuming permanent viewport height or introducing horizontal scrolling. It remains collapsed by default, flat, monochrome, and visually subordinate to the field. One glyph selector switches directly among the cursor and five velocity-aligned goldfish: the original simple vector, the supplied detailed silhouette, and three intermediate abstractions. Goldfish 3–5 retain the body-to-tail proportion, directional eye, narrow caudal peduncle, and a coherent caudal fin whose outer spread and concave trailing edge remain legible in motion. A shared colour input changes every goldfish form; black-cell exclusion remains a hard spatial constraint in every form.
 6. **System family:** full-viewport field, neutral paper, dark marks, canvas motion, and direct clicking remain shared with the other swarm experiments.
-7. **Removal test:** visible grid lines, labels, and legends are absent because none help locate or operate the selected cells. The corner dots, cursor agents, selected cells, exclusion constraint, and the bottom parameter controls remain necessary. Goldfish is optional rather than a visual default, so it can be removed without changing the field's model.
+7. **Removal test:** visible grid lines, labels, and legends are absent because none help locate or operate the selected cells. The corner dots, cursor agents, selected cells, exclusion constraint, and the collapsed parameter access remain necessary. Goldfish is optional rather than a visual default, so it can be removed without changing the field's model.
 
-`swarm/4` uses 200 stable cursor-agent IDs, the same 20–30px cells as `swarm/5`, a 1× baseline glyph scale, a 16px cursor-spacing target, and a 6px black-cell exclusion clearance. It starts in dark mode; its bottom bar starts with cursor-to-cursor collision prevention off, can toggle it on, can change the active count from 50 to 1000 in 50-agent steps, and can switch between mouse-cursor and goldfish glyphs. `swarm/5` also starts in dark mode, keeps collision prevention on, and uses 1000 IDs, 20–30px cells, a 0.5× baseline glyph scale, an 8px spacing target, and a 3px clearance. Both variants expose the same 0.5–2× scale, which multiplies their own baseline equivalently for both glyph types. Both variants use the same spatial-neighbour, separation, alignment, cohesion, edge, and arrival rules as `swarm/1` and `swarm/2`, changing only the glyph, density, and target boundary. Every selected cell is retained as an attention target; each cursor is assigned by `id % targetCount` and receives a moving perimeter destination around that cell. Each group fills outward perimeter bands, so a dense target remains legible rather than collapsing into one mark. Both glyphs align to the current velocity vector.
+`swarm/4` uses 200 stable cursor-agent IDs, the same 20–30px cells as `swarm/5`, a 1× baseline glyph scale, a 16px cursor-spacing target, and a 6px black-cell exclusion clearance. It starts in dark mode; its parameter panel starts with cursor-to-cursor collision prevention off, can toggle it on, can change the active count from 50 to 1000 in 50-agent steps, and can switch among the cursor and five goldfish glyphs. `swarm/5` also starts in dark mode, keeps collision prevention on, and uses 1000 IDs, 20–30px cells, a 0.5× baseline glyph scale, an 8px spacing target, and a 3px clearance. Both variants expose the same 0.5–2× scale, which multiplies their own baseline equivalently for every glyph. Both variants share the same six glyph choices and native goldfish colour input. They otherwise use the same spatial-neighbour, separation, alignment, cohesion, edge, and arrival rules as `swarm/1` and `swarm/2`, changing only the glyph, density, and target boundary. Every selected cell is retained as an attention target; each cursor is assigned by `id % targetCount` and receives a moving perimeter destination around that cell. Each group fills outward perimeter bands, so a dense target remains legible rather than collapsing into one mark. Every glyph aligns to the current velocity vector.
 
 ## Swarm/5 interface premise
 
 `swarm/5` preserves `swarm/4`'s movement, cell-selection, and theme-control language, while omitting its density and collision controls. It exists only as the denser performance variant: the smaller cell and glyph scale maintain the same relative spacing while allowing one thousand cursor agents to remain distinct.
 
-## Swarm/6 interface premise
+## Parameter UI boundary
 
-`swarm/6` intentionally changes no field behavior from `swarm/4`: it preserves the full viewport, grid marks, persistent square selections, press-drag trace, hard selected-cell exclusion, multi-location attention, dark-mode default, count slider, collision toggle, scale slider, glyph toggle, and corner-mark toggle. It begins with 200 agents, collision prevention off, and goldfish selected.
+Leva is the experiment's scalable authoring and parameter-adjustment surface,
+not the artwork's conceptual wrapper. It is used because folders, typed inputs,
+and controlled collapse remain manageable as the parameter set grows. The
+panel must stay collapsed by default, flat, monochrome, non-draggable, and
+bounded to one corner. Its collapsed handle must retain a high-contrast border,
+readable title, and sufficient pointer target against both field themes;
+minimal does not mean low-contrast or difficult to discover. New model
+parameters belong in `Agents`, `Field`, or `Appearance` only when they are
+directly adjustable and their effect is perceptible in the field.
 
-The perspective change applies only when goldfish is active, and retains the existing goldfish path unchanged. `swarm/6` starts as one lateral school rather than a field of independently changing headings. A selected cell still receives its same stable ID group and perimeter bands, but it bends that group's route continuously toward the assigned perimeter point and then into a persistent orbit; it never creates a new random heading. Selected cells and viewport edges begin exerting avoidance before contact, so a fish takes a continuous arc around them instead of reflecting or reversing in open space. Collision prevention still changes positions when enabled, but does not inject a new velocity impulse into side-view fish. The side-profile body's left/right facing follows horizontal velocity and its vertical velocity produces only a limited upward or downward body tilt. During a true left/right reversal, the existing fish path is temporarily narrowed only by the side projection before it mirrors, so the silhouette does not snap between directions. Thus the cursor-cell interaction contract stays unchanged while the locomotion layer is coherent with a side-view school instead of a top-down boid mark.
+Control rows use Leva's default side-by-side label/control grid. Do not enable
+`oneLineLabels`: despite its name, that mode places labels above controls and
+turns compact booleans, selects, and ranges into taller multi-line rows.
+
+Do not let Leva's default dark GUI, accent colour, shadows, filtering, copy
+actions, or floating-debug aesthetic become the visual identity of the work.
+If a control becomes part of the final participant interaction rather than
+authoring/tuning, evaluate it separately and promote only the necessary
+participant-facing action into the artwork's own minimal interface.
+
+## Retired swarm/6 failure
+
+`swarm/6` was deleted. It was not a visual variant of the established cursor-cell experiment: enabling `motionProfile="sideFish"` replaced the shared boid locomotion with a separate lateral-school steering model, including different speed limits, turn-rate limits, boundary lookahead, cell lookahead, avoidance forces, and collision response. That silently changed the primary observable behavior even though the request that produced it concerned the fish's view/rendering.
+
+The result violated the experiment-preservation contract in three concrete ways:
+
+- A presentation request was allowed to mutate movement and interaction behavior.
+- The variant claimed to preserve `swarm/4` while its implementation deliberately bypassed the shared cursor motion rules.
+- A new numbered route duplicated the full `swarm/4` interface instead of keeping a reversible visual choice inside the established variants.
+
+For future work, fish silhouette, orientation, scale, and colour are presentation state owned by `CursorSwarm`. They must not select a different motion profile or introduce new simulation constants. A requested visual alternative belongs behind an explicit toggle in `/swarm/4` and `/swarm/5`; movement changes require a separate, explicit user request and must never be inferred from the artwork's side-view appearance.
+
+## Goldfish glyph visual failures
+
+Two successive attempts to add Goldfish 3–5 were rejected and must not be
+repeated.
+
+The first attempt confused “three different abstract goldfish” with three
+naturalistic types. It drew a fantail, ryukin, and comet through extra fins,
+breed-like proportions, gill marks, and anatomical curves. This was imitation
+with reduced fidelity, not abstraction. The added detail competed with heading
+and swarm density while still weakening immediate goldfish recognition.
+
+The second attempt renamed decorative silhouettes as `cut-paper`, `halo`, and
+`ribbon`. Negative-space cuts and more elaborate Bézier contours were treated
+as artistic content by themselves. They had no perceptual job in the
+experiment, were not minimal, and made each agent more visually autonomous
+than the collective relation it was meant to reveal. Naming those treatments
+in the selector added explanatory chrome instead of improving the glyph.
+
+The third attempt removed the decorative names but still drew bespoke fish
+outlines with many control points. Calling the results geometric fill, contour,
+and counterform did not change the fact that each form began by tracing a fish
+silhouette. It reduced internal detail without achieving genuine abstraction
+or the minimal shared grammar of the field. Future variants must be composed
+from a very small set of autonomous geometric primitives; they must not begin
+from a naturalistic outer contour.
+
+The fourth attempt overcorrected by replacing the fish with autonomous circles,
+ellipses, and an open contour. It satisfied a primitive-count rule while
+removing the high back, rounded abdomen, compact head, and luxuriant paired
+tail that distinguish a goldfish from a generic fish or an arbitrary diagram.
+Minimalism cannot discard the subject's recognition structure. Primitive count
+is not an artistic criterion.
+
+Future Goldfish 3–5 work follows this contract:
+
+- Abstraction means removing anatomy until only the recognition relation
+  remains; it does not mean stylizing anatomy.
+- At the `swarm/5` baseline, Goldfish 3–5 must retain a high back, rounded
+  abdomen, compact head, directional eye, narrow caudal peduncle, and a caudal
+  fin with a clear outer spread and concave trailing edge. One dorsal or lower
+  fin may remain only when it strengthens that silhouette at small scale.
+- The body-to-tail proportion and continuous outer rhythm—not added internal
+  detail—must make the mark read as a goldfish rather than a generic fish.
+- Goldfish 3–5 form one visual family. Variation comes from body compression
+  and tail flow, not separate themes, breed imitation, or metaphors.
+- Visible options remain `Goldfish 1` through `Goldfish 5`; internal design
+  terminology does not belong in the parameter panel.
+- Reject a glyph if it is less legible than Goldfish 1 at 0.5×, if it attracts
+  more attention than the swarm relation, or if any element can be deleted
+  without weakening heading or goldfish recognition.

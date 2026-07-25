@@ -65,4 +65,10 @@ export const experimentCatalog = [
     label: "translate",
     description: "Hundred-language translation grid interface study.",
   },
+  {
+    href: "/videos",
+    label: "videos",
+    description:
+      "Portrait media fields fragmented across independent speeds and phases.",
+  },
 ] as const;
