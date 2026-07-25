@@ -1,7 +1,14 @@
 import * as THREE from "three";
-import type { CursorAgent } from "../../../model";
+import type { CursorAgent, SelectedCell } from "../../../model";
+import {
+  KISS_ATLAS_COLUMNS,
+  KISS_ATLAS_ROWS,
+  KISS_IMAGE_COUNT,
+  loadKissAtlas,
+} from "./kiss-atlas";
 
 const MAX_FISH_COUNT = 1000;
+const MAX_ATTENTION_CELL_COUNT = 4096;
 const FLOOR_Y = 0;
 
 type GoldfishSceneOptions = {
@@ -22,6 +29,43 @@ export type FieldPoint = {
   x: number;
   y: number;
 };
+
+export type AttentionSurface = "white" | "kiss";
+
+export type GoldfishPerformanceInfo = {
+  drawCalls: number;
+  geometries: number;
+  textures: number;
+  triangles: number;
+};
+
+type KissPlayback = {
+  current: number;
+  next: number;
+  startedAt: number;
+  duration: number;
+  randomState: number;
+};
+
+function nextPlaybackRandom(playback: KissPlayback) {
+  playback.randomState =
+    (Math.imul(playback.randomState, 1664525) + 1013904223) >>> 0;
+  return playback.randomState / 0xffffffff;
+}
+
+function getPlaybackDuration(playback: KissPlayback) {
+  const diversity = 0.72;
+  const factor =
+    1 + (nextPlaybackRandom(playback) * 2 - 1) * diversity;
+  return 1000 / (24 * Math.max(0.05, factor));
+}
+
+function getOtherKissIndex(playback: KissPlayback, current: number) {
+  const candidate = Math.floor(
+    nextPlaybackRandom(playback) * (KISS_IMAGE_COUNT - 1),
+  );
+  return candidate >= current ? candidate + 1 : candidate;
+}
 
 function createTailGeometry() {
   const shape = new THREE.Shape();
@@ -86,6 +130,20 @@ export class GoldfishScene {
   private readonly fieldTexture: THREE.CanvasTexture;
   private readonly floorMaterial: THREE.MeshBasicMaterial;
   private readonly floor: THREE.Mesh;
+  private readonly kissTileCurrent = new THREE.InstancedBufferAttribute(
+    new Float32Array(MAX_ATTENTION_CELL_COUNT),
+    1,
+  );
+  private readonly kissTileNext = new THREE.InstancedBufferAttribute(
+    new Float32Array(MAX_ATTENTION_CELL_COUNT),
+    1,
+  );
+  private readonly kissTileMix = new THREE.InstancedBufferAttribute(
+    new Float32Array(MAX_ATTENTION_CELL_COUNT),
+    1,
+  );
+  private readonly kissMaterial: THREE.ShaderMaterial;
+  private readonly kissCells: THREE.InstancedMesh;
   private readonly bodyMaterial = new THREE.MeshStandardMaterial({
     roughness: 0.38,
     metalness: 0.02,
@@ -117,6 +175,17 @@ export class GoldfishScene {
   private width = 1;
   private height = 1;
   private activeCount: number;
+  private fitDistance = 1;
+  private cameraAzimuth = 0;
+  private cameraElevation = THREE.MathUtils.degToRad(53);
+  private cameraZoom = 1;
+  private attentionSurface: AttentionSurface = "white";
+  private kissAtlasTexture: THREE.CanvasTexture | null = null;
+  private kissAtlasLoading = false;
+  private kissPlayback: KissPlayback[] = [];
+  private readonly kissPlaybackByCell = new Map<string, KissPlayback>();
+  private lastElapsedMilliseconds = 0;
+  private disposed = false;
 
   constructor({
     canvas,
@@ -147,6 +216,101 @@ export class GoldfishScene {
     this.floor = new THREE.Mesh(floorGeometry, this.floorMaterial);
     this.floor.position.y = FLOOR_Y - 0.6;
     this.scene.add(this.floor);
+
+    const kissGeometry = new THREE.PlaneGeometry(1, 1);
+    kissGeometry.rotateX(-Math.PI / 2);
+    this.kissTileCurrent.setUsage(THREE.DynamicDrawUsage);
+    this.kissTileNext.setUsage(THREE.DynamicDrawUsage);
+    this.kissTileMix.setUsage(THREE.DynamicDrawUsage);
+    kissGeometry.setAttribute("kissTileCurrent", this.kissTileCurrent);
+    kissGeometry.setAttribute("kissTileNext", this.kissTileNext);
+    kissGeometry.setAttribute("kissTileMix", this.kissTileMix);
+    this.kissMaterial = new THREE.ShaderMaterial({
+      uniforms: {
+        kissAtlas: { value: null },
+      },
+      vertexShader: `
+        attribute float kissTileCurrent;
+        attribute float kissTileNext;
+        attribute float kissTileMix;
+        varying vec2 vKissUv;
+        varying float vKissTileCurrent;
+        varying float vKissTileNext;
+        varying float vKissTileMix;
+
+        void main() {
+          vKissUv = uv;
+          vKissTileCurrent = kissTileCurrent;
+          vKissTileNext = kissTileNext;
+          vKissTileMix = kissTileMix;
+          gl_Position =
+            projectionMatrix *
+            modelViewMatrix *
+            instanceMatrix *
+            vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform sampler2D kissAtlas;
+        varying vec2 vKissUv;
+        varying float vKissTileCurrent;
+        varying float vKissTileNext;
+        varying float vKissTileMix;
+
+        vec2 kissAtlasUv(float tileIndex) {
+          float column = mod(
+            tileIndex,
+            ${KISS_ATLAS_COLUMNS.toFixed(1)}
+          );
+          float row = floor(
+            tileIndex / ${KISS_ATLAS_COLUMNS.toFixed(1)}
+          );
+          vec2 localUv = mix(
+            vec2(0.012),
+            vec2(0.988),
+            vKissUv
+          );
+          return vec2(
+            (column + localUv.x) /
+              ${KISS_ATLAS_COLUMNS.toFixed(1)},
+            1.0 -
+              (row + 1.0 - localUv.y) /
+                ${KISS_ATLAS_ROWS.toFixed(1)}
+          );
+        }
+
+        void main() {
+          vec4 currentColor = texture2D(
+            kissAtlas,
+            kissAtlasUv(vKissTileCurrent)
+          );
+          vec4 nextColor = texture2D(
+            kissAtlas,
+            kissAtlasUv(vKissTileNext)
+          );
+          gl_FragColor = mix(
+            currentColor,
+            nextColor,
+            smoothstep(0.0, 1.0, vKissTileMix)
+          );
+          #include <colorspace_fragment>
+        }
+      `,
+      depthTest: true,
+      depthWrite: true,
+      side: THREE.DoubleSide,
+      toneMapped: false,
+    });
+    this.kissCells = new THREE.InstancedMesh(
+      kissGeometry,
+      this.kissMaterial,
+      MAX_ATTENTION_CELL_COUNT,
+    );
+    this.kissCells.count = 0;
+    this.kissCells.frustumCulled = false;
+    this.kissCells.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    this.kissCells.visible = false;
+    this.scene.add(this.kissCells);
 
     const bodyGeometry = new THREE.SphereGeometry(1, 22, 15);
     const peduncleGeometry = new THREE.CylinderGeometry(0.68, 1.2, 2.5, 12, 1);
@@ -246,20 +410,227 @@ export class GoldfishScene {
       this.width / 2 / Math.tan(horizontalFov / 2) + depthExtent;
     const verticalDistance =
       verticalExtent / Math.tan(verticalFov / 2) + depthExtent;
-    const distance = Math.max(horizontalDistance, verticalDistance) * 1.035;
-
-    this.camera.position.copy(direction.multiplyScalar(distance));
-    this.camera.near = Math.max(1, distance - depthExtent - 220);
-    this.camera.far = distance + depthExtent + 520;
-    this.camera.lookAt(0, 12, 0);
-    this.camera.updateProjectionMatrix();
+    this.fitDistance =
+      Math.max(horizontalDistance, verticalDistance) * 1.035;
+    this.updateCamera();
 
     this.floor.scale.set(this.width, 1, this.height);
     this.floor.updateMatrixWorld();
   }
 
+  private updateCamera() {
+    const distance = this.fitDistance * this.cameraZoom;
+    const horizontalDistance = Math.cos(this.cameraElevation) * distance;
+    this.camera.position.set(
+      Math.sin(this.cameraAzimuth) * horizontalDistance,
+      Math.sin(this.cameraElevation) * distance,
+      Math.cos(this.cameraAzimuth) * horizontalDistance,
+    );
+    this.camera.near = Math.max(1, distance * 0.34);
+    this.camera.far = distance * 2.35 + 520;
+    this.camera.lookAt(0, 12, 0);
+    this.camera.updateProjectionMatrix();
+  }
+
+  orbit(deltaX: number, deltaY: number) {
+    this.cameraAzimuth -= deltaX * 0.0045;
+    this.cameraElevation = THREE.MathUtils.clamp(
+      this.cameraElevation + deltaY * 0.0035,
+      THREE.MathUtils.degToRad(28),
+      THREE.MathUtils.degToRad(76),
+    );
+    this.updateCamera();
+  }
+
+  zoom(deltaY: number) {
+    this.cameraZoom = THREE.MathUtils.clamp(
+      this.cameraZoom * Math.exp(deltaY * 0.0015),
+      0.28,
+      3,
+    );
+    this.updateCamera();
+  }
+
+  resetCamera() {
+    this.cameraAzimuth = 0;
+    this.cameraElevation = THREE.MathUtils.degToRad(53);
+    this.cameraZoom = 1;
+    this.updateCamera();
+  }
+
   updateField() {
     this.fieldTexture.needsUpdate = true;
+  }
+
+  private createKissPlayback(cell: SelectedCell) {
+    const randomState =
+      (
+        Math.imul(cell.column + 1, 0x45d9f3b) ^
+        Math.imul(cell.row + 1, 0x119de1f3)
+      ) >>> 0;
+    const playback: KissPlayback = {
+      current: 0,
+      next: 0,
+      startedAt: this.lastElapsedMilliseconds,
+      duration: 0,
+      randomState,
+    };
+    playback.current = Math.floor(
+      nextPlaybackRandom(playback) * KISS_IMAGE_COUNT,
+    );
+    playback.next = getOtherKissIndex(
+      playback,
+      playback.current,
+    );
+    playback.duration = getPlaybackDuration(playback);
+    return playback;
+  }
+
+  private prepareKissAtlas() {
+    if (this.kissAtlasTexture || this.kissAtlasLoading) return;
+    this.kissAtlasLoading = true;
+
+    void loadKissAtlas()
+      .then((canvas) => {
+        if (this.disposed) return;
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.colorSpace = THREE.SRGBColorSpace;
+        texture.minFilter = THREE.LinearMipmapLinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        texture.generateMipmaps = true;
+        texture.anisotropy = Math.min(
+          4,
+          this.renderer.capabilities.getMaxAnisotropy(),
+        );
+        this.kissAtlasTexture = texture;
+        this.kissMaterial.uniforms.kissAtlas.value = texture;
+        this.kissMaterial.needsUpdate = true;
+        this.kissCells.visible =
+          this.attentionSurface === "kiss" &&
+          this.kissCells.count > 0;
+      })
+      .catch(() => {
+        this.kissCells.visible = false;
+      })
+      .finally(() => {
+        this.kissAtlasLoading = false;
+      });
+  }
+
+  setAttentionSurface(surface: AttentionSurface) {
+    this.attentionSurface = surface;
+
+    if (surface === "white") {
+      this.kissCells.visible = false;
+      return;
+    }
+
+    for (const playback of this.kissPlayback) {
+      playback.startedAt = this.lastElapsedMilliseconds;
+      playback.duration = getPlaybackDuration(playback);
+    }
+    if (this.kissCells.count > 0) {
+      this.prepareKissAtlas();
+    }
+    this.kissCells.visible =
+      this.kissAtlasTexture !== null && this.kissCells.count > 0;
+  }
+
+  setAttentionCells(cells: readonly SelectedCell[]) {
+    const count = Math.min(cells.length, MAX_ATTENTION_CELL_COUNT);
+    const playback: KissPlayback[] = [];
+
+    for (let index = 0; index < count; index += 1) {
+      const cell = cells[index];
+      const key = `${cell.column}:${cell.row}`;
+      let cellPlayback = this.kissPlaybackByCell.get(key);
+      if (!cellPlayback) {
+        cellPlayback = this.createKissPlayback(cell);
+        this.kissPlaybackByCell.set(key, cellPlayback);
+      }
+      playback.push(cellPlayback);
+
+      this.local.position.set(
+        cell.centerX - this.width / 2,
+        FLOOR_Y - 0.42,
+        cell.centerY - this.height / 2,
+      );
+      this.local.rotation.set(0, 0, 0);
+      this.local.scale.set(cell.width, 1, cell.height);
+      this.local.updateMatrix();
+      this.kissCells.setMatrixAt(index, this.local.matrix);
+      this.kissTileCurrent.setX(index, cellPlayback.current);
+      this.kissTileNext.setX(index, cellPlayback.next);
+      this.kissTileMix.setX(index, 0);
+    }
+
+    this.kissPlayback = playback;
+    this.kissCells.count = count;
+    this.kissCells.instanceMatrix.clearUpdateRanges();
+    this.kissCells.instanceMatrix.addUpdateRange(0, count * 16);
+    this.kissCells.instanceMatrix.needsUpdate = true;
+    this.kissTileCurrent.clearUpdateRanges();
+    this.kissTileCurrent.addUpdateRange(0, count);
+    this.kissTileCurrent.needsUpdate = true;
+    this.kissTileNext.clearUpdateRanges();
+    this.kissTileNext.addUpdateRange(0, count);
+    this.kissTileNext.needsUpdate = true;
+    this.kissTileMix.clearUpdateRanges();
+    this.kissTileMix.addUpdateRange(0, count);
+    this.kissTileMix.needsUpdate = true;
+    if (this.attentionSurface === "kiss" && count > 0) {
+      this.prepareKissAtlas();
+    }
+    this.kissCells.visible =
+      this.attentionSurface === "kiss" &&
+      this.kissAtlasTexture !== null &&
+      count > 0;
+  }
+
+  private updateKissPlayback(elapsedMilliseconds: number) {
+    this.lastElapsedMilliseconds = elapsedMilliseconds;
+    if (!this.kissCells.visible) return;
+    let tileChanged = false;
+
+    for (let index = 0; index < this.kissPlayback.length; index += 1) {
+      const playback = this.kissPlayback[index];
+
+      while (
+        elapsedMilliseconds >=
+        playback.startedAt + playback.duration
+      ) {
+        tileChanged = true;
+        playback.startedAt += playback.duration;
+        playback.current = playback.next;
+        playback.next = getOtherKissIndex(
+          playback,
+          playback.current,
+        );
+        playback.duration = getPlaybackDuration(playback);
+      }
+
+      const mix = THREE.MathUtils.clamp(
+        (elapsedMilliseconds - playback.startedAt) /
+          playback.duration,
+        0,
+        1,
+      );
+      this.kissTileCurrent.setX(index, playback.current);
+      this.kissTileNext.setX(index, playback.next);
+      this.kissTileMix.setX(index, mix);
+    }
+
+    if (tileChanged) {
+      this.kissTileCurrent.clearUpdateRanges();
+      this.kissTileCurrent.addUpdateRange(0, this.kissPlayback.length);
+      this.kissTileCurrent.needsUpdate = true;
+      this.kissTileNext.clearUpdateRanges();
+      this.kissTileNext.addUpdateRange(0, this.kissPlayback.length);
+      this.kissTileNext.needsUpdate = true;
+    }
+    this.kissTileMix.clearUpdateRanges();
+    this.kissTileMix.addUpdateRange(0, this.kissPlayback.length);
+    this.kissTileMix.needsUpdate = true;
   }
 
   screenToField(screenX: number, screenY: number): FieldPoint | null {
@@ -329,6 +700,7 @@ export class GoldfishScene {
     elapsedSeconds: number,
     settings: GoldfishRenderSettings,
   ) {
+    this.updateKissPlayback(elapsedSeconds * 1000);
     const count = Math.min(this.activeCount, agents.length);
     if (count !== this.body.count) {
       for (const mesh of this.fishMeshes) mesh.count = count;
@@ -472,10 +844,23 @@ export class GoldfishScene {
     this.renderer.render(this.scene, this.camera);
   }
 
+  getPerformanceInfo(): GoldfishPerformanceInfo {
+    return {
+      drawCalls: this.renderer.info.render.calls,
+      geometries: this.renderer.info.memory.geometries,
+      textures: this.renderer.info.memory.textures,
+      triangles: this.renderer.info.render.triangles,
+    };
+  }
+
   dispose() {
+    this.disposed = true;
     for (const mesh of this.fishMeshes) {
       mesh.geometry.dispose();
     }
+    this.kissCells.geometry.dispose();
+    this.kissMaterial.dispose();
+    this.kissAtlasTexture?.dispose();
     this.floor.geometry.dispose();
     this.floorMaterial.dispose();
     this.fieldTexture.dispose();

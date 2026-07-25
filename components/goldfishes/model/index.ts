@@ -30,6 +30,10 @@ export type CellAnchor = {
   yRatio: number;
 };
 
+export type AttentionZoneBehavior =
+  | "protected-perimeter"
+  | "open-perimeter";
+
 export type CursorFieldSettings = {
   cellMin: number;
   cellMax: number;
@@ -450,22 +454,24 @@ export function settleCursorField(
   selectedCells: readonly SelectedCell[],
   settings: CursorFieldSettings,
   preventCursorCollisions = true,
+  attentionZoneBehavior: AttentionZoneBehavior = "protected-perimeter",
 ) {
-  const evacuatedCursors = evacuateSelectedCells(
-    cursors,
-    selectedCells,
-    settings,
-  );
+  const constrainedCursors =
+    attentionZoneBehavior === "protected-perimeter"
+      ? evacuateSelectedCells(cursors, selectedCells, settings)
+      : cursors;
 
   if (!preventCursorCollisions) {
-    return evacuatedCursors;
+    return constrainedCursors;
   }
 
   return resolveCursorCollisions(
-    evacuatedCursors,
+    constrainedCursors,
     width,
     height,
-    selectedCells,
+    attentionZoneBehavior === "protected-perimeter"
+      ? selectedCells
+      : [],
     settings,
   );
 }
@@ -480,6 +486,7 @@ export function stepCursorField(
   settings: CursorFieldSettings,
   preventCursorCollisions = true,
   agentScale = 1,
+  attentionZoneBehavior: AttentionZoneBehavior = "protected-perimeter",
 ) {
   const perceptionSquared = PERCEPTION_RADIUS * PERCEPTION_RADIUS;
   const separationRadius = SEPARATION_RADIUS * agentScale;
@@ -609,9 +616,22 @@ export function stepCursorField(
       vy *= scale;
     }
 
+    const nextX = Math.min(
+      width,
+      Math.max(0, cursor.x + vx * deltaSeconds),
+    );
+    const nextY = Math.min(
+      height,
+      Math.max(0, cursor.y + vy * deltaSeconds),
+    );
+
+    if (attentionZoneBehavior === "open-perimeter") {
+      return { ...cursor, x: nextX, y: nextY, vx, vy };
+    }
+
     const constrained = keepOutsideCells(
-      Math.min(width, Math.max(0, cursor.x + vx * deltaSeconds)),
-      Math.min(height, Math.max(0, cursor.y + vy * deltaSeconds)),
+      nextX,
+      nextY,
       vx,
       vy,
       selectedCells,
@@ -629,7 +649,9 @@ export function stepCursorField(
     movedCursors,
     width,
     height,
-    selectedCells,
+    attentionZoneBehavior === "protected-perimeter"
+      ? selectedCells
+      : [],
     settings,
   );
 }

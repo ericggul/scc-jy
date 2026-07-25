@@ -7,7 +7,7 @@ import {
   useState,
   type PointerEvent,
 } from "react";
-import { folder, LevaPanel, useControls, useCreateStore } from "leva";
+import { button, folder, LevaPanel, useControls, useCreateStore } from "leva";
 import {
   createCursorField,
   createGrid,
@@ -23,6 +23,7 @@ import {
 } from "../../../model";
 import {
   GoldfishScene,
+  type AttentionSurface,
   type GoldfishRenderSettings,
 } from "../rendering/goldfish-scene";
 import styles from "./goldfishes.module.css";
@@ -30,6 +31,11 @@ import styles from "./goldfishes.module.css";
 type FieldTheme = "light" | "dark";
 type GridMark = "dot" | "cross";
 type TracePoint = { x: number; y: number };
+type CameraGesture = {
+  pointerId: number;
+  x: number;
+  y: number;
+};
 
 type FieldPalette = {
   paper: string;
@@ -40,6 +46,7 @@ type FieldPalette = {
 };
 
 const DEFAULT_COUNT = 200;
+const ATTENTION_ZONE_BEHAVIOR = "open-perimeter";
 const FIELD_PALETTES: Record<FieldTheme, FieldPalette> = {
   light: {
     paper: "#f4f4f1",
@@ -141,9 +148,12 @@ export default function Goldfishes3D() {
   const gridRef = useRef<Grid | null>(null);
   const selectionRef = useRef<CellAnchor[]>([]);
   const tracePointRef = useRef<TracePoint | null>(null);
+  const cameraGestureRef = useRef<CameraGesture | null>(null);
+  const cameraInputRef = useRef(true);
   const collisionPreventionRef = useRef(false);
   const themeRef = useRef<FieldTheme>("dark");
   const gridMarkRef = useRef<GridMark>("dot");
+  const attentionSurfaceRef = useRef<AttentionSurface>("white");
   const renderSettingsRef = useRef<GoldfishRenderSettings>({
     agentScale: 1,
     depth: 64,
@@ -172,6 +182,14 @@ export default function Goldfishes3D() {
       selectionRef.current,
       FIELD_PALETTES[themeRef.current],
       gridMarkRef.current,
+    );
+    sceneRef.current?.setAttentionCells(
+      getAnchoredCells(
+        selectionRef.current,
+        grid,
+        interactionCanvas.clientWidth,
+        interactionCanvas.clientHeight,
+      ),
     );
     sceneRef.current?.updateField();
   }, []);
@@ -229,7 +247,28 @@ export default function Goldfishes3D() {
           },
         },
       }),
+      Camera: folder({
+        input: {
+          value: true,
+          onChange: (enabled: boolean) => {
+            cameraInputRef.current = enabled;
+          },
+        },
+        "reset view": button(() => {
+          sceneRef.current?.resetCamera();
+        }),
+      }),
       Field: folder({
+        "kiss blocks": {
+          value: false,
+          onChange: (enabled: boolean) => {
+            const surface: AttentionSurface = enabled
+              ? "kiss"
+              : "white";
+            attentionSurfaceRef.current = surface;
+            sceneRef.current?.setAttentionSurface(surface);
+          },
+        },
         "corner +": {
           value: false,
           onChange: (enabled: boolean) => {
@@ -318,6 +357,7 @@ export default function Goldfishes3D() {
         selectedCells,
         constraintSettingsRef.current,
         collisionPreventionRef.current,
+        ATTENTION_ZONE_BEHAVIOR,
       );
       redrawField();
     },
@@ -347,6 +387,7 @@ export default function Goldfishes3D() {
       ),
       constraintSettingsRef.current,
       collisionPreventionRef.current,
+      ATTENTION_ZONE_BEHAVIOR,
     );
   }, [activeCount]);
 
@@ -367,10 +408,17 @@ export default function Goldfishes3D() {
       paperColor: FIELD_PALETTES.dark.paper,
     });
     sceneRef.current = scene;
+    scene.setAttentionSurface(attentionSurfaceRef.current);
 
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     let previousTime = performance.now();
     let elapsedSeconds = 0;
+    const collectPerformanceMetrics =
+      process.env.NODE_ENV === "development";
+    let metricStartedAt = previousTime;
+    let metricFrames = 0;
+    let metricCpuMilliseconds = 0;
+    let metricMaxFrameMilliseconds = 0;
 
     const sizeCanvases = () => {
       const bounds = interactionCanvas.getBoundingClientRect();
@@ -407,14 +455,19 @@ export default function Goldfishes3D() {
         ),
         constraintSettingsRef.current,
         collisionPreventionRef.current,
+        ATTENTION_ZONE_BEHAVIOR,
       );
       redrawField();
     };
 
     const render = (time: number) => {
+      const cpuStartedAt = collectPerformanceMetrics
+        ? performance.now()
+        : 0;
       const width = interactionCanvas.clientWidth;
       const height = interactionCanvas.clientHeight;
-      const deltaSeconds = Math.min((time - previousTime) / 1000, 0.032);
+      const frameMilliseconds = time - previousTime;
+      const deltaSeconds = Math.min(frameMilliseconds / 1000, 0.032);
       previousTime = time;
       const grid = gridRef.current;
 
@@ -435,10 +488,51 @@ export default function Goldfishes3D() {
           constraintSettingsRef.current,
           collisionPreventionRef.current,
           renderSettingsRef.current.agentScale,
+          ATTENTION_ZONE_BEHAVIOR,
         );
       }
 
       scene.render(agentsRef.current, elapsedSeconds, renderSettingsRef.current);
+
+      if (collectPerformanceMetrics) {
+        metricFrames += 1;
+        metricCpuMilliseconds += performance.now() - cpuStartedAt;
+        metricMaxFrameMilliseconds = Math.max(
+          metricMaxFrameMilliseconds,
+          frameMilliseconds,
+        );
+
+        const metricDuration = time - metricStartedAt;
+        if (metricDuration >= 2000) {
+          const rendererInfo = scene.getPerformanceInfo();
+          interactionCanvas.dataset.performanceFps = (
+            (metricFrames * 1000) /
+            metricDuration
+          ).toFixed(1);
+          interactionCanvas.dataset.performanceMeanCpuMs = (
+            metricCpuMilliseconds / metricFrames
+          ).toFixed(3);
+          interactionCanvas.dataset.performanceMaxFrameMs =
+            metricMaxFrameMilliseconds.toFixed(1);
+          interactionCanvas.dataset.performanceDrawCalls =
+            String(rendererInfo.drawCalls);
+          interactionCanvas.dataset.performanceTextures =
+            String(rendererInfo.textures);
+          interactionCanvas.dataset.performanceTriangles =
+            String(rendererInfo.triangles);
+          interactionCanvas.dataset.performanceAttentionSurface =
+            attentionSurfaceRef.current;
+          interactionCanvas.dataset.performanceSelectedCells = String(
+            selectionRef.current.length,
+          );
+
+          metricStartedAt = time;
+          metricFrames = 0;
+          metricCpuMilliseconds = 0;
+          metricMaxFrameMilliseconds = 0;
+        }
+      }
+
       frameRef.current = requestAnimationFrame(render);
     };
 
@@ -464,6 +558,7 @@ export default function Goldfishes3D() {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
     tracePointRef.current = null;
+    cameraGestureRef.current = null;
   };
 
   return (
@@ -481,12 +576,25 @@ export default function Goldfishes3D() {
       <canvas
         ref={interactionCanvasRef}
         className={styles.interactionCanvas}
-        aria-label="A field of moving goldfish. Click or drag across cells to gather fish around each selected cell while the selected cells remain empty."
+        aria-label="A perspective field of moving goldfish. Click or drag across cells to gather fish, Alt-drag or right-drag to rotate the camera, and use the wheel to zoom."
         tabIndex={0}
         onPointerDown={(event) => {
           event.currentTarget.focus();
           event.currentTarget.setPointerCapture(event.pointerId);
           const bounds = event.currentTarget.getBoundingClientRect();
+          if (
+            cameraInputRef.current &&
+            (event.altKey || event.button === 2)
+          ) {
+            event.preventDefault();
+            tracePointRef.current = null;
+            cameraGestureRef.current = {
+              pointerId: event.pointerId,
+              x: event.clientX,
+              y: event.clientY,
+            };
+            return;
+          }
           const point = sceneRef.current?.screenToField(
             event.clientX - bounds.left,
             event.clientY - bounds.top,
@@ -496,6 +604,23 @@ export default function Goldfishes3D() {
           selectTrace([point]);
         }}
         onPointerMove={(event) => {
+          const cameraGesture = cameraGestureRef.current;
+          if (
+            cameraGesture &&
+            cameraGesture.pointerId === event.pointerId &&
+            event.currentTarget.hasPointerCapture(event.pointerId)
+          ) {
+            sceneRef.current?.orbit(
+              event.clientX - cameraGesture.x,
+              event.clientY - cameraGesture.y,
+            );
+            cameraGestureRef.current = {
+              pointerId: event.pointerId,
+              x: event.clientX,
+              y: event.clientY,
+            };
+            return;
+          }
           const previousPoint = tracePointRef.current;
           if (
             !previousPoint ||
@@ -523,6 +648,15 @@ export default function Goldfishes3D() {
         onPointerCancel={finishTrace}
         onLostPointerCapture={() => {
           tracePointRef.current = null;
+          cameraGestureRef.current = null;
+        }}
+        onContextMenu={(event) => {
+          if (cameraInputRef.current) event.preventDefault();
+        }}
+        onWheel={(event) => {
+          if (!cameraInputRef.current) return;
+          event.preventDefault();
+          sceneRef.current?.zoom(event.deltaY);
         }}
         onKeyDown={(event) => {
           if (event.key === "Escape") {

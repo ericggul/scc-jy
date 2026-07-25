@@ -10,6 +10,13 @@ import {
 import { folder, LevaPanel, useControls, useCreateStore } from "leva";
 import styles from "./goldfishes.module.css";
 import {
+  drawCollageGoldfish,
+  getCollageAssetIndex,
+  loadCollageGoldfishAssets,
+  type CollageEyeShape,
+  type CollageGoldfishAssets,
+} from "./rendering/collage-goldfish";
+import {
   createCursorField,
   createGrid,
   getAnchoredCells,
@@ -30,6 +37,7 @@ type CursorSwarmProps = {
   settings: CursorFieldSettings;
   initialCollisionPrevention?: boolean;
   initialGoldfish?: boolean;
+  glyphSet?: "legacy" | "collage";
   controls?: {
     minCursorCount: number;
     maxCursorCount: number;
@@ -49,7 +57,9 @@ type AgentGlyph =
   | "goldfish2"
   | "goldfish3"
   | "goldfish4"
-  | "goldfish5";
+  | "goldfish5"
+  | "goldfishCircle"
+  | "goldfishRectangle";
 type GridMark = "dot" | "cross";
 
 type FieldPalette = {
@@ -396,6 +406,7 @@ export function CursorSwarm({
   settings,
   initialCollisionPrevention = true,
   initialGoldfish = false,
+  glyphSet = "legacy",
   controls,
 }: CursorSwarmProps) {
   const backgroundCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -413,6 +424,9 @@ export function CursorSwarm({
   );
   const goldfishColorRef = useRef(FIELD_PALETTES.dark.goldfish);
   const goldfishSilhouetteRef = useRef<HTMLCanvasElement | null>(null);
+  const collageGoldfishAssetsRef = useRef<
+    Partial<Record<CollageEyeShape, CollageGoldfishAssets>>
+  >({});
   const gridMarkRef = useRef<GridMark>("dot");
   const agentScaleRef = useRef(1);
   const constraintSettingsRef = useRef(scaleCursorFieldSettings(settings, 1));
@@ -488,19 +502,35 @@ export function CursorSwarm({
       Appearance: folder({
         glyph: {
           value: initialGoldfish ? "goldfish2" : "cursor",
-          options: {
-            Cursor: "cursor",
-            "Goldfish 1": "goldfish1",
-            "Goldfish 2": "goldfish2",
-            "Goldfish 3": "goldfish3",
-            "Goldfish 4": "goldfish4",
-            "Goldfish 5": "goldfish5",
-          },
+          options:
+            glyphSet === "collage"
+              ? {
+                  Cursor: "cursor",
+                  "Goldfish 1": "goldfish1",
+                  "Goldfish 2": "goldfish2",
+                  "Circle eye": "goldfishCircle",
+                  "Rectangle eye": "goldfishRectangle",
+                }
+              : {
+                  Cursor: "cursor",
+                  "Goldfish 1": "goldfish1",
+                  "Goldfish 2": "goldfish2",
+                  "Goldfish 3": "goldfish3",
+                  "Goldfish 4": "goldfish4",
+                  "Goldfish 5": "goldfish5",
+                },
           onChange: (value: AgentGlyph) => updateAgentGlyph(value),
         },
         "fish colour": {
           value: FIELD_PALETTES.dark.goldfish,
-          render: (get) => get("Appearance.glyph") !== "cursor",
+          render: (get) => {
+            const glyph = get("Appearance.glyph");
+            return (
+              glyph !== "cursor" &&
+              glyph !== "goldfishCircle" &&
+              glyph !== "goldfishRectangle"
+            );
+          },
           onChange: updateGoldfishColor,
         },
         "dark mode": {
@@ -514,6 +544,7 @@ export function CursorSwarm({
       controlStore,
       controls,
       cursorCount,
+      glyphSet,
       initialCollisionPrevention,
       initialGoldfish,
       settings,
@@ -585,6 +616,15 @@ export function CursorSwarm({
     },
     [],
   );
+
+  useEffect(() => {
+    if (glyphSet !== "collage") return;
+
+    collageGoldfishAssetsRef.current = {
+      circle: loadCollageGoldfishAssets("circle"),
+      rectangle: loadCollageGoldfishAssets("rectangle"),
+    };
+  }, [glyphSet]);
 
   useEffect(() => {
     let cancelled = false;
@@ -759,6 +799,35 @@ export function CursorSwarm({
               palette.paper,
             );
             break;
+          case "goldfishCircle":
+          case "goldfishRectangle": {
+            const shape: CollageEyeShape =
+              agentGlyphRef.current === "goldfishCircle"
+                ? "circle"
+                : "rectangle";
+            const asset =
+              collageGoldfishAssetsRef.current[shape]?.[
+                getCollageAssetIndex(cursor.id)
+              ];
+
+            if (asset) {
+              drawCollageGoldfish(
+                context,
+                cursor,
+                effectiveCursorScale,
+                asset,
+              );
+            } else {
+              drawLegacyGoldfish(
+                context,
+                cursor,
+                effectiveCursorScale,
+                goldfishColorRef.current,
+                palette.paper,
+              );
+            }
+            break;
+          }
           default:
             drawCursor(context, cursor, effectiveCursorScale);
         }
@@ -817,7 +886,7 @@ export function CursorSwarm({
       <canvas
         ref={cursorCanvasRef}
         className={styles.cursorCanvas}
-        aria-label="A field of moving mouse cursors. Click or drag across cells to make a continuous black trace and gather cursor groups around every selected cell."
+        aria-label="A field of moving cursors and goldfish. Click or drag across cells to make a continuous trace and gather agent groups around every selected cell."
         tabIndex={0}
         onPointerDown={(event) => {
           event.currentTarget.focus();
@@ -961,6 +1030,7 @@ export default function Goldfishes2DOne() {
       cursorScale={1}
       settings={GOLDFISHES_2D_ONE_SETTINGS}
       initialCollisionPrevention={false}
+      glyphSet="collage"
       controls={{
         minCursorCount: 50,
         maxCursorCount: 1000,
