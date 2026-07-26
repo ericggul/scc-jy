@@ -19,6 +19,7 @@ get a dedicated document.
 - [Experiment and component structure](./harness/experiments.md)
 - [Next.js notes](./harness/nextjs.md)
 - [HTTPS and sockets](./harness/https-and-sockets.md)
+- [Local image collections](./harness/local-image-collections.md)
 - [Common visual design guidelines](./foundations/design-guidelines.md)
 - [Multi-Device Web Artwork](./foundations/mdwa.md)
 - [Parametric détournement research](./foundations/parametric-detournement.md)

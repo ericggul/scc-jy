@@ -62,6 +62,28 @@ once and reused as canvas image sources. Their photographic eyes and fixed SVG
 body fill are preserved; the fish-colour control is shown only for Goldfish 1
 and Goldfish 2 on the `/2d/1` collage menu.
 
+## 2D media attention surfaces
+
+Only `/goldfishes/2d/1` exposes the one-line `Field > blocks` selector with
+`WHITE`, `CAT`, `KISS`, and `POLITICIAN`. `/goldfishes/2d/2` has no media
+control, media canvas, or atlas-loading work. The selection, protected-cell
+collision, attraction, agent rendering, and background field remain unchanged
+in both routes.
+
+The 2D media implementation does not create an `<img>` per cell and does not
+redraw the full field or fish canvas for an image change. A transparent media
+canvas sits between the static background and moving-agent canvases. Each active
+cell copies one tile from the shared 1024×1024 atlas only when its image changes;
+White clears that layer and performs no media work. Atlas decoding is lazy,
+limited to four concurrent images, isolated by surface, and retained for fast
+switching while `/2d/1` remains loaded.
+
+The nominal image-change rate is 24 per cell per second. To prevent a long
+selection trace from multiplying that work without bound, the combined schedule
+is capped at 960 cell draws per second and automatically lowers each cell's rate
+above 40 selected cells. Image changes remain independently staggered. This is
+an architectural workload bound, not a browser FPS measurement.
+
 ## 3D interface premise
 
 1. **Participant situation:** one person observes and redirects a full-screen
@@ -114,29 +136,35 @@ objects sharing geometry and material can use different transforms while
 reducing draw calls. It does not by itself prove a frame rate on the final
 machine.
 
-### KISS attention surface
+### Media attention surfaces
 
-The `Field > kiss blocks` Leva toggle switches selected cells between the
-existing white surface and the KISS set used by `/grid/2`. White remains the
-default. The KISS mode changes only the block surface; the shared attraction,
-open-perimeter movement, fish rendering, camera, and selection interaction are
-unchanged.
+The one-line `Field > blocks` Leva selector switches selected cells between
+`WHITE`, `CAT`, `KISS`, and `POLITICIAN`. White remains the default. The three
+media modes use the corresponding local sets already maintained for `/grid/2`:
+20 Cat images, 62 KISS images, and 60 Politician images. A surface change affects
+only the selected blocks; the shared attraction, open-perimeter movement, fish
+rendering, camera, and selection interaction are unchanged.
 
 `/grid/2` uses 80 DOM images and changes each `src` independently. At its
 default speed of 24 changes per second, that design can request up to 1,920 DOM
 source changes per second. The 3D field therefore does not reuse that rendering
-path. Its 62 KISS JPEGs are decoded at most four at a time and composited once
-into a 1024×1024, 8×8 texture atlas. Loading is deferred until KISS mode and at
-least one selected cell both exist. The source files total about 1.85 MB; the
-RGBA atlas occupies about 4 MiB before mipmaps and about 5.33 MiB with the full
-mipmap chain.
+path. Each selected media set is decoded at most four images at a time and
+composited once into its own 1024×1024, 8×8 texture atlas. Cat, KISS, and
+Politician source directories occupy roughly 0.6 MB, 1.9 MB, and 2.6 MB
+respectively. Loading is deferred until that mode and at least one selected cell
+both exist. Each RGBA atlas occupies about 4 MiB before mipmaps and about
+5.33 MiB with the full mipmap chain. If all three modes have been used, the
+cached GPU atlases therefore occupy about 16 MiB.
 
-All selected KISS cells share one `InstancedMesh`, so the mode adds one draw call
-regardless of selected-cell count. Per cell, the shader receives only the
-current tile, next tile, and crossfade amount. Attribute uploads are restricted
-to the active instance range. White mode hides the mesh and skips all playback
-updates. After the first KISS use, the atlas stays cached when returning to
-white so toggling does not repeat decode and GPU upload work.
+All selected media cells share one `InstancedMesh`, so any media mode adds one
+draw call regardless of selected-cell count. Per cell, the shader receives only
+the current tile, next tile, and crossfade amount. Attribute uploads are
+restricted to the active instance range. Playback state and valid image-index
+ranges are isolated per surface. White mode hides the mesh and skips all
+playback updates. Used atlases stay cached so switching among previously opened
+modes does not repeat decode and GPU upload work, while the temporary source
+canvas can be garbage-collected after its GPU texture is created. A late-loading
+previous mode cannot overwrite the currently selected surface.
 
 The browser A/B check used HTTPS at 1470×695, collision prevention off, two
 selected cells, and three consecutive two-second windows after warm-up. The
@@ -151,10 +179,12 @@ test browser ran both modes at a fixed 30 FPS cadence:
 
 The CPU differences are within run-to-run noise and do not show that KISS is
 faster. They show no measurable regression in this run: cadence and maximum
-frame interval stayed equal while the expected single draw call was added.
-Development builds expose the same two-second metrics on the interaction
-canvas data attributes for future checks. These measurements are not a
-guarantee for other hardware.
+frame interval stayed equal while the expected single draw call was added. Cat
+and Politician use the same shader, atlas dimensions, instance attributes, and
+draw-call count; their one-time source decode cost differs with file size.
+Development builds expose the same two-second metrics on the interaction canvas
+data attributes for future checks. These measurements are not a guarantee for
+other hardware.
 
 ### Isolated model measurement
 

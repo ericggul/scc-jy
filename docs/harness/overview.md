@@ -9,6 +9,8 @@ The documentation split is:
 - `llm.txt`: compact LLM documentation index.
 - `docs/README.md`: complete documentation and experiment map.
 - `docs/harness/*`: repo-wide engineering patterns.
+- `docs/harness/local-image-collections.md`: reusable process for collecting,
+  sourcing, checkpointing, and locally serving image sets.
 - `docs/foundations/*`: shared visual and artwork theory.
 - `docs/experiments/*`: notes aligned with `app/` and `components/` families.
 

@@ -259,12 +259,15 @@ export default function Goldfishes3D() {
         }),
       }),
       Field: folder({
-        "kiss blocks": {
-          value: false,
-          onChange: (enabled: boolean) => {
-            const surface: AttentionSurface = enabled
-              ? "kiss"
-              : "white";
+        blocks: {
+          value: "white" as AttentionSurface,
+          options: {
+            WHITE: "white",
+            CAT: "cat",
+            KISS: "kiss",
+            POLITICIAN: "politician",
+          },
+          onChange: (surface: AttentionSurface) => {
             attentionSurfaceRef.current = surface;
             sceneRef.current?.setAttentionSurface(surface);
           },

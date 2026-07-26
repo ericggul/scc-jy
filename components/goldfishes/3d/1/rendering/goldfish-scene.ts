@@ -1,11 +1,13 @@
 import * as THREE from "three";
 import type { CursorAgent, SelectedCell } from "../../../model";
 import {
-  KISS_ATLAS_COLUMNS,
-  KISS_ATLAS_ROWS,
-  KISS_IMAGE_COUNT,
-  loadKissAtlas,
-} from "./kiss-atlas";
+  MEDIA_ATLAS_COLUMNS,
+  MEDIA_ATLAS_ROWS,
+  MEDIA_IMAGE_COUNTS,
+  loadMediaAtlas,
+  type AttentionSurface,
+  type MediaSurface,
+} from "../../../rendering/media-atlas";
 
 const MAX_FISH_COUNT = 1000;
 const MAX_ATTENTION_CELL_COUNT = 4096;
@@ -30,7 +32,7 @@ export type FieldPoint = {
   y: number;
 };
 
-export type AttentionSurface = "white" | "kiss";
+export type { AttentionSurface };
 
 export type GoldfishPerformanceInfo = {
   drawCalls: number;
@@ -39,30 +41,31 @@ export type GoldfishPerformanceInfo = {
   triangles: number;
 };
 
-type KissPlayback = {
+type MediaPlayback = {
   current: number;
+  imageCount: number;
   next: number;
   startedAt: number;
   duration: number;
   randomState: number;
 };
 
-function nextPlaybackRandom(playback: KissPlayback) {
+function nextPlaybackRandom(playback: MediaPlayback) {
   playback.randomState =
     (Math.imul(playback.randomState, 1664525) + 1013904223) >>> 0;
   return playback.randomState / 0xffffffff;
 }
 
-function getPlaybackDuration(playback: KissPlayback) {
+function getPlaybackDuration(playback: MediaPlayback) {
   const diversity = 0.72;
   const factor =
     1 + (nextPlaybackRandom(playback) * 2 - 1) * diversity;
   return 1000 / (24 * Math.max(0.05, factor));
 }
 
-function getOtherKissIndex(playback: KissPlayback, current: number) {
+function getOtherMediaIndex(playback: MediaPlayback, current: number) {
   const candidate = Math.floor(
-    nextPlaybackRandom(playback) * (KISS_IMAGE_COUNT - 1),
+    nextPlaybackRandom(playback) * (playback.imageCount - 1),
   );
   return candidate >= current ? candidate + 1 : candidate;
 }
@@ -130,20 +133,20 @@ export class GoldfishScene {
   private readonly fieldTexture: THREE.CanvasTexture;
   private readonly floorMaterial: THREE.MeshBasicMaterial;
   private readonly floor: THREE.Mesh;
-  private readonly kissTileCurrent = new THREE.InstancedBufferAttribute(
+  private readonly mediaTileCurrent = new THREE.InstancedBufferAttribute(
     new Float32Array(MAX_ATTENTION_CELL_COUNT),
     1,
   );
-  private readonly kissTileNext = new THREE.InstancedBufferAttribute(
+  private readonly mediaTileNext = new THREE.InstancedBufferAttribute(
     new Float32Array(MAX_ATTENTION_CELL_COUNT),
     1,
   );
-  private readonly kissTileMix = new THREE.InstancedBufferAttribute(
+  private readonly mediaTileMix = new THREE.InstancedBufferAttribute(
     new Float32Array(MAX_ATTENTION_CELL_COUNT),
     1,
   );
-  private readonly kissMaterial: THREE.ShaderMaterial;
-  private readonly kissCells: THREE.InstancedMesh;
+  private readonly mediaMaterial: THREE.ShaderMaterial;
+  private readonly mediaCells: THREE.InstancedMesh;
   private readonly bodyMaterial = new THREE.MeshStandardMaterial({
     roughness: 0.38,
     metalness: 0.02,
@@ -180,10 +183,14 @@ export class GoldfishScene {
   private cameraElevation = THREE.MathUtils.degToRad(53);
   private cameraZoom = 1;
   private attentionSurface: AttentionSurface = "white";
-  private kissAtlasTexture: THREE.CanvasTexture | null = null;
-  private kissAtlasLoading = false;
-  private kissPlayback: KissPlayback[] = [];
-  private readonly kissPlaybackByCell = new Map<string, KissPlayback>();
+  private attentionCells: SelectedCell[] = [];
+  private readonly mediaAtlasTextures = new Map<
+    MediaSurface,
+    THREE.CanvasTexture
+  >();
+  private readonly mediaAtlasLoading = new Set<MediaSurface>();
+  private mediaPlayback: MediaPlayback[] = [];
+  private readonly mediaPlaybackByCell = new Map<string, MediaPlayback>();
   private lastElapsedMilliseconds = 0;
   private disposed = false;
 
@@ -217,32 +224,32 @@ export class GoldfishScene {
     this.floor.position.y = FLOOR_Y - 0.6;
     this.scene.add(this.floor);
 
-    const kissGeometry = new THREE.PlaneGeometry(1, 1);
-    kissGeometry.rotateX(-Math.PI / 2);
-    this.kissTileCurrent.setUsage(THREE.DynamicDrawUsage);
-    this.kissTileNext.setUsage(THREE.DynamicDrawUsage);
-    this.kissTileMix.setUsage(THREE.DynamicDrawUsage);
-    kissGeometry.setAttribute("kissTileCurrent", this.kissTileCurrent);
-    kissGeometry.setAttribute("kissTileNext", this.kissTileNext);
-    kissGeometry.setAttribute("kissTileMix", this.kissTileMix);
-    this.kissMaterial = new THREE.ShaderMaterial({
+    const mediaGeometry = new THREE.PlaneGeometry(1, 1);
+    mediaGeometry.rotateX(-Math.PI / 2);
+    this.mediaTileCurrent.setUsage(THREE.DynamicDrawUsage);
+    this.mediaTileNext.setUsage(THREE.DynamicDrawUsage);
+    this.mediaTileMix.setUsage(THREE.DynamicDrawUsage);
+    mediaGeometry.setAttribute("mediaTileCurrent", this.mediaTileCurrent);
+    mediaGeometry.setAttribute("mediaTileNext", this.mediaTileNext);
+    mediaGeometry.setAttribute("mediaTileMix", this.mediaTileMix);
+    this.mediaMaterial = new THREE.ShaderMaterial({
       uniforms: {
-        kissAtlas: { value: null },
+        mediaAtlas: { value: null },
       },
       vertexShader: `
-        attribute float kissTileCurrent;
-        attribute float kissTileNext;
-        attribute float kissTileMix;
-        varying vec2 vKissUv;
-        varying float vKissTileCurrent;
-        varying float vKissTileNext;
-        varying float vKissTileMix;
+        attribute float mediaTileCurrent;
+        attribute float mediaTileNext;
+        attribute float mediaTileMix;
+        varying vec2 vMediaUv;
+        varying float vMediaTileCurrent;
+        varying float vMediaTileNext;
+        varying float vMediaTileMix;
 
         void main() {
-          vKissUv = uv;
-          vKissTileCurrent = kissTileCurrent;
-          vKissTileNext = kissTileNext;
-          vKissTileMix = kissTileMix;
+          vMediaUv = uv;
+          vMediaTileCurrent = mediaTileCurrent;
+          vMediaTileNext = mediaTileNext;
+          vMediaTileMix = mediaTileMix;
           gl_Position =
             projectionMatrix *
             modelViewMatrix *
@@ -251,47 +258,47 @@ export class GoldfishScene {
         }
       `,
       fragmentShader: `
-        uniform sampler2D kissAtlas;
-        varying vec2 vKissUv;
-        varying float vKissTileCurrent;
-        varying float vKissTileNext;
-        varying float vKissTileMix;
+        uniform sampler2D mediaAtlas;
+        varying vec2 vMediaUv;
+        varying float vMediaTileCurrent;
+        varying float vMediaTileNext;
+        varying float vMediaTileMix;
 
-        vec2 kissAtlasUv(float tileIndex) {
+        vec2 mediaAtlasUv(float tileIndex) {
           float column = mod(
             tileIndex,
-            ${KISS_ATLAS_COLUMNS.toFixed(1)}
+            ${MEDIA_ATLAS_COLUMNS.toFixed(1)}
           );
           float row = floor(
-            tileIndex / ${KISS_ATLAS_COLUMNS.toFixed(1)}
+            tileIndex / ${MEDIA_ATLAS_COLUMNS.toFixed(1)}
           );
           vec2 localUv = mix(
             vec2(0.012),
             vec2(0.988),
-            vKissUv
+            vMediaUv
           );
           return vec2(
             (column + localUv.x) /
-              ${KISS_ATLAS_COLUMNS.toFixed(1)},
+              ${MEDIA_ATLAS_COLUMNS.toFixed(1)},
             1.0 -
               (row + 1.0 - localUv.y) /
-                ${KISS_ATLAS_ROWS.toFixed(1)}
+                ${MEDIA_ATLAS_ROWS.toFixed(1)}
           );
         }
 
         void main() {
           vec4 currentColor = texture2D(
-            kissAtlas,
-            kissAtlasUv(vKissTileCurrent)
+            mediaAtlas,
+            mediaAtlasUv(vMediaTileCurrent)
           );
           vec4 nextColor = texture2D(
-            kissAtlas,
-            kissAtlasUv(vKissTileNext)
+            mediaAtlas,
+            mediaAtlasUv(vMediaTileNext)
           );
           gl_FragColor = mix(
             currentColor,
             nextColor,
-            smoothstep(0.0, 1.0, vKissTileMix)
+            smoothstep(0.0, 1.0, vMediaTileMix)
           );
           #include <colorspace_fragment>
         }
@@ -301,16 +308,16 @@ export class GoldfishScene {
       side: THREE.DoubleSide,
       toneMapped: false,
     });
-    this.kissCells = new THREE.InstancedMesh(
-      kissGeometry,
-      this.kissMaterial,
+    this.mediaCells = new THREE.InstancedMesh(
+      mediaGeometry,
+      this.mediaMaterial,
       MAX_ATTENTION_CELL_COUNT,
     );
-    this.kissCells.count = 0;
-    this.kissCells.frustumCulled = false;
-    this.kissCells.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-    this.kissCells.visible = false;
-    this.scene.add(this.kissCells);
+    this.mediaCells.count = 0;
+    this.mediaCells.frustumCulled = false;
+    this.mediaCells.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    this.mediaCells.visible = false;
+    this.scene.add(this.mediaCells);
 
     const bodyGeometry = new THREE.SphereGeometry(1, 22, 15);
     const peduncleGeometry = new THREE.CylinderGeometry(0.68, 1.2, 2.5, 12, 1);
@@ -462,23 +469,33 @@ export class GoldfishScene {
     this.fieldTexture.needsUpdate = true;
   }
 
-  private createKissPlayback(cell: SelectedCell) {
+  private createMediaPlayback(
+    cell: SelectedCell,
+    surface: MediaSurface,
+  ) {
+    const surfaceSeed = {
+      cat: 0x2c9277b5,
+      kiss: 0x165667b1,
+      politician: 0x7f4a7c15,
+    }[surface];
     const randomState =
       (
         Math.imul(cell.column + 1, 0x45d9f3b) ^
-        Math.imul(cell.row + 1, 0x119de1f3)
+        Math.imul(cell.row + 1, 0x119de1f3) ^
+        surfaceSeed
       ) >>> 0;
-    const playback: KissPlayback = {
+    const playback: MediaPlayback = {
       current: 0,
+      imageCount: MEDIA_IMAGE_COUNTS[surface],
       next: 0,
       startedAt: this.lastElapsedMilliseconds,
       duration: 0,
       randomState,
     };
     playback.current = Math.floor(
-      nextPlaybackRandom(playback) * KISS_IMAGE_COUNT,
+      nextPlaybackRandom(playback) * playback.imageCount,
     );
-    playback.next = getOtherKissIndex(
+    playback.next = getOtherMediaIndex(
       playback,
       playback.current,
     );
@@ -486,11 +503,20 @@ export class GoldfishScene {
     return playback;
   }
 
-  private prepareKissAtlas() {
-    if (this.kissAtlasTexture || this.kissAtlasLoading) return;
-    this.kissAtlasLoading = true;
+  private useMediaAtlas(surface: MediaSurface) {
+    const texture = this.mediaAtlasTextures.get(surface);
+    if (!texture) return false;
+    this.mediaMaterial.uniforms.mediaAtlas.value = texture;
+    return true;
+  }
 
-    void loadKissAtlas()
+  private prepareMediaAtlas(surface: MediaSurface) {
+    if (this.useMediaAtlas(surface) || this.mediaAtlasLoading.has(surface)) {
+      return;
+    }
+    this.mediaAtlasLoading.add(surface);
+
+    void loadMediaAtlas(surface)
       .then((canvas) => {
         if (this.disposed) return;
         const texture = new THREE.CanvasTexture(canvas);
@@ -502,18 +528,20 @@ export class GoldfishScene {
           4,
           this.renderer.capabilities.getMaxAnisotropy(),
         );
-        this.kissAtlasTexture = texture;
-        this.kissMaterial.uniforms.kissAtlas.value = texture;
-        this.kissMaterial.needsUpdate = true;
-        this.kissCells.visible =
-          this.attentionSurface === "kiss" &&
-          this.kissCells.count > 0;
+        this.mediaAtlasTextures.set(surface, texture);
+        if (this.attentionSurface === surface) {
+          this.mediaMaterial.uniforms.mediaAtlas.value = texture;
+          this.mediaMaterial.needsUpdate = true;
+          this.mediaCells.visible = this.mediaCells.count > 0;
+        }
       })
       .catch(() => {
-        this.kissCells.visible = false;
+        if (this.attentionSurface === surface) {
+          this.mediaCells.visible = false;
+        }
       })
       .finally(() => {
-        this.kissAtlasLoading = false;
+        this.mediaAtlasLoading.delete(surface);
       });
   }
 
@@ -521,34 +549,34 @@ export class GoldfishScene {
     this.attentionSurface = surface;
 
     if (surface === "white") {
-      this.kissCells.visible = false;
+      this.mediaCells.visible = false;
       return;
     }
 
-    for (const playback of this.kissPlayback) {
-      playback.startedAt = this.lastElapsedMilliseconds;
-      playback.duration = getPlaybackDuration(playback);
-    }
-    if (this.kissCells.count > 0) {
-      this.prepareKissAtlas();
-    }
-    this.kissCells.visible =
-      this.kissAtlasTexture !== null && this.kissCells.count > 0;
+    this.setAttentionCells(this.attentionCells);
   }
 
   setAttentionCells(cells: readonly SelectedCell[]) {
     const count = Math.min(cells.length, MAX_ATTENTION_CELL_COUNT);
-    const playback: KissPlayback[] = [];
+    this.attentionCells = cells.slice(0, count);
+    const mediaSurface =
+      this.attentionSurface === "white"
+        ? null
+        : this.attentionSurface;
+    const playback: MediaPlayback[] = [];
 
     for (let index = 0; index < count; index += 1) {
       const cell = cells[index];
-      const key = `${cell.column}:${cell.row}`;
-      let cellPlayback = this.kissPlaybackByCell.get(key);
-      if (!cellPlayback) {
-        cellPlayback = this.createKissPlayback(cell);
-        this.kissPlaybackByCell.set(key, cellPlayback);
+      let cellPlayback: MediaPlayback | null = null;
+      if (mediaSurface) {
+        const key = `${mediaSurface}:${cell.column}:${cell.row}`;
+        cellPlayback = this.mediaPlaybackByCell.get(key) ?? null;
+        if (!cellPlayback) {
+          cellPlayback = this.createMediaPlayback(cell, mediaSurface);
+          this.mediaPlaybackByCell.set(key, cellPlayback);
+        }
+        playback.push(cellPlayback);
       }
-      playback.push(cellPlayback);
 
       this.local.position.set(
         cell.centerX - this.width / 2,
@@ -558,42 +586,43 @@ export class GoldfishScene {
       this.local.rotation.set(0, 0, 0);
       this.local.scale.set(cell.width, 1, cell.height);
       this.local.updateMatrix();
-      this.kissCells.setMatrixAt(index, this.local.matrix);
-      this.kissTileCurrent.setX(index, cellPlayback.current);
-      this.kissTileNext.setX(index, cellPlayback.next);
-      this.kissTileMix.setX(index, 0);
+      this.mediaCells.setMatrixAt(index, this.local.matrix);
+      this.mediaTileCurrent.setX(index, cellPlayback?.current ?? 0);
+      this.mediaTileNext.setX(index, cellPlayback?.next ?? 0);
+      this.mediaTileMix.setX(index, 0);
     }
 
-    this.kissPlayback = playback;
-    this.kissCells.count = count;
-    this.kissCells.instanceMatrix.clearUpdateRanges();
-    this.kissCells.instanceMatrix.addUpdateRange(0, count * 16);
-    this.kissCells.instanceMatrix.needsUpdate = true;
-    this.kissTileCurrent.clearUpdateRanges();
-    this.kissTileCurrent.addUpdateRange(0, count);
-    this.kissTileCurrent.needsUpdate = true;
-    this.kissTileNext.clearUpdateRanges();
-    this.kissTileNext.addUpdateRange(0, count);
-    this.kissTileNext.needsUpdate = true;
-    this.kissTileMix.clearUpdateRanges();
-    this.kissTileMix.addUpdateRange(0, count);
-    this.kissTileMix.needsUpdate = true;
-    if (this.attentionSurface === "kiss" && count > 0) {
-      this.prepareKissAtlas();
+    this.mediaPlayback = playback;
+    this.mediaCells.count = count;
+    this.mediaCells.instanceMatrix.clearUpdateRanges();
+    this.mediaCells.instanceMatrix.addUpdateRange(0, count * 16);
+    this.mediaCells.instanceMatrix.needsUpdate = true;
+    this.mediaTileCurrent.clearUpdateRanges();
+    this.mediaTileCurrent.addUpdateRange(0, count);
+    this.mediaTileCurrent.needsUpdate = true;
+    this.mediaTileNext.clearUpdateRanges();
+    this.mediaTileNext.addUpdateRange(0, count);
+    this.mediaTileNext.needsUpdate = true;
+    this.mediaTileMix.clearUpdateRanges();
+    this.mediaTileMix.addUpdateRange(0, count);
+    this.mediaTileMix.needsUpdate = true;
+
+    if (mediaSurface && count > 0) {
+      this.prepareMediaAtlas(mediaSurface);
     }
-    this.kissCells.visible =
-      this.attentionSurface === "kiss" &&
-      this.kissAtlasTexture !== null &&
+    this.mediaCells.visible =
+      mediaSurface !== null &&
+      this.useMediaAtlas(mediaSurface) &&
       count > 0;
   }
 
-  private updateKissPlayback(elapsedMilliseconds: number) {
+  private updateMediaPlayback(elapsedMilliseconds: number) {
     this.lastElapsedMilliseconds = elapsedMilliseconds;
-    if (!this.kissCells.visible) return;
+    if (!this.mediaCells.visible) return;
     let tileChanged = false;
 
-    for (let index = 0; index < this.kissPlayback.length; index += 1) {
-      const playback = this.kissPlayback[index];
+    for (let index = 0; index < this.mediaPlayback.length; index += 1) {
+      const playback = this.mediaPlayback[index];
 
       while (
         elapsedMilliseconds >=
@@ -602,7 +631,7 @@ export class GoldfishScene {
         tileChanged = true;
         playback.startedAt += playback.duration;
         playback.current = playback.next;
-        playback.next = getOtherKissIndex(
+        playback.next = getOtherMediaIndex(
           playback,
           playback.current,
         );
@@ -615,22 +644,22 @@ export class GoldfishScene {
         0,
         1,
       );
-      this.kissTileCurrent.setX(index, playback.current);
-      this.kissTileNext.setX(index, playback.next);
-      this.kissTileMix.setX(index, mix);
+      this.mediaTileCurrent.setX(index, playback.current);
+      this.mediaTileNext.setX(index, playback.next);
+      this.mediaTileMix.setX(index, mix);
     }
 
     if (tileChanged) {
-      this.kissTileCurrent.clearUpdateRanges();
-      this.kissTileCurrent.addUpdateRange(0, this.kissPlayback.length);
-      this.kissTileCurrent.needsUpdate = true;
-      this.kissTileNext.clearUpdateRanges();
-      this.kissTileNext.addUpdateRange(0, this.kissPlayback.length);
-      this.kissTileNext.needsUpdate = true;
+      this.mediaTileCurrent.clearUpdateRanges();
+      this.mediaTileCurrent.addUpdateRange(0, this.mediaPlayback.length);
+      this.mediaTileCurrent.needsUpdate = true;
+      this.mediaTileNext.clearUpdateRanges();
+      this.mediaTileNext.addUpdateRange(0, this.mediaPlayback.length);
+      this.mediaTileNext.needsUpdate = true;
     }
-    this.kissTileMix.clearUpdateRanges();
-    this.kissTileMix.addUpdateRange(0, this.kissPlayback.length);
-    this.kissTileMix.needsUpdate = true;
+    this.mediaTileMix.clearUpdateRanges();
+    this.mediaTileMix.addUpdateRange(0, this.mediaPlayback.length);
+    this.mediaTileMix.needsUpdate = true;
   }
 
   screenToField(screenX: number, screenY: number): FieldPoint | null {
@@ -700,7 +729,7 @@ export class GoldfishScene {
     elapsedSeconds: number,
     settings: GoldfishRenderSettings,
   ) {
-    this.updateKissPlayback(elapsedSeconds * 1000);
+    this.updateMediaPlayback(elapsedSeconds * 1000);
     const count = Math.min(this.activeCount, agents.length);
     if (count !== this.body.count) {
       for (const mesh of this.fishMeshes) mesh.count = count;
@@ -858,9 +887,11 @@ export class GoldfishScene {
     for (const mesh of this.fishMeshes) {
       mesh.geometry.dispose();
     }
-    this.kissCells.geometry.dispose();
-    this.kissMaterial.dispose();
-    this.kissAtlasTexture?.dispose();
+    this.mediaCells.geometry.dispose();
+    this.mediaMaterial.dispose();
+    for (const texture of this.mediaAtlasTextures.values()) {
+      texture.dispose();
+    }
     this.floor.geometry.dispose();
     this.floorMaterial.dispose();
     this.fieldTexture.dispose();

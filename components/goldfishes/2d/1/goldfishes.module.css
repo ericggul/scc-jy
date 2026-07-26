@@ -17,6 +17,7 @@
 }
 
 .backgroundCanvas,
+.mediaCanvas,
 .cursorCanvas {
   position: absolute;
   inset: 0;
@@ -25,11 +26,17 @@
   height: 100%;
 }
 
-.backgroundCanvas {
+.backgroundCanvas,
+.mediaCanvas {
   pointer-events: none;
 }
 
+.mediaCanvas {
+  z-index: 1;
+}
+
 .cursorCanvas {
+  z-index: 2;
   cursor: crosshair;
   touch-action: none;
 }
@@ -40,7 +47,7 @@
 
 .parameterPanel {
   position: absolute;
-  z-index: 1;
+  z-index: 3;
   top: 0.75rem;
   right: 0.75rem;
   max-height: calc(100svh - 1.5rem);

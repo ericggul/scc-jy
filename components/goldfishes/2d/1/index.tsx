@@ -16,6 +16,8 @@ import {
   type CollageEyeShape,
   type CollageGoldfishAssets,
 } from "./rendering/collage-goldfish";
+import { MediaCellLayer } from "./rendering/media-cell-layer";
+import type { AttentionSurface } from "../../rendering/media-atlas";
 import {
   createCursorField,
   createGrid,
@@ -410,7 +412,9 @@ export function CursorSwarm({
   controls,
 }: CursorSwarmProps) {
   const backgroundCanvasRef = useRef<HTMLCanvasElement>(null);
+  const mediaCanvasRef = useRef<HTMLCanvasElement>(null);
   const cursorCanvasRef = useRef<HTMLCanvasElement>(null);
+  const mediaLayerRef = useRef<MediaCellLayer | null>(null);
   const controlStore = useCreateStore();
   const frameRef = useRef<number | null>(null);
   const cursorsRef = useRef<CursorAgent[]>([]);
@@ -428,6 +432,7 @@ export function CursorSwarm({
     Partial<Record<CollageEyeShape, CollageGoldfishAssets>>
   >({});
   const gridMarkRef = useRef<GridMark>("dot");
+  const attentionSurfaceRef = useRef<AttentionSurface>("white");
   const agentScaleRef = useRef(1);
   const constraintSettingsRef = useRef(scaleCursorFieldSettings(settings, 1));
   const [activeCursorCount, setActiveCursorCount] = useState(cursorCount);
@@ -494,6 +499,23 @@ export function CursorSwarm({
         },
       }),
       Field: folder({
+        ...(glyphSet === "collage"
+          ? {
+              blocks: {
+                value: "white" as AttentionSurface,
+                options: {
+                  WHITE: "white",
+                  CAT: "cat",
+                  KISS: "kiss",
+                  POLITICIAN: "politician",
+                },
+                onChange: (surface: AttentionSurface) => {
+                  attentionSurfaceRef.current = surface;
+                  mediaLayerRef.current?.setSurface(surface);
+                },
+              },
+            }
+          : {}),
         "corner +": {
           value: false,
           onChange: updateGridMark,
@@ -599,6 +621,7 @@ export function CursorSwarm({
         constraintSettingsRef.current,
         collisionPreventionRef.current,
       );
+      mediaLayerRef.current?.setCells(selectedCells);
 
       const backgroundCanvas = backgroundCanvasRef.current;
       const backgroundContext = backgroundCanvas?.getContext("2d");
@@ -655,11 +678,21 @@ export function CursorSwarm({
   useEffect(() => {
     const canvas = cursorCanvasRef.current;
     const backgroundCanvas = backgroundCanvasRef.current;
+    const mediaCanvas = mediaCanvasRef.current;
     if (!canvas || !backgroundCanvas) return;
 
     const context = canvas.getContext("2d");
     const backgroundContext = backgroundCanvas.getContext("2d");
     if (!context || !backgroundContext) return;
+    const mediaLayer = mediaCanvas
+      ? new MediaCellLayer(mediaCanvas)
+      : null;
+    mediaLayerRef.current = mediaLayer;
+    mediaLayer?.setSurface(attentionSurfaceRef.current);
+    mediaLayer?.setAppearance(
+      gridMarkRef.current,
+      FIELD_PALETTES[themeRef.current].grid,
+    );
 
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     let previousTime = performance.now();
@@ -676,6 +709,7 @@ export function CursorSwarm({
       backgroundCanvas.height = Math.round(bounds.height * pixelRatio);
       context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
       backgroundContext.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+      mediaLayer?.setSize(bounds.width, bounds.height, pixelRatio);
 
       gridRef.current = grid;
       cursorsRef.current = createCursorField(
@@ -699,6 +733,7 @@ export function CursorSwarm({
         constraintSettingsRef.current,
         collisionPreventionRef.current,
       );
+      mediaLayer?.setCells(selectedCells);
 
       drawField(
         backgroundContext,
@@ -739,6 +774,7 @@ export function CursorSwarm({
         );
       }
 
+      mediaLayer?.render(time, !reduceMotion.matches);
       context.clearRect(0, 0, width, height);
       const palette = FIELD_PALETTES[themeRef.current];
       const effectiveCursorScale = cursorScale * agentScaleRef.current;
@@ -844,6 +880,10 @@ export function CursorSwarm({
     return () => {
       resizeObserver.disconnect();
       if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
+      mediaLayer?.dispose();
+      if (mediaLayerRef.current === mediaLayer) {
+        mediaLayerRef.current = null;
+      }
     };
   }, [
     activeCursorCount,
@@ -867,6 +907,10 @@ export function CursorSwarm({
       FIELD_PALETTES[theme],
       gridMark,
     );
+    mediaLayerRef.current?.setAppearance(
+      gridMark,
+      FIELD_PALETTES[theme].grid,
+    );
   }, [theme, gridMark]);
 
   const finishTrace = (event: PointerEvent<HTMLCanvasElement>) => {
@@ -883,6 +927,13 @@ export function CursorSwarm({
         className={styles.backgroundCanvas}
         aria-hidden="true"
       />
+      {glyphSet === "collage" ? (
+        <canvas
+          ref={mediaCanvasRef}
+          className={styles.mediaCanvas}
+          aria-hidden="true"
+        />
+      ) : null}
       <canvas
         ref={cursorCanvasRef}
         className={styles.cursorCanvas}
@@ -927,6 +978,7 @@ export function CursorSwarm({
         onKeyDown={(event) => {
           if (event.key === "Escape") {
             selectionRef.current = [];
+            mediaLayerRef.current?.setCells([]);
             const backgroundCanvas = backgroundCanvasRef.current;
             const grid = gridRef.current;
             const backgroundContext = backgroundCanvas?.getContext("2d");

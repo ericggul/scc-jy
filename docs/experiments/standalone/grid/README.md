@@ -112,11 +112,17 @@ the collapsed Leva panel in the top-right corner.
 | `CAT` | 20 | `components/dashboard/stock/4/model/cat-sources.json` |
 | `KISS` | 62 | `components/dashboard/stock/4/model/kiss-sources.json` |
 | `FRENCH` | 162 | 60 `bastilleDayImages` + 25 `good-sources.json` + 77 `dark-sources.json` |
-| `ALL` | 244 | CAT + KISS + FRENCH |
+| `POLITICIANS` | 60 | `components/standalone/grid/2/politician-sources.json`; one Commons-sourced political image per configured country |
+| `ALL` | 304 | CAT + KISS + FRENCH + POLITICIANS |
 
 `FRENCH` intentionally contains both national celebration/revolution imagery
 and contemporary social tension. It is not limited to the Bastille Day
-celebration set.
+celebration set. `POLITICIANS` uses 60 local roughly-320px Commons derivatives selected
+from a country-specific query ledger; see the [local image collection
+method](../../../harness/local-image-collections.md) for collection and source
+review rules. `POLITICIANS` is intentionally geographically distributed across
+60 configured country records; it is not a claim that a single figure can
+represent a country or its political reality.
 
 ### Playback contract
 
@@ -145,7 +151,7 @@ share a common beat. Reduced-motion preference stops the scheduler.
 - No React rerender of the 80-cell grid or Leva panel per animation frame.
 - One scheduler performs DOM updates only for cells whose own deadline has
   arrived.
-- Only the selected album is decoded; `ALL` can grow to its full 244-image
+- Only the selected album is decoded; `ALL` can grow to its full 304-image
   pool in the background after the first eight images make the work visible.
 
 This is materially lighter than grid/1's 80 independently decoded videos, but

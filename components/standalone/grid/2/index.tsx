@@ -7,6 +7,7 @@ import goodFrenchSources from "@/components/standalone/bastille-day/2/good-sourc
 import darkFrenchSources from "@/components/standalone/bastille-day/2/dark-sources.json";
 import catSources from "@/components/dashboard/stock/4/model/cat-sources.json";
 import kissSources from "@/components/dashboard/stock/4/model/kiss-sources.json";
+import politicianSources from "./politician-sources.json";
 import styles from "../screen/grid.module.css";
 
 const COLUMN_COUNT = 16;
@@ -20,10 +21,11 @@ const frenchSources = [
   ...darkFrenchSources,
 ];
 const imageSets = {
-  all: [...catSources, ...kissSources, ...frenchSources],
+  all: [...catSources, ...kissSources, ...frenchSources, ...politicianSources],
   cat: catSources,
   kiss: kissSources,
   french: frenchSources,
+  politicians: politicianSources,
 } as const;
 
 type CellPlayback = {
@@ -63,6 +65,7 @@ export default function GridTwo() {
           CAT: "cat",
           KISS: "kiss",
           FRENCH: "french",
+          POLITICIANS: "politicians",
         },
         onChange: (value: ImageSet) => {
           availableSourcesRef.current = [];
