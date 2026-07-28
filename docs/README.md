@@ -28,6 +28,7 @@ get a dedicated document.
 
 | Code family | Registered variants | Documentation |
 | --- | --- | --- |
+| `components/ddong-ditation` | `1`, `2` | [ddong-ditation](./experiments/ddong-ditation/README.md) |
 | `components/dashboard/palantir` | `1` | [palantir/1](./experiments/dashboard/palantir/1.md) |
 | `components/dashboard/stock` | `default`, `1`, `2`, `3`, `4` | [stock index](./experiments/dashboard/stock/README.md) |
 | `components/realtime/calendar` | `default`, `1` | [calendar](./experiments/realtime/calendar/README.md) |
@@ -42,7 +43,7 @@ get a dedicated document.
 | `components/goldfishes` | `2d/1`, `2d/2`, `3d/1` | [goldfishes](./experiments/goldfishes/README.md) |
 | `components/dj` | `1` | [dj](./experiments/dj/README.md) |
 | `components/finger-skating` | `1`, `2` | [finger-skating](./experiments/finger-skating/README.md) |
-| `components/network-system` | `default`, `macro-economy`, `cycle`, `population`, `competitive-firms` | [network-system index](./experiments/network-system/README.md) |
+| `components/network-system` | `default`, `macro-economy`, `cycle`, `c-val`, `population`, `competitive-firms` | [network-system index](./experiments/network-system/README.md) |
 | `components/sns` | `feed/1`, `navigation/default`, `navigation/1`, `youtube/1`, `youtube/2`, `linkedin/1` | [sns index](./experiments/sns/README.md) |
 
 The registries under `components/**/experiments.ts` remain the source of truth

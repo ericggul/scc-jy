@@ -15,12 +15,17 @@ import CompetitiveFirmsScreen, {
 import CycleScreen, {
   CycleVideoScreenExperience,
 } from "@/components/network-system/cycle/screen";
+import CValScreen, {
+  CValScreenExperience,
+} from "@/components/network-system/c-val/screen";
 import {
+  cValScreenIds,
   cycleMediaScreenIds,
   isCycleEmploymentScreenId,
   isCycleGraphScreenId,
   isCycleMediaScreenId,
   isCycleNewsScreenId,
+  isCValScreenId,
   isNetworkSystemExperimentSlug,
   isNetworkSystemScreenId,
   isNetworkSystemScreenRoute,
@@ -73,6 +78,14 @@ export default async function NetworkSystemScreenPage({
       notFound();
     }
     return <CycleScreen screenId={screen} />;
+  }
+
+  if (experiment === "c-val") {
+    if (screen === "whole") {
+      return <CValScreenExperience screenIds={cValScreenIds} />;
+    }
+    if (!isCValScreenId(screen)) notFound();
+    return <CValScreen screenId={screen} />;
   }
 
   if (experiment === "default") {

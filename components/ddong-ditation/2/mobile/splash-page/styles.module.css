@@ -1,0 +1,87 @@
+.page {
+  position: relative;
+  display: flex;
+  width: 100%;
+  min-height: 100svh;
+  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+}
+
+.identity {
+  animation: identityEnter 3s ease both;
+}
+
+.identity h1 {
+  margin: 0;
+  font-family: "Snell Roundhand", "Brush Script MT", cursive;
+  font-size: clamp(44px, 13vw, 66px);
+  font-weight: 400;
+  line-height: 0.95;
+  letter-spacing: -0.05em;
+}
+
+.identity p {
+  margin: 17px 0 0;
+  color: rgb(241 231 225 / 82%);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+}
+
+.message {
+  position: absolute;
+  right: 30px;
+  bottom: max(46px, env(safe-area-inset-bottom));
+  left: 30px;
+  margin: 0;
+  color: rgb(241 231 225 / 70%);
+  font-size: 12px;
+  line-height: 1.5;
+  animation: messageEnter 3s ease both;
+}
+
+@keyframes identityEnter {
+  0%,
+  12% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  35%,
+  86% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes messageEnter {
+  0%,
+  34% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  55%,
+  86% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .identity,
+  .message {
+    animation: none;
+  }
+}

@@ -13,6 +13,12 @@ export default function NetworkSystemPage() {
         network system
       </h1>
       <nav className="grid border-t border-[#f7f4ec]">
+        <Link
+          href="/network-system/c-val/mobile"
+          className="border-b border-[#f7f4ec] py-4 text-[clamp(28px,7vw,72px)] font-black leading-none hover:bg-[#f7f4ec] hover:text-[#050505]"
+        >
+          c-val/mobile
+        </Link>
         {networkSystemExperiments.map((experiment) => (
           <Link
             key={`controller-${experiment.slug}`}

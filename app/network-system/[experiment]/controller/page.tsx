@@ -5,6 +5,7 @@ import MarkovController from "@/components/network-system/default/controller";
 import PopulationController from "@/components/network-system/population/controller";
 import CompetitiveFirmsController from "@/components/network-system/competitive-firms/controller";
 import CycleController from "@/components/network-system/cycle/controller";
+import CValController from "@/components/network-system/c-val/controller";
 import {
   isNetworkSystemExperimentSlug,
   networkSystemExperiments,
@@ -36,5 +37,6 @@ export default async function NetworkSystemControllerPage({
   if (experiment === "population") return <PopulationController />;
   if (experiment === "competitive-firms") return <CompetitiveFirmsController />;
   if (experiment === "cycle") return <CycleController />;
+  if (experiment === "c-val") return <CValController />;
   return <NetworkSystemController />;
 }

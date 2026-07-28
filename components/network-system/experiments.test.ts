@@ -38,3 +38,25 @@ test("cycle route validation accepts only declared screens and whole", () => {
   }
   assert.equal(isNetworkSystemScreenRoute("macro-economy", "left"), false);
 });
+
+test("c-val reserves the market and future response wrappers", () => {
+  const cVal = networkSystemExperiments.find(
+    (experiment) => experiment.slug === "c-val",
+  );
+  assert.deepEqual(cVal?.screenIds, [
+    "market",
+    "news",
+    "media",
+    "employment",
+  ]);
+  for (const route of [
+    "market",
+    "news",
+    "media",
+    "employment",
+    "whole",
+  ]) {
+    assert.equal(isNetworkSystemScreenRoute("c-val", route), true);
+  }
+  assert.equal(isNetworkSystemScreenRoute("c-val", "graphs"), false);
+});

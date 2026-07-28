@@ -3,6 +3,7 @@
 The family uses one controller route and one or more screen routes per
 registered experiment:
 
+- `/network-system/[experiment]/mobile` when the variant has a phone role
 - `/network-system/[experiment]/controller`
 - `/network-system/[experiment]/screen/[screen]`
 
@@ -19,6 +20,8 @@ Each experiment owns an isolated socket room and event prefix under
   employment, news, and graph observations.
   - [model research](./cycle/research.md)
   - [source ledger](./cycle/source-ledger.csv)
+- [c-val](./c-val.md): phone-conducted volatility, activity, and liquidity
+  driving one shared financial-market runtime.
 - [population](./population.md): age-structured population stock/flow system.
 - [competitive-firms](./competitive-firms.md): firm-level controls and
   customer-movement network.

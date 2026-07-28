@@ -1,5 +1,11 @@
 export const experimentCatalog = [
   {
+    href: "/ddong-ditation",
+    label: "ddong-ditation",
+    description:
+      "A toilet-seat meditation linked to a shared live archive screen.",
+  },
+  {
     href: "/bastille-day",
     label: "bastille-day",
     description:
