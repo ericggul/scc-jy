@@ -66,6 +66,14 @@ const Price = styled.div`
     font-size: clamp(9px, 0.8vw, 11px);
     letter-spacing: 0.03em;
   }
+
+  span[data-direction="up"] {
+    color: ${bid};
+  }
+
+  span[data-direction="down"] {
+    color: ${ask};
+  }
 `;
 
 const Measure = styled.div`
@@ -453,13 +461,28 @@ export default function CValController() {
     role: "controller",
   });
   const snapshot = state ?? fallback;
+  const openingPrice = snapshot.market.openingPrice ?? 100;
+  const changeFromOpen =
+    snapshot.market.changeFromOpenPercent ??
+    ((snapshot.market.index / openingPrice - 1) * 100);
+  const fundamental = snapshot.market.fundamental ?? snapshot.market.index;
+  const priceDirection =
+    changeFromOpen > 0.0005
+      ? "up"
+      : changeFromOpen < -0.0005
+        ? "down"
+        : "steady";
 
   return (
     <Page>
       <Header>
         <Price>
           <strong>{snapshot.market.index.toFixed(2)}</strong>
-          <span>LAST EXECUTED PRICE</span>
+          <span data-direction={priceDirection}>
+            LAST EXECUTED PRICE · {changeFromOpen >= 0 ? "+" : ""}
+            {changeFromOpen.toFixed(2)}% FROM OPEN · VALUE{" "}
+            {fundamental.toFixed(2)}
+          </span>
         </Price>
         <Measure>
           <span>REALIZED VOLATILITY</span>

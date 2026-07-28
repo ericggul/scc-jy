@@ -7,7 +7,11 @@ wordmark.
 Current routes:
 
 - `/ddong-ditation`: mobile experience, currently variant `1`.
-- `/ddong-ditation/2`: mobile variant `2`.
+- `/ddong-ditation/2`: variant `2` splash and nickname entry.
+- `/ddong-ditation/2/main`: variant `2` introduction and meditation
+  playlist.
+- `/ddong-ditation/2/dummy`: the first temporary meditation content in
+  variant `2`.
 - `/ddong-ditation/screen`: shared exhibition screen, currently variant `1`.
 - `/ddong-ditation/2/screen`: exhibition screen for variant `2`.
 
@@ -40,20 +44,25 @@ or behavioral results do not make one iteration a dependency of another.
   flat `mobile/` directory or in one shared page stylesheet.
 
 Variant `1` currently follows this structure for `home-page` and
-`session-page`. Variant `2` follows it for `gradient-shell`, `intro-flow`,
-`splash-page`, `nickname-page`, and `reading-page`.
+`session-page`. Variant `2` keeps `intro-flow`, `splash-page`, and
+`nickname-page` under `mobile/`; its reusable animated surface lives under
+`surface/`, its playlist under `main/`, and each meditation content under
+`contents/<content-slug>/`.
 
 ### Variant 2
 
-Variant `2` keeps only the three-second entry animation and nickname step from
-its earlier Calm-like skeleton. After nickname submission, the old photographic
-landing page, Daily Ddong card, bottom navigation, and breathing player are not
-rendered. They are discarded behavior, not hidden alternate states.
+Variant `2` uses separate routes for entry, discovery, and playback.
+`/ddong-ditation/2` owns only the three-second entry animation and nickname
+step. A valid nickname is stored for the current browser session, the form
+fades, and routing continues to `/ddong-ditation/2/main`. The old Daily Ddong
+card, bottom navigation, and breathing player remain discarded behavior, not
+hidden alternate states.
 
-One persistent `gradient-shell` owns a restrained animated field of near-black
-umber, dark chocolate, walnut, cocoa, and ochre brown for the entire mobile
-experience. It never unmounts between the splash, nickname, and timed reading
-states. The splash contains only the specified identity text:
+The variant-owned `surface/gradient-shell` provides the same restrained
+animated field of near-black umber, dark chocolate, walnut, cocoa, and ochre
+brown to every route. It remains mounted without interruption between splash
+and nickname, and each later route remounts the same visual surface. The splash
+contains only the specified identity text:
 
 - `ddong-ditation`
 - `똥디테이션`
@@ -61,19 +70,30 @@ states. The splash contains only the specified identity text:
 
 After exactly three seconds, the identity content yields to a minimal nickname
 form while the gradient continues uninterrupted. The nickname screen has no
-bottom identity or slogan footer. Submitting a non-empty nickname fades only
-the form content and starts a 4 minute 33 second reading.
+bottom identity or slogan footer.
 
-The timed reading screen shows `elapsed / 4:33` and a matching progress bar at
-the top beside the `ddong-ditation` wordmark. Every line uses the same brand
-type treatment and occupies a `78svh` scene. Symmetrical `11svh` document
-padding still places the first and final lines at the exact viewport center,
-while keeping consecutive lines closer together. A single GPU-transformed text
-layer advances linearly over the full duration while the native scroll
-container remains manually operable. The current copy is explicitly temporary,
-user-provided text stored as stable-ID records in
-`2/model/reading-script.ts`; replace that dataset when the final instruction
-text arrives.
+The main route briefly explains that `ddong-ditation` turns time spent waiting
+for a bowel movement into time attending to breath and bodily sensation. Below
+that introduction is a vertically scrollable meditation playlist. Every
+catalog record owns a stable slug, title, description, image path, and duration
+in `2/model/content-catalog.ts`; every duration is currently 4 minutes 33
+seconds. The first and only record is the temporary `dummy` content. The whole
+content card is one accessible link to `/ddong-ditation/2/dummy`; there is no
+bottom navigation.
+
+The dummy content route starts its own timer when mounted. Its reading screen
+shows `elapsed / 4:33` and a matching progress bar at the top beside a
+`ddong-ditation` wordmark that returns to the main playlist. Every line uses
+the same brand type treatment and occupies a `40svh` scene. Symmetrical
+`30svh` document padding still places the first and final lines at the exact
+viewport center, while keeping consecutive lines close together. A single
+GPU-transformed text layer advances linearly over the full duration while the
+native scroll container remains manually operable. A fixed vertical alpha mask
+keeps text at full opacity near the center and fades it continuously to zero at
+the upper and lower viewport edges without adding per-line animation. The
+current copy is explicitly temporary, user-provided text stored as stable-ID
+records in `2/model/reading-script.ts`; replace that dataset when the final
+instruction text arrives.
 
 Variant `2`'s mobile, model, transport, screen, socket room, event namespace,
 archive, and tests remain owned by variant `2` and do not import from variant
@@ -85,14 +105,15 @@ variant `2` screen contract.
 
 This is a light skeleton, not a completed meditation product. It establishes:
 
-- one Calm-like mobile landing screen;
-- one short start-to-finish breathing state;
+- one branded mobile entry and nickname flow;
+- one Calm-like mobile discovery screen with a minimal content catalog;
+- one 4 minute 33 second timed reading content;
 - one matching exhibition screen;
 - anonymous live participation and an in-memory completion archive.
 
-It does not add a content library, onboarding questionnaire, account,
-subscription, teacher system, personalization, streak, database, or invented
-product dashboard.
+It does not add a broader production content library, onboarding questionnaire,
+account, subscription, teacher system, personalization, streak, database, or
+invented product dashboard.
 
 The premise combines `ddong` and meditation: a person pauses digital activity
 while seated on a toilet, and the language of mental release meets literal

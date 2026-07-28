@@ -6,6 +6,12 @@ import {
   snapshotCValRuntime,
   stepCValRuntime,
 } from "./model.mjs";
+import {
+  clearCValDiagnostics,
+  createCValDiagnostics,
+  flushCValDiagnostics,
+  observeCValDiagnostics,
+} from "./diagnostics.mjs";
 
 const familyId = "network-system";
 const variantId = "c-val";
@@ -13,6 +19,7 @@ const id = `${familyId}:${variantId}`;
 export const networkSystemCValRoom = `experiment:${familyId}:${variantId}`;
 const clients = new Map();
 const runtime = createCValRuntime();
+const diagnostics = createCValDiagnostics();
 let ioRef = null;
 
 const events = {
@@ -78,10 +85,14 @@ function broadcastState(io) {
 setInterval(() => {
   const now = Date.now();
   stepCValRuntime(runtime, now, cValModelTiming.broadcastIntervalMs / 1000);
-  if (
-    ioRef?.sockets.adapter.rooms.get(networkSystemCValRoom)?.size
-  ) {
-    broadcastState(ioRef);
+  const activeClientCount =
+    ioRef?.sockets.adapter.rooms.get(networkSystemCValRoom)?.size ?? 0;
+  if (activeClientCount > 0) {
+    const state = broadcastState(ioRef);
+    observeCValDiagnostics(diagnostics, state);
+    flushCValDiagnostics(diagnostics, now);
+  } else {
+    clearCValDiagnostics(diagnostics, now);
   }
 }, cValModelTiming.broadcastIntervalMs).unref();
 
@@ -123,7 +134,9 @@ function register({ io, socket }) {
     ) {
       return;
     }
-    resetCValRuntime(runtime, Date.now());
+    const now = Date.now();
+    resetCValRuntime(runtime, now);
+    clearCValDiagnostics(diagnostics, now);
     broadcastState(io);
   });
 

@@ -1,12 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import {
   useEffect,
   useRef,
   useState,
   type CSSProperties,
 } from "react";
-import type { ReadingLine } from "../../model/reading-script";
+import type { ReadingLine } from "../../../model/reading-script";
 import styles from "./styles.module.css";
 
 type ReadingPageProps = {
@@ -52,7 +53,9 @@ function TimerHeader({ startedAt, totalMs }: TimerHeaderProps) {
 
   return (
     <header className={styles.header}>
-      <span className={styles.wordmark}>ddong-ditation</span>
+      <Link className={styles.wordmark} href="/ddong-ditation/2/main">
+        ddong-ditation
+      </Link>
       <div className={styles.clock}>
         <time>{formatClock(elapsedSeconds)}</time>
         <span>/ {formatClock(totalMs / 1000)}</span>

@@ -9,7 +9,8 @@
     "dev:http": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:c-val:shake": "node scripts/verify-c-val-shake.mjs"
   },
   "dependencies": {
     "hls.js": "^1.6.16",

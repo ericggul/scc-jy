@@ -16,11 +16,14 @@ function advance(runtime, ticks, startAt = 1_000) {
 }
 
 function advanceWithFreshSignal(runtime, orientation, ticks, startAt = 1_000) {
+  const prices = [];
   for (let tick = 0; tick < ticks; tick += 1) {
     const now = startAt + tick * 50;
     setCValOrientation(runtime, orientation, now);
     stepCValRuntime(runtime, now, 0.05);
+    prices.push(runtime.market.index);
   }
+  return prices;
 }
 
 function totalWealth(runtime) {
@@ -30,6 +33,30 @@ function totalWealth(runtime) {
       inventory: totals.inventory + participant.inventory,
     }),
     { cash: 0, inventory: 0 },
+  );
+}
+
+function mean(values) {
+  return values.reduce((total, value) => total + value, 0) / values.length;
+}
+
+function scenarioMeans(orientation) {
+  const observations = [11, 23, 37, 53, 71].map((seed) => {
+    const runtime = createCValRuntime(0, `scenario-${seed}`, seed);
+    const prices = advanceWithFreshSignal(runtime, orientation, 800);
+    return {
+      realizedVolatilityBps: runtime.market.realizedVolatilityBps,
+      turnover: runtime.market.turnover,
+      depth: runtime.market.depth,
+      priceImpactBps: runtime.market.priceImpactBps,
+      priceRange: Math.max(...prices) - Math.min(...prices),
+    };
+  });
+  return Object.fromEntries(
+    Object.keys(observations[0]).map((key) => [
+      key,
+      mean(observations.map((observation) => observation[key])),
+    ]),
   );
 }
 
@@ -78,9 +105,10 @@ test("all price changes come from executions in an uncrossed FIFO book", () => {
   assert.ok(snapshot.recentOrders.length > 0);
   assert.ok(snapshot.recentTrades.length > 0);
   assert.ok(snapshot.market.bestBid < snapshot.market.bestAsk);
-  assert.equal(
-    snapshot.market.index,
-    snapshot.recentTrades.at(-1).price,
+  assert.ok(
+    Math.abs(
+      snapshot.market.index - snapshot.recentTrades.at(-1).price,
+    ) < 0.000001,
   );
   assert.ok(
     [...runtime.book.orders.values()].every(
@@ -152,6 +180,129 @@ test("volatility changes the distribution of realized execution returns", () => 
   assert.ok(
     high.market.realizedVolatilityBps >
       low.market.realizedVolatilityBps * 2,
+  );
+  assert.ok(high.market.spreadBps > low.market.spreadBps);
+  assert.ok(
+    high.recentOrders.some(
+      (order) =>
+        order.participantType === "fundamental" &&
+        order.kind === "market" &&
+        order.filled > 0,
+    ),
+  );
+});
+
+test("sustained high V and A with low L creates visible executed-price movement", () => {
+  const runtime = createCValRuntime(0, "visible-price", 101);
+  const prices = advanceWithFreshSignal(
+    runtime,
+    { absolute: false, alpha: 90, beta: 90, gamma: -45 },
+    200,
+  );
+  const range = Math.max(...prices) - Math.min(...prices);
+  assert.ok(range > 0.5);
+  assert.ok(Math.abs(runtime.market.changeFromOpenPercent) > 0.1);
+  assert.ok(runtime.market.index === runtime.lastTradeTicks * 0.01);
+});
+
+test("VAL effects remain distinct across multiple random market paths", () => {
+  const lowV = scenarioMeans({
+    absolute: false,
+    alpha: -90,
+    beta: 0,
+    gamma: 0,
+  });
+  const highV = scenarioMeans({
+    absolute: false,
+    alpha: 90,
+    beta: 0,
+    gamma: 0,
+  });
+  const lowA = scenarioMeans({
+    absolute: false,
+    alpha: 0,
+    beta: -90,
+    gamma: 0,
+  });
+  const highA = scenarioMeans({
+    absolute: false,
+    alpha: 0,
+    beta: 90,
+    gamma: 0,
+  });
+  const lowL = scenarioMeans({
+    absolute: false,
+    alpha: 0,
+    beta: 0,
+    gamma: -45,
+  });
+  const highL = scenarioMeans({
+    absolute: false,
+    alpha: 0,
+    beta: 0,
+    gamma: 45,
+  });
+
+  assert.ok(highV.realizedVolatilityBps > lowV.realizedVolatilityBps * 4);
+  assert.ok(highV.priceRange > lowV.priceRange * 4);
+  assert.ok(highA.turnover > lowA.turnover * 4);
+  assert.ok(highL.depth > lowL.depth * 4);
+  assert.ok(highL.priceImpactBps < lowL.priceImpactBps);
+});
+
+test("rapid shake-like VAL reversals persist long enough to move executions", () => {
+  const runtime = createCValRuntime(0, "shake-pattern", 202);
+  const prices = [];
+  const values = [];
+  const riskRegimes = [];
+  for (let tick = 0; tick < 300; tick += 1) {
+    const now = 1_000 + tick * 50;
+    setCValOrientation(
+      runtime,
+      {
+        absolute: false,
+        alpha: 90 * Math.sin(tick * 0.43),
+        beta: 90 * Math.sin(tick * 0.29 + 1.1),
+        gamma: 45 * Math.sin(tick * 0.37 + 2.2),
+      },
+      now,
+    );
+    stepCValRuntime(runtime, now, 0.05);
+    prices.push(runtime.market.index);
+    values.push(runtime.market.fundamental);
+    riskRegimes.push(runtime.volatilityRegime);
+  }
+
+  assert.ok(Math.max(...riskRegimes) > 0.7);
+  assert.ok(Math.max(...values) - Math.min(...values) > 0.5);
+  assert.ok(Math.max(...prices) - Math.min(...prices) > 0.5);
+});
+
+test("provider depth accumulated at high L withdraws when L falls and V rises", () => {
+  const runtime = createCValRuntime(0, "liquidity-withdrawal", 303);
+  advanceWithFreshSignal(
+    runtime,
+    { absolute: false, alpha: -45, beta: 0, gamma: 45 },
+    200,
+  );
+  const highLiquidityDepth = runtime.market.depth;
+  const highLiquidityProviderOrders = [...runtime.book.orders.values()].filter(
+    (order) => order.participantType === "liquidity-provider",
+  ).length;
+
+  advanceWithFreshSignal(
+    runtime,
+    { absolute: false, alpha: 90, beta: 0, gamma: -45 },
+    60,
+    11_000,
+  );
+  const withdrawnProviderOrders = [...runtime.book.orders.values()].filter(
+    (order) => order.participantType === "liquidity-provider",
+  ).length;
+
+  assert.ok(runtime.market.depth < highLiquidityDepth / 3);
+  assert.ok(
+    withdrawnProviderOrders < highLiquidityProviderOrders / 2,
   );
 });
 

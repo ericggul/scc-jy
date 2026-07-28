@@ -22,6 +22,7 @@ Each experiment owns an isolated socket room and event prefix under
   - [source ledger](./cycle/source-ledger.csv)
 - [c-val](./c-val.md): phone-conducted volatility, activity, and liquidity
   driving one shared financial-market runtime.
+  - [mobile-shake verification harness](./c-val-shake-harness.md)
 - [population](./population.md): age-structured population stock/flow system.
 - [competitive-firms](./competitive-firms.md): firm-level controls and
   customer-movement network.

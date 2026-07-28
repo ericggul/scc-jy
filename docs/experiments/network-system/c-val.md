@@ -78,16 +78,19 @@ not label these coefficients universal or contemporary exchange estimates.
 
 V/A/L vary bounded scenario ranges around the reference:
 
-- `V` moves placement scale from `0.0012–0.0048`, information-shock scale from
-  `0.08–1.8` bps, and provider quote distance;
+- `V` moves placement scale from `0.0012–0.0048`, persistent
+  information-pressure scale from `0.15–8` bps, private-valuation
+  dispersion, provider quote distance, provider size, cancellation, and
+  replenishment risk;
 - `A` moves the simulated arrival rate from `6–140` orders per second;
 - `L` moves provider participation from `12–72%`, provider order size from
   `100–400` shares, and replenishment probability from `15–92%`.
 
-The 50 ms clock and order-arrival range are installation-time compression,
-tagged as timing rather than empirical calibration. Tail truncation, book
-limits, and history limits are tagged as numerical safety. This distinction is
-encoded in `calibration.mjs`.
+The 50 ms clock, the `12` market-seconds-per-real-second compression, the
+information-pressure half-life, and the order-arrival range are installation
+timing or scenario choices rather than empirical exchange calibration. Tail
+truncation, book limits, and history limits are tagged as numerical safety.
+This distinction is encoded in `calibration.mjs`.
 
 Primary references:
 
@@ -104,8 +107,10 @@ The server creates 56 stable participants:
 
 - 12 liquidity providers replenish passive bids and asks while managing
   inventory;
-- 12 value traders compare private valuations with the market;
-- 8 trend traders respond to recent executed-price movement;
+- 12 value traders compare private valuations with the market and use those
+  valuations as their actual order limits;
+- 8 trend traders change both order direction and aggressiveness in response
+  to recent executed-price movement;
 - 24 flow traders execute persistent hidden-order sequences, approximating the
   empirically observed long memory of order signs.
 
@@ -129,9 +134,18 @@ turnover, or impact value from V/A/L.
 
 Liquidity is therefore a stock that can be consumed and replenished: aggressive
 orders remove resting quantity, and providers restore it by submitting new
-orders. High activity can create high volume without forcing a directional
-price move. Equivalent order pressure tends to move price less when more depth
-is resting.
+orders. When volatility rises, providers widen quotes, reduce size, cancel
+more readily, and replenish more cautiously. High activity can create high
+volume without forcing a directional price move. Equivalent order pressure
+tends to move price less when more depth is resting.
+
+Rapid input uses asymmetric state response: the effective volatility regime
+rises quickly when V spikes and decays slowly afterward. This represents
+volatility clustering and prevents alternating phone motion from averaging
+risk immediately back to neutral. Liquidity is not allowed the opposite
+one-way memory: when L falls or effective volatility rises, already-resting
+provider quotes are actively cancelled toward the new supply regime instead
+of leaving high-L depth accumulated in the book.
 
 ## Robustness and limits
 
@@ -168,3 +182,26 @@ so memory and payload size do not grow with runtime.
 
 Only a joined mobile can send orientation. Only a joined controller can reset
 the market. Events remain isolated from other experiments.
+
+## Runtime diagnosis
+
+While at least one client is present in the C-VAL room, the socket process emits
+one `[c-val:1s]` JSON line per second. Each bounded line aggregates the preceding
+second rather than logging individual sensor or order events. It contains:
+
+- V/A/L minimum, maximum, and ending values;
+- the effective persistent V regime used by market participants;
+- age of the latest phone-orientation event;
+- executed-price start, end, range, change from open, and reference value;
+- submitted, cancelled, and executed order counts;
+- order imbalance, depth, spread, and observed impact.
+
+The diagnostic window is cleared whenever the room becomes inactive or the
+controller resets the market. This makes it possible to locate whether a weak
+visible response originates in phone input, participant order generation,
+execution scarcity, or liquidity absorption without producing sensor-rate log
+volume.
+
+The repeatable offline workflow for synthetic and recorded mobile motion is
+documented in the [C-VAL mobile-shake verification
+harness](./c-val-shake-harness.md).

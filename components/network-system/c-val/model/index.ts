@@ -20,6 +20,8 @@ export type CValOrientationSignal = CValOrientation & {
 
 export type CValMarketState = {
   index: number;
+  openingPrice: number;
+  changeFromOpenPercent: number;
   fundamental: number;
   bestBid: number;
   bestAsk: number;
@@ -30,6 +32,7 @@ export type CValMarketState = {
   depth: number;
   priceImpactBps: number;
   realizedVolatilityBps: number;
+  volatilityRegime: number;
   submittedOrders: number;
   cancelledOrders: number;
   executions: number;
@@ -109,6 +112,8 @@ export const cValNeutralParameters: CValParameters = {
 
 export const cValInitialMarket: CValMarketState = {
   index: 100,
+  openingPrice: 100,
+  changeFromOpenPercent: 0,
   fundamental: 100,
   bestBid: 99.99,
   bestAsk: 100.01,
@@ -119,6 +124,7 @@ export const cValInitialMarket: CValMarketState = {
   depth: 12_000,
   priceImpactBps: 0,
   realizedVolatilityBps: 0,
+  volatilityRegime: 0.5,
   submittedOrders: 0,
   cancelledOrders: 0,
   executions: 0,

@@ -34,7 +34,9 @@ export const cValCalibration = Object.freeze({
   }),
   scenario: Object.freeze({
     placementScaleRange: Object.freeze([0.0012, 0.0048]),
-    informationShockBpsRange: Object.freeze([0.08, 1.8]),
+    informationShockBpsRange: Object.freeze([0.15, 8]),
+    informationShockBpsAtNeutral: 0.6,
+    privateValuationNoiseTicksRange: Object.freeze([1, 12]),
     orderArrivalRateRange: Object.freeze([6, 140]),
     liquidityProviderShareRange: Object.freeze([0.12, 0.72]),
     providerOrderQuantityRange: Object.freeze([100, 400]),
@@ -43,6 +45,10 @@ export const cValCalibration = Object.freeze({
   timing: Object.freeze({
     broadcastIntervalMs: 50,
     historySampleEvery: 4,
+    marketSecondsPerRealSecond: 12,
+    informationHalfLifeMarketSeconds: 2.5,
+    volatilityRiseHalfLifeRealSeconds: 0.12,
+    volatilityFallHalfLifeRealSeconds: 2.4,
   }),
   safety: Object.freeze({
     historyLength: 120,

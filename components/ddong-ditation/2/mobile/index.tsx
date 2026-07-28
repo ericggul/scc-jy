@@ -1,21 +1,19 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { readingScript } from "../model/reading-script";
-import GradientShell from "./gradient-shell";
+import GradientShell from "../surface/gradient-shell";
 import IntroFlow from "./intro-flow";
-import ReadingPage from "./reading-page";
 
 const splashDurationMs = 3000;
 const nicknameExitDurationMs = 420;
-const readingDurationMs = 4 * 60 * 1000 + 33 * 1000;
 
-type Stage = "splash" | "nickname" | "nickname-exit" | "reading";
+type Stage = "splash" | "nickname" | "nickname-exit";
 
 export default function DdongDitationTwoMobile() {
+  const router = useRouter();
   const [stage, setStage] = useState<Stage>("splash");
   const [nickname, setNickname] = useState("");
-  const [startedAt, setStartedAt] = useState<number | null>(null);
 
   useEffect(() => {
     const splashTimer = window.setTimeout(() => {
@@ -29,38 +27,31 @@ export default function DdongDitationTwoMobile() {
     if (stage !== "nickname-exit") return;
 
     const exitTimer = window.setTimeout(() => {
-      setStartedAt(Date.now());
-      setStage("reading");
+      router.push("/ddong-ditation/2/main");
     }, nicknameExitDurationMs);
 
     return () => window.clearTimeout(exitTimer);
-  }, [stage]);
+  }, [router, stage]);
 
-  function continueToReading() {
+  function continueToMain() {
     const trimmedNickname = nickname.trim();
     if (!trimmedNickname) return;
+    window.sessionStorage.setItem(
+      "ddong-ditation:2:nickname",
+      trimmedNickname,
+    );
     setNickname(trimmedNickname);
     setStage("nickname-exit");
   }
 
   return (
     <GradientShell>
-      {stage !== "reading" ? (
-        <IntroFlow
-          stage={stage}
-          nickname={nickname}
-          onNicknameChange={setNickname}
-          onContinue={continueToReading}
-        />
-      ) : startedAt !== null ? (
-        <ReadingPage
-          lines={readingScript}
-          startedAt={startedAt}
-          totalMs={readingDurationMs}
-        />
-      ) : (
-        null
-      )}
+      <IntroFlow
+        stage={stage}
+        nickname={nickname}
+        onNicknameChange={setNickname}
+        onContinue={continueToMain}
+      />
     </GradientShell>
   );
 }

@@ -21,15 +21,16 @@
     24px
     14px;
   color: #f1e7e1;
-  pointer-events: none;
 }
 
 .wordmark {
   overflow: hidden;
+  color: inherit;
   font-family: "Snell Roundhand", "Brush Script MT", cursive;
   font-size: 27px;
   line-height: 1;
   letter-spacing: -0.04em;
+  text-decoration: none;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -80,6 +81,28 @@
   height: 100%;
   overflow-x: hidden;
   overflow-y: auto;
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    transparent 8%,
+    #000 38%,
+    #000 62%,
+    transparent 92%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    transparent 8%,
+    #000 38%,
+    #000 62%,
+    transparent 92%,
+    transparent 100%
+  );
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
   overscroll-behavior: contain;
   scrollbar-width: none;
 }
@@ -89,14 +112,14 @@
 }
 
 .script {
-  padding: 11svh 24px;
+  padding: 30svh 24px;
   will-change: transform;
 }
 
 .line {
   display: grid;
   width: 100%;
-  min-height: 78svh;
+  min-height: 40svh;
   place-items: center;
   margin: 0;
   color: #f1e7e1;

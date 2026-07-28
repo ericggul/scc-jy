@@ -134,6 +134,7 @@ function createParticipants() {
         type,
         cash: 5_000_000,
         inventory: 50_000,
+        privateValueTicks: cValCalibration.structural.initialPriceTicks,
       });
     }
   }
@@ -274,8 +275,11 @@ function updateMarket(runtime, now) {
   const bookState = deriveBookState(runtime);
   const priceTicks = runtime.lastTradeTicks ?? bookState.midTicks;
   const index = priceFromTicks(priceTicks);
+  const openingPrice = priceFromTicks(runtime.openingPriceTicks);
   runtime.market = {
     index,
+    openingPrice,
+    changeFromOpenPercent: (index / openingPrice - 1) * 100,
     fundamental: priceFromTicks(runtime.fundamentalTicks),
     bestBid: priceFromTicks(bookState.bestBidTicks),
     bestAsk: priceFromTicks(bookState.bestAskTicks),
@@ -286,6 +290,7 @@ function updateMarket(runtime, now) {
     depth: bookState.depth,
     priceImpactBps: observedImpactBps(runtime),
     realizedVolatilityBps: realizedVolatilityBps(runtime),
+    volatilityRegime: runtime.volatilityRegime,
     submittedOrders: runtime.counters.submitted,
     cancelledOrders: runtime.counters.cancelled,
     executions: runtime.counters.executions,
@@ -304,6 +309,7 @@ export function createCValRuntime(
     serverTime: now,
     randomSeed: randomSeed >>> 0,
     parameters: copyRecord(cValNeutralParameters),
+    volatilityRegime: cValNeutralParameters.volatility,
     orientationTarget: copyRecord(cValNeutralParameters),
     orientation: {
       absolute: false,
@@ -316,11 +322,13 @@ export function createCValRuntime(
     book: createOrderBook(),
     visibleBook: { bids: [], asks: [] },
     fundamentalTicks: cValCalibration.structural.initialPriceTicks,
+    informationPressureBps: 0,
     lastTradeTicks: cValCalibration.structural.initialPriceTicks,
+    openingPriceTicks: cValCalibration.structural.initialPriceTicks,
     lastHistoryIndex: 100,
     orderSequence: 0,
     metaOrder: { sign: 1, remaining: 0 },
-    momentum: 0,
+    momentumBps: 0,
     flowWindow: [],
     tradeWindow: [],
     recentOrders: [],
@@ -383,13 +391,39 @@ function updateParameters(runtime, now, dt) {
   }
 }
 
-function updateFundamental(runtime, dt) {
-  const shockBps = interpolateRange(
-    cValCalibration.scenario.informationShockBpsRange,
-    runtime.parameters.volatility,
+function updateVolatilityRegime(runtime, dt) {
+  const target = runtime.parameters.volatility;
+  const halfLife =
+    target > runtime.volatilityRegime
+      ? cValCalibration.timing.volatilityRiseHalfLifeRealSeconds
+      : cValCalibration.timing.volatilityFallHalfLifeRealSeconds;
+  const response = 1 - Math.exp((-Math.log(2) * dt) / halfLife);
+  runtime.volatilityRegime = clamp(
+    runtime.volatilityRegime +
+      (target - runtime.volatilityRegime) * response,
+    0,
+    1,
   );
-  const innovation =
-    sampleNormal(runtime) * shockBps * Math.sqrt(Math.max(dt, 0.001));
+}
+
+function updateFundamental(runtime, dt) {
+  const marketDt =
+    dt * cValCalibration.timing.marketSecondsPerRealSecond;
+  const shockBps = interpolateAround(
+    cValCalibration.scenario.informationShockBpsRange,
+    cValCalibration.scenario.informationShockBpsAtNeutral,
+    runtime.volatilityRegime,
+  );
+  const decay = Math.exp(
+    (-Math.log(2) * marketDt) /
+      cValCalibration.timing.informationHalfLifeMarketSeconds,
+  );
+  runtime.informationPressureBps =
+    runtime.informationPressureBps * decay +
+    sampleNormal(runtime) *
+      shockBps *
+      Math.sqrt(Math.max(1 - decay ** 2, 0));
+  const innovation = runtime.informationPressureBps * marketDt;
   runtime.fundamentalTicks = clamp(
     runtime.fundamentalTicks * Math.exp(innovation / 10_000),
     2_000,
@@ -447,14 +481,22 @@ function sideForParticipant(runtime, participant, bookState) {
     return nextRandom(runtime) < buyProbability ? "buy" : "sell";
   }
   if (participant.type === "fundamental") {
-    const privateNoise =
-      sampleNormal(runtime) * (2 + 16 * runtime.parameters.volatility);
-    return runtime.fundamentalTicks + privateNoise >= bookState.midTicks
+    const privateNoiseTicks = interpolateRange(
+      cValCalibration.scenario.privateValuationNoiseTicksRange,
+      runtime.volatilityRegime,
+    );
+    participant.privateValueTicks =
+      runtime.fundamentalTicks + sampleNormal(runtime) * privateNoiseTicks;
+    return participant.privateValueTicks >= bookState.midTicks
       ? "buy"
       : "sell";
   }
   if (participant.type === "trend") {
-    const trendProbability = clamp(0.5 + runtime.momentum * 16, 0.1, 0.9);
+    const trendProbability = clamp(
+      0.5 + 0.38 * Math.tanh(runtime.momentumBps / 2.5),
+      0.1,
+      0.9,
+    );
     return nextRandom(runtime) < trendProbability ? "buy" : "sell";
   }
   return nextMetaOrderSide(runtime);
@@ -499,10 +541,12 @@ function orderForParticipant(runtime, participant, now) {
   let quantity =
     participant.type === "liquidity-provider"
       ? Math.round(
-          interpolateRange(
+          (interpolateRange(
             cValCalibration.scenario.providerOrderQuantityRange,
             runtime.parameters.liquidity,
-          ) / typical,
+          ) *
+            (1 - 0.45 * runtime.volatilityRegime)) /
+            typical,
         ) * typical
       : typical * (nextRandom(runtime) < 0.16 ? 2 : 1);
   quantity = executableQuantity(
@@ -517,7 +561,11 @@ function orderForParticipant(runtime, participant, now) {
   let kind = "limit";
   let priceTicks;
   if (participant.type === "liquidity-provider") {
-    const volatilityOffset = Math.floor(runtime.parameters.volatility * 4);
+    const volatilityOffset = Math.floor(
+      runtime.volatilityRegime *
+        6 *
+        (1 - 0.5 * runtime.parameters.liquidity),
+    );
     const offset =
       volatilityOffset +
       (nextRandom(runtime) < 0.68 ? 0 : 1 + Math.floor(nextRandom(runtime) * 3));
@@ -525,17 +573,30 @@ function orderForParticipant(runtime, participant, now) {
       side === "buy"
         ? bookState.bestBidTicks - offset
         : bookState.bestAskTicks + offset;
+  } else if (participant.type === "fundamental") {
+    priceTicks = Math.round(participant.privateValueTicks);
+    const crosses =
+      side === "buy"
+        ? priceTicks >= bookState.bestAskTicks
+        : priceTicks <= bookState.bestBidTicks;
+    if (crosses) kind = "market";
   } else {
     const scale = interpolateAround(
       cValCalibration.scenario.placementScaleRange,
       cValCalibration.empirical.placementScaleLogPrice,
-      runtime.parameters.volatility,
+      runtime.volatilityRegime,
     );
+    const trendAggression =
+      participant.type === "trend"
+        ? Math.min(Math.abs(runtime.momentumBps) / 10_000, 0.0025)
+        : 0;
     const relativePrice = clamp(
       sampleStudentT(
         runtime,
         cValCalibration.empirical.placementDegreesOfFreedom,
-      ) * scale,
+      ) *
+        scale +
+        trendAggression,
       -0.014,
       0.014,
     );
@@ -587,9 +648,10 @@ function applyExecutions(runtime, executions) {
 
     const priorTrade = runtime.lastTradeTicks;
     runtime.lastTradeTicks = execution.priceTicks;
-    runtime.momentum =
-      runtime.momentum * 0.82 +
-      Math.log(runtime.lastTradeTicks / priorTrade) * 0.18;
+    const tradeReturnBps =
+      Math.log(runtime.lastTradeTicks / priorTrade) * 10_000;
+    runtime.momentumBps =
+      runtime.momentumBps * 0.82 + tradeReturnBps * 0.18;
     pushBounded(runtime.tradeWindow, execution, INTERNAL_TRADE_LIMIT);
     pushBounded(
       runtime.recentTrades,
@@ -614,6 +676,7 @@ function placeParticipantOrder(runtime, now, forcedType) {
   const input = orderForParticipant(runtime, participant, now);
   if (!input) return null;
   if (participant.type === "liquidity-provider") {
+    const desiredQuoteCount = desiredProviderQuotesPerSide(runtime);
     const existingQuotes = bookOrders(runtime.book)
       .filter(
         (order) =>
@@ -622,7 +685,7 @@ function placeParticipantOrder(runtime, now, forcedType) {
       .sort((left, right) => left.sequence - right.sequence);
     for (const staleQuote of existingQuotes.slice(
       0,
-      Math.max(existingQuotes.length - 2, 0),
+      Math.max(existingQuotes.length - desiredQuoteCount + 1, 0),
     )) {
       if (cancelOrder(runtime.book, staleQuote.id)) {
         runtime.counters.cancelled += 1;
@@ -656,6 +719,55 @@ function placeParticipantOrder(runtime, now, forcedType) {
   return result;
 }
 
+function desiredProviderQuotesPerSide(runtime) {
+  return (
+    1 +
+    Math.floor(
+      2 *
+        runtime.parameters.liquidity *
+        (1 - 0.75 * runtime.volatilityRegime),
+    )
+  );
+}
+
+function rebalanceProviderQuotes(runtime) {
+  const desiredCount = desiredProviderQuotesPerSide(runtime);
+  const center = deriveBookState(runtime).midTicks;
+  const providerOrders = bookOrders(runtime.book).filter(
+    (order) => order.participantType === "liquidity-provider",
+  );
+  const groups = new Map();
+  for (const order of providerOrders) {
+    const key = `${order.traderId}:${order.side}`;
+    const group = groups.get(key) ?? [];
+    group.push(order);
+    groups.set(key, group);
+  }
+
+  for (const group of groups.values()) {
+    group.sort(
+      (left, right) =>
+        Math.abs(right.priceTicks - center) -
+          Math.abs(left.priceTicks - center) ||
+        left.sequence - right.sequence,
+    );
+    for (const staleQuote of group.slice(
+      0,
+      Math.max(group.length - desiredCount, 0),
+    )) {
+      if (
+        bookSideOrderCount(runtime.book, staleQuote.side) <=
+        cValCalibration.safety.minimumOrdersPerSide
+      ) {
+        break;
+      }
+      if (cancelOrder(runtime.book, staleQuote.id)) {
+        runtime.counters.cancelled += 1;
+      }
+    }
+  }
+}
+
 function cancelOneOrder(runtime) {
   const orders = bookOrders(runtime.book);
   if (orders.length === 0) return;
@@ -677,7 +789,11 @@ function cancelOneOrder(runtime) {
     0.95,
   );
   const liquidityAdjustment = 1.3 - 0.65 * runtime.parameters.liquidity;
-  if (nextRandom(runtime) < empiricalProbability * liquidityAdjustment) {
+  const volatilityAdjustment = 0.8 + 0.65 * runtime.volatilityRegime;
+  if (
+    nextRandom(runtime) <
+    empiricalProbability * liquidityAdjustment * volatilityAdjustment
+  ) {
     const cancelled = cancelOrder(runtime.book, order.id);
     if (cancelled) runtime.counters.cancelled += 1;
   }
@@ -718,7 +834,12 @@ function runMarketEvents(runtime, now, dt) {
       cValCalibration.scenario.providerReplenishmentRange,
       runtime.parameters.liquidity,
     );
-    if (nextRandom(runtime) < replenishment * 0.34) {
+    const providerRiskResponse =
+      1 - 0.48 * runtime.volatilityRegime;
+    if (
+      nextRandom(runtime) <
+      replenishment * providerRiskResponse * 0.34
+    ) {
       placeParticipantOrder(runtime, now + index / Math.max(eventCount, 1), "liquidity-provider");
     }
   }
@@ -750,6 +871,8 @@ export function stepCValRuntime(runtime, now = Date.now(), dt = 0.05) {
   const safeDt = clamp(dt, 0.001, 0.2);
   runtime.counters = { submitted: 0, cancelled: 0, executions: 0 };
   updateParameters(runtime, now, safeDt);
+  updateVolatilityRegime(runtime, safeDt);
+  rebalanceProviderQuotes(runtime);
   updateFundamental(runtime, safeDt);
   runMarketEvents(runtime, now, safeDt);
   updateMarket(runtime, now);

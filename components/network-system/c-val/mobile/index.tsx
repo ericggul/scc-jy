@@ -7,6 +7,10 @@ import {
   orientationToCValParameters,
 } from "@/components/network-system/c-val/model";
 import { useCValSocket } from "@/components/network-system/c-val/transport";
+import {
+  calibrateRawOrientation,
+  finiteOrientationValue,
+} from "@/socket/experiments/network-system/c-val/orientation.mjs";
 
 type MotionPermission = "idle" | "listening" | "denied" | "unavailable";
 type OrientationEventConstructor = typeof DeviceOrientationEvent & {
@@ -20,14 +24,6 @@ const initialOrientation: CValOrientation = {
   beta: 0,
   gamma: 0,
 };
-
-function finiteOrZero(value: number | null) {
-  return Number.isFinite(value) ? Number(value) : 0;
-}
-
-function signedAngleDelta(value: number, baseline: number) {
-  return ((value - baseline + 540) % 360) - 180;
-}
 
 export default function CValMobile() {
   const [orientation, setOrientation] =
@@ -45,19 +41,17 @@ export default function CValMobile() {
   const handleOrientation = useCallback(
     (event: DeviceOrientationEvent) => {
       const raw = {
-        alpha: finiteOrZero(event.alpha),
-        beta: finiteOrZero(event.beta),
-        gamma: finiteOrZero(event.gamma),
+        alpha: finiteOrientationValue(event.alpha),
+        beta: finiteOrientationValue(event.beta),
+        gamma: finiteOrientationValue(event.gamma),
       };
       latestRawRef.current = raw;
       baselineRef.current ??= raw;
       const baseline = baselineRef.current;
-      const next = {
-        absolute: event.absolute,
-        alpha: signedAngleDelta(raw.alpha, baseline.alpha),
-        beta: raw.beta - baseline.beta,
-        gamma: raw.gamma - baseline.gamma,
-      };
+      const next = calibrateRawOrientation(
+        { ...raw, absolute: event.absolute },
+        baseline,
+      );
       setOrientation(next);
 
       const now = performance.now();
