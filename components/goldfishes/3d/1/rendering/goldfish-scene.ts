@@ -11,6 +11,7 @@ import {
 
 const MAX_FISH_COUNT = 1000;
 const MAX_ATTENTION_CELL_COUNT = 4096;
+const MEDIA_CELL_OVERSCAN = 2;
 const FLOOR_Y = 0;
 
 type GoldfishSceneOptions = {
@@ -56,11 +57,12 @@ function nextPlaybackRandom(playback: MediaPlayback) {
   return playback.randomState / 0xffffffff;
 }
 
-function getPlaybackDuration(playback: MediaPlayback) {
+function getPlaybackDuration(playback: MediaPlayback, speed: number) {
+  if (speed === 0) return Number.POSITIVE_INFINITY;
   const diversity = 0.72;
   const factor =
     1 + (nextPlaybackRandom(playback) * 2 - 1) * diversity;
-  return 1000 / (24 * Math.max(0.05, factor));
+  return 1000 / (speed * Math.max(0.05, factor));
 }
 
 function getOtherMediaIndex(playback: MediaPlayback, current: number) {
@@ -133,15 +135,7 @@ export class GoldfishScene {
   private readonly fieldTexture: THREE.CanvasTexture;
   private readonly floorMaterial: THREE.MeshBasicMaterial;
   private readonly floor: THREE.Mesh;
-  private readonly mediaTileCurrent = new THREE.InstancedBufferAttribute(
-    new Float32Array(MAX_ATTENTION_CELL_COUNT),
-    1,
-  );
-  private readonly mediaTileNext = new THREE.InstancedBufferAttribute(
-    new Float32Array(MAX_ATTENTION_CELL_COUNT),
-    1,
-  );
-  private readonly mediaTileMix = new THREE.InstancedBufferAttribute(
+  private readonly mediaTile = new THREE.InstancedBufferAttribute(
     new Float32Array(MAX_ATTENTION_CELL_COUNT),
     1,
   );
@@ -183,6 +177,7 @@ export class GoldfishScene {
   private cameraElevation = THREE.MathUtils.degToRad(53);
   private cameraZoom = 1;
   private attentionSurface: AttentionSurface = "white";
+  private mediaSpeed = 24;
   private attentionCells: SelectedCell[] = [];
   private readonly mediaAtlasTextures = new Map<
     MediaSurface,
@@ -226,30 +221,20 @@ export class GoldfishScene {
 
     const mediaGeometry = new THREE.PlaneGeometry(1, 1);
     mediaGeometry.rotateX(-Math.PI / 2);
-    this.mediaTileCurrent.setUsage(THREE.DynamicDrawUsage);
-    this.mediaTileNext.setUsage(THREE.DynamicDrawUsage);
-    this.mediaTileMix.setUsage(THREE.DynamicDrawUsage);
-    mediaGeometry.setAttribute("mediaTileCurrent", this.mediaTileCurrent);
-    mediaGeometry.setAttribute("mediaTileNext", this.mediaTileNext);
-    mediaGeometry.setAttribute("mediaTileMix", this.mediaTileMix);
+    this.mediaTile.setUsage(THREE.DynamicDrawUsage);
+    mediaGeometry.setAttribute("mediaTile", this.mediaTile);
     this.mediaMaterial = new THREE.ShaderMaterial({
       uniforms: {
         mediaAtlas: { value: null },
       },
       vertexShader: `
-        attribute float mediaTileCurrent;
-        attribute float mediaTileNext;
-        attribute float mediaTileMix;
+        attribute float mediaTile;
         varying vec2 vMediaUv;
-        varying float vMediaTileCurrent;
-        varying float vMediaTileNext;
-        varying float vMediaTileMix;
+        varying float vMediaTile;
 
         void main() {
           vMediaUv = uv;
-          vMediaTileCurrent = mediaTileCurrent;
-          vMediaTileNext = mediaTileNext;
-          vMediaTileMix = mediaTileMix;
+          vMediaTile = mediaTile;
           gl_Position =
             projectionMatrix *
             modelViewMatrix *
@@ -260,9 +245,7 @@ export class GoldfishScene {
       fragmentShader: `
         uniform sampler2D mediaAtlas;
         varying vec2 vMediaUv;
-        varying float vMediaTileCurrent;
-        varying float vMediaTileNext;
-        varying float vMediaTileMix;
+        varying float vMediaTile;
 
         vec2 mediaAtlasUv(float tileIndex) {
           float column = mod(
@@ -287,18 +270,9 @@ export class GoldfishScene {
         }
 
         void main() {
-          vec4 currentColor = texture2D(
+          gl_FragColor = texture2D(
             mediaAtlas,
-            mediaAtlasUv(vMediaTileCurrent)
-          );
-          vec4 nextColor = texture2D(
-            mediaAtlas,
-            mediaAtlasUv(vMediaTileNext)
-          );
-          gl_FragColor = mix(
-            currentColor,
-            nextColor,
-            smoothstep(0.0, 1.0, vMediaTileMix)
+            mediaAtlasUv(vMediaTile)
           );
           #include <colorspace_fragment>
         }
@@ -499,7 +473,7 @@ export class GoldfishScene {
       playback,
       playback.current,
     );
-    playback.duration = getPlaybackDuration(playback);
+    playback.duration = getPlaybackDuration(playback, this.mediaSpeed);
     return playback;
   }
 
@@ -556,6 +530,17 @@ export class GoldfishScene {
     this.setAttentionCells(this.attentionCells);
   }
 
+  setMediaSpeed(speed: number) {
+    this.mediaSpeed = THREE.MathUtils.clamp(speed, 0, 40);
+    for (const playback of this.mediaPlaybackByCell.values()) {
+      playback.startedAt = this.lastElapsedMilliseconds;
+      playback.duration = getPlaybackDuration(
+        playback,
+        this.mediaSpeed,
+      );
+    }
+  }
+
   setAttentionCells(cells: readonly SelectedCell[]) {
     const count = Math.min(cells.length, MAX_ATTENTION_CELL_COUNT);
     this.attentionCells = cells.slice(0, count);
@@ -584,12 +569,14 @@ export class GoldfishScene {
         cell.centerY - this.height / 2,
       );
       this.local.rotation.set(0, 0, 0);
-      this.local.scale.set(cell.width, 1, cell.height);
+      this.local.scale.set(
+        cell.width + MEDIA_CELL_OVERSCAN,
+        1,
+        cell.height + MEDIA_CELL_OVERSCAN,
+      );
       this.local.updateMatrix();
       this.mediaCells.setMatrixAt(index, this.local.matrix);
-      this.mediaTileCurrent.setX(index, cellPlayback?.current ?? 0);
-      this.mediaTileNext.setX(index, cellPlayback?.next ?? 0);
-      this.mediaTileMix.setX(index, 0);
+      this.mediaTile.setX(index, cellPlayback?.current ?? 0);
     }
 
     this.mediaPlayback = playback;
@@ -597,15 +584,9 @@ export class GoldfishScene {
     this.mediaCells.instanceMatrix.clearUpdateRanges();
     this.mediaCells.instanceMatrix.addUpdateRange(0, count * 16);
     this.mediaCells.instanceMatrix.needsUpdate = true;
-    this.mediaTileCurrent.clearUpdateRanges();
-    this.mediaTileCurrent.addUpdateRange(0, count);
-    this.mediaTileCurrent.needsUpdate = true;
-    this.mediaTileNext.clearUpdateRanges();
-    this.mediaTileNext.addUpdateRange(0, count);
-    this.mediaTileNext.needsUpdate = true;
-    this.mediaTileMix.clearUpdateRanges();
-    this.mediaTileMix.addUpdateRange(0, count);
-    this.mediaTileMix.needsUpdate = true;
+    this.mediaTile.clearUpdateRanges();
+    this.mediaTile.addUpdateRange(0, count);
+    this.mediaTile.needsUpdate = true;
 
     if (mediaSurface && count > 0) {
       this.prepareMediaAtlas(mediaSurface);
@@ -623,43 +604,36 @@ export class GoldfishScene {
 
     for (let index = 0; index < this.mediaPlayback.length; index += 1) {
       const playback = this.mediaPlayback[index];
+      let playbackChanged = false;
 
       while (
         elapsedMilliseconds >=
         playback.startedAt + playback.duration
       ) {
         tileChanged = true;
+        playbackChanged = true;
         playback.startedAt += playback.duration;
         playback.current = playback.next;
         playback.next = getOtherMediaIndex(
           playback,
           playback.current,
         );
-        playback.duration = getPlaybackDuration(playback);
+        playback.duration = getPlaybackDuration(
+          playback,
+          this.mediaSpeed,
+        );
       }
 
-      const mix = THREE.MathUtils.clamp(
-        (elapsedMilliseconds - playback.startedAt) /
-          playback.duration,
-        0,
-        1,
-      );
-      this.mediaTileCurrent.setX(index, playback.current);
-      this.mediaTileNext.setX(index, playback.next);
-      this.mediaTileMix.setX(index, mix);
+      if (playbackChanged) {
+        this.mediaTile.setX(index, playback.current);
+      }
     }
 
     if (tileChanged) {
-      this.mediaTileCurrent.clearUpdateRanges();
-      this.mediaTileCurrent.addUpdateRange(0, this.mediaPlayback.length);
-      this.mediaTileCurrent.needsUpdate = true;
-      this.mediaTileNext.clearUpdateRanges();
-      this.mediaTileNext.addUpdateRange(0, this.mediaPlayback.length);
-      this.mediaTileNext.needsUpdate = true;
+      this.mediaTile.clearUpdateRanges();
+      this.mediaTile.addUpdateRange(0, this.mediaPlayback.length);
+      this.mediaTile.needsUpdate = true;
     }
-    this.mediaTileMix.clearUpdateRanges();
-    this.mediaTileMix.addUpdateRange(0, this.mediaPlayback.length);
-    this.mediaTileMix.needsUpdate = true;
   }
 
   screenToField(screenX: number, screenY: number): FieldPoint | null {

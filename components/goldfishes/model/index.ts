@@ -64,6 +64,8 @@ export const GOLDFISHES_2D_TWO_SETTINGS: CursorFieldSettings = {
   collisionPasses: 8,
 };
 
+export const GOLDFISHES_PRIMARY_GRID_SCALE = 2;
+
 export function scaleCursorFieldSettings(
   settings: CursorFieldSettings,
   agentScale: number,
@@ -101,14 +103,16 @@ export function createGrid(
   width: number,
   height: number,
   settings: CursorFieldSettings,
+  gridScale = 1,
 ): Grid {
-  const cellSize = Math.max(
+  const baseCellSize = Math.max(
     settings.cellMin,
     Math.min(
       settings.cellMax,
       Math.round(Math.min(width, height) / settings.cellDivisor),
     ),
   );
+  const cellSize = baseCellSize * Math.max(0.1, gridScale);
   const columns = Math.ceil(width / cellSize) + 1;
   const rows = Math.ceil(height / cellSize) + 1;
 

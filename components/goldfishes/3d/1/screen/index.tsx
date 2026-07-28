@@ -17,6 +17,7 @@ import {
   settleCursorField,
   stepCursorField,
   GOLDFISHES_2D_ONE_SETTINGS,
+  GOLDFISHES_PRIMARY_GRID_SCALE,
   type CellAnchor,
   type CursorAgent,
   type Grid,
@@ -154,6 +155,7 @@ export default function Goldfishes3D() {
   const themeRef = useRef<FieldTheme>("dark");
   const gridMarkRef = useRef<GridMark>("dot");
   const attentionSurfaceRef = useRef<AttentionSurface>("white");
+  const mediaSpeedRef = useRef(24);
   const renderSettingsRef = useRef<GoldfishRenderSettings>({
     agentScale: 1,
     depth: 64,
@@ -174,13 +176,21 @@ export default function Goldfishes3D() {
     const grid = gridRef.current;
     const context = backgroundCanvas?.getContext("2d");
     if (!backgroundCanvas || !interactionCanvas || !grid || !context) return;
+    const palette = FIELD_PALETTES[themeRef.current];
+    const fieldPalette =
+      attentionSurfaceRef.current === "white"
+        ? palette
+        : {
+            ...palette,
+            selectedCell: palette.paper,
+          };
     drawField(
       context,
       interactionCanvas.clientWidth,
       interactionCanvas.clientHeight,
       grid,
       selectionRef.current,
-      FIELD_PALETTES[themeRef.current],
+      fieldPalette,
       gridMarkRef.current,
     );
     sceneRef.current?.setAttentionCells(
@@ -270,6 +280,17 @@ export default function Goldfishes3D() {
           onChange: (surface: AttentionSurface) => {
             attentionSurfaceRef.current = surface;
             sceneRef.current?.setAttentionSurface(surface);
+            redrawField();
+          },
+        },
+        "image speed": {
+          value: 24,
+          min: 0,
+          max: 40,
+          step: 1,
+          onChange: (speed: number) => {
+            mediaSpeedRef.current = speed;
+            sceneRef.current?.setMediaSpeed(speed);
           },
         },
         "corner +": {
@@ -411,6 +432,7 @@ export default function Goldfishes3D() {
       paperColor: FIELD_PALETTES.dark.paper,
     });
     sceneRef.current = scene;
+    scene.setMediaSpeed(mediaSpeedRef.current);
     scene.setAttentionSurface(attentionSurfaceRef.current);
 
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -430,6 +452,7 @@ export default function Goldfishes3D() {
         bounds.width,
         bounds.height,
         GOLDFISHES_2D_ONE_SETTINGS,
+        GOLDFISHES_PRIMARY_GRID_SCALE,
       );
 
       backgroundCanvas.width = Math.round(bounds.width * pixelRatio);

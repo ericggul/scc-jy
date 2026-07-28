@@ -81,8 +81,21 @@ switching while `/2d/1` remains loaded.
 The nominal image-change rate is 24 per cell per second. To prevent a long
 selection trace from multiplying that work without bound, the combined schedule
 is capped at 960 cell draws per second and automatically lowers each cell's rate
-above 40 selected cells. Image changes remain independently staggered. This is
-an architectural workload bound, not a browser FPS measurement.
+when the selected-cell count and requested speed would exceed that budget.
+Image changes remain independently staggered. The `Field > image speed` slider
+sets the requested rate from 0 to 40 in both `/2d/1` and `/3d/1`. At `0`, every
+selected cell freezes on its own current randomly assigned image; it does not
+reset all cells to one shared frame. White still performs no playback work.
+This is an architectural workload bound, not a browser FPS measurement.
+
+## Primary grid scale
+
+`/goldfishes/2d/1` and `/goldfishes/3d/1` pass the shared
+`GOLDFISHES_PRIMARY_GRID_SCALE` value of `2` into grid construction, producing
+cells exactly twice the prior size. `/goldfishes/2d/2` keeps scale `1`. Only the
+grid cell geometry changes: fish size, movement, collision clearance, and
+attention forces retain their existing values. Reverting the experiment
+requires changing the one shared scale constant from `2` back to `1`.
 
 ## 3D interface premise
 
@@ -158,13 +171,21 @@ cached GPU atlases therefore occupy about 16 MiB.
 
 All selected media cells share one `InstancedMesh`, so any media mode adds one
 draw call regardless of selected-cell count. Per cell, the shader receives only
-the current tile, next tile, and crossfade amount. Attribute uploads are
-restricted to the active instance range. Playback state and valid image-index
-ranges are isolated per surface. White mode hides the mesh and skips all
-playback updates. Used atlases stay cached so switching among previously opened
-modes does not repeat decode and GPU upload work, while the temporary source
-canvas can be garbage-collected after its GPU texture is created. A late-loading
-previous mode cannot overwrite the currently selected surface.
+the current tile index. Attribute uploads happen only on a hard-cut transition
+and are restricted to the active instance range. Playback state and valid
+image-index ranges are isolated per surface. `Field > image speed` adjusts immediate
+hard-cut playback from 0 to 40 changes per second; `0` freezes each cell on its
+current random tile, and there is no interpolation
+between images. White mode hides the mesh and skips all playback updates. Used
+atlases stay cached so switching among previously
+opened modes does not repeat decode and GPU upload work, while the temporary
+source canvas can be garbage-collected after its GPU texture is created. A
+late-loading previous mode cannot overwrite the currently selected surface.
+
+In 3D media modes, the field texture no longer retains the White block beneath
+the image plane. The plane extends one CSS pixel beyond each cell edge so
+perspective antialiasing cannot reveal a white seam. White blocks remain
+unchanged when `WHITE` is selected.
 
 The browser A/B check used HTTPS at 1470×695, collision prevention off, two
 selected cells, and three consecutive two-second windows after warm-up. The

@@ -51,14 +51,16 @@ function nextRandom(playback: CellPlayback) {
 function getChangeInterval(
   playback: CellPlayback,
   selectedCellCount: number,
+  requestedSpeed: number,
 ) {
+  if (requestedSpeed === 0) return Number.POSITIVE_INFINITY;
   const diversity = 0.72;
   const factor = 1 + (nextRandom(playback) * 2 - 1) * diversity;
   const speed = Math.min(
-    24,
+    requestedSpeed * Math.max(0.05, factor),
     MAX_CELL_DRAWS_PER_SECOND / Math.max(1, selectedCellCount),
   );
-  return 1000 / (speed * Math.max(0.05, factor));
+  return 1000 / speed;
 }
 
 function getOtherIndex(playback: CellPlayback, imageCount: number) {
@@ -99,6 +101,7 @@ export class MediaCellLayer {
   private surface: AttentionSurface = "white";
   private gridMark: MediaGridMark = "dot";
   private gridColor = "rgba(236, 238, 232, 0.52)";
+  private speed = 24;
   private width = 1;
   private height = 1;
   private needsFullRedraw = false;
@@ -123,6 +126,13 @@ export class MediaCellLayer {
     this.gridMark = gridMark;
     this.gridColor = gridColor;
     this.needsFullRedraw = true;
+  }
+
+  setSpeed(speed: number) {
+    this.speed = Math.max(0, Math.min(40, speed));
+    for (const playback of this.playback) {
+      playback.nextChangeAt = 0;
+    }
   }
 
   setSurface(surface: AttentionSurface) {
@@ -194,7 +204,12 @@ export class MediaCellLayer {
   ) {
     if (playback.nextChangeAt === 0) {
       playback.nextChangeAt =
-        time + getChangeInterval(playback, this.cells.length);
+        time +
+        getChangeInterval(
+          playback,
+          this.cells.length,
+          this.speed,
+        );
       return false;
     }
 
@@ -207,6 +222,7 @@ export class MediaCellLayer {
       playback.nextChangeAt += getChangeInterval(
         playback,
         this.cells.length,
+        this.speed,
       );
       changed = true;
     }

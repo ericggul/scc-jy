@@ -16,7 +16,7 @@ import {
   type CollageEyeShape,
   type CollageGoldfishAssets,
 } from "./rendering/collage-goldfish";
-import { MediaCellLayer } from "./rendering/media-cell-layer";
+import type { MediaCellLayer } from "./rendering/media-cell-layer";
 import type { AttentionSurface } from "../../rendering/media-atlas";
 import {
   createCursorField,
@@ -27,6 +27,7 @@ import {
   settleCursorField,
   stepCursorField,
   GOLDFISHES_2D_ONE_SETTINGS,
+  GOLDFISHES_PRIMARY_GRID_SCALE,
   type CellAnchor,
   type CursorAgent,
   type CursorFieldSettings,
@@ -40,6 +41,7 @@ type CursorSwarmProps = {
   initialCollisionPrevention?: boolean;
   initialGoldfish?: boolean;
   glyphSet?: "legacy" | "collage";
+  gridScale?: number;
   controls?: {
     minCursorCount: number;
     maxCursorCount: number;
@@ -409,6 +411,7 @@ export function CursorSwarm({
   initialCollisionPrevention = true,
   initialGoldfish = false,
   glyphSet = "legacy",
+  gridScale = 1,
   controls,
 }: CursorSwarmProps) {
   const backgroundCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -433,6 +436,7 @@ export function CursorSwarm({
   >({});
   const gridMarkRef = useRef<GridMark>("dot");
   const attentionSurfaceRef = useRef<AttentionSurface>("white");
+  const mediaSpeedRef = useRef(24);
   const agentScaleRef = useRef(1);
   const constraintSettingsRef = useRef(scaleCursorFieldSettings(settings, 1));
   const [activeCursorCount, setActiveCursorCount] = useState(cursorCount);
@@ -512,6 +516,16 @@ export function CursorSwarm({
                 onChange: (surface: AttentionSurface) => {
                   attentionSurfaceRef.current = surface;
                   mediaLayerRef.current?.setSurface(surface);
+                },
+              },
+              "image speed": {
+                value: 24,
+                min: 0,
+                max: 40,
+                step: 1,
+                onChange: (speed: number) => {
+                  mediaSpeedRef.current = speed;
+                  mediaLayerRef.current?.setSpeed(speed);
                 },
               },
             }
@@ -684,15 +698,38 @@ export function CursorSwarm({
     const context = canvas.getContext("2d");
     const backgroundContext = backgroundCanvas.getContext("2d");
     if (!context || !backgroundContext) return;
-    const mediaLayer = mediaCanvas
-      ? new MediaCellLayer(mediaCanvas)
-      : null;
-    mediaLayerRef.current = mediaLayer;
-    mediaLayer?.setSurface(attentionSurfaceRef.current);
-    mediaLayer?.setAppearance(
-      gridMarkRef.current,
-      FIELD_PALETTES[themeRef.current].grid,
-    );
+    let mediaLayer: MediaCellLayer | null = null;
+    let mediaLayerCancelled = false;
+
+    if (mediaCanvas) {
+      void import("./rendering/media-cell-layer").then(
+        ({ MediaCellLayer: MediaCellLayerConstructor }) => {
+          if (mediaLayerCancelled) return;
+          mediaLayer = new MediaCellLayerConstructor(mediaCanvas);
+          mediaLayerRef.current = mediaLayer;
+          const bounds = canvas.getBoundingClientRect();
+          const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+          mediaLayer.setSize(bounds.width, bounds.height, pixelRatio);
+          mediaLayer.setAppearance(
+            gridMarkRef.current,
+            FIELD_PALETTES[themeRef.current].grid,
+          );
+          mediaLayer.setSpeed(mediaSpeedRef.current);
+          mediaLayer.setSurface(attentionSurfaceRef.current);
+          const grid = gridRef.current;
+          if (grid) {
+            mediaLayer.setCells(
+              getAnchoredCells(
+                selectionRef.current,
+                grid,
+                bounds.width,
+                bounds.height,
+              ),
+            );
+          }
+        },
+      );
+    }
 
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     let previousTime = performance.now();
@@ -701,7 +738,12 @@ export function CursorSwarm({
     const sizeCanvases = () => {
       const bounds = canvas.getBoundingClientRect();
       const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
-      const grid = createGrid(bounds.width, bounds.height, settings);
+      const grid = createGrid(
+        bounds.width,
+        bounds.height,
+        settings,
+        gridScale,
+      );
 
       canvas.width = Math.round(bounds.width * pixelRatio);
       canvas.height = Math.round(bounds.height * pixelRatio);
@@ -878,6 +920,7 @@ export function CursorSwarm({
     frameRef.current = requestAnimationFrame(render);
 
     return () => {
+      mediaLayerCancelled = true;
       resizeObserver.disconnect();
       if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
       mediaLayer?.dispose();
@@ -888,6 +931,7 @@ export function CursorSwarm({
   }, [
     activeCursorCount,
     cursorScale,
+    gridScale,
     settings,
   ]);
 
@@ -1083,6 +1127,7 @@ export default function Goldfishes2DOne() {
       settings={GOLDFISHES_2D_ONE_SETTINGS}
       initialCollisionPrevention={false}
       glyphSet="collage"
+      gridScale={GOLDFISHES_PRIMARY_GRID_SCALE}
       controls={{
         minCursorCount: 50,
         maxCursorCount: 1000,
