@@ -22,6 +22,10 @@ export type CValMarketState = {
   index: number;
   openingPrice: number;
   changeFromOpenPercent: number;
+  oneSecondMovePercent: number;
+  oneSecondLow: number;
+  oneSecondHigh: number;
+  oneSecondRange: number;
   fundamental: number;
   bestBid: number;
   bestAsk: number;
@@ -114,6 +118,10 @@ export const cValInitialMarket: CValMarketState = {
   index: 100,
   openingPrice: 100,
   changeFromOpenPercent: 0,
+  oneSecondMovePercent: 0,
+  oneSecondLow: 100,
+  oneSecondHigh: 100,
+  oneSecondRange: 0,
   fundamental: 100,
   bestBid: 99.99,
   bestAsk: 100.01,

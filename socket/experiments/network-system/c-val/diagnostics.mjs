@@ -100,10 +100,14 @@ export function flushCValDiagnostics(
       end: rounded(state.market.index),
       low: rounded(diagnostics.price.minimum),
       high: rounded(diagnostics.price.maximum),
-      rangeCents: rounded(
-        (diagnostics.price.maximum - diagnostics.price.minimum) * 100,
+      range: rounded(
+        diagnostics.price.maximum - diagnostics.price.minimum,
+      ),
+      marketDayMovePercent: rounded(
+        state.market.oneSecondMovePercent,
         1,
       ),
+      marketDayRange: rounded(state.market.oneSecondRange),
       fromOpenPercent: rounded(changeFromOpenPercent),
       value: rounded(state.market.fundamental ?? state.market.index),
     },

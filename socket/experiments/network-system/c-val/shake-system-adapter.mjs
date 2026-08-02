@@ -6,6 +6,7 @@ import {
   snapshotCValRuntime,
   stepCValRuntime,
 } from "./model.mjs";
+import { cValCalibration } from "./calibration.mjs";
 
 function participantTotals(runtime) {
   return runtime.participants.reduce(
@@ -25,6 +26,8 @@ function participantTotals(runtime) {
 export const cValShakeSystemAdapter = {
   id: "c-val-production-model-v1",
   tickIntervalMs: cValModelTiming.broadcastIntervalMs,
+  marketDayMs:
+    1_000 / cValCalibration.timing.marketDaysPerRealSecond,
   releaseTailMs:
     cValModelTiming.signalHoldMs +
     cValModelTiming.signalReleaseMs +
@@ -83,6 +86,12 @@ export const cValShakeSystemAdapter = {
       inventoryDrift: finalTotals.inventory - initialTotals.inventory,
       restingOrders: runtime.book.orders.size,
       snapshotBytes: Buffer.byteLength(JSON.stringify(snapshot)),
+      maximumRestingOrders:
+        cValCalibration.safety.maximumBookOrders,
+      maximumSnapshotBytes:
+        cValCalibration.safety.maximumSnapshotBytes,
+      cashTolerance:
+        Math.max(Math.abs(initialTotals.cash), 1) * Number.EPSILON,
       priceComesFromLastExecution:
         runtime.market.index === runtime.lastTradeTicks * 0.01,
     };

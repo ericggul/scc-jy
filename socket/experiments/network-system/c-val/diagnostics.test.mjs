@@ -22,6 +22,8 @@ function state({
       openingPrice: 100,
       changeFromOpenPercent: price - 100,
       fundamental: price + 0.2,
+      oneSecondMovePercent: price - 100,
+      oneSecondRange: Math.abs(price - 100),
       submittedOrders: 2,
       cancelledOrders: 1,
       executions: 1,
@@ -65,7 +67,9 @@ test("diagnostics aggregate one bounded line per second", () => {
   });
   assert.equal(message.price.start, 99.9);
   assert.equal(message.price.end, 100.3);
-  assert.equal(message.price.rangeCents, 40);
+  assert.equal(message.price.range, 0.4);
+  assert.equal(message.price.marketDayMovePercent, 0.3);
+  assert.equal(message.price.marketDayRange, 0.3);
   assert.deepEqual(message.flow, {
     submitted: 4,
     cancelled: 2,

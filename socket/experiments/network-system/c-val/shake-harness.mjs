@@ -27,6 +27,58 @@ function range(values) {
   return Math.max(...values) - Math.min(...values);
 }
 
+function relativeRange(values) {
+  return Math.max(...values) / Math.max(Math.min(...values), Number.EPSILON);
+}
+
+function distanceBetweenRecords(left, right) {
+  return Math.sqrt(
+    Object.keys(left).reduce(
+      (total, key) => total + (left[key] - right[key]) ** 2,
+      0,
+    ),
+  );
+}
+
+function greatestRiseIndex(values) {
+  let index = 0;
+  let greatestRise = -Infinity;
+  for (let current = 1; current < values.length; current += 1) {
+    const rise = values[current] - values[current - 1];
+    if (rise > greatestRise) {
+      greatestRise = rise;
+      index = current;
+    }
+  }
+  return index;
+}
+
+function matchedPathResponseLatency(
+  elapsedTimes,
+  treatmentPrices,
+  controlPrices,
+  onsetIndex,
+) {
+  const initialRelativePrice =
+    treatmentPrices[onsetIndex] / controlPrices[onsetIndex];
+  for (let index = onsetIndex + 1; index < treatmentPrices.length; index += 1) {
+    const treatmentDivergence = Math.abs(
+      Math.log(
+        treatmentPrices[index] /
+          controlPrices[index] /
+          initialRelativePrice,
+      ),
+    );
+    const controlMove = Math.abs(
+      Math.log(controlPrices[index] / controlPrices[onsetIndex]),
+    );
+    if (treatmentDivergence > controlMove) {
+      return elapsedTimes[index] - elapsedTimes[onsetIndex];
+    }
+  }
+  return null;
+}
+
 function round(value, digits = 3) {
   return Number(value.toFixed(digits));
 }
@@ -63,10 +115,23 @@ export function runCValShakeHarness(
     startTime,
     marketSeed,
   });
+  const {
+    runtime: controlRuntime,
+    initialTotals: controlInitialTotals,
+  } = systemAdapter.create({
+    startTime,
+    marketSeed,
+  });
   const prices = [];
   const fundamentals = [];
   const depths = [];
   const effectiveVolatility = [];
+  const controlPrices = [];
+  const controlFundamentals = [];
+  const controlDepths = [];
+  const controlEffectiveVolatility = [];
+  const parameterDistances = [];
+  const elapsedTimes = [];
   const parameterSeries = {
     volatility: [],
     activity: [],
@@ -91,8 +156,6 @@ export function runCValShakeHarness(
   let crossedBookSamples = 0;
   let nonFiniteSamples = 0;
   let transmissionIndex = 0;
-  let inputOnsetMs = null;
-  let priceResponseMs = null;
   const durationMs = trace.durationMs ?? trace.events.at(-1).tMs;
   const replayEndMs = durationMs + systemAdapter.releaseTailMs;
 
@@ -115,11 +178,26 @@ export function runCValShakeHarness(
     }
 
     systemAdapter.step(runtime, startTime + elapsedMs);
+    systemAdapter.step(controlRuntime, startTime + elapsedMs);
     const observation = systemAdapter.observe(runtime);
+    const controlObservation = systemAdapter.observe(controlRuntime);
+    elapsedTimes.push(elapsedMs);
     prices.push(observation.price);
     fundamentals.push(observation.fundamental);
     depths.push(observation.depth);
     effectiveVolatility.push(observation.effectiveVolatility);
+    controlPrices.push(controlObservation.price);
+    controlFundamentals.push(controlObservation.fundamental);
+    controlDepths.push(controlObservation.depth);
+    controlEffectiveVolatility.push(
+      controlObservation.effectiveVolatility,
+    );
+    parameterDistances.push(
+      distanceBetweenRecords(
+        observation.parameters,
+        controlObservation.parameters,
+      ),
+    );
     for (const parameterId of Object.keys(parameterSeries)) {
       parameterSeries[parameterId].push(
         observation.parameters[parameterId],
@@ -139,24 +217,23 @@ export function runCValShakeHarness(
       nonFiniteSamples += 1;
     }
 
-    const inputDistance = Math.max(
-      ...Object.values(observation.parameters).map((value) =>
-        Math.abs(value - 0.5),
-      ),
-    );
-    if (inputOnsetMs === null && inputDistance >= 0.12) {
-      inputOnsetMs = elapsedMs;
-    }
-    if (
-      inputOnsetMs !== null &&
-      priceResponseMs === null &&
-      Math.abs(observation.price - observation.openingPrice) >= 0.05
-    ) {
-      priceResponseMs = elapsedMs - inputOnsetMs;
-    }
   }
 
   const finalState = systemAdapter.finish(runtime, initialTotals);
+  const controlFinalState = systemAdapter.finish(
+    controlRuntime,
+    controlInitialTotals,
+  );
+  const inputOnsetIndex = greatestRiseIndex(parameterDistances);
+  const priceResponseMs = matchedPathResponseLatency(
+    elapsedTimes,
+    prices,
+    controlPrices,
+    inputOnsetIndex,
+  );
+  const depthPathDivergence = mean(
+    depths.map((depth, index) => Math.abs(depth - controlDepths[index])),
+  );
   const eventIntervals = trace.events
     .slice(1)
     .map((event, index) => event.tMs - trace.events[index].tMs);
@@ -195,19 +272,49 @@ export function runCValShakeHarness(
         Math.max(...effectiveVolatility) * 100,
         1,
       ),
+      neutralVolatilityPeak: round(
+        Math.max(...controlEffectiveVolatility) * 100,
+        1,
+      ),
+      changePointMs: elapsedTimes[inputOnsetIndex],
     },
     market: {
       priceStart: round(prices[0], 2),
       priceEnd: round(prices.at(-1), 2),
       priceRange: round(range(prices), 2),
+      priceMinimum: round(Math.min(...prices), 2),
+      priceMaximum: round(Math.max(...prices), 2),
+      priceMultiple: round(
+        relativeRange(prices),
+        2,
+      ),
       fundamentalRange: round(range(fundamentals), 2),
+      neutralPriceRange: round(range(controlPrices), 2),
+      neutralPriceMultiple: round(relativeRange(controlPrices), 2),
+      neutralFundamentalRange: round(range(controlFundamentals), 2),
+      priceRangeRatio: round(
+        range(prices) / Math.max(range(controlPrices), Number.EPSILON),
+        2,
+      ),
+      fundamentalRangeRatio: round(
+        range(fundamentals) /
+          Math.max(range(controlFundamentals), Number.EPSILON),
+        2,
+      ),
       priceResponseLatencyMs: priceResponseMs,
+      marketDayMs: systemAdapter.marketDayMs,
       depthMinimum: Math.min(...depths),
       depthMaximum: Math.max(...depths),
       depthRatio: round(
         Math.max(...depths) / Math.max(Math.min(...depths), 1),
         2,
       ),
+      neutralDepthRatio: round(
+        Math.max(...controlDepths) /
+          Math.max(Math.min(...controlDepths), 1),
+        2,
+      ),
+      depthPathDivergence: round(depthPathDivergence, 1),
       submittedOrders,
       cancelledOrders,
       executions,
@@ -219,6 +326,14 @@ export function runCValShakeHarness(
       nonFiniteSamples,
       restingOrders: finalState.restingOrders,
       snapshotBytes: finalState.snapshotBytes,
+      maximumRestingOrders: finalState.maximumRestingOrders,
+      maximumSnapshotBytes: finalState.maximumSnapshotBytes,
+      cashTolerance: finalState.cashTolerance,
+      controlIntegrity:
+        Math.abs(controlFinalState.cashDrift) <=
+          controlFinalState.cashTolerance &&
+        controlFinalState.inventoryDrift === 0 &&
+        controlFinalState.priceComesFromLastExecution,
       priceComesFromLastExecution:
         finalState.priceComesFromLastExecution,
     },

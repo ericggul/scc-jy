@@ -466,10 +466,21 @@ export default function CValController() {
     snapshot.market.changeFromOpenPercent ??
     ((snapshot.market.index / openingPrice - 1) * 100);
   const fundamental = snapshot.market.fundamental ?? snapshot.market.index;
+  const recentPrices = [
+    ...snapshot.history.index.slice(-5),
+    snapshot.market.index,
+  ];
+  const fallbackDayStart = recentPrices[0] ?? snapshot.market.index;
+  const oneDayMove =
+    snapshot.market.oneSecondMovePercent ??
+    ((snapshot.market.index / fallbackDayStart - 1) * 100);
+  const oneDayRange =
+    snapshot.market.oneSecondRange ??
+    Math.max(...recentPrices) - Math.min(...recentPrices);
   const priceDirection =
-    changeFromOpen > 0.0005
+    oneDayMove > 0.0005
       ? "up"
-      : changeFromOpen < -0.0005
+      : oneDayMove < -0.0005
         ? "down"
         : "steady";
 
@@ -479,8 +490,14 @@ export default function CValController() {
         <Price>
           <strong>{snapshot.market.index.toFixed(2)}</strong>
           <span data-direction={priceDirection}>
-            LAST EXECUTED PRICE · {changeFromOpen >= 0 ? "+" : ""}
-            {changeFromOpen.toFixed(2)}% FROM OPEN · VALUE{" "}
+            LAST EXECUTED PRICE · 1 MARKET DAY{" "}
+            {oneDayMove >= 0 ? "+" : ""}
+            {oneDayMove.toFixed(1)}% · DAY RANGE{" "}
+            {oneDayRange.toFixed(2)}
+          </span>
+          <span>
+            {changeFromOpen >= 0 ? "+" : ""}
+            {changeFromOpen.toFixed(1)}% FROM OPEN · VALUE{" "}
             {fundamental.toFixed(2)}
           </span>
         </Price>

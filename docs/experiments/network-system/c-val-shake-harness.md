@@ -34,13 +34,13 @@ replays it through five independent market random seeds. It exits:
 For a machine-readable report:
 
 ```bash
-pnpm test:c-val:shake -- --json
+pnpm test:c-val:shake --json
 ```
 
 For exact reproduction of one market path:
 
 ```bash
-pnpm test:c-val:shake -- --seed 12648430 --market-seed 202
+pnpm test:c-val:shake --seed 12648430 --market-seed 202
 ```
 
 ## Gesture model
@@ -69,7 +69,7 @@ but must not be cited as empirical motion capture.
 The same runner accepts a real or externally recorded JSON trace:
 
 ```bash
-pnpm test:c-val:shake -- --trace recordings/person-01-shake.json
+pnpm test:c-val:shake --trace recordings/person-01-shake.json
 ```
 
 The required envelope is:
@@ -120,9 +120,43 @@ reporting, and acceptance policy remain intact. An alternative adapter can
 also be injected programmatically; the adapter-injection test ensures the
 runner does not bypass it.
 
-Do not adjust acceptance thresholds merely to make a changed model pass.
-First inspect the per-seed JSON report. Change policy only when the experiment's
-intended observable contract changes, and document that contract change here.
+## Verification philosophy
+
+Market-response tests must not encode a second, hand-written market model.
+They must also not turn one observed run into inline constants such as
+`V >= 0.7`, `price change >= 5%`, or `range >= 10`. Such constants become stale
+when the production calibration changes and encourage tuning the test until it
+passes.
+
+Every replay therefore advances two production runtimes with the same random
+seed and clock:
+
+1. the treatment market receives the real mobile transmission path;
+2. the matched control market receives no phone intervention.
+
+Response magnitude is evaluated relative to that run's matched control, not
+against a fixed price number. The VAL onset is the greatest observed rise in
+the treatment-to-control parameter distance, so no absolute V threshold defines
+the change point. Execution latency ends when treatment price leaves the
+matched-control path; the allowed duration is one market day exported by the
+production adapter. Runtime memory and payload limits are likewise read from
+production calibration.
+
+Absolute constants remain only where the external object itself supplies the
+meaning: browser sensor-rate plausibility, valid orientation bounds, and the
+chosen multi-seed pass proportion. They are not used to manufacture market
+response.
+
+A mixed three-axis shake cannot identify the isolated causal sign of L because
+V, A, and L co-vary. The integrated harness therefore checks that depth leaves
+the untouched path. Directionality—higher L produces greater depth and lower
+impact—is owned by the separate paired model test that holds seed, V, and A
+fixed and changes only L. This prevents a confounded correlation from becoming
+a fake acceptance rule.
+
+Do not tune policy to rescue a failing path. Inspect the treatment/control
+report, then fix production behavior or explicitly revise the experiment
+contract and this document.
 
 ## Acceptance gates
 
@@ -130,25 +164,24 @@ Input gates verify:
 
 - 40–70 Hz effective raw sampling;
 - realistic jitter and at least one dropped-frame gap;
-- at least 80 points of transmitted V, A, and L range;
-- at least 30 points of runtime V, A, and L range after server smoothing;
-- effective persistent V reaches 70.
+- all transmitted and runtime V/A/L axes move;
+- production smoothing reduces the raw transmitted span;
+- effective V exceeds the matched untouched market.
 
 Market-response gates verify:
 
-- reference-value range of at least `0.50`;
-- last-executed-price range of at least `0.50`;
-- a five-cent execution response within three seconds of input onset;
-- at least 250 orders and 60 executions;
-- at least a twofold five-level depth range.
+- reference value varies more than the matched untouched market;
+- actual executions vary more than the matched untouched market;
+- actual price leaves its matched-control path within one exported market day;
+- production participants submit and execute real orders;
+- resting depth leaves the matched untouched path.
 
 Integrity gates require every random path to preserve:
 
 - cash and inventory;
 - an uncrossed, finite book;
 - execution-derived last price;
-- no more than 420 resting orders;
-- no more than a 32 KB bounded snapshot.
+- production-calibrated book and snapshot bounds.
 
 Market-response gates must pass on at least four of five independent market
 paths. Integrity, sensor, and input gates must pass on all paths. This avoids

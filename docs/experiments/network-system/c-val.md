@@ -58,12 +58,12 @@ derived in the browser from actual resting quantity, and every order and trade
 row carries a stable server-created ID. There are no server-authored colors,
 widths, animation phases, highlights, or layout instructions.
 
-## Reference class and calibration
+## Reference mechanics and time scale
 
-The simulation explicitly represents a **liquid, small-tick electronic
-equity**, not every financial market. The preset
-`liquid-small-tick-equity-v1` uses the AstraZeneca (`AZN`) values reported in
-Table 2 of Mike and Farmer's empirical London Stock Exchange model:
+The matching mechanics use a **continuous double-auction equity market** as
+their reference. The preset `compressed-market-day-double-auction-v2` retains
+the AstraZeneca (`AZN`) order-flow values reported in Table 2 of Mike and
+Farmer's empirical London Stock Exchange model:
 
 - order-sign Hurst exponent `H = 0.77`;
 - Student-t order-placement degrees of freedom `1.31`;
@@ -71,26 +71,36 @@ Table 2 of Mike and Farmer's empirical London Stock Exchange model:
 - cancellation parameters `A = 1.12`, `B = 0.20`;
 - a small integer tick and a typical 100-share simulation lot.
 
-The source model was fitted to AZN order flow from 2000–2002 and performed well
-for the paper's low-volatility, small-tick Group-I stocks. The paper itself
-reports weaker performance outside that reference class. C-VAL therefore does
-not label these coefficients universal or contemporary exchange estimates.
+Those values describe order sign, placement, and cancellation behavior only.
+The source model was fitted to AZN order flow from 2000–2002 and is not treated
+as a universal or contemporary estimate.
 
-V/A/L vary bounded scenario ranges around the reference:
+The installation time contract is explicit: **one real second represents one
+market day**. This makes each phone intervention a compressed daily regime
+change rather than a wall-clock high-frequency tick. Starting from `100`, the
+market permits actual order prices from `10` to `1000`. These are safety bounds,
+not a direct VAL-to-price mapping.
 
-- `V` moves placement scale from `0.0012–0.0048`, persistent
-  information-pressure scale from `0.15–8` bps, private-valuation
-  dispersion, provider quote distance, provider size, cancellation, and
-  replenishment risk;
-- `A` moves the simulated arrival rate from `6–140` orders per second;
+V/A/L alter participant decisions within that compressed market:
+
+- `V` moves daily information uncertainty, private-valuation dispersion,
+  provider quote distance, provider size, cancellation, and replenishment risk;
+- `A` moves the compressed order-arrival rate from `6–140` events per real
+  second;
 - `L` moves provider participation from `12–72%`, provider order size from
-  `100–400` shares, and replenishment probability from `15–92%`.
+  `100–800` shares, and replenishment probability from `15–92%`.
 
-The 50 ms clock, the `12` market-seconds-per-real-second compression, the
-information-pressure half-life, and the order-arrival range are installation
-timing or scenario choices rather than empirical exchange calibration. Tail
-truncation, book limits, and history limits are tagged as numerical safety.
-This distinction is encoded in `calibration.mjs`.
+The one-day-per-second clock, daily information range, order-arrival range, and
+`10–1000` price bounds are installation scenario choices rather than empirical
+exchange calibration. This distinction is encoded in `calibration.mjs`.
+
+The common V stress response is deliberately nonlinear. At `V=50`, daily
+information uncertainty, private-valuation dispersion, and provider quote
+width all use calm normal-market baselines; values just above 50 do not inherit
+crisis-scale behavior. The upper half becomes progressively steeper, with the
+largest regime reserved for sustained V near 90–100. This keeps an untouched
+market near 100 with a normal median spread while preserving
+order-of-magnitude paths under sustained extreme input.
 
 Primary references:
 
@@ -126,11 +136,14 @@ integer-tick continuous double auction with:
 - bounded passive queues.
 
 Executions transfer shares and cash between the buyer and seller. The last
-execution sets market price. The book determines best bid, best ask, spread,
-and depth. Rolling executions determine volume, realized volatility, and
-observed price impact. Recent submitted quantity determines order-flow
-imbalance. No equation directly assigns a return, index, spread, depth,
-turnover, or impact value from V/A/L.
+execution—and only the last execution—sets market price. New information
+changes participant valuations; it never writes the displayed price. Value
+traders cross stale quotes, providers cancel and reprice, and aggressive orders
+walk the available book. The book determines best bid, best ask, spread, and
+depth. Rolling executions determine daily move, daily high-low range, volume,
+realized volatility, and observed price impact. Recent submitted quantity
+determines order-flow imbalance. No equation directly assigns a displayed
+price, spread, depth, turnover, or impact value from V/A/L.
 
 Liquidity is therefore a stock that can be consumed and replenished: aggressive
 orders remove resting quantity, and providers restore it by submitting new
@@ -157,6 +170,12 @@ Pure tests separately verify:
 - an uncrossed resting book;
 - cash and inventory conservation across executions;
 - executed-price provenance;
+- one-market-day move and range provenance from the actual one-second
+  execution window;
+- untouched neutral paths remaining near 100;
+- moderate V remaining distinct from crisis-scale behavior;
+- crisis/bubble paths producing order-of-magnitude moves while remaining
+  inside the `10–1000` order-price bounds;
 - activity-to-volume sensitivity;
 - liquidity-to-depth and impact sensitivity;
 - volatility-to-realized-volatility sensitivity;
@@ -192,7 +211,8 @@ second rather than logging individual sensor or order events. It contains:
 - V/A/L minimum, maximum, and ending values;
 - the effective persistent V regime used by market participants;
 - age of the latest phone-orientation event;
-- executed-price start, end, range, change from open, and reference value;
+- executed-price start, end, one-market-day move and range, change from open,
+  and reference value;
 - submitted, cancelled, and executed order counts;
 - order imbalance, depth, spread, and observed impact.
 

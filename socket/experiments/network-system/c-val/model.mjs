@@ -177,6 +177,14 @@ function priceFromTicks(ticks) {
   return ticks * cValCalibration.structural.tickSize;
 }
 
+function boundedPriceTicks(ticks) {
+  return clamp(
+    Math.round(ticks),
+    cValCalibration.structural.minimumPriceTicks,
+    cValCalibration.structural.maximumPriceTicks,
+  );
+}
+
 function seedBook(runtime, now) {
   const center = cValCalibration.structural.initialPriceTicks;
   const providers = participantPool(runtime, "liquidity-provider");
@@ -207,8 +215,11 @@ function seedBook(runtime, now) {
 function deriveBookState(runtime) {
   const { bestBidTicks, bestAskTicks } = getBestQuotes(runtime.book);
   const fallback = cValCalibration.structural.initialPriceTicks;
-  const bid = bestBidTicks ?? runtime.lastTradeTicks ?? fallback - 1;
-  const ask = bestAskTicks ?? runtime.lastTradeTicks ?? fallback + 1;
+  const reference = runtime.lastTradeTicks ?? fallback;
+  const bid =
+    bestBidTicks ?? Math.min(reference - 1, (bestAskTicks ?? reference) - 1);
+  const ask =
+    bestAskTicks ?? Math.max(reference + 1, (bestBidTicks ?? reference) + 1);
   const midTicks = (bid + ask) / 2;
   const book = snapshotOrderBook(runtime.book, BOOK_LEVELS_IN_SNAPSHOT);
   const depth = [...book.bids.slice(0, 5), ...book.asks.slice(0, 5)].reduce(
@@ -237,6 +248,36 @@ function turnover(runtime, now) {
   return runtime.tradeWindow
     .filter((trade) => trade.executedAt >= cutoff)
     .reduce((total, trade) => total + trade.quantity, 0);
+}
+
+function oneSecondExecutionMetrics(runtime, now) {
+  const cutoff = now - 1_000;
+  const trades = runtime.tradeWindow;
+  const firstRecentIndex = trades.findIndex(
+    (trade) => trade.executedAt >= cutoff,
+  );
+  if (firstRecentIndex < 0) {
+    const price = priceFromTicks(runtime.lastTradeTicks);
+    return {
+      oneSecondMovePercent: 0,
+      oneSecondLow: price,
+      oneSecondHigh: price,
+      oneSecondRange: 0,
+    };
+  }
+  const anchorIndex = Math.max(firstRecentIndex - 1, firstRecentIndex);
+  const window = trades.slice(anchorIndex);
+  const firstTicks = window[0].priceTicks;
+  const lastTicks = window.at(-1).priceTicks;
+  const prices = window.map(({ priceTicks }) => priceTicks);
+  const low = priceFromTicks(Math.min(...prices));
+  const high = priceFromTicks(Math.max(...prices));
+  return {
+    oneSecondMovePercent: (lastTicks / firstTicks - 1) * 100,
+    oneSecondLow: low,
+    oneSecondHigh: high,
+    oneSecondRange: high - low,
+  };
 }
 
 function realizedVolatilityBps(runtime) {
@@ -276,10 +317,12 @@ function updateMarket(runtime, now) {
   const priceTicks = runtime.lastTradeTicks ?? bookState.midTicks;
   const index = priceFromTicks(priceTicks);
   const openingPrice = priceFromTicks(runtime.openingPriceTicks);
+  const oneSecond = oneSecondExecutionMetrics(runtime, now);
   runtime.market = {
     index,
     openingPrice,
     changeFromOpenPercent: (index / openingPrice - 1) * 100,
+    ...oneSecond,
     fundamental: priceFromTicks(runtime.fundamentalTicks),
     bestBid: priceFromTicks(bookState.bestBidTicks),
     bestAsk: priceFromTicks(bookState.bestAskTicks),
@@ -322,7 +365,6 @@ export function createCValRuntime(
     book: createOrderBook(),
     visibleBook: { bids: [], asks: [] },
     fundamentalTicks: cValCalibration.structural.initialPriceTicks,
-    informationPressureBps: 0,
     lastTradeTicks: cValCalibration.structural.initialPriceTicks,
     openingPriceTicks: cValCalibration.structural.initialPriceTicks,
     lastHistoryIndex: 100,
@@ -406,28 +448,43 @@ function updateVolatilityRegime(runtime, dt) {
   );
 }
 
+function upperRegimeStress(regime) {
+  return (
+    clamp((regime - 0.5) * 2, 0, 1) **
+    cValCalibration.scenario.informationStressExponent
+  );
+}
+
+function regimeValue(range, neutral, regime) {
+  if (regime <= 0.5) {
+    return range[0] + (neutral - range[0]) * regime * 2;
+  }
+  return neutral + (range[1] - neutral) * upperRegimeStress(regime);
+}
+
 function updateFundamental(runtime, dt) {
-  const marketDt =
-    dt * cValCalibration.timing.marketSecondsPerRealSecond;
-  const shockBps = interpolateAround(
-    cValCalibration.scenario.informationShockBpsRange,
-    cValCalibration.scenario.informationShockBpsAtNeutral,
-    runtime.volatilityRegime,
+  const marketDays =
+    dt * cValCalibration.timing.marketDaysPerRealSecond;
+  const regime = runtime.volatilityRegime;
+  const dailyVolatility = regimeValue(
+    cValCalibration.scenario.dailyInformationVolatilityRange,
+    cValCalibration.scenario.dailyInformationVolatilityAtNeutral,
+    regime,
   );
-  const decay = Math.exp(
-    (-Math.log(2) * marketDt) /
-      cValCalibration.timing.informationHalfLifeMarketSeconds,
-  );
-  runtime.informationPressureBps =
-    runtime.informationPressureBps * decay +
-    sampleNormal(runtime) *
-      shockBps *
-      Math.sqrt(Math.max(1 - decay ** 2, 0));
-  const innovation = runtime.informationPressureBps * marketDt;
-  runtime.fundamentalTicks = clamp(
-    runtime.fundamentalTicks * Math.exp(innovation / 10_000),
-    2_000,
-    50_000,
+  const initial = cValCalibration.structural.initialPriceTicks;
+  const currentLogDistance = Math.log(runtime.fundamentalTicks / initial);
+  const meanReversion =
+    (-Math.log(2) * currentLogDistance * marketDays) /
+    cValCalibration.scenario.valueMeanReversionHalfLifeDays;
+  const innovation =
+    sampleStudentT(
+      runtime,
+      cValCalibration.scenario.informationTailDegreesOfFreedom,
+    ) *
+    dailyVolatility *
+    Math.sqrt(marketDays);
+  runtime.fundamentalTicks = boundedPriceTicks(
+    runtime.fundamentalTicks * Math.exp(meanReversion + innovation),
   );
 }
 
@@ -481,12 +538,15 @@ function sideForParticipant(runtime, participant, bookState) {
     return nextRandom(runtime) < buyProbability ? "buy" : "sell";
   }
   if (participant.type === "fundamental") {
-    const privateNoiseTicks = interpolateRange(
-      cValCalibration.scenario.privateValuationNoiseTicksRange,
+    const privateNoise = regimeValue(
+      cValCalibration.scenario.privateValuationNoiseRange,
+      cValCalibration.scenario.privateValuationNoiseAtNeutral,
       runtime.volatilityRegime,
     );
-    participant.privateValueTicks =
-      runtime.fundamentalTicks + sampleNormal(runtime) * privateNoiseTicks;
+    participant.privateValueTicks = boundedPriceTicks(
+      runtime.fundamentalTicks *
+        Math.exp(sampleNormal(runtime) * privateNoise),
+    );
     return participant.privateValueTicks >= bookState.midTicks
       ? "buy"
       : "sell";
@@ -561,18 +621,36 @@ function orderForParticipant(runtime, participant, now) {
   let kind = "limit";
   let priceTicks;
   if (participant.type === "liquidity-provider") {
-    const volatilityOffset = Math.floor(
-      runtime.volatilityRegime *
-        6 *
-        (1 - 0.5 * runtime.parameters.liquidity),
+    const informationWeight = clamp(
+      0.12 +
+        0.5 * runtime.parameters.activity +
+        0.22 * (1 - runtime.parameters.liquidity),
+      0.12,
+      0.84,
     );
-    const offset =
-      volatilityOffset +
-      (nextRandom(runtime) < 0.68 ? 0 : 1 + Math.floor(nextRandom(runtime) * 3));
-    priceTicks =
-      side === "buy"
-        ? bookState.bestBidTicks - offset
-        : bookState.bestAskTicks + offset;
+    const quoteCenter = Math.round(
+      runtime.lastTradeTicks +
+        (runtime.fundamentalTicks - runtime.lastTradeTicks) *
+          informationWeight,
+    );
+    const halfSpreadRate =
+      regimeValue(
+        cValCalibration.scenario.providerHalfSpreadRateRange,
+        cValCalibration.scenario.providerHalfSpreadRateAtNeutral,
+        runtime.volatilityRegime,
+      ) *
+      (1.35 - runtime.parameters.liquidity);
+    const offset = Math.max(
+      1,
+      Math.round(
+        quoteCenter *
+          halfSpreadRate *
+          (0.75 + nextRandom(runtime) * 0.5),
+      ),
+    );
+    priceTicks = boundedPriceTicks(
+      quoteCenter + (side === "buy" ? -offset : offset),
+    );
   } else if (participant.type === "fundamental") {
     priceTicks = Math.round(participant.privateValueTicks);
     const crosses =
@@ -609,11 +687,16 @@ function orderForParticipant(runtime, participant, now) {
         ? priceTicks >= bookState.bestAskTicks
         : priceTicks <= bookState.bestBidTicks;
     if (crosses) kind = "market";
-    const maximumDistance = cValCalibration.safety.maximumPlacementTicks;
-    priceTicks = clamp(
-      priceTicks,
-      Math.floor(bookState.midTicks - maximumDistance),
-      Math.ceil(bookState.midTicks + maximumDistance),
+    const maximumDistance = Math.max(
+      cValCalibration.safety.maximumPlacementTicks,
+      Math.round(bookState.midTicks * 0.018),
+    );
+    priceTicks = boundedPriceTicks(
+      clamp(
+        priceTicks,
+        Math.floor(bookState.midTicks - maximumDistance),
+        Math.ceil(bookState.midTicks + maximumDistance),
+      ),
     );
   }
 
@@ -723,9 +806,9 @@ function desiredProviderQuotesPerSide(runtime) {
   return (
     1 +
     Math.floor(
-      2 *
+      6 *
         runtime.parameters.liquidity *
-        (1 - 0.75 * runtime.volatilityRegime),
+        (1 - 0.65 * runtime.volatilityRegime),
     )
   );
 }

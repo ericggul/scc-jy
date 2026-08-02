@@ -200,9 +200,82 @@ test("sustained high V and A with low L creates visible executed-price movement"
     200,
   );
   const range = Math.max(...prices) - Math.min(...prices);
-  assert.ok(range > 0.5);
-  assert.ok(Math.abs(runtime.market.changeFromOpenPercent) > 0.1);
+  assert.ok(range > 50);
+  assert.ok(Math.abs(runtime.market.changeFromOpenPercent) > 10);
   assert.ok(runtime.market.index === runtime.lastTradeTicks * 0.01);
+});
+
+test("an untouched neutral market stays near 100 across compressed market days", () => {
+  for (const seed of [11, 23, 37, 53, 71]) {
+    const runtime = createCValRuntime(0, `neutral-${seed}`, seed);
+    const prices = [];
+    const spreads = [];
+    for (let tick = 0; tick < 400; tick += 1) {
+      stepCValRuntime(runtime, 1_000 + tick * 50, 0.05);
+      prices.push(runtime.market.index);
+      spreads.push(runtime.market.spreadBps);
+    }
+    assert.ok(Math.min(...prices) >= 95);
+    assert.ok(Math.max(...prices) <= 105);
+    spreads.sort((left, right) => left - right);
+    assert.ok(spreads[Math.floor(spreads.length / 2)] < 10);
+  }
+});
+
+test("moderate V does not inherit the crisis-scale price process", () => {
+  for (const seed of [11, 23, 37, 53, 71]) {
+    const runtime = createCValRuntime(0, `moderate-${seed}`, seed);
+    const prices = advanceWithFreshSignal(
+      runtime,
+      {
+        absolute: false,
+        alpha: 32.4,
+        beta: -32.4,
+        gamma: -22.5,
+      },
+      200,
+    );
+    assert.ok(Math.max(...prices) / Math.min(...prices) < 1.75);
+  }
+});
+
+test("one market-day measures are derived from the actual one-second execution window", () => {
+  const runtime = createCValRuntime(0, "day-window", 121);
+  advanceWithFreshSignal(
+    runtime,
+    { absolute: false, alpha: 90, beta: 90, gamma: -45 },
+    80,
+  );
+  const cutoff = runtime.serverTime - 1_000;
+  const firstRecentIndex = runtime.tradeWindow.findIndex(
+    (trade) => trade.executedAt >= cutoff,
+  );
+  assert.ok(firstRecentIndex >= 0);
+  const trades = runtime.tradeWindow.slice(
+    Math.max(firstRecentIndex - 1, firstRecentIndex),
+  );
+  const prices = trades.map(({ priceTicks }) => priceTicks * 0.01);
+  const expectedMove =
+    (trades.at(-1).priceTicks / trades[0].priceTicks - 1) * 100;
+  const expectedRange = Math.max(...prices) - Math.min(...prices);
+  assert.ok(
+    Math.abs(runtime.market.oneSecondMovePercent - expectedMove) < 1e-9,
+  );
+  assert.ok(
+    Math.abs(runtime.market.oneSecondRange - expectedRange) < 1e-9,
+  );
+});
+
+test("compressed crisis and bubble days can produce execution-derived order-of-magnitude moves", () => {
+  const runtime = createCValRuntime(0, "compressed-days", 202);
+  const prices = advanceWithFreshSignal(
+    runtime,
+    { absolute: false, alpha: 90, beta: 90, gamma: -45 },
+    600,
+  );
+  assert.ok(Math.max(...prices) / Math.min(...prices) >= 10);
+  assert.ok(prices.every((price) => price >= 10 && price <= 1_000));
+  assert.equal(runtime.market.index, runtime.recentTrades.at(-1).price);
 });
 
 test("VAL effects remain distinct across multiple random market paths", () => {
