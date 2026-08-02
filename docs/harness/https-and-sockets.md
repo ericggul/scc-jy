@@ -1,5 +1,9 @@
 # HTTPS and Sockets
 
+The development and socket processes require the repository's pinned Node.js
+`26.5.1` runtime with npm `11.17.0`; dependency commands use pnpm. Activate
+that Node version before installing dependencies or starting either process.
+
 The user-owned local development workflow is HTTPS-first:
 
 ```bash

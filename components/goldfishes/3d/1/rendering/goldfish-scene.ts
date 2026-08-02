@@ -13,6 +13,7 @@ const MAX_FISH_COUNT = 1000;
 const MAX_ATTENTION_CELL_COUNT = 4096;
 const MEDIA_CELL_OVERSCAN = 2;
 const FLOOR_Y = 0;
+const INITIAL_CAMERA_ELEVATION = Math.PI / 2;
 
 type GoldfishSceneOptions = {
   canvas: HTMLCanvasElement;
@@ -20,7 +21,10 @@ type GoldfishSceneOptions = {
   count: number;
   color: string;
   paperColor: string;
+  cameraProjection?: CameraProjection;
 };
+
+export type CameraProjection = "perspective" | "orthographic";
 
 export type GoldfishRenderSettings = {
   agentScale: number;
@@ -124,7 +128,10 @@ function setMeshColor(material: THREE.MeshStandardMaterial, color: string) {
 export class GoldfishScene {
   private readonly renderer: THREE.WebGLRenderer;
   private readonly scene = new THREE.Scene();
-  private readonly camera = new THREE.PerspectiveCamera(40, 1, 1, 10000);
+  private readonly camera:
+    | THREE.PerspectiveCamera
+    | THREE.OrthographicCamera;
+  private readonly cameraProjection: CameraProjection;
   private readonly raycaster = new THREE.Raycaster();
   private readonly floorPlane = new THREE.Plane(
     new THREE.Vector3(0, 1, 0),
@@ -174,7 +181,7 @@ export class GoldfishScene {
   private activeCount: number;
   private fitDistance = 1;
   private cameraAzimuth = 0;
-  private cameraElevation = THREE.MathUtils.degToRad(53);
+  private cameraElevation = INITIAL_CAMERA_ELEVATION;
   private cameraZoom = 1;
   private attentionSurface: AttentionSurface = "white";
   private mediaSpeed = 24;
@@ -195,7 +202,13 @@ export class GoldfishScene {
     count,
     color,
     paperColor,
+    cameraProjection = "perspective",
   }: GoldfishSceneOptions) {
+    this.cameraProjection = cameraProjection;
+    this.camera =
+      cameraProjection === "orthographic"
+        ? new THREE.OrthographicCamera(-0.5, 0.5, 0.5, -0.5, 1, 10000)
+        : new THREE.PerspectiveCamera(40, 1, 1, 10000);
     this.renderer = new THREE.WebGLRenderer({
       antialias: true,
       canvas,
@@ -380,19 +393,27 @@ export class GoldfishScene {
     this.renderer.setPixelRatio(pixelRatio);
     this.renderer.setSize(this.width, this.height, false);
 
-    this.camera.aspect = this.width / this.height;
-    const verticalFov = THREE.MathUtils.degToRad(this.camera.fov);
-    const horizontalFov =
-      2 * Math.atan(Math.tan(verticalFov / 2) * this.camera.aspect);
-    const direction = new THREE.Vector3(0, 0.8, 0.6).normalize();
-    const depthExtent = (this.height / 2) * direction.z;
-    const verticalExtent = (this.height / 2) * direction.y;
-    const horizontalDistance =
-      this.width / 2 / Math.tan(horizontalFov / 2) + depthExtent;
-    const verticalDistance =
-      verticalExtent / Math.tan(verticalFov / 2) + depthExtent;
-    this.fitDistance =
-      Math.max(horizontalDistance, verticalDistance) * 1.035;
+    if (this.camera instanceof THREE.PerspectiveCamera) {
+      this.camera.aspect = this.width / this.height;
+      const verticalFov = THREE.MathUtils.degToRad(this.camera.fov);
+      const horizontalFov =
+        2 * Math.atan(Math.tan(verticalFov / 2) * this.camera.aspect);
+      const direction = new THREE.Vector3(0, 0.8, 0.6).normalize();
+      const depthExtent = (this.height / 2) * direction.z;
+      const verticalExtent = (this.height / 2) * direction.y;
+      const horizontalDistance =
+        this.width / 2 / Math.tan(horizontalFov / 2) + depthExtent;
+      const verticalDistance =
+        verticalExtent / Math.tan(verticalFov / 2) + depthExtent;
+      this.fitDistance =
+        Math.max(horizontalDistance, verticalDistance) * 1.035;
+    } else {
+      this.camera.left = -this.width / 2;
+      this.camera.right = this.width / 2;
+      this.camera.top = this.height / 2;
+      this.camera.bottom = -this.height / 2;
+      this.fitDistance = Math.max(this.width, this.height) * 1.5;
+    }
     this.updateCamera();
 
     this.floor.scale.set(this.width, 1, this.height);
@@ -402,23 +423,37 @@ export class GoldfishScene {
   private updateCamera() {
     const distance = this.fitDistance * this.cameraZoom;
     const horizontalDistance = Math.cos(this.cameraElevation) * distance;
+    const sinAzimuth = Math.sin(this.cameraAzimuth);
+    const cosAzimuth = Math.cos(this.cameraAzimuth);
+    const sinElevation = Math.sin(this.cameraElevation);
+    const cosElevation = Math.cos(this.cameraElevation);
     this.camera.position.set(
-      Math.sin(this.cameraAzimuth) * horizontalDistance,
-      Math.sin(this.cameraElevation) * distance,
-      Math.cos(this.cameraAzimuth) * horizontalDistance,
+      sinAzimuth * horizontalDistance,
+      sinElevation * distance,
+      cosAzimuth * horizontalDistance,
+    );
+    this.camera.up.set(
+      -sinAzimuth * sinElevation,
+      cosElevation,
+      -cosAzimuth * sinElevation,
     );
     this.camera.near = Math.max(1, distance * 0.34);
     this.camera.far = distance * 2.35 + 520;
+    if (this.cameraProjection === "orthographic") {
+      this.camera.zoom = 1 / this.cameraZoom;
+    }
     this.camera.lookAt(0, 12, 0);
     this.camera.updateProjectionMatrix();
   }
 
   orbit(deltaX: number, deltaY: number) {
-    this.cameraAzimuth -= deltaX * 0.0045;
-    this.cameraElevation = THREE.MathUtils.clamp(
+    this.cameraAzimuth = THREE.MathUtils.euclideanModulo(
+      this.cameraAzimuth - deltaX * 0.0045,
+      Math.PI * 2,
+    );
+    this.cameraElevation = THREE.MathUtils.euclideanModulo(
       this.cameraElevation + deltaY * 0.0035,
-      THREE.MathUtils.degToRad(28),
-      THREE.MathUtils.degToRad(76),
+      Math.PI * 2,
     );
     this.updateCamera();
   }
@@ -434,7 +469,7 @@ export class GoldfishScene {
 
   resetCamera() {
     this.cameraAzimuth = 0;
-    this.cameraElevation = THREE.MathUtils.degToRad(53);
+    this.cameraElevation = INITIAL_CAMERA_ELEVATION;
     this.cameraZoom = 1;
     this.updateCamera();
   }

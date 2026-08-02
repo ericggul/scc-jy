@@ -1,7 +1,7 @@
 export const experimentCatalog = [
   {
-    href: "/ddong-ditation",
-    label: "ddong-ditation",
+    href: "/ddong-meong",
+    label: "ddong-meong",
     description:
       "A toilet-seat meditation linked to a shared live archive screen.",
   },
@@ -35,6 +35,11 @@ export const experimentCatalog = [
     href: "/network-system",
     label: "network-system",
     description: "Four-node institutional network and parameter screens.",
+  },
+  {
+    href: "/c-val",
+    label: "c-val",
+    description: "Versioned multi-device V/A/L financial-market simulations.",
   },
   {
     href: "/finger-skating",

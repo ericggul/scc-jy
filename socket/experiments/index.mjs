@@ -1,10 +1,11 @@
 import { calendarExperiment } from "./calendar/index.mjs";
-import { ddongDitationOneExperiment } from "./ddong-ditation/1/index.mjs";
-import { ddongDitationTwoExperiment } from "./ddong-ditation/2/index.mjs";
+import { ddongMeongOneExperiment } from "./ddong-meong/1/index.mjs";
+import { ddongMeongTwoExperiment } from "./ddong-meong/2/index.mjs";
 import { djExperiment } from "./dj/index.mjs";
 import { fingerSkatingExperiment } from "./finger-skating/index.mjs";
 import { networkSystemCompetitiveFirmsExperiment } from "./network-system/competitive-firms/index.mjs";
-import { networkSystemCValExperiment } from "./network-system/c-val/index.mjs";
+import { cValOneExperiment } from "./c-val/1/index.mjs";
+import { cValTwoExperiment } from "./c-val/2/index.mjs";
 import { networkSystemCycleExperiment } from "./network-system/cycle/index.mjs";
 import { networkSystemDefaultExperiment } from "./network-system/default/index.mjs";
 import { networkSystemMacroEconomyExperiment } from "./network-system/macro-economy/index.mjs";
@@ -12,14 +13,15 @@ import { networkSystemPopulationExperiment } from "./network-system/population/i
 import { stockExperiment } from "./stock/index.mjs";
 
 const registeredExperiments = [
-  ddongDitationOneExperiment,
-  ddongDitationTwoExperiment,
+  ddongMeongOneExperiment,
+  ddongMeongTwoExperiment,
   fingerSkatingExperiment,
   djExperiment,
   calendarExperiment,
   stockExperiment,
   networkSystemMacroEconomyExperiment,
-  networkSystemCValExperiment,
+  cValOneExperiment,
+  cValTwoExperiment,
   networkSystemCycleExperiment,
   networkSystemDefaultExperiment,
   networkSystemPopulationExperiment,

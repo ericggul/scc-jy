@@ -2,6 +2,9 @@
   "name": "scc",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": "26.5.1"
+  },
   "scripts": {
     "dev": "node scripts/dev-https.mjs",
     "dev:next": "bash scripts/generate-certs.sh && next dev --hostname 0.0.0.0 --experimental-https --experimental-https-key certificates/server.key --experimental-https-cert certificates/server.pem --experimental-https-ca certificates/rootCA.pem",
@@ -10,7 +13,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test:c-val:shake": "node scripts/verify-c-val-shake.mjs"
+    "test:c-val:shake": "node scripts/verify-c-val-shake.mjs --version 2",
+    "test:c-val:shake:v1": "node scripts/verify-c-val-shake.mjs --version 1",
+    "test:c-val:shake:v2": "node scripts/verify-c-val-shake.mjs --version 2"
   },
   "dependencies": {
     "hls.js": "^1.6.16",
@@ -26,7 +31,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
+    "@types/node": "^26",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/three": "^0.185.1",

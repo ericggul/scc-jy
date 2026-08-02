@@ -20,9 +20,6 @@ Each experiment owns an isolated socket room and event prefix under
   employment, news, and graph observations.
   - [model research](./cycle/research.md)
   - [source ledger](./cycle/source-ledger.csv)
-- [c-val](./c-val.md): phone-conducted volatility, activity, and liquidity
-  driving one shared financial-market runtime.
-  - [mobile-shake verification harness](./c-val-shake-harness.md)
 - [population](./population.md): age-structured population stock/flow system.
 - [competitive-firms](./competitive-firms.md): firm-level controls and
   customer-movement network.
@@ -30,3 +27,6 @@ Each experiment owns an isolated socket room and event prefix under
 Shared route selection belongs in `components/network-system/experiments.ts`.
 Model, presenter, transport, controller, and screen behavior remain inside the
 matching experiment folder.
+
+C-VAL has moved completely to the top-level
+[versioned C-VAL family](../c-val/README.md).

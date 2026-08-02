@@ -427,7 +427,7 @@ export function CursorSwarm({
   const collisionPreventionRef = useRef(initialCollisionPrevention);
   const themeRef = useRef<FieldTheme>("dark");
   const agentGlyphRef = useRef<AgentGlyph>(
-    initialGoldfish ? "goldfish2" : "cursor",
+    initialGoldfish ? "goldfish1" : "cursor",
   );
   const goldfishColorRef = useRef(FIELD_PALETTES.dark.goldfish);
   const goldfishSilhouetteRef = useRef<HTMLCanvasElement | null>(null);
@@ -537,7 +537,7 @@ export function CursorSwarm({
       }),
       Appearance: folder({
         glyph: {
-          value: initialGoldfish ? "goldfish2" : "cursor",
+          value: initialGoldfish ? "goldfish1" : "cursor",
           options:
             glyphSet === "collage"
               ? {
@@ -1126,6 +1126,7 @@ export default function Goldfishes2DOne() {
       cursorScale={1}
       settings={GOLDFISHES_2D_ONE_SETTINGS}
       initialCollisionPrevention={false}
+      initialGoldfish
       glyphSet="collage"
       gridScale={GOLDFISHES_PRIMARY_GRID_SCALE}
       controls={{

@@ -26,4 +26,5 @@ Per-experiment documentation:
 - `docs/experiments/dj/`
 - `docs/experiments/finger-skating/`
 - `docs/experiments/network-system/`
+- `docs/experiments/c-val/`
 - `docs/experiments/sns/`

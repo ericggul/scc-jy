@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import type { ComponentType } from "react";
 import Goldfishes2DOne from "@/components/goldfishes/2d/1";
-import Goldfishes2DTwo from "@/components/goldfishes/2d/2";
 import {
   goldfish2DExperiments,
   isGoldfish2DExperimentSlug,
@@ -11,7 +10,6 @@ import {
 
 const components: Record<Goldfish2DExperimentSlug, ComponentType> = {
   "1": Goldfishes2DOne,
-  "2": Goldfishes2DTwo,
 };
 
 export function generateStaticParams() {

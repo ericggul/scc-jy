@@ -43,6 +43,6 @@ Each of the 177 countries plus the ocean campaign has a dedicated mono AAC/M4A v
 6. **System family:** the paper ground, line map, viewport canvas, three swarm controls, pause/reset actions, and compact hairline panel are shared with `swarm/2`; there are no dashboards, campaign metadata, labels, or destination lists competing with the map.
 7. **Removal test:** the launch crosshair, arrival impact burst, persistent destroyed-target mark, directed trajectories, and the flock's origin avoidance are necessary. Country labels, counts, a target ledger, impact statistics, and simulated command metadata are omitted because they would not make the interaction more legible.
 
-The former cursor-cell variants `/swarm/4` and `/swarm/5` now belong to the
-top-level `goldfishes` family. Their current routes and preservation contract
-are documented in `docs/experiments/goldfishes/README.md`.
+The former cursor-cell variant `/swarm/4` now belongs to the top-level
+`goldfishes` family. Its current route and preservation contract are documented
+in `docs/experiments/goldfishes/README.md`.

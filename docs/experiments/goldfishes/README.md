@@ -6,35 +6,46 @@ Routes:
 
 - `/goldfishes/2d/1`: the former `/swarm/4`, with 200 agents by default and
   adjustable count and collision prevention.
-- `/goldfishes/2d/2`: the former `/swarm/5`, with 1000 agents and the smaller
-  baseline scale.
 - `/goldfishes/3d/1`: the shared field and attraction behavior rendered as 3D
   goldfish, with the selected-cell hard boundary disabled and 200 agents by
   default.
+- `/goldfishes/3d/2`: an orthographic 3D variant whose swarm and selected-cell
+  boundary behavior matches `/goldfishes/2d/1`.
 
 The family is top-level because it is being developed as a larger experience,
-not as another standalone swarm variant. The 2D variants were moved rather than
+not as another standalone swarm variant. The 2D variant was moved rather than
 copied; `/swarm` now contains variants 1–3 only.
 
 ## Preserved interaction and model contract
 
-All three routes use `components/goldfishes/model/index.ts`. Click or
+All routes use `components/goldfishes/model/index.ts`. Click or
 press-drag adds persistent grid cells and stable agent IDs distribute agents
 across all selected cells. Enter or Space selects the central cell and Escape
 clears all cells.
 
-The 2D routes retain physically excluded cells. The 3D route preserves the same
-flocking, edge behavior, agent-to-cell assignment, distributed perimeter
-targets, arrival steering, and orbit motion. Its only model difference is that
-the selected-cell hard constraint is disabled: entering a block no longer
-projects a fish to the nearest edge or reverses a velocity component. Attention
-therefore remains visibly strong while boundary crossing is continuous.
+The 2D route and `3d/2` retain physically excluded cells. The `3d/1` route
+preserves the same flocking, edge behavior, agent-to-cell assignment,
+distributed perimeter targets, arrival steering, and orbit motion. Its only
+model difference is that the selected-cell hard constraint is disabled:
+entering a block no longer projects a fish to the nearest edge or reverses a
+velocity component. Attention therefore remains visibly strong while boundary
+crossing is continuous.
 
-The 2D routes retain their movement, field, count, scale, collision, corner
-mark, and theme controls. Their glyph menus intentionally differ. The 3D route
-retains count, collision prevention, scale, corner mark, colour, and theme
-controls, and adds depth, tail motion, fin opacity, bounded camera input, and
-view reset. Its default count is 200; the count control remains 50–1000 in
+`3d/2` passes the shared model's `protected-perimeter` behavior at every
+settling and simulation step. Its initial count, grid scale, flocking forces,
+stable agent assignment, collision toggle, perimeter targets, arrival steering,
+speed limits, and edge forces are therefore the same as `2d/1`. Its default
+agent scale is `2`, with a `1`–`4` authoring range; collision clearance and
+minimum distance scale through the same shared function used by `2d/1`. The
+remaining differences are presentation: Canvas glyphs in 2D versus instanced
+volumetric fish, independent swim height, lighting, and an orthographic 3D
+camera.
+
+The 2D route retains its movement, field, count, scale, collision, corner
+mark, and theme controls. Both 3D routes retain count, collision prevention,
+scale, corner mark, colour, and theme controls, and add depth, tail motion, fin
+opacity, full-orbit camera input, bounded zoom, and view reset. Their default
+count is 200; the count control remains 50–1000 in
 steps of 50 so density can be evaluated without editing code.
 
 Leva remains an authoring and parameter-adjustment surface, not the artwork's
@@ -45,9 +56,8 @@ are later required.
 ## 2D glyph sets
 
 `/goldfishes/2d/1` offers Cursor, Goldfish 1, Goldfish 2, Circle eye, and
-Rectangle eye. Goldfish 3, 4, and 5 were removed from this route only.
-`/goldfishes/2d/2` reuses the shared renderer but retains its existing Cursor
-and Goldfish 1–5 menu.
+Rectangle eye. Goldfish 1 is the initial glyph. Goldfish 3, 4, and 5 were
+removed from this route only.
 
 The two collage options use the 75 SVGs in each of:
 
@@ -64,11 +74,9 @@ and Goldfish 2 on the `/2d/1` collage menu.
 
 ## 2D media attention surfaces
 
-Only `/goldfishes/2d/1` exposes the one-line `Field > blocks` selector with
-`WHITE`, `CAT`, `KISS`, and `POLITICIAN`. `/goldfishes/2d/2` has no media
-control, media canvas, or atlas-loading work. The selection, protected-cell
-collision, attraction, agent rendering, and background field remain unchanged
-in both routes.
+`/goldfishes/2d/1` exposes the one-line `Field > blocks` selector with `WHITE`,
+`CAT`, `KISS`, and `POLITICIAN`. The selection, protected-cell collision,
+attraction, agent rendering, and background field remain unchanged.
 
 The 2D media implementation does not create an `<img>` per cell and does not
 redraw the full field or fish canvas for an image change. A transparent media
@@ -90,12 +98,12 @@ This is an architectural workload bound, not a browser FPS measurement.
 
 ## Primary grid scale
 
-`/goldfishes/2d/1` and `/goldfishes/3d/1` pass the shared
+`/goldfishes/2d/1`, `/goldfishes/3d/1`, and `/goldfishes/3d/2` pass the shared
 `GOLDFISHES_PRIMARY_GRID_SCALE` value of `2` into grid construction, producing
-cells exactly twice the prior size. `/goldfishes/2d/2` keeps scale `1`. Only the
-grid cell geometry changes: fish size, movement, collision clearance, and
-attention forces retain their existing values. Reverting the experiment
-requires changing the one shared scale constant from `2` back to `1`.
+cells exactly twice the prior size. Only the grid cell geometry changes: fish
+size, movement, collision clearance, and attention forces retain their existing
+values. Reverting the experiment requires changing the one shared scale
+constant from `2` back to `1`.
 
 ## 3D interface premise
 
@@ -103,38 +111,46 @@ requires changing the one shared scale constant from `2` back to `1`.
    goldfish field.
 2. **Primary parameter:** the persistent set of selected cells that attracts
    fish toward distributed targets around associated media locations.
-3. **Perceptual job:** see fish gather and intertwine around selected blocks
-   without a sudden boundary bounce, while clearly reading perspective, height,
-   body volume, heading, and tail movement.
+3. **Perceptual job:** see fish gather around selected blocks while clearly
+   reading height, body volume, heading, and tail movement. `3d/1` emphasizes
+   perspective depth; `3d/2` emphasizes planar correspondence with `2d/1`.
 4. **Interaction job:** preserve click, drag, and keyboard selection exactly.
    Left drag remains selection, while Alt-drag or right drag rotates the camera
    and the wheel changes distance.
-5. **Wrapper justification:** a bounded oblique perspective turns the field
-   into a spatial plane without replacing the established interaction with an
-   unrestricted free-camera aquarium.
+5. **Wrapper justification:** orbiting 3D cameras turn the field into a spatial
+   plane and permit inspection from every side without adding camera translation
+   or replacing the established selection interaction. Orthographic projection
+   in `3d/2` removes height-dependent screen-space displacement from its exact
+   top-down comparison view.
 6. **System family:** the dark/light neutral field, sparse corner marks,
    selected-cell contrast, and compact Leva panel remain shared with 2D.
-7. **Removal test:** perspective foreshortening, vertical separation, occlusion,
-   lighting, body volume, tail articulation, and bounded camera inspection
-   justify the 3D renderer. Labels, scenery, bubbles, and water decoration are
-   absent because they do not clarify the interaction.
+7. **Removal test:** vertical separation, occlusion, lighting, body volume, tail
+   articulation, and full-orbit camera inspection justify the 3D renderer.
+   Labels, scenery, bubbles, and water decoration are absent because they do not
+   clarify the interaction.
 
 ## Implemented rendering boundary
 
-`/goldfishes/3d/1` uses Three.js `WebGLRenderer` with a perspective camera.
+`/goldfishes/3d/1` uses Three.js `WebGLRenderer` with a perspective camera. Its
+initial and reset view is exactly top-down; full-orbit camera input begins from
+that overhead position. `/goldfishes/3d/2` uses `OrthographicCamera` with a
+viewport-sized frustum. Its exact top-down view therefore preserves model-plane
+positions and sizes regardless of each fish's rendered height.
 The grid and selected cells are drawn into a canvas texture on a horizontal
 plane. Pointer positions are ray-cast back onto that plane before entering the
 shared field model. Fish move in the model's existing two axes while their
-rendered height varies independently. The 3D route still computes the original
-perimeter targets and arrival steering, but does not call the 2D evacuation or
-protected-cell collision routines. Fish can therefore cross above the textured
-block without reflecting at its boundary while attraction and orbiting remain
-unchanged.
+rendered height varies independently. Both 3D routes compute the original
+perimeter targets and arrival steering. Only `3d/1` skips the 2D evacuation and
+protected-cell collision routines, allowing fish to cross above a textured
+block. `3d/2` runs those routines like `2d/1`.
 
-Camera input changes only the perspective-camera transform. It does not add
-fish instances, geometries, simulation work, or draw calls. Its incremental
+Camera input changes only the active camera transform. It does not add fish
+instances, geometries, simulation work, or draw calls. Its incremental
 cost should therefore be small relative to simulation and fish rendering, but
 this is an architectural expectation rather than a measured frame-rate claim.
+Alt-drag or right-drag wraps both azimuth and elevation through complete
+circles. The camera uses a continuously derived up vector so crossing either
+vertical pole does not introduce a `lookAt` orientation flip.
 The wheel range permits close inspection down to 28% of the fitted camera
 distance and a wide overview up to 300%; the bounds prevent the camera from
 crossing the field or drifting indefinitely.
@@ -209,8 +225,10 @@ other hardware.
 
 ### Isolated model measurement
 
-On Node 22.3.0, the shared CPU model was measured at 1920×1080 with one selected
-cell after a warm-up. The figures are mean time per simulation step on the
+This is a historical benchmark recorded on Node 22.3.0; the repository runtime
+is now Node.js 26.5.1, and these figures have not been remeasured under that
+runtime. The shared CPU model was measured at 1920×1080 with one selected cell
+after a warm-up. The figures are mean time per simulation step on the
 development machine; they exclude React, Three.js rendering, Leva, media
 decoding, and browser scheduling.
 

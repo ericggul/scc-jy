@@ -2,6 +2,14 @@
 
 SCC is a Next.js creative experiment harness. It supports single-device studies and multi-device web artwork experiments.
 
+## Runtime baseline
+
+The repository runtime is Node.js `26.5.1` with npm `11.17.0`; package
+operations use pnpm. `.nvmrc`, `.node-version`,
+`package.json#engines.node`, and `@types/node` must remain aligned. A different
+Node version exposed inside an agent sandbox is not the project runtime and
+must not be written back into repository configuration.
+
 The documentation split is:
 
 - `AGENTS.md`: active instructions for coding agents.

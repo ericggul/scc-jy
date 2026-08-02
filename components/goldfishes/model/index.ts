@@ -54,16 +54,6 @@ export const GOLDFISHES_2D_ONE_SETTINGS: CursorFieldSettings = {
   collisionPasses: 8,
 };
 
-export const GOLDFISHES_2D_TWO_SETTINGS: CursorFieldSettings = {
-  cellMin: 20,
-  cellMax: 30,
-  cellDivisor: 30,
-  clearance: 3,
-  minDistance: 8,
-  collisionBuffer: 1,
-  collisionPasses: 8,
-};
-
 export const GOLDFISHES_PRIMARY_GRID_SCALE = 2;
 
 export function scaleCursorFieldSettings(

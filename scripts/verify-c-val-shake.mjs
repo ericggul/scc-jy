@@ -2,21 +2,11 @@
 
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import {
-  formatCValShakeHarnessReport,
-  formatCValShakeRobustnessSuiteReport,
-  runCValShakeHarness,
-  runCValShakeRobustnessSuite,
-} from "../socket/experiments/network-system/c-val/shake-harness.mjs";
-import {
-  generateCValShakeTrace,
-  validateCValOrientationTrace,
-} from "../socket/experiments/network-system/c-val/shake-trace.mjs";
-
 function usage() {
   return `Usage: node scripts/verify-c-val-shake.mjs [options]
 
 Options:
+  --version <1|2>      C-VAL version to verify (default: 2)
   --trace <path>        Replay a recorded trace instead of generating one
   --seed <integer>      Synthetic gesture seed (default: 12648430)
   --market-seed <int>   Reproduce one market path instead of the 5-seed suite
@@ -37,6 +27,7 @@ function parseInteger(value, flag) {
 
 function parseArguments(argv) {
   const options = {
+    version: "2",
     tracePath: null,
     seed: 0xc0ffee,
     marketSeed: null,
@@ -45,7 +36,13 @@ function parseArguments(argv) {
   };
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
-    if (argument === "--trace") {
+    if (argument === "--version") {
+      const value = argv[++index];
+      if (value !== "1" && value !== "2") {
+        throw new Error("--version requires 1 or 2");
+      }
+      options.version = value;
+    } else if (argument === "--trace") {
       const value = argv[++index];
       if (!value) throw new Error("--trace requires a file path");
       options.tracePath = value;
@@ -67,9 +64,9 @@ function parseArguments(argv) {
   return options;
 }
 
-async function loadTrace(options) {
+async function loadTrace(options, traceModule) {
   if (!options.tracePath) {
-    return generateCValShakeTrace({ seed: options.seed });
+    return traceModule.generateCValShakeTrace({ seed: options.seed });
   }
   const absolutePath = resolve(process.cwd(), options.tracePath);
   let parsed;
@@ -78,7 +75,7 @@ async function loadTrace(options) {
   } catch (error) {
     throw new Error(`Unable to read trace ${absolutePath}: ${error.message}`);
   }
-  return validateCValOrientationTrace(parsed);
+  return traceModule.validateCValOrientationTrace(parsed);
 }
 
 try {
@@ -86,19 +83,25 @@ try {
   if (options.help) {
     console.log(usage());
   } else {
-    const trace = await loadTrace(options);
+    const harness = await import(
+      `../socket/experiments/c-val/${options.version}/shake-harness.mjs`
+    );
+    const traceModule = await import(
+      `../socket/experiments/c-val/${options.version}/shake-trace.mjs`
+    );
+    const trace = await loadTrace(options, traceModule);
     const report =
       options.marketSeed === null
-        ? runCValShakeRobustnessSuite(trace)
-        : runCValShakeHarness(trace, {
+        ? harness.runCValShakeRobustnessSuite(trace)
+        : harness.runCValShakeHarness(trace, {
             marketSeed: options.marketSeed,
           });
     console.log(
       options.json
         ? JSON.stringify(report, null, 2)
         : options.marketSeed === null
-          ? formatCValShakeRobustnessSuiteReport(report)
-          : formatCValShakeHarnessReport(report),
+          ? harness.formatCValShakeRobustnessSuiteReport(report)
+          : harness.formatCValShakeHarnessReport(report),
     );
     if (!report.ok) process.exitCode = 1;
   }

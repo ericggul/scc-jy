@@ -18,6 +18,7 @@ import {
   stepCursorField,
   GOLDFISHES_2D_ONE_SETTINGS,
   GOLDFISHES_PRIMARY_GRID_SCALE,
+  type AttentionZoneBehavior,
   type CellAnchor,
   type CursorAgent,
   type Grid,
@@ -25,6 +26,7 @@ import {
 import {
   GoldfishScene,
   type AttentionSurface,
+  type CameraProjection,
   type GoldfishRenderSettings,
 } from "../rendering/goldfish-scene";
 import styles from "./goldfishes.module.css";
@@ -47,7 +49,6 @@ type FieldPalette = {
 };
 
 const DEFAULT_COUNT = 200;
-const ATTENTION_ZONE_BEHAVIOR = "open-perimeter";
 const FIELD_PALETTES: Record<FieldTheme, FieldPalette> = {
   light: {
     paper: "#f4f4f1",
@@ -139,7 +140,21 @@ function getCellKey(column: number, row: number) {
   return `${column}:${row}`;
 }
 
-export default function Goldfishes3D() {
+type Goldfishes3DProps = {
+  attentionZoneBehavior?: AttentionZoneBehavior;
+  cameraProjection?: CameraProjection;
+  initialAgentScale?: number;
+  minimumAgentScale?: number;
+  maximumAgentScale?: number;
+};
+
+export default function Goldfishes3D({
+  attentionZoneBehavior = "open-perimeter",
+  cameraProjection = "perspective",
+  initialAgentScale = 1,
+  minimumAgentScale = 0.5,
+  maximumAgentScale = 2,
+}: Goldfishes3DProps) {
   const backgroundCanvasRef = useRef<HTMLCanvasElement>(null);
   const threeCanvasRef = useRef<HTMLCanvasElement>(null);
   const interactionCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -157,12 +172,15 @@ export default function Goldfishes3D() {
   const attentionSurfaceRef = useRef<AttentionSurface>("white");
   const mediaSpeedRef = useRef(24);
   const renderSettingsRef = useRef<GoldfishRenderSettings>({
-    agentScale: 1,
+    agentScale: initialAgentScale,
     depth: 64,
     tailMotion: 0.38,
   });
   const constraintSettingsRef = useRef(
-    scaleCursorFieldSettings(GOLDFISHES_2D_ONE_SETTINGS, 1),
+    scaleCursorFieldSettings(
+      GOLDFISHES_2D_ONE_SETTINGS,
+      initialAgentScale,
+    ),
   );
   const controlStore = useCreateStore();
   const [activeCount, setActiveCount] = useState(DEFAULT_COUNT);
@@ -224,9 +242,9 @@ export default function Goldfishes3D() {
           },
         },
         scale: {
-          value: 1,
-          min: 0.5,
-          max: 2,
+          value: initialAgentScale,
+          min: minimumAgentScale,
+          max: maximumAgentScale,
           step: 0.05,
           onChange: (value: number) => {
             renderSettingsRef.current.agentScale = value;
@@ -328,7 +346,12 @@ export default function Goldfishes3D() {
       }),
     }),
     { store: controlStore },
-    [controlStore],
+    [
+      controlStore,
+      initialAgentScale,
+      maximumAgentScale,
+      minimumAgentScale,
+    ],
   );
 
   const selectTrace = useCallback(
@@ -381,11 +404,11 @@ export default function Goldfishes3D() {
         selectedCells,
         constraintSettingsRef.current,
         collisionPreventionRef.current,
-        ATTENTION_ZONE_BEHAVIOR,
+        attentionZoneBehavior,
       );
       redrawField();
     },
-    [redrawField],
+    [attentionZoneBehavior, redrawField],
   );
 
   useEffect(() => {
@@ -411,9 +434,9 @@ export default function Goldfishes3D() {
       ),
       constraintSettingsRef.current,
       collisionPreventionRef.current,
-      ATTENTION_ZONE_BEHAVIOR,
+      attentionZoneBehavior,
     );
-  }, [activeCount]);
+  }, [activeCount, attentionZoneBehavior]);
 
   useEffect(() => {
     const backgroundCanvas = backgroundCanvasRef.current;
@@ -430,6 +453,7 @@ export default function Goldfishes3D() {
       count: DEFAULT_COUNT,
       color: FIELD_PALETTES.dark.goldfish,
       paperColor: FIELD_PALETTES.dark.paper,
+      cameraProjection,
     });
     sceneRef.current = scene;
     scene.setMediaSpeed(mediaSpeedRef.current);
@@ -481,7 +505,7 @@ export default function Goldfishes3D() {
         ),
         constraintSettingsRef.current,
         collisionPreventionRef.current,
-        ATTENTION_ZONE_BEHAVIOR,
+        attentionZoneBehavior,
       );
       redrawField();
     };
@@ -514,7 +538,7 @@ export default function Goldfishes3D() {
           constraintSettingsRef.current,
           collisionPreventionRef.current,
           renderSettingsRef.current.agentScale,
-          ATTENTION_ZONE_BEHAVIOR,
+          attentionZoneBehavior,
         );
       }
 
@@ -573,7 +597,7 @@ export default function Goldfishes3D() {
       scene.dispose();
       sceneRef.current = null;
     };
-  }, [redrawField]);
+  }, [attentionZoneBehavior, cameraProjection, redrawField]);
 
   useEffect(() => {
     redrawField();
@@ -602,7 +626,7 @@ export default function Goldfishes3D() {
       <canvas
         ref={interactionCanvasRef}
         className={styles.interactionCanvas}
-        aria-label="A perspective field of moving goldfish. Click or drag across cells to gather fish, Alt-drag or right-drag to rotate the camera, and use the wheel to zoom."
+        aria-label="A perspective field of moving goldfish. Click or drag across cells to gather fish, Alt-drag or right-drag to rotate the camera through a full orbit, and use the wheel to zoom."
         tabIndex={0}
         onPointerDown={(event) => {
           event.currentTarget.focus();

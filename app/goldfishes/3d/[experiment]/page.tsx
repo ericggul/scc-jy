@@ -1,10 +1,18 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import type { ComponentType } from "react";
 import Goldfishes3DOne from "@/components/goldfishes/3d/1";
+import Goldfishes3DTwo from "@/components/goldfishes/3d/2";
 import {
   goldfish3DExperiments,
   isGoldfish3DExperimentSlug,
+  type Goldfish3DExperimentSlug,
 } from "@/components/goldfishes/experiments";
+
+const components: Record<Goldfish3DExperimentSlug, ComponentType> = {
+  "1": Goldfishes3DOne,
+  "2": Goldfishes3DTwo,
+};
 
 export function generateStaticParams() {
   return goldfish3DExperiments.map((experiment) => ({
@@ -36,5 +44,6 @@ export default async function Goldfishes3DExperimentPage({
     notFound();
   }
 
-  return <Goldfishes3DOne />;
+  const Component = components[experiment];
+  return <Component />;
 }

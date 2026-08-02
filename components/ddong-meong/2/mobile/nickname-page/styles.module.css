@@ -1,0 +1,112 @@
+.page {
+  display: flex;
+  width: 100%;
+  min-height: 100svh;
+  flex-direction: column;
+  padding:
+    max(26px, env(safe-area-inset-top))
+    24px
+    max(30px, env(safe-area-inset-bottom));
+  animation: contentEnter 420ms ease both;
+}
+
+.wordmark {
+  font-family: "Snell Roundhand", "Brush Script MT", cursive;
+  font-size: 27px;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  padding-bottom: 9svh;
+}
+
+.body h1 {
+  max-width: 340px;
+  margin: 0;
+  font-size: clamp(30px, 8.5vw, 40px);
+  font-weight: 520;
+  line-height: 1.15;
+  letter-spacing: -0.045em;
+}
+
+.body > p {
+  margin: 13px 0 0;
+  color: rgb(241 231 225 / 70%);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.form {
+  display: grid;
+  gap: 14px;
+  margin-top: 42px;
+}
+
+.form label {
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.form input {
+  width: 100%;
+  min-height: 58px;
+  padding: 0 17px;
+  border: 1px solid rgb(241 231 225 / 35%);
+  border-radius: 15px;
+  outline: none;
+  background: rgb(255 255 255 / 10%);
+  color: #fff8f3;
+  font: inherit;
+  font-size: 16px;
+  backdrop-filter: blur(12px);
+}
+
+.form input::placeholder {
+  color: rgb(241 231 225 / 42%);
+}
+
+.form input:focus-visible {
+  border-color: rgb(255 248 243 / 82%);
+  box-shadow: 0 0 0 3px rgb(255 248 243 / 12%);
+}
+
+.form button {
+  min-height: 56px;
+  margin-top: 4px;
+  border: 0;
+  border-radius: 999px;
+  background: #f1e7e1;
+  color: #38251d;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.form button:disabled {
+  cursor: default;
+  opacity: 0.38;
+}
+
+@keyframes contentEnter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page {
+    animation: none;
+  }
+}

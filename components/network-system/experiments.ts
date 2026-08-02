@@ -23,11 +23,6 @@ export const networkSystemExperiments = [
     ],
   },
   {
-    slug: "c-val",
-    label: "network-system/c-val",
-    screenIds: ["market", "news", "media", "employment"],
-  },
-  {
     slug: "population",
     label: "network-system/population",
     screenIds: ["1", "2", "3", "4"],
@@ -48,27 +43,18 @@ export const cycleMediaScreenIds = ["left", "right"] as const;
 export const cycleNewsScreenIds = ["news"] as const;
 export const cycleEmploymentScreenIds = ["employment", "employment-2"] as const;
 export const cycleGraphScreenIds = ["graphs", "graphs-2"] as const;
-export const cValScreenIds = [
-  "market",
-  "news",
-  "media",
-  "employment",
-] as const;
-
 export type NetworkSystemScreenId = (typeof networkSystemScreenIds)[number];
 export type CycleMediaScreenId = (typeof cycleMediaScreenIds)[number];
 export type CycleNewsScreenId = (typeof cycleNewsScreenIds)[number];
 export type CycleEmploymentScreenId =
   (typeof cycleEmploymentScreenIds)[number];
 export type CycleGraphScreenId = (typeof cycleGraphScreenIds)[number];
-export type CValScreenId = (typeof cValScreenIds)[number];
 export type NetworkSystemScreenRoute =
   | NetworkSystemScreenId
   | CycleMediaScreenId
   | CycleNewsScreenId
   | CycleEmploymentScreenId
   | CycleGraphScreenId
-  | CValScreenId
   | "whole";
 
 export function isNetworkSystemExperimentSlug(
@@ -107,10 +93,6 @@ export function isCycleGraphScreenId(
   value: string,
 ): value is CycleGraphScreenId {
   return cycleGraphScreenIds.some((screenId) => screenId === value);
-}
-
-export function isCValScreenId(value: string): value is CValScreenId {
-  return cValScreenIds.some((screenId) => screenId === value);
 }
 
 export function getNetworkSystemScreenIds(

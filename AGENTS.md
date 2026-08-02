@@ -47,6 +47,18 @@ This version has breaking changes — APIs, conventions, and file structure may 
   Do not write to Codex-global memory files unless the user explicitly names
   that external location.
 
+## Runtime
+
+- This repository is pinned to Node.js `26.5.1` with its npm `11.17.0`.
+  Treat that as the canonical project runtime in code, documentation, local
+  development, CI, and tooling. Package operations in this repo still use
+  pnpm.
+- `.nvmrc`, `.node-version`, `package.json#engines.node`, and the Node major
+  used by `@types/node` must remain aligned with Node.js `26.5.1`.
+- An agent sandbox may expose a different `node -v`. That sandbox value does
+  not override the repository runtime or the version reported by the user's
+  active project terminal.
+
 ## React
 
 - Never use generated display text, pseudo-random sentence text, or mutable
