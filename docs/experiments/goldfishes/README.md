@@ -37,16 +37,50 @@ stable agent assignment, collision toggle, perimeter targets, arrival steering,
 speed limits, and edge forces are therefore the same as `2d/1`. Its default
 agent scale is `2`, with a `1`–`4` authoring range; collision clearance and
 minimum distance scale through the same shared function used by `2d/1`. The
+agent-count slider defaults to `100` and spans `0`–`250` in steps of `50`. The
 remaining differences are presentation: Canvas glyphs in 2D versus instanced
 volumetric fish, independent swim height, lighting, and an orthographic 3D
 camera.
 
+### 3D/2 naturalistic model
+
+`3d/2` starts with a top-view-specific naturalistic model. It keeps the same
+eight instanced fish-part meshes and geometries as the previous model and
+changes only their per-instance transforms and existing materials.
+The body is stouter, the peduncle is thicker and shorter, the paired pectoral
+fins begin nearer the gill region, and the caudal fin is slightly canted so its
+translucent fork remains legible from directly above. The default colour is a
+warmer cultivated-goldfish orange.
+
+The eyes remain normal goldfish eyes rather than telescope-eye anatomy, but are
+deliberately enlarged and moved dorsolaterally. At the default scale they read
+as convex, glossy organs from the orthographic top view instead of disappearing
+inside the body silhouette. `Appearance > natural model` switches between this
+model and the previous minimal model without rebuilding the scene or changing
+the swarm state.
+
+`Appearance > fish side 90°` is a controlled model-orientation comparison.
+Off leaves every fish at its existing `0°` top orientation. On uses the fixed
+orientation of a conventional aquarium side view: the lateral body surface
+faces the viewer, the dorsal side stays toward the top of the screen, and fish
+face left or right according to the horizontal sign of their current velocity.
+The camera, orthographic projection, field plane, grid, selected white or media
+cells, agent positions, swim heights, and all steering state remain unchanged.
+Consequently the screen composition and attractor locations stay fixed while
+only the fish's displayed orientation changes.
+
+A browser comparison at 100 fish and scale `2` reported the same structural
+renderer counts for both toggle states: 13 draw calls, 2 textures, and 224,002
+triangles. Both ran at the browser's 60 FPS cadence in that check. This proves
+that the toggle does not add meshes, textures, or geometry work; it is not a
+frame-rate guarantee for other machines.
+
 The 2D route retains its movement, field, count, scale, collision, corner
 mark, and theme controls. Both 3D routes retain count, collision prevention,
 scale, corner mark, colour, and theme controls, and add depth, tail motion, fin
-opacity, full-orbit camera input, bounded zoom, and view reset. Their default
-count is 200; the count control remains 50–1000 in
-steps of 50 so density can be evaluated without editing code.
+opacity, full-orbit camera input, bounded zoom, and view reset. `3d/1` retains a
+default count of 200 and a 50–1000 range; `3d/2` uses the 100 default and 0–250
+range stated above. Both sliders advance in steps of 50.
 
 Leva remains an authoring and parameter-adjustment surface, not the artwork's
 visual wrapper. It stays collapsed, flat, monochrome, non-draggable, and limited
@@ -144,6 +178,13 @@ perimeter targets and arrival steering. Only `3d/1` skips the 2D evacuation and
 protected-cell collision routines, allowing fish to cross above a textured
 block. `3d/2` runs those routines like `2d/1`.
 
+Each numbered 3D variant owns its own route entry, screen implementation,
+renderer, and stylesheet. `3d/2` does not import implementation code from
+`3d/1`; changes to one version cannot alter the other's renderer or controls.
+Both may import the family-level pure field model and media-atlas loader because
+those are explicit cross-variant contracts used to compare swarm behavior, not
+implementation owned by either numbered version.
+
 Camera input changes only the active camera transform. It does not add fish
 instances, geometries, simulation work, or draw calls. Its incremental
 cost should therefore be small relative to simulation and fish rendering, but
@@ -225,12 +266,12 @@ other hardware.
 
 ### Isolated model measurement
 
-This is a historical benchmark recorded on Node 22.3.0; the repository runtime
-is now Node.js 26.5.1, and these figures have not been remeasured under that
-runtime. The shared CPU model was measured at 1920×1080 with one selected cell
-after a warm-up. The figures are mean time per simulation step on the
-development machine; they exclude React, Three.js rendering, Leva, media
-decoding, and browser scheduling.
+This is a historical benchmark recorded on Node 22.3.0; local development now
+uses Node.js 26.5.1 and Vercel builds use Node 24.x. These figures have not been
+remeasured under either current runtime. The shared CPU model was measured at
+1920×1080 with one selected cell after a warm-up. The figures are mean time per
+simulation step on the development machine; they exclude React, Three.js
+rendering, Leva, media decoding, and browser scheduling.
 
 | Agents | Collision prevention off | Collision prevention on |
 | ---: | ---: | ---: |

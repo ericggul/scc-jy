@@ -1,8 +1,9 @@
 # HTTPS and Sockets
 
-The development and socket processes require the repository's pinned Node.js
-`26.5.1` runtime with npm `11.17.0`; dependency commands use pnpm. Activate
-that Node version before installing dependencies or starting either process.
+Local development and socket processes use Node.js `26.5.1` with npm
+`11.17.0`; dependency commands use pnpm. Activate that local Node version
+before installing dependencies or starting either process. Vercel's build
+runtime resolves to Node `24.x` from the accepted `24.x || 26.x` engine range.
 
 The user-owned local development workflow is HTTPS-first:
 

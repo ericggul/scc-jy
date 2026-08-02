@@ -4,9 +4,11 @@ SCC is a Next.js creative experiment harness.
 
 ## Runtime
 
-This repository requires Node.js `26.5.1` with npm `11.17.0`. Package
-operations use pnpm. The same Node version is pinned in `.nvmrc`,
-`.node-version`, and `package.json`.
+Local development uses Node.js `26.5.1` with npm `11.17.0`, pinned in `.nvmrc`
+and `.node-version`. Package operations use pnpm. Vercel builds use Node
+`24.x` because Vercel does not yet support Node 26. The package engine range is
+`24.x || 26.x`: local Node 26 satisfies it without warnings, while Vercel
+selects its currently supported Node 24 runtime.
 
 ## Getting started
 

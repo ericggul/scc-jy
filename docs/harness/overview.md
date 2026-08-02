@@ -4,11 +4,12 @@ SCC is a Next.js creative experiment harness. It supports single-device studies 
 
 ## Runtime baseline
 
-The repository runtime is Node.js `26.5.1` with npm `11.17.0`; package
-operations use pnpm. `.nvmrc`, `.node-version`,
-`package.json#engines.node`, and `@types/node` must remain aligned. A different
-Node version exposed inside an agent sandbox is not the project runtime and
-must not be written back into repository configuration.
+Local development uses Node.js `26.5.1` with npm `11.17.0`; package operations
+use pnpm. `.nvmrc` and `.node-version` own that local pin. Vercel builds use
+Node `24.x`; `package.json#engines.node` accepts `24.x || 26.x`, allowing both
+the Vercel runtime and pinned local runtime without a pnpm engine warning.
+`@types/node` targets major 24. A different Node version exposed inside an
+agent sandbox must not be written back into either declaration.
 
 The documentation split is:
 

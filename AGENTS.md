@@ -49,14 +49,16 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 ## Runtime
 
-- This repository is pinned to Node.js `26.5.1` with its npm `11.17.0`.
-  Treat that as the canonical project runtime in code, documentation, local
-  development, CI, and tooling. Package operations in this repo still use
-  pnpm.
-- `.nvmrc`, `.node-version`, `package.json#engines.node`, and the Node major
-  used by `@types/node` must remain aligned with Node.js `26.5.1`.
+- Local development is pinned to Node.js `26.5.1` with its npm `11.17.0` in
+  `.nvmrc` and `.node-version`. Package operations use pnpm.
+- `package.json#engines.node` must remain `24.x || 26.x`. This accepts the
+  pinned local Node 26 without a pnpm engine warning while allowing Vercel,
+  which does not support Node 26 yet, to select Node 24 from the same range.
+- `@types/node` must remain on major 24 so deployed code cannot accidentally
+  rely on Node 26-only APIs. When Vercel supports Node 26, reassess the type
+  floor deliberately rather than changing it implicitly.
 - An agent sandbox may expose a different `node -v`. That sandbox value does
-  not override the repository runtime or the version reported by the user's
+  not override either declared runtime or the version reported by the user's
   active project terminal.
 
 ## React

@@ -3,9 +3,10 @@
 The documentation tree follows the same ownership boundaries as `app/` and
 `components/`.
 
-The canonical repository runtime is Node.js `26.5.1` with npm `11.17.0`;
-package operations use pnpm. Runtime declarations, development instructions,
-CI, and Node type definitions must stay aligned to that version.
+Local development uses Node.js `26.5.1` with npm `11.17.0`; package operations
+use pnpm. Vercel builds use Node `24.x`, and Node type definitions target major
+24. `package.json#engines.node` allows `24.x || 26.x` so both environments
+satisfy the repository without a local engine warning.
 
 - `harness/` contains repository-wide engineering conventions.
 - `foundations/` contains shared design and artwork theory.

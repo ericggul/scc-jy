@@ -1,4 +1,4 @@
-import Goldfishes3D from "../1/screen";
+import Goldfishes3D from "./screen";
 
 export default function Goldfishes3DTwo() {
   return (
@@ -8,6 +8,12 @@ export default function Goldfishes3DTwo() {
       initialAgentScale={2}
       minimumAgentScale={1}
       maximumAgentScale={4}
+      initialCount={100}
+      minimumCount={0}
+      maximumCount={250}
+      fishModelStyle="naturalistic"
+      initialFishColor="#cf741c"
+      allowFishModelToggle
     />
   );
 }
