@@ -45,7 +45,7 @@ get a dedicated document.
 | `components/standalone/table` | `1`, `2` | [table](./experiments/standalone/table/README.md) |
 | `components/standalone/translate` | `1` | [translate](./experiments/standalone/translate/README.md) |
 | `components/standalone/grid` | `1`, `2` | [grid](./experiments/standalone/grid/README.md) |
-| `components/goldfishes` | `2d/1`, `3d/1`, `3d/2` | [goldfishes](./experiments/goldfishes/README.md) |
+| `components/goldfishes` | `2d/1`, `3d/1`, `3d/2`, `3d/3` | [goldfishes](./experiments/goldfishes/README.md) |
 | `components/dj` | `1` | [dj](./experiments/dj/README.md) |
 | `components/finger-skating` | `1`, `2` | [finger-skating](./experiments/finger-skating/README.md) |
 | `components/c-val` | `1`, `2` | [c-val](./experiments/c-val/README.md) |

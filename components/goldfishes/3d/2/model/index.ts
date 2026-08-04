@@ -23,7 +23,6 @@ export type SelectedCell = {
   height: number;
   centerX: number;
   centerY: number;
-  attentionStrength?: number;
 };
 
 export type CellAnchor = {
@@ -68,6 +67,8 @@ export function scaleCursorFieldSettings(
     collisionBuffer: settings.collisionBuffer * agentScale,
   };
 }
+
+export * from "./tube-network";
 
 const PERCEPTION_RADIUS = 72;
 const SEPARATION_RADIUS = 24;
@@ -565,7 +566,6 @@ export function stepCursorField(
         : null;
 
     if (attentionCell) {
-      const attentionStrength = attentionCell.attentionStrength ?? 1;
       const targetRank = Math.floor(cursor.id / selectedCells.length);
       const targetIndex = cursor.id % selectedCells.length;
       const orbitPoint = getPerimeterTarget(
@@ -583,10 +583,8 @@ export function stepCursorField(
         const arrival = Math.min(1, distance / 150);
         const desiredVx = (dx / distance) * MAX_SPEED * arrival;
         const desiredVy = (dy / distance) * MAX_SPEED * arrival;
-        accelerationX +=
-          (desiredVx - cursor.vx) * 0.72 * attentionStrength;
-        accelerationY +=
-          (desiredVy - cursor.vy) * 0.72 * attentionStrength;
+        accelerationX += (desiredVx - cursor.vx) * 0.72;
+        accelerationY += (desiredVy - cursor.vy) * 0.72;
       }
     }
 

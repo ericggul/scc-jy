@@ -302,6 +302,7 @@ export default function Goldfishes3D({
         blocks: {
           value: "white" as AttentionSurface,
           options: {
+            COMPANY: "company",
             WHITE: "white",
             CAT: "cat",
             KISS: "kiss",

@@ -11,18 +11,18 @@ import { button, folder, LevaPanel, useControls, useCreateStore } from "leva";
 import {
   createCursorField,
   createGrid,
+  getAnchoredCells,
   getCellAtPoint,
   scaleCursorFieldSettings,
   settleCursorField,
   stepCursorField,
   GOLDFISHES_2D_ONE_SETTINGS,
   GOLDFISHES_PRIMARY_GRID_SCALE,
-  TUBE_STATIONS,
   type AttentionZoneBehavior,
   type CellAnchor,
   type CursorAgent,
   type Grid,
-} from "../model";
+} from "../../../model";
 import {
   GoldfishScene,
   type AttentionSurface,
@@ -31,12 +31,6 @@ import {
   type GoldfishRenderSettings,
 } from "../rendering/goldfish-scene";
 import styles from "./goldfishes.module.css";
-import {
-  drawTubeField,
-  getTubeLinePaths,
-  getTubeStationStacks,
-  getTubeStationCells,
-} from "./tube-field";
 
 type FieldTheme = "light" | "dark";
 type GridMark = "dot" | "cross";
@@ -76,9 +70,51 @@ function drawField(
   context: CanvasRenderingContext2D,
   width: number,
   height: number,
+  grid: Grid,
+  anchors: readonly CellAnchor[],
+  palette: FieldPalette,
   gridMark: GridMark,
 ) {
-  drawTubeField(context, width, height, gridMark);
+  context.fillStyle = palette.paper;
+  context.fillRect(0, 0, width, height);
+
+  const selectedCells = getAnchoredCells(anchors, grid, width, height);
+  context.fillStyle = palette.selectedCell;
+  for (const selectedCell of selectedCells) {
+    context.fillRect(
+      selectedCell.x,
+      selectedCell.y,
+      selectedCell.width,
+      selectedCell.height,
+    );
+  }
+
+  if (gridMark === "dot") {
+    context.fillStyle = palette.grid;
+    for (let column = 0; column <= grid.columns; column += 1) {
+      const x = Math.round(grid.originX + column * grid.cellSize);
+      for (let row = 0; row <= grid.rows; row += 1) {
+        const y = Math.round(grid.originY + row * grid.cellSize);
+        context.fillRect(x, y, 1, 1);
+      }
+    }
+    return;
+  }
+
+  context.strokeStyle = palette.grid;
+  context.lineWidth = 1;
+  context.beginPath();
+  for (let column = 0; column <= grid.columns; column += 1) {
+    const x = Math.round(grid.originX + column * grid.cellSize) + 0.5;
+    for (let row = 0; row <= grid.rows; row += 1) {
+      const y = Math.round(grid.originY + row * grid.cellSize) + 0.5;
+      context.moveTo(x - 2.25, y);
+      context.lineTo(x + 2.25, y);
+      context.moveTo(x, y - 2.25);
+      context.lineTo(x, y + 2.25);
+    }
+  }
+  context.stroke();
 }
 
 function getTracePoints(
@@ -170,30 +206,25 @@ export default function Goldfishes3D({
     const grid = gridRef.current;
     const context = backgroundCanvas?.getContext("2d");
     if (!backgroundCanvas || !interactionCanvas || !grid || !context) return;
+    const palette = FIELD_PALETTES[themeRef.current];
+    const fieldPalette =
+      attentionSurfaceRef.current === "white"
+        ? palette
+        : {
+            ...palette,
+            selectedCell: palette.paper,
+          };
     drawField(
       context,
       interactionCanvas.clientWidth,
       interactionCanvas.clientHeight,
+      grid,
+      selectionRef.current,
+      fieldPalette,
       gridMarkRef.current,
     );
-    sceneRef.current?.setTubeLinePaths(
-      getTubeLinePaths(
-        interactionCanvas.clientWidth,
-        interactionCanvas.clientHeight,
-      ),
-      interactionCanvas.clientWidth,
-      interactionCanvas.clientHeight,
-    );
-    sceneRef.current?.setTubeStationStacks(
-      getTubeStationStacks(
-        interactionCanvas.clientWidth,
-        interactionCanvas.clientHeight,
-      ),
-      interactionCanvas.clientWidth,
-      interactionCanvas.clientHeight,
-    );
     sceneRef.current?.setAttentionCells(
-      getTubeStationCells(
+      getAnchoredCells(
         selectionRef.current,
         grid,
         interactionCanvas.clientWidth,
@@ -335,6 +366,9 @@ export default function Goldfishes3D({
             themeRef.current = nextTheme;
             setTheme(nextTheme);
             sceneRef.current?.setPaperColor(FIELD_PALETTES[nextTheme].paper);
+            sceneRef.current?.setBlockColor(
+              FIELD_PALETTES[nextTheme].selectedCell,
+            );
           },
         },
       }),
@@ -369,7 +403,7 @@ export default function Goldfishes3D({
 
       const currentSelections = selectionRef.current;
       const existingCellKeys = new Set(
-        getTubeStationCells(
+        getAnchoredCells(
           currentSelections,
           grid,
           canvas.clientWidth,
@@ -391,7 +425,7 @@ export default function Goldfishes3D({
 
       if (nextSelections.length === currentSelections.length) return;
       selectionRef.current = nextSelections;
-      const selectedCells = getTubeStationCells(
+      const selectedCells = getAnchoredCells(
         nextSelections,
         grid,
         canvas.clientWidth,
@@ -426,7 +460,7 @@ export default function Goldfishes3D({
       agentsRef.current,
       canvas.clientWidth,
       canvas.clientHeight,
-      getTubeStationCells(
+      getAnchoredCells(
         selectionRef.current,
         grid,
         canvas.clientWidth,
@@ -453,6 +487,7 @@ export default function Goldfishes3D({
       count: initialCount,
       color: initialFishColor,
       paperColor: FIELD_PALETTES.dark.paper,
+      blockColor: FIELD_PALETTES.dark.selectedCell,
       cameraProjection,
       fishModelStyle,
     });
@@ -498,7 +533,7 @@ export default function Goldfishes3D({
         agentsRef.current,
         bounds.width,
         bounds.height,
-        getTubeStationCells(
+        getAnchoredCells(
           selectionRef.current,
           grid,
           bounds.width,
@@ -530,7 +565,7 @@ export default function Goldfishes3D({
           height,
           deltaSeconds,
           elapsedSeconds,
-          getTubeStationCells(
+          getAnchoredCells(
             selectionRef.current,
             grid,
             width,
@@ -574,7 +609,7 @@ export default function Goldfishes3D({
           interactionCanvas.dataset.performanceAttentionSurface =
             attentionSurfaceRef.current;
           interactionCanvas.dataset.performanceSelectedCells = String(
-            TUBE_STATIONS.length,
+            selectionRef.current.length,
           );
 
           metricStartedAt = time;
@@ -634,7 +669,7 @@ export default function Goldfishes3D({
       <canvas
         ref={interactionCanvasRef}
         className={styles.interactionCanvas}
-        aria-label="A dark London Underground map with one goldfish attracted to each station. Alt-drag or right-drag rotates the camera through a full orbit, and the wheel zooms."
+        aria-label="A perspective field of moving goldfish. Click or drag across cells to gather fish, Alt-drag or right-drag to rotate the camera through a full orbit, and use the wheel to zoom."
         tabIndex={0}
         onPointerDown={(event) => {
           event.currentTarget.focus();

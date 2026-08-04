@@ -2,6 +2,7 @@ export const goldfishExperiments = [
   { href: "/goldfishes/2d/1", label: "goldfishes/2d/1" },
   { href: "/goldfishes/3d/1", label: "goldfishes/3d/1" },
   { href: "/goldfishes/3d/2", label: "goldfishes/3d/2" },
+  { href: "/goldfishes/3d/3", label: "goldfishes/3d/3" },
 ] as const;
 
 export const goldfish2DExperiments = [
@@ -22,6 +23,7 @@ export function isGoldfish2DExperimentSlug(
 export const goldfish3DExperiments = [
   { slug: "1", label: "goldfishes/3d/1" },
   { slug: "2", label: "goldfishes/3d/2" },
+  { slug: "3", label: "goldfishes/3d/3" },
 ] as const;
 
 export type Goldfish3DExperimentSlug =

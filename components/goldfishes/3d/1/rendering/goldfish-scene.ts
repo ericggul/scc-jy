@@ -7,7 +7,7 @@ import {
   loadMediaAtlas,
   type AttentionSurface,
   type MediaSurface,
-} from "../../../rendering/media-atlas";
+} from "./media-atlas";
 
 const MAX_FISH_COUNT = 1000;
 const MAX_ATTENTION_CELL_COUNT = 4096;
@@ -495,6 +495,7 @@ export class GoldfishScene {
       cat: 0x2c9277b5,
       kiss: 0x165667b1,
       politician: 0x7f4a7c15,
+      company: 0x6f2e9b41,
     }[surface];
     const randomState =
       (

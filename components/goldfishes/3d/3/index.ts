@@ -1,7 +1,7 @@
 import { createElement } from "react";
 import Goldfishes3D from "./screen";
 
-export default function Goldfishes3DTwo() {
+export default function Goldfishes3DThree() {
   return createElement(Goldfishes3D, {
     attentionZoneBehavior: "protected-perimeter",
     cameraProjection: "orthographic",

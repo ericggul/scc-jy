@@ -6,11 +6,13 @@ Routes:
 
 - `/goldfishes/2d/1`: the former `/swarm/4`, with 200 agents by default and
   adjustable count and collision prevention.
-- `/goldfishes/3d/1`: the preserved orthographic baseline promoted from the
-  former `3d/2`, with 100 naturalistic fish and protected selected cells.
-- `/goldfishes/3d/2`: an independent experiment derived from that baseline. Its
-  attractors stay at full strength for 10 seconds and then gradually decay; its
-  default cell surface is a 64-company technology-logo atlas.
+- `/goldfishes/3d/1`: the orthographic baseline with 100 naturalistic fish,
+  protected selected cells, and a selectable 64-company technology-logo atlas.
+- `/goldfishes/3d/2`: an isolated dark London Underground field experiment in
+  which station positions are the swarm's persistent attraction targets.
+- `/goldfishes/3d/3`: an independent copy of `3d/1` whose selected-cell blocks
+  rise into independently randomized symmetric pillars while preserving the
+  exact-top initial view.
 
 The family is top-level because it is being developed as a larger experience,
 not as another standalone swarm variant. The 2D variant was moved rather than
@@ -19,30 +21,88 @@ copied; `/swarm` now contains variants 1–3 only.
 ## Preserved interaction and version contract
 
 Click or press-drag creates grid-cell attractors. Enter or Space creates one at
-the centre and Escape clears all active attractors. `2d/1` and the preserved
-`3d/1` baseline continue to use the family model. `3d/2` owns its modified model
-under `components/goldfishes/3d/2/model`; it does not change either baseline.
+the centre and Escape clears all active attractors. `2d/1` and `3d/1` use the
+family model. `3d/2` owns an identical local model under
+`components/goldfishes/3d/2/model`, so future changes remain isolated.
 
-Both 3D routes default to 100 fish, scale `2`, a `1`–`4` scale range, and a
-`0`–`250` count range in steps of 50. `3d/1` retains the protected-cell baseline.
-`3d/2` retains that same assignment, perimeter targeting, collision, and
+All three 3D routes default to 100 fish with a `0`–`250` count range. They retain
+scale `2`, the `1`–`4` scale range, perimeter targeting, collision, and
 protected-cell behavior.
+`3d/3` preserves the same model behavior and changes only selected-cell
+geometry.
 
-### 3D/2 delayed decay
+### 3D/2 London Underground field
 
-For the first 10 seconds after creation, a `3d/2` cell is identical to the
-`3d/1` baseline: opacity and attraction strength are both `1`. It then fades for
-5 seconds with a smoothstep curve,
-`s = 1 - (3p² - 2p³)`, where `p` is decay progress from 0 to 1. The same `s`
-multiplies the perimeter-arrival steering term and the white-cell opacity. At
-15 seconds the cell is removed. Media planes receive the same per-cell `s`, so
-White, Cat, KISS, Politician, and Company surfaces share one disappearance
-timing and curve. No capacity limit, inspect mode, alternative
-assignment, onset ramp, or additional attention UI remains in `3d/2`.
+The participant observes the existing top-down 3D swarm against a dark transit
+network. The primary relation is station-to-fish assignment: the same projected
+station coordinate draws each station marker and supplies its attraction cell,
+so the map is operational rather than decorative. Fish are not paired one-to-one
+with all 272 stations. At the default count, 100 stable targets are drawn from a
+farthest-point station ordering so they cover the network rather than clustering
+in the geographic centre.
 
-### 3D/2 company-logo surface
+The local snapshot was generated from the TfL Unified API's 11 Tube line route
+sequences on 2026-08-04. `model/tube-network.ts` owns station coordinates,
+served-line membership, route segments, and dark-adjusted line hues.
+`screen/tube-field.ts` applies a median-centred smooth schematic warp that
+expands the dense centre and compresses long outer branches independently on
+both axes. It draws the dark field and station markers, returns matching target
+cells, and supplies the same projected route points to the renderer. The 46
+route branches render as rounded centripetal curves instead of station-to-station
+canvas polylines. All 11 lines occupy distinct 50-unit height layers spanning
+from below to above the default fish swimming band. Stations repeat once at
+each served line's height, and interchange copies share a slender dashed
+vertical connector rather than one heavy continuous column. Each fish uses its
+stable station assignment to choose one served line, then eases toward that
+line's height with a small per-fish vertical offset and slow swim oscillation.
+The exact-top orthographic view preserves the shared 2D footprint, while
+orbiting reveals the routes passing below, between, and above the fish. There is
+no runtime API request, external map tile, copied official map artwork, added
+panel, legend, caption, or ornamental transit chrome.
 
-`3d/2` adds `COMPANY` to the existing block selector and makes it the default.
+Before implementation, 76 unique London Underground map images were reviewed
+across the Wikimedia Commons main, line-map, Night Tube, derivative, and old-map
+categories. The retained visual rule is sparse colored routes and high-contrast
+station nodes on a near-black field; labels and other reference-specific surface
+details failed the removal test because they do not clarify swarm attraction.
+
+### 3D/3 attention pillars
+
+Every selected block in `3d/3` is a symmetric rectangular pillar. Under the
+current vertical multiplier, each newly created cell independently samples an
+extent from `0` to `1,080` units. That same sampled extent is applied above and
+below the field, so total pillar length ranges from `0` to `2,160` while always
+remaining symmetric. A cell keeps its sampled extent through redraws, resize,
+theme changes, and media-surface changes. Removing it clears that stored value,
+so recreating the cell samples a new extent.
+
+Its top face keeps the existing cell centre, width, and depth. White uses the
+current theme's selected-cell colour; Company, Cat, KISS, and Politician keep
+their existing media atlas across the top and all four side faces while sharing
+the same pillar geometry. The side textures reuse the existing atlas sampler
+and per-instance tile attribute; they do not create per-cell materials or
+meshes.
+
+The pillar crosses the field plane and extends only along the scene's vertical
+axis. Because the initial and reset camera is exact-top orthographic, the new
+length does not change the block's initial screen-space footprint or position.
+Orbiting the camera reveals the varied lengths and restrained side-face shading.
+Fish movement, protected-perimeter targeting, collision, controls, media
+playback, camera behavior, and all other rendering settings remain copied from
+`3d/1`.
+
+For the current distance experiment, `3d/3` keeps the field's XZ dimensions,
+orthographic frustum, cell widths, fish size, model coordinates, and pointer
+mapping unchanged. `CAMERA_DISTANCE_MULTIPLIER` moves the camera farther away,
+while `VERTICAL_EXTENT_MULTIPLIER` independently increases only pillar length,
+rendered fish Y positions, and the camera's Y-axis look target. Both currently
+equal `6`. The exact-top orthographic composition therefore remains unchanged,
+but an orbit view reveals the genuinely longer pillars and higher swim layer.
+
+### 3D company-logo surface
+
+All three 3D variants include `COMPANY` in the existing block selector while keeping
+`WHITE` as the default.
 The July 2026 snapshot contains 64 global technology companies spanning AI,
 semiconductors, cloud, enterprise software, consumer hardware, and internet
 platforms. It explicitly includes OpenAI, Anthropic, and SK hynix alongside the
@@ -51,14 +111,13 @@ where available, the OpenAI vector mark, and the SK hynix vector wordmark.
 Each logo is contained without distortion on a white tile and rasterized only
 once into the local 8×8 GPU atlas.
 
-`Field > image speed` defaults to `0` in `3d/2`, so each selected cell keeps its
-independently seeded logo. Raising the control preserves the existing staggered
-hard-cut playback. This company surface and its assets live entirely under the
-`3d/2` implementation/public paths and do not alter `3d/1`.
+`Field > image speed` retains the baseline default of `24`. Each numbered
+version owns its renderer, atlas module, and public logo assets rather than
+importing them from the other experiment.
 
 ### 3D naturalistic model
 
-Both 3D routes start with the same top-view-specific naturalistic model. It keeps the same
+All three 3D routes start with the same top-view-specific naturalistic model. It keeps the same
 eight instanced fish-part meshes and geometries as the previous model and
 changes only their per-instance transforms and existing materials.
 The body is stouter, the peduncle is thicker and shorter, the paired pectoral
@@ -80,9 +139,9 @@ that the toggle does not add meshes, textures, or geometry work; it is not a
 frame-rate guarantee for other machines.
 
 The 2D route retains its movement, field, count, scale, collision, corner
-mark, and theme controls. Both 3D routes retain count, collision prevention,
+mark, and theme controls. All three 3D routes retain count, collision prevention,
 scale, corner mark, colour, and theme controls, and add depth, tail motion, fin
-opacity, full-orbit camera input, bounded zoom, and view reset. Both use the 100
+opacity, full-orbit camera input, bounded zoom, and view reset. All three use the 100
 default and 0–250 range stated above, advancing in steps of 50.
 
 Leva remains an authoring and parameter-adjustment surface, not the artwork's
@@ -135,7 +194,8 @@ This is an architectural workload bound, not a browser FPS measurement.
 
 ## Primary grid scale
 
-`/goldfishes/2d/1`, `/goldfishes/3d/1`, and `/goldfishes/3d/2` pass the shared
+`/goldfishes/2d/1`, `/goldfishes/3d/1`, `/goldfishes/3d/2`, and
+`/goldfishes/3d/3` pass the shared
 `GOLDFISHES_PRIMARY_GRID_SCALE` value of `2` into grid construction, producing
 cells exactly twice the prior size. Only the grid cell geometry changes: fish
 size, movement, collision clearance, and attention forces retain their existing
@@ -149,7 +209,7 @@ constant from `2` back to `1`.
 2. **Primary parameter:** the persistent set of selected cells that attracts
    fish toward distributed targets around associated media locations.
 3. **Perceptual job:** see fish gather around selected blocks while clearly
-   reading height, body volume, heading, and tail movement. Both 3D versions use
+   reading height, body volume, heading, and tail movement. All 3D versions use
    the same exact-top orthographic composition for direct comparison.
 4. **Interaction job:** preserve click, drag, and keyboard selection exactly.
    Left drag remains selection, while Alt-drag or right drag rotates the camera
@@ -157,8 +217,8 @@ constant from `2` back to `1`.
 5. **Wrapper justification:** orbiting 3D cameras turn the field into a spatial
    plane and permit inspection from every side without adding camera translation
    or replacing the established selection interaction. Orthographic projection
-   in `3d/2` removes height-dependent screen-space displacement from its exact
-   top-down comparison view.
+   in every 3D variant removes height-dependent screen-space displacement from
+   its exact top-down comparison view.
 6. **System family:** the dark/light neutral field, sparse corner marks,
    selected-cell contrast, and compact Leva panel remain shared with 2D.
 7. **Removal test:** vertical separation, occlusion, lighting, body volume, tail
@@ -168,24 +228,22 @@ constant from `2` back to `1`.
 
 ## Implemented rendering boundary
 
-Both `/goldfishes/3d/1` and `/goldfishes/3d/2` use Three.js `WebGLRenderer` with
+All three 3D routes use Three.js `WebGLRenderer` with
 an `OrthographicCamera` and a viewport-sized frustum. Their initial and reset
 view is exactly top-down, preserving model-plane positions and sizes regardless
 of each fish's rendered height. Full-orbit input begins from that view.
 The grid and selected cells are drawn into a canvas texture on a horizontal
 plane. Pointer positions are ray-cast back onto that plane before entering the
 shared field model. Fish move in the model's existing two axes while their
-rendered height varies independently. Both 3D routes compute the original
+rendered height varies independently. All three 3D routes compute the original
 perimeter targets, arrival steering, evacuation, and protected-cell collision.
-Only `3d/2` multiplies the attraction steering and white-cell opacity by its
-post-10-second decay value.
 
 Each numbered 3D variant owns its own route entry, screen implementation,
 renderer, and stylesheet. `3d/2` does not import implementation code from
 `3d/1`; changes to one version cannot alter the other's renderer or controls.
-`3d/1` imports the family baseline model. `3d/2` owns a local copy whose only
-behavioral difference is the optional per-cell attraction-strength multiplier.
-Both import the family media-atlas loader, which is version-independent.
+`3d/3` likewise owns its copied renderer, media-atlas module, and logo assets.
+`3d/1` and `3d/3` import the family baseline model, while `3d/2` owns its
+behaviorally identical local copy.
 
 Camera input changes only the active camera transform. It does not add fish
 instances, geometries, simulation work, or draw calls. Its incremental
@@ -211,11 +269,12 @@ machine.
 ### Media attention surfaces
 
 The one-line `Field > blocks` Leva selector switches selected cells between
-`WHITE`, `CAT`, `KISS`, and `POLITICIAN`. White remains the default. The three
-media modes use the corresponding local sets already maintained for `/grid/2`:
-20 Cat images, 62 KISS images, and 60 Politician images. A surface change affects
-only the selected blocks; the shared attraction, open-perimeter movement, fish
-rendering, camera, and selection interaction are unchanged.
+`COMPANY`, `WHITE`, `CAT`, `KISS`, and `POLITICIAN`. White remains the default.
+The three photographic media modes use the corresponding local sets already
+maintained for `/grid/2`: 20 Cat images, 62 KISS images, and 60 Politician
+images. A surface change affects only the selected blocks; the shared
+attraction, protected-perimeter movement, fish rendering, camera, and selection
+interaction are unchanged.
 
 `/grid/2` uses 80 DOM images and changes each `src` independently. At its
 default speed of 24 changes per second, that design can request up to 1,920 DOM
@@ -377,8 +436,7 @@ adaptation overcorrected: it replaced perimeter attraction with distributed
 interior points, lateral-only steering, and release after passage, which removed
 the visible gathering and intertwining that attention was meant to produce.
 Later capacity-limited and inspection-slot experiments were also rejected as
-unintuitive. The current `3d/1` deliberately preserves the promoted baseline.
-The current `3d/2` keeps the baseline swarm assignment and steering, and differs
-through the delayed attraction/opacity decay plus its company-logo surface.
-Do not reintroduce alternative assignment or attention modes without an
-explicit request.
+unintuitive. The current `3d/1` deliberately preserves the promoted baseline;
+`3d/2` changes only the field source and fixed station targets while retaining
+that baseline steering. Do not reintroduce alternative assignment or attention
+modes without an explicit request.

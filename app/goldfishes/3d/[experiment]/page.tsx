@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import type { ComponentType } from "react";
 import Goldfishes3DOne from "@/components/goldfishes/3d/1";
 import Goldfishes3DTwo from "@/components/goldfishes/3d/2";
+import Goldfishes3DThree from "@/components/goldfishes/3d/3";
 import {
   goldfish3DExperiments,
   isGoldfish3DExperimentSlug,
@@ -12,6 +13,7 @@ import {
 const components: Record<Goldfish3DExperimentSlug, ComponentType> = {
   "1": Goldfishes3DOne,
   "2": Goldfishes3DTwo,
+  "3": Goldfishes3DThree,
 };
 
 export function generateStaticParams() {
