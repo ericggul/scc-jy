@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import type { CursorAgent, SelectedCell } from "../../../model";
+import type { CursorAgent, SelectedCell } from "../model";
 import {
   MEDIA_ATLAS_COLUMNS,
   MEDIA_ATLAS_ROWS,
@@ -7,7 +7,7 @@ import {
   loadMediaAtlas,
   type AttentionSurface,
   type MediaSurface,
-} from "../../../rendering/media-atlas";
+} from "./media-atlas";
 
 const MAX_FISH_COUNT = 1000;
 const MAX_ATTENTION_CELL_COUNT = 4096;
@@ -27,7 +27,6 @@ type GoldfishSceneOptions = {
 
 export type CameraProjection = "perspective" | "orthographic";
 export type FishModelStyle = "minimal" | "naturalistic";
-export type FishOrientation = "top" | "side";
 
 export type GoldfishRenderSettings = {
   agentScale: number;
@@ -151,6 +150,10 @@ export class GoldfishScene {
     new Float32Array(MAX_ATTENTION_CELL_COUNT),
     1,
   );
+  private readonly mediaOpacity = new THREE.InstancedBufferAttribute(
+    new Float32Array(MAX_ATTENTION_CELL_COUNT),
+    1,
+  );
   private readonly mediaMaterial: THREE.ShaderMaterial;
   private readonly mediaCells: THREE.InstancedMesh;
   private readonly bodyMaterial = new THREE.MeshStandardMaterial({
@@ -188,9 +191,8 @@ export class GoldfishScene {
   private cameraAzimuth = 0;
   private cameraElevation = INITIAL_CAMERA_ELEVATION;
   private cameraZoom = 1;
-  private fishOrientation: FishOrientation = "top";
-  private attentionSurface: AttentionSurface = "white";
-  private mediaSpeed = 24;
+  private attentionSurface: AttentionSurface = "company";
+  private mediaSpeed = 0;
   private attentionCells: SelectedCell[] = [];
   private readonly mediaAtlasTextures = new Map<
     MediaSurface,
@@ -246,19 +248,24 @@ export class GoldfishScene {
     const mediaGeometry = new THREE.PlaneGeometry(1, 1);
     mediaGeometry.rotateX(-Math.PI / 2);
     this.mediaTile.setUsage(THREE.DynamicDrawUsage);
+    this.mediaOpacity.setUsage(THREE.DynamicDrawUsage);
     mediaGeometry.setAttribute("mediaTile", this.mediaTile);
+    mediaGeometry.setAttribute("mediaOpacity", this.mediaOpacity);
     this.mediaMaterial = new THREE.ShaderMaterial({
       uniforms: {
         mediaAtlas: { value: null },
       },
       vertexShader: `
         attribute float mediaTile;
+        attribute float mediaOpacity;
         varying vec2 vMediaUv;
         varying float vMediaTile;
+        varying float vMediaOpacity;
 
         void main() {
           vMediaUv = uv;
           vMediaTile = mediaTile;
+          vMediaOpacity = mediaOpacity;
           gl_Position =
             projectionMatrix *
             modelViewMatrix *
@@ -270,6 +277,7 @@ export class GoldfishScene {
         uniform sampler2D mediaAtlas;
         varying vec2 vMediaUv;
         varying float vMediaTile;
+        varying float vMediaOpacity;
 
         vec2 mediaAtlasUv(float tileIndex) {
           float column = mod(
@@ -298,11 +306,13 @@ export class GoldfishScene {
             mediaAtlas,
             mediaAtlasUv(vMediaTile)
           );
+          gl_FragColor.a *= vMediaOpacity;
           #include <colorspace_fragment>
         }
       `,
       depthTest: true,
-      depthWrite: true,
+      depthWrite: false,
+      transparent: true,
       side: THREE.DoubleSide,
       toneMapped: false,
     });
@@ -485,10 +495,6 @@ export class GoldfishScene {
     this.updateCamera();
   }
 
-  setFishOrientation(orientation: FishOrientation) {
-    this.fishOrientation = orientation;
-  }
-
   updateField() {
     this.fieldTexture.needsUpdate = true;
   }
@@ -501,6 +507,7 @@ export class GoldfishScene {
       cat: 0x2c9277b5,
       kiss: 0x165667b1,
       politician: 0x7f4a7c15,
+      company: 0x6f2e9b41,
     }[surface];
     const randomState =
       (
@@ -627,6 +634,7 @@ export class GoldfishScene {
       this.local.updateMatrix();
       this.mediaCells.setMatrixAt(index, this.local.matrix);
       this.mediaTile.setX(index, cellPlayback?.current ?? 0);
+      this.mediaOpacity.setX(index, cell.attentionStrength ?? 1);
     }
 
     this.mediaPlayback = playback;
@@ -637,6 +645,9 @@ export class GoldfishScene {
     this.mediaTile.clearUpdateRanges();
     this.mediaTile.addUpdateRange(0, count);
     this.mediaTile.needsUpdate = true;
+    this.mediaOpacity.clearUpdateRanges();
+    this.mediaOpacity.addUpdateRange(0, count);
+    this.mediaOpacity.needsUpdate = true;
 
     if (mediaSurface && count > 0) {
       this.prepareMediaAtlas(mediaSurface);
@@ -806,15 +817,7 @@ export class GoldfishScene {
         swimHeight,
         agent.y - this.height / 2,
       );
-      if (this.fishOrientation === "side") {
-        this.root.rotation.set(
-          -Math.PI / 2,
-          0,
-          agent.vx < 0 ? Math.PI : 0,
-        );
-      } else {
-        this.root.rotation.set(bank * 0.18, -heading, bank);
-      }
+      this.root.rotation.set(bank * 0.18, -heading, bank);
       this.root.scale.set(scale, scale, scale);
       this.root.updateMatrix();
 

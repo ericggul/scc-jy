@@ -22,9 +22,11 @@ type GoldfishSceneOptions = {
   color: string;
   paperColor: string;
   cameraProjection?: CameraProjection;
+  fishModelStyle?: FishModelStyle;
 };
 
 export type CameraProjection = "perspective" | "orthographic";
+export type FishModelStyle = "minimal" | "naturalistic";
 
 export type GoldfishRenderSettings = {
   agentScale: number;
@@ -132,6 +134,8 @@ export class GoldfishScene {
     | THREE.PerspectiveCamera
     | THREE.OrthographicCamera;
   private readonly cameraProjection: CameraProjection;
+  private fishModelStyle: FishModelStyle;
+  private currentColor: string;
   private readonly raycaster = new THREE.Raycaster();
   private readonly floorPlane = new THREE.Plane(
     new THREE.Vector3(0, 1, 0),
@@ -203,8 +207,11 @@ export class GoldfishScene {
     color,
     paperColor,
     cameraProjection = "perspective",
+    fishModelStyle = "minimal",
   }: GoldfishSceneOptions) {
     this.cameraProjection = cameraProjection;
+    this.fishModelStyle = fishModelStyle;
+    this.currentColor = color;
     this.camera =
       cameraProjection === "orthographic"
         ? new THREE.OrthographicCamera(-0.5, 0.5, 0.5, -0.5, 1, 10000)
@@ -217,6 +224,8 @@ export class GoldfishScene {
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.13;
+
+    this.applyFishModelMaterials();
 
     this.fieldTexture = new THREE.CanvasTexture(fieldCanvas);
     this.fieldTexture.colorSpace = THREE.SRGBColorSpace;
@@ -695,12 +704,33 @@ export class GoldfishScene {
   }
 
   setColor(color: string) {
+    this.currentColor = color;
     setMeshColor(this.bodyMaterial, color);
     const finColor = new THREE.Color(color).lerp(
       new THREE.Color("#fff0c8"),
-      0.2,
+      this.fishModelStyle === "naturalistic" ? 0.38 : 0.2,
     );
     setMeshColor(this.finMaterial, `#${finColor.getHexString()}`);
+  }
+
+  private applyFishModelMaterials() {
+    const naturalistic = this.fishModelStyle === "naturalistic";
+    this.bodyMaterial.roughness = naturalistic ? 0.27 : 0.38;
+    this.bodyMaterial.metalness = naturalistic ? 0.055 : 0.02;
+    this.finMaterial.roughness = naturalistic ? 0.4 : 0.52;
+    this.eyeMaterial.color.set(naturalistic ? "#050403" : "#0a0a09");
+    this.eyeMaterial.roughness = naturalistic ? 0.045 : 0.24;
+    this.eyeMaterial.metalness = naturalistic ? 0.025 : 0;
+    this.bodyMaterial.needsUpdate = true;
+    this.finMaterial.needsUpdate = true;
+    this.eyeMaterial.needsUpdate = true;
+  }
+
+  setFishModelStyle(style: FishModelStyle) {
+    if (this.fishModelStyle === style) return;
+    this.fishModelStyle = style;
+    this.applyFishModelMaterials();
+    this.setColor(this.currentColor);
   }
 
   setPaperColor(color: string) {
@@ -760,6 +790,10 @@ export class GoldfishScene {
       const tailAngle = Math.sin(phase) * settings.tailMotion;
       const bodyPulse = 1 + Math.sin(phase * 0.5) * 0.016;
       const bank = THREE.MathUtils.clamp(agent.vy / 110, -0.24, 0.24);
+      const naturalistic = this.fishModelStyle === "naturalistic";
+      const tailCant = naturalistic
+        ? (agent.id % 2 === 0 ? 1 : -1) * 0.58
+        : 0;
 
       this.root.position.set(
         agent.x - this.width / 2,
@@ -779,30 +813,30 @@ export class GoldfishScene {
         0,
         0,
         0,
-        5.35 * bodyPulse,
-        3.45,
-        2.48,
+        (naturalistic ? 5.65 : 5.35) * bodyPulse,
+        naturalistic ? 3.38 : 3.45,
+        naturalistic ? 2.72 : 2.48,
       );
       this.setPartMatrix(
         this.peduncle,
         index,
-        -5.1,
+        naturalistic ? -5.35 : -5.1,
         0,
         0,
         0,
         0,
         0,
         1,
-        1,
-        1,
+        naturalistic ? 1.08 : 1,
+        naturalistic ? 1.12 : 1,
       );
       this.setPartMatrix(
         this.tail,
         index,
-        -5.95,
+        naturalistic ? -6.05 : -5.95,
         0,
         0,
-        0,
+        tailCant,
         tailAngle,
         0,
         1,
@@ -825,54 +859,54 @@ export class GoldfishScene {
       this.setPartMatrix(
         this.leftFin,
         index,
-        0.35,
-        -0.25,
-        2.1,
+        naturalistic ? 1.25 : 0.35,
+        naturalistic ? -0.1 : -0.25,
+        naturalistic ? 2.28 : 2.1,
         0.8 + tailAngle * 0.18,
         -0.12,
         -0.3,
-        0.72,
-        0.62,
-        0.72,
+        naturalistic ? 0.88 : 0.72,
+        naturalistic ? 0.68 : 0.62,
+        naturalistic ? 0.84 : 0.72,
       );
       this.setPartMatrix(
         this.rightFin,
         index,
-        0.35,
-        -0.25,
-        -2.1,
+        naturalistic ? 1.25 : 0.35,
+        naturalistic ? -0.1 : -0.25,
+        naturalistic ? -2.28 : -2.1,
         -0.8 - tailAngle * 0.18,
         0.12,
         -0.3,
-        0.72,
-        0.62,
-        0.72,
+        naturalistic ? 0.88 : 0.72,
+        naturalistic ? 0.68 : 0.62,
+        naturalistic ? 0.84 : 0.72,
       );
       this.setPartMatrix(
         this.leftEye,
         index,
-        3.82,
-        0.88,
-        1.92,
+        naturalistic ? 3.85 : 3.82,
+        naturalistic ? 2.1 : 0.88,
+        naturalistic ? 2.45 : 1.92,
         0,
         0,
         0,
-        1,
-        1,
-        0.52,
+        naturalistic ? 2 : 1,
+        naturalistic ? 2 : 1,
+        naturalistic ? 2 : 0.52,
       );
       this.setPartMatrix(
         this.rightEye,
         index,
-        3.82,
-        0.88,
-        -1.92,
+        naturalistic ? 3.85 : 3.82,
+        naturalistic ? 2.1 : 0.88,
+        naturalistic ? -2.45 : -1.92,
         0,
         0,
         0,
-        1,
-        1,
-        0.52,
+        naturalistic ? 2 : 1,
+        naturalistic ? 2 : 1,
+        naturalistic ? 2 : 0.52,
       );
     }
 

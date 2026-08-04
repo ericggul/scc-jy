@@ -22,7 +22,8 @@ import {
   type CellAnchor,
   type CursorAgent,
   type Grid,
-} from "../../../model";
+  type SelectedCell,
+} from "../model";
 import {
   GoldfishScene,
   type AttentionSurface,
@@ -35,6 +36,7 @@ import styles from "./goldfishes.module.css";
 type FieldTheme = "light" | "dark";
 type GridMark = "dot" | "cross";
 type TracePoint = { x: number; y: number };
+type TimedCellAnchor = CellAnchor & { createdAtMilliseconds: number };
 type CameraGesture = {
   pointerId: number;
   x: number;
@@ -48,6 +50,37 @@ type FieldPalette = {
   grid: string;
   goldfish: string;
 };
+
+const ATTENTION_HOLD_MILLISECONDS = 10_000;
+const ATTENTION_DECAY_MILLISECONDS = 5_000;
+
+function getAttentionStrength(ageMilliseconds: number) {
+  if (ageMilliseconds <= ATTENTION_HOLD_MILLISECONDS) return 1;
+  const progress = Math.min(
+    1,
+    (ageMilliseconds - ATTENTION_HOLD_MILLISECONDS) /
+      ATTENTION_DECAY_MILLISECONDS,
+  );
+  const smoothProgress = progress * progress * (3 - 2 * progress);
+  return 1 - smoothProgress;
+}
+
+function getDecayingCells(
+  anchors: readonly TimedCellAnchor[],
+  grid: Grid,
+  width: number,
+  height: number,
+  nowMilliseconds: number,
+) {
+  return getAnchoredCells(anchors, grid, width, height)
+    .map<SelectedCell>((cell, index) => ({
+      ...cell,
+      attentionStrength: getAttentionStrength(
+        nowMilliseconds - anchors[index].createdAtMilliseconds,
+      ),
+    }))
+    .filter((cell) => (cell.attentionStrength ?? 0) > 0);
+}
 
 const FIELD_PALETTES: Record<FieldTheme, FieldPalette> = {
   light: {
@@ -71,16 +104,16 @@ function drawField(
   width: number,
   height: number,
   grid: Grid,
-  anchors: readonly CellAnchor[],
+  selectedCells: readonly SelectedCell[],
   palette: FieldPalette,
   gridMark: GridMark,
 ) {
   context.fillStyle = palette.paper;
   context.fillRect(0, 0, width, height);
 
-  const selectedCells = getAnchoredCells(anchors, grid, width, height);
-  context.fillStyle = palette.selectedCell;
   for (const selectedCell of selectedCells) {
+    context.globalAlpha = selectedCell.attentionStrength ?? 1;
+    context.fillStyle = palette.selectedCell;
     context.fillRect(
       selectedCell.x,
       selectedCell.y,
@@ -88,6 +121,7 @@ function drawField(
       selectedCell.height,
     );
   }
+  context.globalAlpha = 1;
 
   if (gridMark === "dot") {
     context.fillStyle = palette.grid;
@@ -174,15 +208,16 @@ export default function Goldfishes3D({
   const frameRef = useRef<number | null>(null);
   const agentsRef = useRef<CursorAgent[]>([]);
   const gridRef = useRef<Grid | null>(null);
-  const selectionRef = useRef<CellAnchor[]>([]);
+  const selectionRef = useRef<TimedCellAnchor[]>([]);
+  const lastAttentionRedrawRef = useRef(0);
   const tracePointRef = useRef<TracePoint | null>(null);
   const cameraGestureRef = useRef<CameraGesture | null>(null);
   const cameraInputRef = useRef(true);
   const collisionPreventionRef = useRef(false);
   const themeRef = useRef<FieldTheme>("dark");
   const gridMarkRef = useRef<GridMark>("dot");
-  const attentionSurfaceRef = useRef<AttentionSurface>("white");
-  const mediaSpeedRef = useRef(24);
+  const attentionSurfaceRef = useRef<AttentionSurface>("company");
+  const mediaSpeedRef = useRef(0);
   const renderSettingsRef = useRef<GoldfishRenderSettings>({
     agentScale: initialAgentScale,
     depth: 64,
@@ -200,7 +235,7 @@ export default function Goldfishes3D({
   const [theme, setTheme] = useState<FieldTheme>("dark");
   const [gridMark, setGridMark] = useState<GridMark>("dot");
 
-  const redrawField = useCallback(() => {
+  const redrawField = useCallback((nowMilliseconds = performance.now()) => {
     const backgroundCanvas = backgroundCanvasRef.current;
     const interactionCanvas = interactionCanvasRef.current;
     const grid = gridRef.current;
@@ -214,24 +249,25 @@ export default function Goldfishes3D({
             ...palette,
             selectedCell: palette.paper,
           };
+    const selectedCells = getDecayingCells(
+      selectionRef.current,
+      grid,
+      interactionCanvas.clientWidth,
+      interactionCanvas.clientHeight,
+      nowMilliseconds,
+    );
     drawField(
       context,
       interactionCanvas.clientWidth,
       interactionCanvas.clientHeight,
       grid,
-      selectionRef.current,
+      selectedCells,
       fieldPalette,
       gridMarkRef.current,
     );
-    sceneRef.current?.setAttentionCells(
-      getAnchoredCells(
-        selectionRef.current,
-        grid,
-        interactionCanvas.clientWidth,
-        interactionCanvas.clientHeight,
-      ),
-    );
+    sceneRef.current?.setAttentionCells(selectedCells);
     sceneRef.current?.updateField();
+    return selectedCells;
   }, []);
 
   useControls(
@@ -300,8 +336,9 @@ export default function Goldfishes3D({
       }),
       Field: folder({
         blocks: {
-          value: "white" as AttentionSurface,
+          value: "company" as AttentionSurface,
           options: {
+            COMPANY: "company",
             WHITE: "white",
             CAT: "cat",
             KISS: "kiss",
@@ -314,7 +351,7 @@ export default function Goldfishes3D({
           },
         },
         "image speed": {
-          value: 24,
+          value: 0,
           min: 0,
           max: 40,
           step: 1,
@@ -333,14 +370,6 @@ export default function Goldfishes3D({
         },
       }),
       Appearance: folder({
-        "fish side 90°": {
-          value: false,
-          onChange: (enabled: boolean) => {
-            sceneRef.current?.setFishOrientation(
-              enabled ? "side" : "top",
-            );
-          },
-        },
         "fish colour": {
           value: initialFishColor,
           onChange: (color: string) => sceneRef.current?.setColor(color),
@@ -405,7 +434,12 @@ export default function Goldfishes3D({
         return;
       }
 
-      const currentSelections = selectionRef.current;
+      const nowMilliseconds = performance.now();
+      const currentSelections = selectionRef.current.filter(
+        (anchor) =>
+          nowMilliseconds - anchor.createdAtMilliseconds <
+          ATTENTION_HOLD_MILLISECONDS + ATTENTION_DECAY_MILLISECONDS,
+      );
       const existingCellKeys = new Set(
         getAnchoredCells(
           currentSelections,
@@ -422,6 +456,7 @@ export default function Goldfishes3D({
         if (existingCellKeys.has(cellKey)) continue;
         existingCellKeys.add(cellKey);
         nextSelections.push({
+          createdAtMilliseconds: nowMilliseconds,
           xRatio: cell.centerX / canvas.clientWidth,
           yRatio: cell.centerY / canvas.clientHeight,
         });
@@ -429,11 +464,12 @@ export default function Goldfishes3D({
 
       if (nextSelections.length === currentSelections.length) return;
       selectionRef.current = nextSelections;
-      const selectedCells = getAnchoredCells(
+      const selectedCells = getDecayingCells(
         nextSelections,
         grid,
         canvas.clientWidth,
         canvas.clientHeight,
+        nowMilliseconds,
       );
       agentsRef.current = settleCursorField(
         agentsRef.current,
@@ -444,7 +480,7 @@ export default function Goldfishes3D({
         collisionPreventionRef.current,
         attentionZoneBehavior,
       );
-      redrawField();
+      redrawField(nowMilliseconds);
     },
     [attentionZoneBehavior, redrawField],
   );
@@ -460,16 +496,18 @@ export default function Goldfishes3D({
       canvas.clientHeight,
       constraintSettingsRef.current,
     );
+    const selectedCells = getDecayingCells(
+      selectionRef.current,
+      grid,
+      canvas.clientWidth,
+      canvas.clientHeight,
+      performance.now(),
+    );
     agentsRef.current = settleCursorField(
       agentsRef.current,
       canvas.clientWidth,
       canvas.clientHeight,
-      getAnchoredCells(
-        selectionRef.current,
-        grid,
-        canvas.clientWidth,
-        canvas.clientHeight,
-      ),
+      selectedCells,
       constraintSettingsRef.current,
       collisionPreventionRef.current,
       attentionZoneBehavior,
@@ -532,16 +570,18 @@ export default function Goldfishes3D({
         bounds.height,
         constraintSettingsRef.current,
       );
+      const selectedCells = getDecayingCells(
+        selectionRef.current,
+        grid,
+        bounds.width,
+        bounds.height,
+        performance.now(),
+      );
       agentsRef.current = settleCursorField(
         agentsRef.current,
         bounds.width,
         bounds.height,
-        getAnchoredCells(
-          selectionRef.current,
-          grid,
-          bounds.width,
-          bounds.height,
-        ),
+        selectedCells,
         constraintSettingsRef.current,
         collisionPreventionRef.current,
         attentionZoneBehavior,
@@ -560,25 +600,49 @@ export default function Goldfishes3D({
       previousTime = time;
       const grid = gridRef.current;
 
-      if (!reduceMotion.matches && grid) {
-        elapsedSeconds += deltaSeconds;
-        agentsRef.current = stepCursorField(
-          agentsRef.current,
+      if (grid) {
+        const previousSelectionCount = selectionRef.current.length;
+        selectionRef.current = selectionRef.current.filter(
+          (anchor) =>
+            time - anchor.createdAtMilliseconds <
+            ATTENTION_HOLD_MILLISECONDS + ATTENTION_DECAY_MILLISECONDS,
+        );
+        const selectedCells = getDecayingCells(
+          selectionRef.current,
+          grid,
           width,
           height,
-          deltaSeconds,
-          elapsedSeconds,
-          getAnchoredCells(
-            selectionRef.current,
-            grid,
+          time,
+        );
+        const selectionExpired =
+          previousSelectionCount !== selectionRef.current.length;
+        const decayStarted = selectionRef.current.some(
+          (anchor) =>
+            time - anchor.createdAtMilliseconds >=
+            ATTENTION_HOLD_MILLISECONDS,
+        );
+        if (
+          selectionExpired ||
+          (decayStarted && time - lastAttentionRedrawRef.current >= 50)
+        ) {
+          redrawField(time);
+          lastAttentionRedrawRef.current = time;
+        }
+        if (!reduceMotion.matches) {
+          elapsedSeconds += deltaSeconds;
+          agentsRef.current = stepCursorField(
+            agentsRef.current,
             width,
             height,
-          ),
-          constraintSettingsRef.current,
-          collisionPreventionRef.current,
-          renderSettingsRef.current.agentScale,
-          attentionZoneBehavior,
-        );
+            deltaSeconds,
+            elapsedSeconds,
+            selectedCells,
+            constraintSettingsRef.current,
+            collisionPreventionRef.current,
+            renderSettingsRef.current.agentScale,
+            attentionZoneBehavior,
+          );
+        }
       }
 
       scene.render(agentsRef.current, elapsedSeconds, renderSettingsRef.current);

@@ -6,45 +6,59 @@ Routes:
 
 - `/goldfishes/2d/1`: the former `/swarm/4`, with 200 agents by default and
   adjustable count and collision prevention.
-- `/goldfishes/3d/1`: the shared field and attraction behavior rendered as 3D
-  goldfish, with the selected-cell hard boundary disabled and 200 agents by
-  default.
-- `/goldfishes/3d/2`: an orthographic 3D variant whose swarm and selected-cell
-  boundary behavior matches `/goldfishes/2d/1`.
+- `/goldfishes/3d/1`: the preserved orthographic baseline promoted from the
+  former `3d/2`, with 100 naturalistic fish and protected selected cells.
+- `/goldfishes/3d/2`: an independent experiment derived from that baseline. Its
+  attractors stay at full strength for 10 seconds and then gradually decay; its
+  default cell surface is a 64-company technology-logo atlas.
 
 The family is top-level because it is being developed as a larger experience,
 not as another standalone swarm variant. The 2D variant was moved rather than
 copied; `/swarm` now contains variants 1–3 only.
 
-## Preserved interaction and model contract
+## Preserved interaction and version contract
 
-All routes use `components/goldfishes/model/index.ts`. Click or
-press-drag adds persistent grid cells and stable agent IDs distribute agents
-across all selected cells. Enter or Space selects the central cell and Escape
-clears all cells.
+Click or press-drag creates grid-cell attractors. Enter or Space creates one at
+the centre and Escape clears all active attractors. `2d/1` and the preserved
+`3d/1` baseline continue to use the family model. `3d/2` owns its modified model
+under `components/goldfishes/3d/2/model`; it does not change either baseline.
 
-The 2D route and `3d/2` retain physically excluded cells. The `3d/1` route
-preserves the same flocking, edge behavior, agent-to-cell assignment,
-distributed perimeter targets, arrival steering, and orbit motion. Its only
-model difference is that the selected-cell hard constraint is disabled:
-entering a block no longer projects a fish to the nearest edge or reverses a
-velocity component. Attention therefore remains visibly strong while boundary
-crossing is continuous.
+Both 3D routes default to 100 fish, scale `2`, a `1`–`4` scale range, and a
+`0`–`250` count range in steps of 50. `3d/1` retains the protected-cell baseline.
+`3d/2` retains that same assignment, perimeter targeting, collision, and
+protected-cell behavior.
 
-`3d/2` passes the shared model's `protected-perimeter` behavior at every
-settling and simulation step. Its initial count, grid scale, flocking forces,
-stable agent assignment, collision toggle, perimeter targets, arrival steering,
-speed limits, and edge forces are therefore the same as `2d/1`. Its default
-agent scale is `2`, with a `1`–`4` authoring range; collision clearance and
-minimum distance scale through the same shared function used by `2d/1`. The
-agent-count slider defaults to `100` and spans `0`–`250` in steps of `50`. The
-remaining differences are presentation: Canvas glyphs in 2D versus instanced
-volumetric fish, independent swim height, lighting, and an orthographic 3D
-camera.
+### 3D/2 delayed decay
 
-### 3D/2 naturalistic model
+For the first 10 seconds after creation, a `3d/2` cell is identical to the
+`3d/1` baseline: opacity and attraction strength are both `1`. It then fades for
+5 seconds with a smoothstep curve,
+`s = 1 - (3p² - 2p³)`, where `p` is decay progress from 0 to 1. The same `s`
+multiplies the perimeter-arrival steering term and the white-cell opacity. At
+15 seconds the cell is removed. Media planes receive the same per-cell `s`, so
+White, Cat, KISS, Politician, and Company surfaces share one disappearance
+timing and curve. No capacity limit, inspect mode, alternative
+assignment, onset ramp, or additional attention UI remains in `3d/2`.
 
-`3d/2` starts with a top-view-specific naturalistic model. It keeps the same
+### 3D/2 company-logo surface
+
+`3d/2` adds `COMPANY` to the existing block selector and makes it the default.
+The July 2026 snapshot contains 64 global technology companies spanning AI,
+semiconductors, cloud, enterprise software, consumer hardware, and internet
+platforms. It explicitly includes OpenAI, Anthropic, and SK hynix alongside the
+FAANG companies. The atlas uses SVG source artwork: named Simple Icons assets
+where available, the OpenAI vector mark, and the SK hynix vector wordmark.
+Each logo is contained without distortion on a white tile and rasterized only
+once into the local 8×8 GPU atlas.
+
+`Field > image speed` defaults to `0` in `3d/2`, so each selected cell keeps its
+independently seeded logo. Raising the control preserves the existing staggered
+hard-cut playback. This company surface and its assets live entirely under the
+`3d/2` implementation/public paths and do not alter `3d/1`.
+
+### 3D naturalistic model
+
+Both 3D routes start with the same top-view-specific naturalistic model. It keeps the same
 eight instanced fish-part meshes and geometries as the previous model and
 changes only their per-instance transforms and existing materials.
 The body is stouter, the peduncle is thicker and shorter, the paired pectoral
@@ -59,16 +73,6 @@ inside the body silhouette. `Appearance > natural model` switches between this
 model and the previous minimal model without rebuilding the scene or changing
 the swarm state.
 
-`Appearance > fish side 90°` is a controlled model-orientation comparison.
-Off leaves every fish at its existing `0°` top orientation. On uses the fixed
-orientation of a conventional aquarium side view: the lateral body surface
-faces the viewer, the dorsal side stays toward the top of the screen, and fish
-face left or right according to the horizontal sign of their current velocity.
-The camera, orthographic projection, field plane, grid, selected white or media
-cells, agent positions, swim heights, and all steering state remain unchanged.
-Consequently the screen composition and attractor locations stay fixed while
-only the fish's displayed orientation changes.
-
 A browser comparison at 100 fish and scale `2` reported the same structural
 renderer counts for both toggle states: 13 draw calls, 2 textures, and 224,002
 triangles. Both ran at the browser's 60 FPS cadence in that check. This proves
@@ -78,9 +82,8 @@ frame-rate guarantee for other machines.
 The 2D route retains its movement, field, count, scale, collision, corner
 mark, and theme controls. Both 3D routes retain count, collision prevention,
 scale, corner mark, colour, and theme controls, and add depth, tail motion, fin
-opacity, full-orbit camera input, bounded zoom, and view reset. `3d/1` retains a
-default count of 200 and a 50–1000 range; `3d/2` uses the 100 default and 0–250
-range stated above. Both sliders advance in steps of 50.
+opacity, full-orbit camera input, bounded zoom, and view reset. Both use the 100
+default and 0–250 range stated above, advancing in steps of 50.
 
 Leva remains an authoring and parameter-adjustment surface, not the artwork's
 visual wrapper. It stays collapsed, flat, monochrome, non-draggable, and limited
@@ -146,8 +149,8 @@ constant from `2` back to `1`.
 2. **Primary parameter:** the persistent set of selected cells that attracts
    fish toward distributed targets around associated media locations.
 3. **Perceptual job:** see fish gather around selected blocks while clearly
-   reading height, body volume, heading, and tail movement. `3d/1` emphasizes
-   perspective depth; `3d/2` emphasizes planar correspondence with `2d/1`.
+   reading height, body volume, heading, and tail movement. Both 3D versions use
+   the same exact-top orthographic composition for direct comparison.
 4. **Interaction job:** preserve click, drag, and keyboard selection exactly.
    Left drag remains selection, while Alt-drag or right drag rotates the camera
    and the wheel changes distance.
@@ -165,25 +168,24 @@ constant from `2` back to `1`.
 
 ## Implemented rendering boundary
 
-`/goldfishes/3d/1` uses Three.js `WebGLRenderer` with a perspective camera. Its
-initial and reset view is exactly top-down; full-orbit camera input begins from
-that overhead position. `/goldfishes/3d/2` uses `OrthographicCamera` with a
-viewport-sized frustum. Its exact top-down view therefore preserves model-plane
-positions and sizes regardless of each fish's rendered height.
+Both `/goldfishes/3d/1` and `/goldfishes/3d/2` use Three.js `WebGLRenderer` with
+an `OrthographicCamera` and a viewport-sized frustum. Their initial and reset
+view is exactly top-down, preserving model-plane positions and sizes regardless
+of each fish's rendered height. Full-orbit input begins from that view.
 The grid and selected cells are drawn into a canvas texture on a horizontal
 plane. Pointer positions are ray-cast back onto that plane before entering the
 shared field model. Fish move in the model's existing two axes while their
 rendered height varies independently. Both 3D routes compute the original
-perimeter targets and arrival steering. Only `3d/1` skips the 2D evacuation and
-protected-cell collision routines, allowing fish to cross above a textured
-block. `3d/2` runs those routines like `2d/1`.
+perimeter targets, arrival steering, evacuation, and protected-cell collision.
+Only `3d/2` multiplies the attraction steering and white-cell opacity by its
+post-10-second decay value.
 
 Each numbered 3D variant owns its own route entry, screen implementation,
 renderer, and stylesheet. `3d/2` does not import implementation code from
 `3d/1`; changes to one version cannot alter the other's renderer or controls.
-Both may import the family-level pure field model and media-atlas loader because
-those are explicit cross-variant contracts used to compare swarm behavior, not
-implementation owned by either numbered version.
+`3d/1` imports the family baseline model. `3d/2` owns a local copy whose only
+behavioral difference is the optional per-cell attraction-strength multiplier.
+Both import the family media-atlas loader, which is version-independent.
 
 Camera input changes only the active camera transform. It does not add fish
 instances, geometries, simulation work, or draw calls. Its incremental
@@ -374,5 +376,9 @@ reversed velocity, creating visible head-butting and bounce behavior. The next
 adaptation overcorrected: it replaced perimeter attraction with distributed
 interior points, lateral-only steering, and release after passage, which removed
 the visible gathering and intertwining that attention was meant to produce.
-The correct scope is narrower: preserve the entire attraction calculation and
-disable only hard boundary projection and velocity reflection.
+Later capacity-limited and inspection-slot experiments were also rejected as
+unintuitive. The current `3d/1` deliberately preserves the promoted baseline.
+The current `3d/2` keeps the baseline swarm assignment and steering, and differs
+through the delayed attraction/opacity decay plus its company-logo surface.
+Do not reintroduce alternative assignment or attention modes without an
+explicit request.

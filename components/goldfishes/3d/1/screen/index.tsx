@@ -27,6 +27,7 @@ import {
   GoldfishScene,
   type AttentionSurface,
   type CameraProjection,
+  type FishModelStyle,
   type GoldfishRenderSettings,
 } from "../rendering/goldfish-scene";
 import styles from "./goldfishes.module.css";
@@ -48,7 +49,6 @@ type FieldPalette = {
   goldfish: string;
 };
 
-const DEFAULT_COUNT = 200;
 const FIELD_PALETTES: Record<FieldTheme, FieldPalette> = {
   light: {
     paper: "#f4f4f1",
@@ -146,6 +146,12 @@ type Goldfishes3DProps = {
   initialAgentScale?: number;
   minimumAgentScale?: number;
   maximumAgentScale?: number;
+  initialCount?: number;
+  minimumCount?: number;
+  maximumCount?: number;
+  fishModelStyle?: FishModelStyle;
+  initialFishColor?: string;
+  allowFishModelToggle?: boolean;
 };
 
 export default function Goldfishes3D({
@@ -154,6 +160,12 @@ export default function Goldfishes3D({
   initialAgentScale = 1,
   minimumAgentScale = 0.5,
   maximumAgentScale = 2,
+  initialCount = 200,
+  minimumCount = 50,
+  maximumCount = 1000,
+  fishModelStyle = "minimal",
+  initialFishColor = FIELD_PALETTES.dark.goldfish,
+  allowFishModelToggle = false,
 }: Goldfishes3DProps) {
   const backgroundCanvasRef = useRef<HTMLCanvasElement>(null);
   const threeCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -183,8 +195,8 @@ export default function Goldfishes3D({
     ),
   );
   const controlStore = useCreateStore();
-  const [activeCount, setActiveCount] = useState(DEFAULT_COUNT);
-  const activeCountRef = useRef(DEFAULT_COUNT);
+  const [activeCount, setActiveCount] = useState(initialCount);
+  const activeCountRef = useRef(initialCount);
   const [theme, setTheme] = useState<FieldTheme>("dark");
   const [gridMark, setGridMark] = useState<GridMark>("dot");
 
@@ -226,9 +238,9 @@ export default function Goldfishes3D({
     () => ({
       Agents: folder({
         count: {
-          value: DEFAULT_COUNT,
-          min: 50,
-          max: 1000,
+          value: initialCount,
+          min: minimumCount,
+          max: maximumCount,
           step: 50,
           onChange: (value: number) => {
             activeCountRef.current = value;
@@ -322,7 +334,7 @@ export default function Goldfishes3D({
       }),
       Appearance: folder({
         "fish colour": {
-          value: FIELD_PALETTES.dark.goldfish,
+          value: initialFishColor,
           onChange: (color: string) => sceneRef.current?.setColor(color),
         },
         "fin opacity": {
@@ -334,6 +346,18 @@ export default function Goldfishes3D({
             sceneRef.current?.setFinOpacity(value);
           },
         },
+        ...(allowFishModelToggle
+          ? {
+              "natural model": {
+                value: fishModelStyle === "naturalistic",
+                onChange: (enabled: boolean) => {
+                  sceneRef.current?.setFishModelStyle(
+                    enabled ? "naturalistic" : "minimal",
+                  );
+                },
+              },
+            }
+          : {}),
         "dark mode": {
           value: true,
           onChange: (darkMode: boolean) => {
@@ -348,9 +372,15 @@ export default function Goldfishes3D({
     { store: controlStore },
     [
       controlStore,
+      allowFishModelToggle,
+      fishModelStyle,
       initialAgentScale,
+      initialCount,
+      initialFishColor,
       maximumAgentScale,
+      maximumCount,
       minimumAgentScale,
+      minimumCount,
     ],
   );
 
@@ -450,10 +480,11 @@ export default function Goldfishes3D({
     const scene = new GoldfishScene({
       canvas: threeCanvas,
       fieldCanvas: backgroundCanvas,
-      count: DEFAULT_COUNT,
-      color: FIELD_PALETTES.dark.goldfish,
+      count: initialCount,
+      color: initialFishColor,
       paperColor: FIELD_PALETTES.dark.paper,
       cameraProjection,
+      fishModelStyle,
     });
     sceneRef.current = scene;
     scene.setMediaSpeed(mediaSpeedRef.current);
@@ -597,7 +628,14 @@ export default function Goldfishes3D({
       scene.dispose();
       sceneRef.current = null;
     };
-  }, [attentionZoneBehavior, cameraProjection, redrawField]);
+  }, [
+    attentionZoneBehavior,
+    cameraProjection,
+    fishModelStyle,
+    initialCount,
+    initialFishColor,
+    redrawField,
+  ]);
 
   useEffect(() => {
     redrawField();
