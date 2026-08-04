@@ -41,7 +41,7 @@ export const goldfishExperiments = [
     key: "0804/music-sheet",
     section: "dated",
     date: "2026-08-04",
-    phrase: "Playable staff notation as fish attraction targets",
+    phrase: "Mahler harmonic score slices revealed as attraction targets",
     load: () => import("./0804/music-sheet"),
   },
   {

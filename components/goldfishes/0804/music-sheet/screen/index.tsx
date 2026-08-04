@@ -12,17 +12,19 @@ import { MusicSheetEngine } from "../audio/music-engine";
 import {
   createGoldfishSchool,
   createScoreLayout,
-  getScoreAnchorAtPoint,
-  resolveScoreNotes,
-  scoreAnchorId,
+  getLatentEventIdsNearPoints,
+  resolveLatentScore,
   settleGoldfishSchool,
   stepGoldfishSchool,
   GOLDFISH_SCHOOL_SETTINGS,
   type GoldfishAgent,
-  type ScoreAnchor,
   type ScoreLayout,
   type ScoreNote,
 } from "../model";
+import {
+  MAHLER_ONE_IV_109,
+  MUSIC_SHEET_TITLE,
+} from "../model/score";
 import {
   GoldfishScene,
   type GoldfishRenderSettings,
@@ -58,7 +60,6 @@ function drawScore(
       context.lineTo(system.right, y);
     }
     context.stroke();
-
   }
 }
 
@@ -82,7 +83,7 @@ function getTracePoints(
 }
 
 function chordKey(note: ScoreNote) {
-  return `${note.system}:${note.slot}`;
+  return note.eventId;
 }
 
 export default function MusicSheetScreen() {
@@ -94,8 +95,10 @@ export default function MusicSheetScreen() {
   const frameRef = useRef<number | null>(null);
   const agentsRef = useRef<GoldfishAgent[]>([]);
   const layoutRef = useRef<ScoreLayout | null>(null);
-  const anchorsRef = useRef<ScoreAnchor[]>([]);
+  const latentNotesRef = useRef<ScoreNote[]>([]);
   const notesRef = useRef<ScoreNote[]>([]);
+  const revealedEventIdsRef = useRef(new Set<string>());
+  const showAllRef = useRef(false);
   const tracePointRef = useRef<TracePoint | null>(null);
   const cameraGestureRef = useRef<CameraGesture | null>(null);
   const cameraInputRef = useRef(true);
@@ -120,7 +123,17 @@ export default function MusicSheetScreen() {
   const syncNotes = useCallback(() => {
     const layout = layoutRef.current;
     if (!layout) return;
-    notesRef.current = resolveScoreNotes(anchorsRef.current, layout);
+    latentNotesRef.current = resolveLatentScore(MAHLER_ONE_IV_109, layout);
+    notesRef.current = showAllRef.current
+      ? latentNotesRef.current
+      : latentNotesRef.current.filter((note) =>
+          revealedEventIdsRef.current.has(note.revealId),
+        );
+    const context = scoreCanvasRef.current?.getContext("2d");
+    if (context) {
+      drawScore(context, layout);
+      sceneRef.current?.updateScoreTexture();
+    }
     sceneRef.current?.setNotes(notesRef.current, layout);
     hitEntriesRef.current.clear();
   }, []);
@@ -175,6 +188,13 @@ export default function MusicSheetScreen() {
         },
       }),
       Score: folder({
+        "show all": {
+          value: false,
+          onChange: (enabled: boolean) => {
+            showAllRef.current = enabled;
+            syncNotes();
+          },
+        },
         sound: {
           value: true,
           onChange: (enabled: boolean) => {
@@ -190,8 +210,8 @@ export default function MusicSheetScreen() {
           step: 1,
           onChange: (tempo: number) => audioRef.current?.setTempo(tempo),
         },
-        "clear notes": button(() => {
-          anchorsRef.current = [];
+        "clear reveal": button(() => {
+          revealedEventIdsRef.current.clear();
           syncNotes();
         }),
       }),
@@ -225,18 +245,19 @@ export default function MusicSheetScreen() {
   const selectTrace = useCallback(
     (points: readonly TracePoint[]) => {
       const layout = layoutRef.current;
-      if (!layout) return;
-      const existingIds = new Set(anchorsRef.current.map(scoreAnchorId));
-      const next = [...anchorsRef.current];
-      for (const point of points) {
-        const anchor = getScoreAnchorAtPoint(point.x, point.y, layout);
-        const id = scoreAnchorId(anchor);
-        if (existingIds.has(id)) continue;
-        existingIds.add(id);
-        next.push(anchor);
+      if (!layout || showAllRef.current) return;
+      const nearbyEventIds = getLatentEventIdsNearPoints(
+        points,
+        latentNotesRef.current,
+        layout,
+      );
+      let changed = false;
+      for (const eventId of nearbyEventIds) {
+        if (revealedEventIdsRef.current.has(eventId)) continue;
+        revealedEventIdsRef.current.add(eventId);
+        changed = true;
       }
-      if (next.length === anchorsRef.current.length) return;
-      anchorsRef.current = next;
+      if (!changed) return;
       syncNotes();
     },
     [syncNotes],
@@ -298,17 +319,7 @@ export default function MusicSheetScreen() {
 
       const layout = createScoreLayout(bounds.width, bounds.height);
       layoutRef.current = layout;
-      anchorsRef.current = anchorsRef.current.flatMap((anchor) => {
-        const system = layout.systems[anchor.system];
-        if (!system) return [];
-        return [{
-          ...anchor,
-          slot: Math.min(system.slotCount - 1, anchor.slot),
-        }];
-      });
-      drawScore(context, layout);
       scene.setSize(bounds.width, bounds.height);
-      scene.updateScoreTexture();
       agentsRef.current = createGoldfishSchool(
         activeCountRef.current,
         bounds.width,
@@ -333,7 +344,6 @@ export default function MusicSheetScreen() {
         if (group) group.push(note);
         else chordNotes.set(key, [note]);
       }
-
       for (const agent of agentsRef.current) {
         const note = notes[agent.id % notes.length];
         if (!note) continue;
@@ -396,6 +406,11 @@ export default function MusicSheetScreen() {
           interactionCanvas.dataset.performanceTextures = String(info.textures);
           interactionCanvas.dataset.performanceTriangles = String(info.triangles);
           interactionCanvas.dataset.performanceNotes = String(notesRef.current.length);
+          interactionCanvas.dataset.performanceRevealedEvents = String(
+            showAllRef.current
+              ? MAHLER_ONE_IV_109.length
+              : revealedEventIdsRef.current.size,
+          );
           metricStartedAt = time;
           metricFrames = 0;
           metricCpuMilliseconds = 0;
@@ -434,7 +449,7 @@ export default function MusicSheetScreen() {
       <canvas
         ref={interactionCanvasRef}
         className={styles.interactionCanvas}
-        aria-label="An interactive music score with moving goldfish. Click or drag on the staff to place notes. Goldfish gather at notes and sound each chord when they cross it. Alt-drag or right-drag to orbit, and use the wheel to zoom."
+        aria-label={`A latent score of ${MUSIC_SHEET_TITLE} with moving goldfish. Click or drag across a staff to reveal the notes already present there. Goldfish gather at revealed notes and sound each event when they cross it. Alt-drag or right-drag to orbit, and use the wheel to zoom.`}
         tabIndex={0}
         onPointerDown={(event) => {
           enableAudio();
@@ -510,7 +525,7 @@ export default function MusicSheetScreen() {
         }}
         onKeyDown={(event) => {
           if (event.key === "Escape") {
-            anchorsRef.current = [];
+            revealedEventIdsRef.current.clear();
             syncNotes();
             return;
           }

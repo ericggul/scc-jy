@@ -4,60 +4,77 @@ Date: 2026-08-04
 
 Route: `/goldfishes/0804/music-sheet`
 
-Short description: **Playable staff notation as fish attraction targets.**
+Short description: **Mahler score data inside the established latent music-sheet interaction.**
 
 ## Experiment contract
 
-- **Question:** can a score replace the inherited coordinate grid so notation
-  becomes both the swarm's spatial field and a playable event surface?
-- **Baseline:** `default`, retained as the behavioral and anatomical parent but
-  reimplemented here as a complete standalone experiment.
-- **Mutation:** the square-cell field is removed. Pointer positions quantize to
-  rhythmic slots and diatonic staff steps; each resulting note is a visible
-  notation glyph, a fish target, a collision region, and a Tone.js pitch.
-- **Invariants:** 100 naturalistic instanced goldfish, schooling and optional
-  collision prevention, exact-top orthographic initial view, full orbit,
-  bounded zoom, keyboard creation and clearing, and the collapsed authoring
-  surface.
-- **Evidence:** the same coordinate must place the note, attract its assigned
-  fish, detect entry into the note head, pulse the struck chord, and trigger its
-  pitches. No hidden grid cell may perform those jobs.
+- **Baseline:** preserve the pre-Mahler Beethoven `music-sheet` implementation.
+  The black floor, permanently visible white five-line staffs, white Three.js
+  note instances, responsive score reflow, local reveal, fish attraction,
+  collision pulse and Tone.js signal chain are invariants.
+- **Only mutation:** replace the Beethoven source events with a denser Mahler
+  movement-IV reduction containing literal chord events.
+- **Reveal:** a click is resolved to the nearest staff. Only pre-defined events
+  inside the local horizontal radius on that staff become visible. It never
+  reveals the same time position on the other staffs.
+- **Sound:** a fish collision plays only the pitches belonging to the visible
+  local event it hit. A displayed chord therefore sounds its own literal notes;
+  hidden voices and unrelated events are never added to it.
 
-## Interface premise
+## Ontological relation to node-edge
 
-1. **Participant situation:** one person encounters a full-viewport blank score
-   occupied by a moving school, then writes into it by clicking or dragging.
-2. **Primary parameter:** the growing set of quantized pitch-and-time positions.
-3. **Perceptual job:** read the initial exact-top view as sheet music and see
-   the school redistribute toward authored notes.
-4. **Interaction job:** place notes directly on staff positions; notes sharing
-   one rhythmic slot form a chord, and a fish entering any note head sounds and
-   pulses that chord.
-5. **Wrapper justification:** uninterrupted five-line staffs, note heads, stems,
-   and ledger lines define pitch, horizontal sequence, quantization, collision,
-   and sound without clefs, meter, or barlines.
-6. **System family:** the neutral full-screen field, orange naturalistic fish,
-   sparse composition, orthographic camera grammar, and collapsed Leva surface
-   remain recognizable as Goldfishes.
-7. **Removal test:** removing the staff removes pitch placement; removing a
-   note removes its attraction and sound. There are no captions, legends,
-   media blocks, decorative crossings, or explanatory participant controls.
+As in `0804/node-edge`, the complete structure exists before interaction and
+the participant changes its visible/active subset rather than authoring new
+objects. The relation remains local:
 
-## Implementation and performance boundary
+```text
+fixed score events
+  -> responsive legacy staff layout
+  -> nearest-staff + local-radius hit test
+  -> visible local event
+  -> fish target + that event's own pitches
+```
 
-The black score and white staffs are drawn once into the same canvas texture used by the Three.js floor,
-so orbit and zoom reveal it as an actual plane rather than a screen-fixed
-overlay. Notes use three bounded instanced meshes for heads, stems, and ledger
-lines. Fish retain eight instanced anatomical meshes. Note pulse color and scale
-update within the existing animation frame; no React state is written per hit.
+`show all` exposes the complete latent score. `Escape` and `clear reveal`
+remove the active subset without regenerating the source.
 
-Tone.js is initialized only after a participant gesture, in accordance with
-browser audio policy. One polyphonic synth feeds a short reverb and compressor.
-Per-fish entry hysteresis and a 105 ms per-chord gate prevent continuous contact
-or simultaneous arrivals from producing unbounded retriggers. Audio is muted
-until gesture initialization succeeds; the visual collision still occurs.
+## Score source and local encoding
 
-The staff adapts its line spacing, system count, and rhythmic slot count to the
-viewport. Existing anchors are reprojected to the new staff on resize. This
-trial has received static TypeScript and lint verification only; visual rhythm,
-audio balance, and frame cadence remain to be judged in the browser.
+The replacement data is derived from Gustav Mahler's *Symphony No. 1 in D
+major*, movement IV. IMSLP catalogues the public-domain 1906 Universal Edition
+complete score as file `#17070`. The machine-readable performance source is
+Jean-François Lucarelli's 35-track movement-IV MIDI published by
+GustavMahler.com.
+
+- https://imslp.org/wiki/Symphony_No.1%2C_GMW_11_%28Mahler%2C_Gustav%29
+- https://ks15.imslp.org/files/imglnks/usimg/d/dd/IMSLP17070-Mahler-Symph1fs.pdf
+- https://gustavmahler.com/midi.html
+- https://gustavmahler.com/site/midi/symphony1/set1/4th-movement-Sturmisch-bewegt.midi
+
+The local excerpt begins at source tick 51,840 and spans 480 ticks at 120 PPQ.
+“Sequencer bar 109” is only an internal MIDI location, not a claim about printed
+measure numbering. The reduction stores 38 stable events and 82 note heads,
+including 3- and 4-note chord events, sixteenth/eighth/quarter/dotted-quarter/
+half/whole duration values, and explicit silent events. This is 2.34 times the
+previous Beethoven trial's 35 note heads.
+
+This is a traceable concert-pitch interaction reduction, not a facsimile or a
+new critical edition. No score data is fetched at runtime.
+
+## Visual and performance boundary
+
+The established renderer remains unchanged:
+
+- the black score canvas directly strokes every staff line in white;
+- note heads, stems and ledger lines are white instanced Three.js meshes with
+  no contrasting outline;
+- the score canvas remains the Three.js floor texture;
+- only revealed local events are passed to both the fish model and note meshes;
+- note pulses and the original Tone.js synth/reverb/compressor settings are
+  preserved;
+- score drawing occurs on resize/reveal, while the animation loop updates the
+  existing instanced fish and note pulse matrices.
+
+Static verification: `pnpm exec tsc --noEmit`, `pnpm lint`, and
+`git diff --check`. Browser interaction was not run because repository policy
+requires explicit user authorization for runtime browser testing.

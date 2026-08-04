@@ -16,7 +16,7 @@ standalone-copy rule, archive workflow, and parallel-work protocol.
 | `/goldfishes/2d/1` | retained branch | Glyph swarm and media attention cells | [2d/1](./2d/1.md) |
 | `/goldfishes/0804/tube` | 2026-08-04 | Tube stations as persistent attraction targets | [0804/tube](./0804/tube.md) |
 | `/goldfishes/0804/html` | 2026-08-04 | Live HTML forms as bidirectional attraction targets | [0804/html](./0804/html.md) |
-| `/goldfishes/0804/music-sheet` | 2026-08-04 | Playable staff notation as fish attraction targets | [0804/music-sheet](./0804/music-sheet.md) |
+| `/goldfishes/0804/music-sheet` | 2026-08-04 | Mahler harmonic score slices revealed as attraction targets | [0804/music-sheet](./0804/music-sheet.md) |
 | `/goldfishes/0804/node-edge` | 2026-08-04 | Entropy-generated 3D topology as a persistent attraction field | [0804/node-edge](./0804/node-edge.md) |
 | `/goldfishes/0804/pillars` | 2026-08-04 | Randomized vertical attention pillars | [0804/pillars](./0804/pillars.md) |
 | `/goldfishes/0804/sphere` | 2026-08-04 | Pointer-placed textured spheres distributed through a spatial volume | [0804/sphere](./0804/sphere.md) |

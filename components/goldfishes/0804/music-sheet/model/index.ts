@@ -1,3 +1,5 @@
+import type { LatentScoreEvent } from "./score";
+
 export type GoldfishAgent = {
   id: number;
   x: number;
@@ -33,6 +35,10 @@ export type ScoreLayout = {
 
 export type ScoreNote = ScoreAnchor & {
   id: string;
+  eventId: string;
+  revealId: string;
+  sequence: number;
+  duration: LatentScoreEvent["duration"];
   x: number;
   y: number;
   pitch: string;
@@ -55,26 +61,6 @@ const SEPARATION_RADIUS = 24;
 const MAX_SPEED = 92;
 const MIN_SPEED = 34;
 const EDGE_MARGIN = 48;
-const PITCHES = [
-  "C4",
-  "D4",
-  "E4",
-  "F4",
-  "G4",
-  "A4",
-  "B4",
-  "C5",
-  "D5",
-  "E5",
-  "F5",
-  "G5",
-  "A5",
-  "B5",
-  "C6",
-  "D6",
-  "E6",
-] as const;
-
 function seededUnit(index: number, salt: number) {
   const value = Math.sin(index * 12.9898 + salt * 78.233) * 43758.5453;
   return value - Math.floor(value);
@@ -133,51 +119,92 @@ export function createScoreLayout(width: number, height: number): ScoreLayout {
   };
 }
 
-export function getScoreAnchorAtPoint(
-  x: number,
-  y: number,
-  layout: ScoreLayout,
-): ScoreAnchor {
-  const system = layout.systems.reduce((nearest, candidate) => {
-    const nearestCenter = (nearest.topLineY + nearest.bottomLineY) / 2;
-    const candidateCenter = (candidate.topLineY + candidate.bottomLineY) / 2;
-    return Math.abs(y - candidateCenter) < Math.abs(y - nearestCenter)
-      ? candidate
-      : nearest;
-  });
-  const slotProgress =
-    (clamp(x, system.noteStart, system.noteEnd) - system.noteStart) /
-    Math.max(1, system.noteEnd - system.noteStart);
-  const slot = Math.round(slotProgress * (system.slotCount - 1));
-  const rawStep = Math.round((system.bottomLineY - y) / (system.lineGap / 2));
-  return {
-    system: system.index,
-    slot,
-    step: clamp(rawStep, -2, 12),
-  };
-}
-
-export function scoreAnchorId(anchor: ScoreAnchor) {
-  return `${anchor.system}:${anchor.slot}:${anchor.step}`;
-}
-
-export function resolveScoreNotes(
-  anchors: readonly ScoreAnchor[],
+export function resolveLatentScore(
+  events: readonly LatentScoreEvent[],
   layout: ScoreLayout,
 ): ScoreNote[] {
-  return anchors.flatMap((anchor) => {
-    const system = layout.systems[anchor.system];
-    if (!system) return [];
-    const slotProgress =
-      system.slotCount <= 1 ? 0 : anchor.slot / (system.slotCount - 1);
-    return [{
-      ...anchor,
-      id: scoreAnchorId(anchor),
-      x: system.noteStart + (system.noteEnd - system.noteStart) * slotProgress,
-      y: system.bottomLineY - anchor.step * (system.lineGap / 2),
-      pitch: PITCHES[anchor.step + 2],
-    }];
+  if (layout.systems.length === 0 || events.length === 0) return [];
+  const eventsPerSystem = Math.ceil(events.length / layout.systems.length);
+  const groups = Array.from({ length: layout.systems.length }, (_, system) =>
+    events.slice(system * eventsPerSystem, (system + 1) * eventsPerSystem),
+  );
+
+  return groups.flatMap((group, systemIndex) => {
+    const system = layout.systems[systemIndex];
+    if (!system || group.length === 0) return [];
+    const totalDuration = group.reduce((sum, event) => sum + event.duration, 0);
+    let elapsedDuration = 0;
+
+    return group.flatMap((event, slot) => {
+      const eventCenter = elapsedDuration + event.duration / 2;
+      const progress = totalDuration <= 1 ? 0.5 : eventCenter / totalDuration;
+      const x = system.noteStart + (system.noteEnd - system.noteStart) * progress;
+      elapsedDuration += event.duration;
+      return event.pitches.map(({ pitch, step }, pitchIndex) => ({
+        id: `${event.id}:${pitchIndex}`,
+        eventId: event.id,
+        revealId: event.revealId,
+        sequence: event.sequence,
+        duration: event.duration,
+        system: systemIndex,
+        slot,
+        step,
+        x,
+        y: system.bottomLineY - step * (system.lineGap / 2),
+        pitch,
+      }));
+    });
   });
+}
+
+export function getLatentEventIdsNearPoints(
+  points: readonly { x: number; y: number }[],
+  notes: readonly ScoreNote[],
+  layout: ScoreLayout,
+) {
+  const events = new Map<
+    string,
+    { eventId: string; system: number; x: number }
+  >();
+  for (const note of notes) {
+    if (!events.has(note.revealId)) {
+      events.set(note.revealId, {
+        eventId: note.revealId,
+        system: note.system,
+        x: note.x,
+      });
+    }
+  }
+  const revealed = new Set<string>();
+  const horizontalRadius = layout.lineGap * 2.35;
+
+  for (const point of points) {
+    const nearestSystem = layout.systems.reduce((nearest, candidate) => {
+      const nearestCenter = (nearest.topLineY + nearest.bottomLineY) / 2;
+      const candidateCenter = (candidate.topLineY + candidate.bottomLineY) / 2;
+      return Math.abs(point.y - candidateCenter) < Math.abs(point.y - nearestCenter)
+        ? candidate
+        : nearest;
+    });
+    const candidates = [...events.values()].filter(
+      (event) => event.system === nearestSystem.index,
+    );
+    let found = false;
+    for (const event of candidates) {
+      if (Math.abs(event.x - point.x) > horizontalRadius) continue;
+      revealed.add(event.eventId);
+      found = true;
+    }
+    if (!found && candidates.length > 0) {
+      const nearest = candidates.reduce((current, candidate) =>
+        Math.abs(candidate.x - point.x) < Math.abs(current.x - point.x)
+          ? candidate
+          : current,
+      );
+      revealed.add(nearest.eventId);
+    }
+  }
+  return [...revealed];
 }
 
 export function createGoldfishSchool(
