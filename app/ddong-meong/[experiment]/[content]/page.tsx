@@ -8,6 +8,13 @@ import {
 } from "@/components/ddong-meong/1/model/content-catalog";
 import DdongMeongTwoDummy from "@/components/ddong-meong/2/contents/dummy";
 import {
+  DownwardBreathMeditation,
+  LettingGoMeditation,
+  LighterMomentMeditation,
+  PrivateRoomMeditation,
+  WaitingBodyMeditation,
+} from "@/components/ddong-meong/2/contents/guided-reading";
+import {
   meditationContents as twoMeditationContents,
   type MeditationContentSlug as TwoMeditationContentSlug,
 } from "@/components/ddong-meong/2/model/content-catalog";
@@ -18,6 +25,11 @@ const oneContentComponents = {
 
 const twoContentComponents = {
   dummy: DdongMeongTwoDummy,
+  "letting-go": LettingGoMeditation,
+  "waiting-body": WaitingBodyMeditation,
+  "downward-breath": DownwardBreathMeditation,
+  "private-room": PrivateRoomMeditation,
+  "lighter-moment": LighterMomentMeditation,
 } satisfies Record<TwoMeditationContentSlug, ComponentType>;
 
 const contentRoutes = [

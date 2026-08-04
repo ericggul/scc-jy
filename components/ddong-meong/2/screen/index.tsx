@@ -5,6 +5,8 @@ import type {
   DdongMeongArchiveEntry,
   DdongMeongSession,
 } from "../model/types";
+import { ddongMeongSans } from "../design-system/fonts";
+import theme from "../design-system/theme.module.css";
 import styles from "./styles.module.css";
 
 function formatDuration(durationMs: number) {
@@ -50,7 +52,10 @@ export default function DdongMeongTwoScreen() {
   const archive = snapshot?.archive ?? [];
 
   return (
-    <main className={styles.page}>
+    <main
+      className={`${ddongMeongSans.variable} ${theme.theme} ${styles.page}`}
+      lang="ko"
+    >
       <div className={styles.photoShade} />
 
       <header className={styles.header}>
@@ -88,7 +93,7 @@ export default function DdongMeongTwoScreen() {
       <aside className={styles.archive} aria-labelledby="archive-title">
         <div className={styles.archiveHeading}>
           <div>
-            <span>TODAY</span>
+            <span>RECENT</span>
             <h2 id="archive-title">비운 기록</h2>
           </div>
           <strong>{archive.length}</strong>

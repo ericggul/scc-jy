@@ -1,0 +1,669 @@
+{
+  "schemaVersion": 1,
+  "purpose": "맥락을 최소화하고 감각적 발화 차이를 보존한 한국어 감탄사 후보",
+  "constraints": {
+    "exactRequiredToken": "씨발",
+    "maximumTextCharacters": 24,
+    "forbiddenExplicitContextTerms": [
+      "버튼",
+      "누르",
+      "투자",
+      "주가",
+      "주식",
+      "돈",
+      "사상",
+      "매수",
+      "매도",
+      "계좌",
+      "평단",
+      "수익",
+      "손실",
+      "회사",
+      "실적",
+      "시장",
+      "코스피",
+      "하이닉스",
+      "레버리지",
+      "체결",
+      "주문",
+      "상한가",
+      "하한가",
+      "원금",
+      "청산",
+      "종목"
+    ],
+    "contextRule": "텍스트 자체에는 금융·버튼·금액·기업·성과를 직접 가리키는 단어를 넣지 않는다.",
+    "performanceRule": "상황 설명 대신 호흡, 속도, 피치, 에너지 윤곽과 몸의 감각으로 차이를 만든다."
+  },
+  "styles": [
+    {
+      "id": "startle-flash",
+      "valence": "ambiguous",
+      "arousal": 0.92,
+      "tempo": "fast",
+      "pitchContour": "sharp-rise-cut",
+      "breath": "caught",
+      "energyContour": "burst-stop",
+      "actingCue": "생각보다 첫 음절이 먼저 튀어나온다. 뒤 문장은 작게 끊긴다."
+    },
+    {
+      "id": "delighted-disbelief",
+      "valence": "positive",
+      "arousal": 0.86,
+      "tempo": "medium-fast",
+      "pitchContour": "rise-hover-fall",
+      "breath": "leaking",
+      "energyContour": "bright-expand",
+      "actingCue": "웃기 직전의 숨이 새지만 웃음소리를 연기하지 않는다."
+    },
+    {
+      "id": "suspended-attention",
+      "valence": "ambiguous",
+      "arousal": 0.66,
+      "tempo": "slow",
+      "pitchContour": "low-hover",
+      "breath": "held",
+      "energyContour": "quiet-suspend",
+      "actingCue": "몸을 멈춘 채 작은 소리로 말하고 끝을 닫지 않는다."
+    },
+    {
+      "id": "panic-impact",
+      "valence": "negative",
+      "arousal": 0.96,
+      "tempo": "fast",
+      "pitchContour": "sharp-rise-collapse",
+      "breath": "shallow",
+      "energyContour": "impact-fracture",
+      "actingCue": "숨이 짧아지고 단어 사이가 찢어진다. 또박또박 읽지 않는다."
+    },
+    {
+      "id": "angry-rejection",
+      "valence": "negative",
+      "arousal": 0.82,
+      "tempo": "medium-fast",
+      "pitchContour": "low-flat-hit",
+      "breath": "compressed",
+      "energyContour": "clipped-strike",
+      "actingCue": "소리를 키우기보다 턱을 굳히고 짧게 잘라낸다."
+    },
+    {
+      "id": "helpless-collapse",
+      "valence": "negative",
+      "arousal": 0.42,
+      "tempo": "slow",
+      "pitchContour": "falling",
+      "breath": "exhausted",
+      "energyContour": "drain-away",
+      "actingCue": "첫 단어 이후 힘이 빠지고 마지막 음절이 아래로 사라진다."
+    },
+    {
+      "id": "relief-rebound",
+      "valence": "positive",
+      "arousal": 0.74,
+      "tempo": "medium",
+      "pitchContour": "low-rise-release",
+      "breath": "released",
+      "energyContour": "tremble-open",
+      "actingCue": "참았던 숨이 먼저 풀리고 뒤늦게 작은 웃음기가 번진다."
+    },
+    {
+      "id": "bitter-regret",
+      "valence": "negative",
+      "arousal": 0.55,
+      "tempo": "medium-slow",
+      "pitchContour": "small-rise-fall",
+      "breath": "sighing",
+      "energyContour": "inward-fold",
+      "actingCue": "상대보다 자기 자신에게 말하듯 안으로 접힌다."
+    },
+    {
+      "id": "cynical-laughter",
+      "valence": "mixed",
+      "arousal": 0.58,
+      "tempo": "medium",
+      "pitchContour": "dry-rise-fall",
+      "breath": "nose-release",
+      "energyContour": "dry-bounce",
+      "actingCue": "어이가 없어 코로 숨이 한 번 새지만 실제 웃음은 넣지 않는다."
+    },
+    {
+      "id": "numb-flat",
+      "valence": "negative",
+      "arousal": 0.2,
+      "tempo": "medium-slow",
+      "pitchContour": "flat-low",
+      "breath": "normal",
+      "energyContour": "level",
+      "actingCue": "놀라거나 설득하려 하지 않는다. 이미 여러 번 겪은 사람처럼 평평하다."
+    },
+    {
+      "id": "compulsive-focus",
+      "valence": "ambiguous",
+      "arousal": 0.7,
+      "tempo": "quiet-medium",
+      "pitchContour": "narrow-hover",
+      "breath": "held-shallow",
+      "energyContour": "draw-in",
+      "actingCue": "시선을 떼지 못한 채 거의 혼잣말로 압축해서 말한다."
+    },
+    {
+      "id": "fragile-plea",
+      "valence": "negative",
+      "arousal": 0.68,
+      "tempo": "slow",
+      "pitchContour": "thin-rise",
+      "breath": "unstable",
+      "energyContour": "reach-hold",
+      "actingCue": "큰소리로 요구하지 못하고 가느다란 숨으로 매달린다."
+    },
+    {
+      "id": "somatic-overload",
+      "valence": "ambiguous",
+      "arousal": 0.9,
+      "tempo": "broken-medium",
+      "pitchContour": "unstable",
+      "breath": "irregular",
+      "energyContour": "body-spike",
+      "actingCue": "감정보다 떨림·숨막힘·소름 같은 몸의 반응이 먼저 들린다."
+    }
+  ],
+  "candidates": [
+    {
+      "id": "u001",
+      "text": "씨발, 뭐야.",
+      "style": "startle-flash",
+      "profanityPosition": "initial"
+    },
+    {
+      "id": "u002",
+      "text": "잠깐만, 씨발.",
+      "style": "startle-flash",
+      "profanityPosition": "final"
+    },
+    {
+      "id": "u003",
+      "text": "뭐야 씨발, 진짜?",
+      "style": "startle-flash",
+      "profanityPosition": "medial"
+    },
+    {
+      "id": "u004",
+      "text": "씨발. 이게 뭐야.",
+      "style": "startle-flash",
+      "profanityPosition": "initial"
+    },
+    {
+      "id": "u005",
+      "text": "아니, 씨발.",
+      "style": "startle-flash",
+      "profanityPosition": "final"
+    },
+    {
+      "id": "u006",
+      "text": "씨발, 지금?",
+      "style": "startle-flash",
+      "profanityPosition": "initial"
+    },
+    {
+      "id": "u007",
+      "text": "와, 씨발.",
+      "style": "delighted-disbelief",
+      "profanityPosition": "final"
+    },
+    {
+      "id": "u008",
+      "text": "씨발, 이게 되네.",
+      "style": "delighted-disbelief",
+      "profanityPosition": "initial"
+    },
+    {
+      "id": "u009",
+      "text": "진짜네, 씨발.",
+      "style": "delighted-disbelief",
+      "profanityPosition": "final"
+    },
+    {
+      "id": "u010",
+      "text": "씨발, 아직도 가네.",
+      "style": "delighted-disbelief",
+      "profanityPosition": "initial"
+    },
+    {
+      "id": "u011",
+      "text": "미쳤다, 씨발.",
+      "style": "delighted-disbelief",
+      "profanityPosition": "final"
+    },
+    {
+      "id": "u012",
+      "text": "씨발, 나 웃어도 돼?",
+      "style": "delighted-disbelief",
+      "profanityPosition": "initial"
+    },
+    {
+      "id": "u013",
+      "text": "씨발, 잠깐.",
+      "style": "suspended-attention",
+      "profanityPosition": "initial"
+    },
+    {
+      "id": "u014",
+      "text": "잠깐… 씨발.",
+      "style": "suspended-attention",
+      "profanityPosition": "final"
+    },
+    {
+      "id": "u015",
+      "text": "씨발, 그대로 있어.",
+      "style": "suspended-attention",
+      "profanityPosition": "initial"
+    },
+    {
+      "id": "u016",
+      "text": "아직이야, 씨발.",
+      "style": "suspended-attention",
+      "profanityPosition": "final"
+    },
+    {
+      "id": "u017",
+      "text": "씨발, 조용히 해봐.",
+      "style": "suspended-attention",
+      "profanityPosition": "initial"
+    },
+    {
+      "id": "u018",
+      "text": "지금은 말하지 마, 씨발.",
+      "style": "suspended-attention",
+      "profanityPosition": "final"
+    },
+    {
+      "id": "u019",
+      "text": "씨발, 아니야.",
+      "style": "panic-impact",
+      "profanityPosition": "initial"
+    },
+    {
+      "id": "u020",
+      "text": "아니 씨발, 잠깐만.",
+      "style": "panic-impact",
+      "profanityPosition": "medial"
+    },
+    {
+      "id": "u021",
+      "text": "그만, 씨발.",
+      "style": "panic-impact",
+      "profanityPosition": "final"
+    },
+    {
+      "id": "u022",
+      "text": "씨발, 너무 빨라.",
+      "style": "panic-impact",
+      "profanityPosition": "initial"
+    },
+    {
+      "id": "u023",
+      "text": "잠깐만 씨발, 안 돼.",
+      "style": "panic-impact",
+      "profanityPosition": "medial"
+    },
+    {
+      "id": "u024",
+      "text": "씨발, 못 보겠어.",
+      "style": "panic-impact",
+      "profanityPosition": "initial"
+    },
+    {
+      "id": "u025",
+      "text": "씨발, 이건 아니지.",
+      "style": "angry-rejection",
+      "profanityPosition": "initial"
+    },
+    {
+      "id": "u026",
+      "text": "왜 이러냐, 씨발.",
+      "style": "angry-rejection",
+      "profanityPosition": "final"
+    },
+    {
+      "id": "u027",
+      "text": "씨발, 장난하냐.",
+      "style": "angry-rejection",
+      "profanityPosition": "initial"
+    },
+    {
+      "id": "u028",
+      "text": "사람 놀리냐, 씨발.",
+      "style": "angry-rejection",
+      "profanityPosition": "final"
+    },
+    {
+      "id": "u029",
+      "text": "씨발, 적당히 해.",
+      "style": "angry-rejection",
+      "profanityPosition": "initial"
+    },
+    {
+      "id": "u030",
+      "text": "이건 너무하잖아, 씨발.",
+      "style": "angry-rejection",
+      "profanityPosition": "final"
+    },
+    {
+      "id": "u031",
+      "text": "아, 씨발…",
+      "style": "helpless-collapse",
+      "profanityPosition": "final"
+    },
+    {
+      "id": "u032",
+      "text": "씨발, 끝났네.",
+      "style": "helpless-collapse",
+      "profanityPosition": "initial"
+    },
+    {
+      "id": "u033",
+      "text": "다 갔네, 씨발.",
+      "style": "helpless-collapse",
+      "profanityPosition": "final"
+    },
+    {
+      "id": "u034",
+      "text": "씨발, 또 이러네.",
+      "style": "helpless-collapse",
+      "profanityPosition": "initial"
+    },
+    {
+      "id": "u035",
+      "text": "하 씨발, 진짜.",
+      "style": "helpless-collapse",
+      "profanityPosition": "medial"
+    },
+    {
+      "id": "u036",
+      "text": "이제 됐다, 씨발.",
+      "style": "helpless-collapse",
+      "profanityPosition": "final"
+    },
+    {
+      "id": "u037",
+      "text": "살았다, 씨발.",
+      "style": "relief-rebound",
+      "profanityPosition": "final"
+    },
+    {
+      "id": "u038",
+      "text": "씨발, 살아 있네.",
+      "style": "relief-rebound",
+      "profanityPosition": "initial"
+    },
+    {
+      "id": "u039",
+      "text": "다시 오네, 씨발.",
+      "style": "relief-rebound",
+      "profanityPosition": "final"
+    },
+    {
+      "id": "u040",
+      "text": "와 씨발, 돌아왔어.",
+      "style": "relief-rebound",
+      "profanityPosition": "medial"
+    },
+    {
+      "id": "u041",
+      "text": "씨발, 안 끝났네.",
+      "style": "relief-rebound",
+      "profanityPosition": "initial"
+    },
+    {
+      "id": "u042",
+      "text": "이제 숨 쉬겠다, 씨발.",
+      "style": "relief-rebound",
+      "profanityPosition": "final"
+    },
+    {
+      "id": "u043",
+      "text": "씨발, 괜히 봤네.",
+      "style": "bitter-regret",
+      "profanityPosition": "initial"
+    },
+    {
+      "id": "u044",
+      "text": "보지 말걸, 씨발.",
+      "style": "bitter-regret",
+      "profanityPosition": "final"
+    },
+    {
+      "id": "u045",
+      "text": "또 나냐, 씨발.",
+      "style": "bitter-regret",
+      "profanityPosition": "final"
+    },
+    {
+      "id": "u046",
+      "text": "씨발, 이럴 줄 알았어.",
+      "style": "bitter-regret",
+      "profanityPosition": "initial"
+    },
+    {
+      "id": "u047",
+      "text": "왜 하필 지금이냐, 씨발.",
+      "style": "bitter-regret",
+      "profanityPosition": "final"
+    },
+    {
+      "id": "u048",
+      "text": "또 믿었네, 씨발.",
+      "style": "bitter-regret",
+      "profanityPosition": "final"
+    },
+    {
+      "id": "u049",
+      "text": "웃기네, 씨발.",
+      "style": "cynical-laughter",
+      "profanityPosition": "final"
+    },
+    {
+      "id": "u050",
+      "text": "씨발, 참 잘한다.",
+      "style": "cynical-laughter",
+      "profanityPosition": "initial"
+    },
+    {
+      "id": "u051",
+      "text": "또 시작이네, 씨발.",
+      "style": "cynical-laughter",
+      "profanityPosition": "final"
+    },
+    {
+      "id": "u052",
+      "text": "씨발, 그래 그렇지.",
+      "style": "cynical-laughter",
+      "profanityPosition": "initial"
+    },
+    {
+      "id": "u053",
+      "text": "사람 가지고 노네, 씨발.",
+      "style": "cynical-laughter",
+      "profanityPosition": "final"
+    },
+    {
+      "id": "u054",
+      "text": "어이가 없네, 씨발.",
+      "style": "cynical-laughter",
+      "profanityPosition": "final"
+    },
+    {
+      "id": "u055",
+      "text": "씨발, 그래.",
+      "style": "numb-flat",
+      "profanityPosition": "initial"
+    },
+    {
+      "id": "u056",
+      "text": "그래, 씨발.",
+      "style": "numb-flat",
+      "profanityPosition": "final"
+    },
+    {
+      "id": "u057",
+      "text": "또 이러네, 씨발.",
+      "style": "numb-flat",
+      "profanityPosition": "final"
+    },
+    {
+      "id": "u058",
+      "text": "씨발, 이제 모르겠다.",
+      "style": "numb-flat",
+      "profanityPosition": "initial"
+    },
+    {
+      "id": "u059",
+      "text": "그냥 둬, 씨발.",
+      "style": "numb-flat",
+      "profanityPosition": "final"
+    },
+    {
+      "id": "u060",
+      "text": "그러든가, 씨발.",
+      "style": "numb-flat",
+      "profanityPosition": "final"
+    },
+    {
+      "id": "u061",
+      "text": "씨발, 눈을 못 떼겠네.",
+      "style": "compulsive-focus",
+      "profanityPosition": "initial"
+    },
+    {
+      "id": "u062",
+      "text": "잠깐, 씨발 조용히.",
+      "style": "compulsive-focus",
+      "profanityPosition": "medial"
+    },
+    {
+      "id": "u063",
+      "text": "씨발, 계속 보게 되네.",
+      "style": "compulsive-focus",
+      "profanityPosition": "initial"
+    },
+    {
+      "id": "u064",
+      "text": "뭐지… 씨발.",
+      "style": "compulsive-focus",
+      "profanityPosition": "final"
+    },
+    {
+      "id": "u065",
+      "text": "씨발, 아직 모르겠어.",
+      "style": "compulsive-focus",
+      "profanityPosition": "initial"
+    },
+    {
+      "id": "u066",
+      "text": "조금만 더 보자, 씨발.",
+      "style": "compulsive-focus",
+      "profanityPosition": "final"
+    },
+    {
+      "id": "u067",
+      "text": "씨발, 제발.",
+      "style": "fragile-plea",
+      "profanityPosition": "initial"
+    },
+    {
+      "id": "u068",
+      "text": "제발 한 번만, 씨발.",
+      "style": "fragile-plea",
+      "profanityPosition": "final"
+    },
+    {
+      "id": "u069",
+      "text": "조금만, 씨발.",
+      "style": "fragile-plea",
+      "profanityPosition": "final"
+    },
+    {
+      "id": "u070",
+      "text": "씨발, 조금만 더.",
+      "style": "fragile-plea",
+      "profanityPosition": "initial"
+    },
+    {
+      "id": "u071",
+      "text": "가지 마, 씨발.",
+      "style": "fragile-plea",
+      "profanityPosition": "final"
+    },
+    {
+      "id": "u072",
+      "text": "한 번만 와줘, 씨발.",
+      "style": "fragile-plea",
+      "profanityPosition": "final"
+    },
+    {
+      "id": "u073",
+      "text": "씨발, 손 떨려.",
+      "style": "somatic-overload",
+      "profanityPosition": "initial"
+    },
+    {
+      "id": "u074",
+      "text": "숨 막혀, 씨발.",
+      "style": "somatic-overload",
+      "profanityPosition": "final"
+    },
+    {
+      "id": "u075",
+      "text": "씨발, 소름 돋아.",
+      "style": "somatic-overload",
+      "profanityPosition": "initial"
+    },
+    {
+      "id": "u076",
+      "text": "손이 안 움직여, 씨발.",
+      "style": "somatic-overload",
+      "profanityPosition": "final"
+    },
+    {
+      "id": "u077",
+      "text": "씨발, 숨 좀 쉬자.",
+      "style": "somatic-overload",
+      "profanityPosition": "initial"
+    },
+    {
+      "id": "u078",
+      "text": "나 지금 떨고 있냐, 씨발.",
+      "style": "somatic-overload",
+      "profanityPosition": "final"
+    }
+  ],
+  "validation": {
+    "candidateCount": 78,
+    "uniqueNormalizedTexts": 78,
+    "forbiddenTermHits": [],
+    "duplicateNormalizedTexts": [],
+    "overLengthCandidateIds": [],
+    "styleCounts": {
+      "startle-flash": 6,
+      "delighted-disbelief": 6,
+      "suspended-attention": 6,
+      "panic-impact": 6,
+      "angry-rejection": 6,
+      "helpless-collapse": 6,
+      "relief-rebound": 6,
+      "bitter-regret": 6,
+      "cynical-laughter": 6,
+      "numb-flat": 6,
+      "compulsive-focus": 6,
+      "fragile-plea": 6,
+      "somatic-overload": 6
+    },
+    "profanityPositionCounts": {
+      "initial": 33,
+      "final": 39,
+      "medial": 6
+    },
+    "passed": true
+  }
+}
+

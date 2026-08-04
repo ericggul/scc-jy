@@ -1,7 +1,9 @@
 .page {
   position: relative;
+  isolation: isolate;
   width: 100%;
-  height: 100svh;
+  height: 100%;
+  min-height: 0;
   overflow: hidden;
   animation: pageEnter 360ms ease both;
 }
@@ -18,15 +20,15 @@
   gap: 18px;
   padding:
     max(26px, env(safe-area-inset-top))
-    24px
+    var(--dm-page-gutter)
     14px;
-  color: #f1e7e1;
+  color: var(--dm-color-ink);
 }
 
 .wordmark {
   overflow: hidden;
   color: inherit;
-  font-family: "Snell Roundhand", "Brush Script MT", cursive;
+  font-family: var(--dm-font-wordmark);
   font-size: 27px;
   line-height: 1;
   letter-spacing: -0.04em;
@@ -51,7 +53,7 @@
 
 .clock span {
   margin-left: 4px;
-  color: rgb(241 231 225 / 58%);
+  color: rgb(var(--dm-color-ink-rgb) / 58%);
   font-size: 10px;
   font-weight: 550;
 }
@@ -61,7 +63,7 @@
   height: 2px;
   overflow: hidden;
   border-radius: 999px;
-  background: rgb(241 231 225 / 20%);
+  background: rgb(var(--dm-color-ink-rgb) / 20%);
 }
 
 .progressFill {
@@ -69,7 +71,7 @@
   width: 100%;
   height: 100%;
   border-radius: inherit;
-  background: #f1e7e1;
+  background: var(--dm-color-ink);
   transform: scaleX(0);
   transform-origin: left center;
   transition: transform 250ms linear;
@@ -77,6 +79,8 @@
 }
 
 .scroller {
+  position: relative;
+  z-index: 2;
   width: 100%;
   height: 100%;
   overflow-x: hidden;
@@ -112,7 +116,7 @@
 }
 
 .script {
-  padding: 30svh 24px;
+  padding: 30svh var(--dm-page-gutter);
   will-change: transform;
 }
 
@@ -122,11 +126,8 @@
   min-height: 40svh;
   place-items: center;
   margin: 0;
-  color: #f1e7e1;
+  color: var(--dm-color-ink);
   text-align: center;
-  font-family:
-    -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Segoe UI",
-    sans-serif;
   font-size: clamp(30px, 8.5vw, 40px);
   font-weight: 520;
   line-height: 1.15;

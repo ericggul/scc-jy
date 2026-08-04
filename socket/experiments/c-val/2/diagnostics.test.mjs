@@ -15,8 +15,13 @@ function state({
   receivedAt = 900,
 } = {}) {
   return {
+    phase: "active",
     parameters: { volatility, activity, liquidity },
-    orientation: { receivedAt },
+    humanControl: {
+      engaged: true,
+      contributors: 1,
+      receivedAt,
+    },
     market: {
       index: price,
       openingPrice: 100,
@@ -64,6 +69,13 @@ test("diagnostics aggregate one bounded line per second", () => {
     a: { min: 50, max: 50, end: 50 },
     l: { min: 50, max: 50, end: 50 },
     effectiveV: 72,
+    direction: 0,
+  });
+  assert.deepEqual(message.human, {
+    phase: "active",
+    engaged: true,
+    contributors: 1,
+    signalAgeMs: 100,
   });
   assert.equal(message.price.start, 99.9);
   assert.equal(message.price.end, 100.3);
@@ -85,4 +97,3 @@ test("clearing an inactive room discards stale observations", () => {
   clearCValDiagnostics(diagnostics, 800);
   assert.equal(flushCValDiagnostics(diagnostics, 2_000, () => {}), null);
 });
-

@@ -7,7 +7,13 @@ import {
   useState,
   type CSSProperties,
 } from "react";
+import {
+  playMeditationSoundtrack,
+  scheduleMeditationSoundtrackStop,
+  stopMeditationSoundtrack,
+} from "../../../media";
 import type { ReadingLine } from "../../../model/reading-script";
+import OrganicLiquidBackground from "../organic-liquid-background";
 import styles from "./styles.module.css";
 
 type ReadingPageProps = {
@@ -76,6 +82,29 @@ export default function ReadingPage({
   const scriptRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
+    const resumeSoundtrack = () => playMeditationSoundtrack();
+    const remainingMs = Math.max(
+      0,
+      totalMs - Math.max(0, Date.now() - startedAt),
+    );
+
+    playMeditationSoundtrack();
+    window.addEventListener("pointerdown", resumeSoundtrack, { once: true });
+    window.addEventListener("keydown", resumeSoundtrack, { once: true });
+    const stopTimer = window.setTimeout(
+      stopMeditationSoundtrack,
+      remainingMs,
+    );
+
+    return () => {
+      window.removeEventListener("pointerdown", resumeSoundtrack);
+      window.removeEventListener("keydown", resumeSoundtrack);
+      window.clearTimeout(stopTimer);
+      scheduleMeditationSoundtrackStop();
+    };
+  }, [startedAt, totalMs]);
+
+  useEffect(() => {
     const scroller = scrollerRef.current;
     const script = scriptRef.current;
     if (!scroller || !script) return;
@@ -108,6 +137,7 @@ export default function ReadingPage({
 
   return (
     <section className={styles.page}>
+      <OrganicLiquidBackground startedAt={startedAt} totalMs={totalMs} />
       <TimerHeader startedAt={startedAt} totalMs={totalMs} />
 
       <div

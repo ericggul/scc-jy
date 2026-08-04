@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "status": "complete",
+  "generatedAt": "2026-08-04T10:41:58.414Z",
+  "run": "generator-smoke-20260804",
+  "config": "scripts/collections/c-val-exclamations.json",
+  "model": "gpt-4o-mini-tts",
+  "voice": "cedar",
+  "format": "wav",
+  "text": "야! 이 씨발!",
+  "suffix": null,
+  "takesPerPreset": 1,
+  "files": [
+    {
+      "id": "flat-take-01",
+      "presetId": "flat",
+      "label": "무덤덤",
+      "take": 1,
+      "fileName": "flat-take-01.wav",
+      "instructions": "Create a hyper-realistic Korean utterance by one adult male in a clean, close-mic studio recording. Use natural contemporary Korean timing and pronunciation. It must feel like a spontaneous reaction captured in the moment, not a voice actor demonstrating an emotion. Say the exact input text only. Do not add words, music, ambience, or sound effects. He is tired and mildly annoyed but emotionally drained. Use an almost flat everyday delivery, medium-low pitch, minimal emphasis, and a small pause after '야', as if the situation is unsurprising. Keep it dry and understated.",
+      "src": "/audio/c-val/exclamations/runs/generator-smoke-20260804/flat-take-01.wav",
+      "bytes": 96044
+    }
+  ],
+  "completedAt": "2026-08-04T10:42:00.232Z"
+}

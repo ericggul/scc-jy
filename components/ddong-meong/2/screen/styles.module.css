@@ -1,5 +1,4 @@
 .page {
-  --brown: #684735;
   position: relative;
   display: grid;
   width: 100%;
@@ -11,7 +10,6 @@
     url("/ddong-meong/2/misty-lake.jpg")
     center / cover no-repeat;
   color: #fff;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 .photoShade {
@@ -39,7 +37,7 @@
 
 .header h1 {
   margin: 0;
-  font-family: "Snell Roundhand", "Brush Script MT", cursive;
+  font-family: var(--dm-font-wordmark);
   font-size: clamp(30px, 2.8vw, 46px);
   font-weight: 400;
   line-height: 1;
@@ -93,7 +91,7 @@
   width: clamp(64px, 7vw, 116px);
   aspect-ratio: 1;
   border-radius: 50%;
-  background: var(--brown);
+  background: var(--dm-color-data);
   box-shadow: 0 12px 34px rgb(30 17 11 / 28%);
   transform: scale(0.94);
   transition: transform 5s ease-in-out;
@@ -121,7 +119,7 @@
   margin: 0 clamp(24px, 3vw, 48px) clamp(28px, 4vw, 62px) 0;
   padding: clamp(28px, 3.2vw, 50px);
   overflow: hidden;
-  border-radius: 24px;
+  border-radius: var(--dm-radius-panel);
   background: rgb(255 255 255 / 91%);
   box-shadow: 0 24px 70px rgb(8 19 19 / 24%);
   color: #2d2d2d;
@@ -150,7 +148,7 @@
 }
 
 .archiveHeading > strong {
-  color: var(--brown);
+  color: var(--dm-color-data);
   font-size: clamp(30px, 2.8vw, 48px);
   font-weight: 500;
   font-variant-numeric: tabular-nums;

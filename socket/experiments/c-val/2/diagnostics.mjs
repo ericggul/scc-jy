@@ -1,3 +1,5 @@
+import { cValConditionDirection } from "./model.mjs";
+
 const DIAGNOSTIC_INTERVAL_MS = 1_000;
 
 function emptyRange() {
@@ -82,10 +84,15 @@ export function flushCValDiagnostics(
   const message = {
     windowMs: elapsed,
     samples: diagnostics.observations,
-    signalAgeMs:
-      state.orientation.receivedAt > 0
-        ? Math.max(0, now - state.orientation.receivedAt)
-        : null,
+    human: {
+      phase: state.phase,
+      engaged: Boolean(state.humanControl.engaged),
+      contributors: state.humanControl.contributors ?? 0,
+      signalAgeMs:
+        state.humanControl.receivedAt > 0
+          ? Math.max(0, now - state.humanControl.receivedAt)
+          : null,
+    },
     val: {
       v: parameterSummary(diagnostics.volatility),
       a: parameterSummary(diagnostics.activity),
@@ -94,6 +101,7 @@ export function flushCValDiagnostics(
         (state.market.volatilityRegime ?? state.parameters.volatility) * 100,
         0,
       ),
+      direction: rounded(cValConditionDirection(state.parameters)),
     },
     price: {
       start: rounded(diagnostics.price.first),
@@ -132,4 +140,3 @@ export function flushCValDiagnostics(
 export const cValDiagnosticTiming = {
   intervalMs: DIAGNOSTIC_INTERVAL_MS,
 };
-

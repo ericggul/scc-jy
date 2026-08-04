@@ -18,6 +18,66 @@ export type CValOrientationSignal = CValOrientation & {
   receivedAt: number;
 };
 
+export type CValSensorVector = {
+  x: number | null;
+  y: number | null;
+  z: number | null;
+};
+
+export type CValRotationRate = {
+  alpha: number | null;
+  beta: number | null;
+  gamma: number | null;
+};
+
+export type CValRecordedOrientationEvent = CValOrientation & {
+  id: string;
+  tMs: number;
+};
+
+export type CValRecordedMotionEvent = {
+  id: string;
+  tMs: number;
+  intervalMs: number | null;
+  acceleration: CValSensorVector;
+  accelerationIncludingGravity: CValSensorVector;
+  rotationRate: CValRotationRate;
+};
+
+export type CValSensorTrace = {
+  schemaVersion: 2;
+  kind: "browser-device-motion-orientation";
+  profile: string;
+  provenance: {
+    type: "recorded";
+    recordedAt: string;
+  };
+  durationMs: number;
+  orientationEvents: CValRecordedOrientationEvent[];
+  motionEvents: CValRecordedMotionEvent[];
+};
+
+export type CValRecordingCommand =
+  | { action: "start"; durationMs: number }
+  | { action: "stop" };
+
+export type CValRecordingStatus = {
+  status: "started" | "saving" | "saved" | "error";
+  message: string;
+  mobileId?: string;
+};
+
+export type CValHumanControlInput = CValParameters & {
+  engaged: boolean;
+  sampledAt: number;
+};
+
+export type CValHumanControlState = CValParameters & {
+  engaged: boolean;
+  contributors: number;
+  receivedAt: number;
+};
+
 export type CValMarketState = {
   index: number;
   openingPrice: number;
@@ -90,6 +150,8 @@ export type CValHistory = {
 export type CValSnapshot = {
   version: "2";
   runId: string;
+  phase: "waiting" | "active";
+  activatedAt: number | null;
   revision: number;
   serverTime: number;
   calibration: {
@@ -98,6 +160,7 @@ export type CValSnapshot = {
   };
   parameters: CValParameters;
   orientation: CValOrientationSignal;
+  humanControl: CValHumanControlState;
   market: CValMarketState;
   orderBook: {
     bids: CValBookLevel[];
@@ -124,13 +187,13 @@ export const cValInitialMarket: CValMarketState = {
   oneSecondHigh: 100,
   oneSecondRange: 0,
   fundamental: 100,
-  bestBid: 99.99,
-  bestAsk: 100.01,
+  bestBid: 100,
+  bestAsk: 100,
   orderImbalance: 0,
   returnPercent: 0,
   turnover: 0,
-  spreadBps: 2,
-  depth: 12_000,
+  spreadBps: 0,
+  depth: 0,
   priceImpactBps: 0,
   realizedVolatilityBps: 0,
   volatilityRegime: 0.5,
@@ -150,25 +213,24 @@ function clamp(value: number, minimum: number, maximum: number) {
 }
 
 export function orientationToCValParameters(
-  orientation: Pick<CValOrientation, "alpha" | "beta" | "gamma">,
+  orientation: Pick<CValOrientation, "beta">,
 ): CValParameters {
+  const direction = clamp(orientation.beta / 35, -1, 1);
+  const intensity = Math.abs(direction);
   return {
-    volatility: clamp(0.5 + 0.5 * (orientation.alpha / 90), 0, 1),
-    activity: clamp(0.5 + 0.5 * (orientation.beta / 90), 0, 1),
-    liquidity: clamp(0.5 + 0.5 * (orientation.gamma / 45), 0, 1),
+    volatility: 0.5 + 0.5 * intensity,
+    activity: 0.5 + 0.5 * direction,
+    liquidity: 0.5 - 0.5 * intensity,
   };
 }
 
 export function createInitialCValSnapshot(): CValSnapshot {
   const historyLength = 120;
-  const emptyBook = Array.from({ length: 9 }, (_, index) => ({
-    price: 100,
-    quantity: Math.max(100, 900 - index * 80),
-    orderCount: 1,
-  }));
   return {
     version: "2",
     runId: "local-initial",
+    phase: "waiting",
+    activatedAt: null,
     revision: 0,
     serverTime: 0,
     calibration: {
@@ -183,22 +245,19 @@ export function createInitialCValSnapshot(): CValSnapshot {
       gamma: 0,
       receivedAt: 0,
     },
-    market: { ...cValInitialMarket },
-    orderBook: {
-      bids: emptyBook.map((level, index) => ({
-        ...level,
-        price: 99.99 - index * 0.01,
-      })),
-      asks: emptyBook.map((level, index) => ({
-        ...level,
-        price: 100.01 + index * 0.01,
-      })),
+    humanControl: {
+      ...cValNeutralParameters,
+      engaged: false,
+      contributors: 0,
+      receivedAt: 0,
     },
+    market: { ...cValInitialMarket },
+    orderBook: { bids: [], asks: [] },
     participants: [
-      { type: "liquidity-provider", count: 12, restingOrders: 0 },
-      { type: "fundamental", count: 12, restingOrders: 0 },
-      { type: "trend", count: 8, restingOrders: 0 },
-      { type: "noise", count: 24, restingOrders: 0 },
+      { type: "liquidity-provider", count: 0, restingOrders: 0 },
+      { type: "fundamental", count: 0, restingOrders: 0 },
+      { type: "trend", count: 0, restingOrders: 0 },
+      { type: "noise", count: 0, restingOrders: 0 },
     ],
     recentOrders: [],
     recentTrades: [],
@@ -221,8 +280,7 @@ export function createInitialCValSnapshot(): CValSnapshot {
         { length: historyLength },
         () => 0,
       ),
-      depth: Array.from({ length: historyLength }, () => 12_000),
+      depth: Array.from({ length: historyLength }, () => 0),
     },
   };
 }
-

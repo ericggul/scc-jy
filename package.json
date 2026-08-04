@@ -13,6 +13,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "audio:c-val": "node scripts/generate-c-val-exclamations.mjs",
     "test:c-val:shake": "node scripts/verify-c-val-shake.mjs --version 2",
     "test:c-val:shake:v1": "node scripts/verify-c-val-shake.mjs --version 1",
     "test:c-val:shake:v2": "node scripts/verify-c-val-shake.mjs --version 2"

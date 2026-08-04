@@ -1,267 +1,402 @@
 # 똥멍 / ddong-meong
 
-`똥멍` is the canonical Korean experience name and `ddong-meong` is its
-canonical English form. `Meong` preserves the Korean word `멍`—the brief,
-vacant pause at the center of the experience—while `mung` would introduce an
-unrelated English association with mung beans. Keep `ddong-meong` lowercase
-and hyphenated in visible wordmarks, public routes, component families, socket
-IDs, and documentation. Use `DdongMeong` only where code requires PascalCase.
+## 한 문장 정의
 
-Current routes:
+**똥멍은 “똥을 싸면서 명상하는 웰니스 플랫폼”을 끝까지 진지한 제품으로
+구현함으로써 웰니스 플랫폼의 측정, 수집, 공개 전시 구조를 풍자하는
+모바일·전시장 연동 작업이다.**
 
-- `/ddong-meong`: minimal entry route; redirects to variant `2`.
-- `/ddong-meong/1`: archived mobile snapshot.
-- `/ddong-meong/1/main`: archived introduction and meditation playlist.
-- `/ddong-meong/1/dummy`: archived temporary meditation content.
-- `/ddong-meong/1/screen`: exhibition screen for variant `1`.
-- `/ddong-meong/2`: working variant splash and nickname entry.
-- `/ddong-meong/2/main`: variant `2` introduction and meditation
-  playlist.
-- `/ddong-meong/2/dummy`: the first temporary meditation content in
-  variant `2`.
-- `/ddong-meong/2/screen`: exhibition screen for variant `2`.
+`똥멍`은 한국어 경험명, `ddong-meong`은 영문 표기다. 공개 경로,
+컴포넌트 폴더, 소켓 식별자에서는 소문자와 하이픈을 유지한다.
 
-All numbered mobile and screen routes resolve through the same
-`[experiment]` segment and the `components/ddong-meong/experiments.ts`
-registry. The unnumbered route never embeds an experiment implementation, and
-there is no unnumbered screen exception.
+## 작업의 목표
 
-Variant `1` is the frozen archive of the current experience. Variant `2` is the
-working iteration and the unnumbered route points to it. At the time of this
-snapshot they are visually and behaviorally identical, but they are physical
-copies rather than aliases: changes to variant `2` must not alter variant `1`.
-The registry records these lifecycle roles as `archive` and `working`.
+현대인은 직장과 가족의 시선에서 잠시 벗어나기 위해 화장실 문을 잠근다.
+그러나 그 사적인 장소에서도 다시 휴대전화 플랫폼에 접속하고, 자신의 시간과
+행동을 플랫폼에 제공한다. 사용자는 이 흐름에서 벗어나려고 `똥멍`에
+접속하지만, 그 안에서 다시 명상 인터랙션의 측정과 데이터화, 공개 전시에
+봉사하게 된다.
 
-## Mandatory development policy
+풍자는 모바일 화면의 농담이나 해설에서 발생하지 않는다. 모바일은 Calm류의
+상용 명상 서비스처럼 세련되고 신뢰할 만하며 끝까지 진지해야 한다. 웃음은
+정통 명상 언어와 “똥을 싸는 중”이라는 사용 맥락이 겹치면서 생긴다. 데이터
+비판은 모바일이 설명하지 않는다. 모바일에서 자연스럽게 발생한 개인의 기록이
+전시장 화면에서 실시간·누적으로 공개되는 두 화면의 관계 자체가 비판을
+수행한다.
 
-Every numbered iteration is a complete, standalone experience. Similar visual
-or behavioral results do not make one iteration a dependency of another.
+이 작업은 휴대전화 없는 휴식, 비측정, 비생산성을 지향하는 웰니스 공간의
+정확한 반대 구조를 취한다.
 
-- An iteration must own its own `mobile/`, `model/`, `screen/`, and
-  `transport/` directories.
-- An iteration must own its socket implementation, event namespace, room,
-  runtime state, and tests.
-- Code inside `components/ddong-meong/<iteration>/` must never import from a
-  sibling iteration.
-- Deleting iteration `1` must not remove or invalidate any implementation
-  module required by iteration `2`; the inverse rule applies equally.
-- Visual duplication between iterations must be copied into the owning
-  iteration unless a future shared primitive is explicitly promoted above all
-  numbered iterations as a stable, iteration-neutral contract.
-- A `mobile/index.tsx` file is an orchestrator only. It owns data, state,
-  timers, transport calls, and screen selection; it must not contain page
-  markup or page styling.
-- Each mobile page is grouped in its own directory:
-  `mobile/<page>/index.tsx` and `mobile/<page>/styles.module.css`.
-- A page imports only its own CSS module. Do not accumulate multiple pages in a
-  flat `mobile/` directory or in one shared page stylesheet.
+- 머문 시간과 명상 진행을 정확히 측정한다.
+- 진입용 QR 코드, 이름 또는 닉네임, 쿠키 등 플랫폼다운 식별·기록 장치를
+  사용한다.
+- 명상 콘텐츠의 형식과 그 안의 인터랙션을 통해 배변 중에도 더 건강하고
+  생산적인 시간이 되어야 한다는 요구를 만든다.
+- 이렇게 수집된 개인 행동을 전시장 관객이 보는 실시간·누적 데이터로
+  전환한다.
 
-Both variants keep `intro-flow`, `splash-page`, and `nickname-page` under
-their own `mobile/` directory; each owns an animated surface under `surface/`,
-a playlist under `main/`, content under `contents/<content-slug>/`, domain data
-under `model/`, transport under `transport/`, and exhibition UI under
-`screen/`. Each also owns its image at `public/ddong-meong/<iteration>/` and
-its socket implementation at `socket/experiments/ddong-meong/<iteration>/`.
+QR, 이름, 쿠키를 도입한다는 것은 무제한 수집을 허용한다는 뜻이 아니다.
+작품이 실제로 수집하는 항목, 식별 범위, 보존 기간, 공개 변환 방식, 삭제
+조건을 구현과 함께 명시해야 한다. 생체정보나 기기 지문처럼 작품의 구조에
+필요하지 않은 데이터는 별도 결정 없이 추가하지 않는다.
 
-### Archived variant 1 and working variant 2
+## 두 개의 구조
 
-Each variant uses separate routes for entry, discovery, and playback.
-`/ddong-meong/<iteration>` owns only the three-second entry animation and
-nickname step. A valid nickname is stored in an iteration-specific browser
-session key, the form fades, and routing continues to the same iteration's
-`main` route. The old Daily Ddong card, bottom navigation, and breathing player
-remain discarded behavior, not hidden alternate states.
+### 1. 모바일: 똥을 싸는 동안 사용하는 정통 명상 서비스
 
-The variant-owned `surface/gradient-shell` provides the same restrained
-animated field of near-black umber, dark chocolate, walnut, cocoa, and ochre
-brown to every route. It remains mounted without interruption between splash
-and nickname, and each later route remounts the same visual surface. The splash
-contains only the specified identity text:
+모바일은 작품의 설명서나 우스운 가짜 앱이 아니라 실제로 사용할 수 있는
+정교한 명상 서비스여야 한다.
 
-- `ddong-meong`
-- `똥멍`
-- `명상을 하며 쾌적한 대변을 즐겨보세요.`
+- QR을 통해 서비스에 진입한다.
+- 이름 또는 닉네임을 입력하고, 필요한 범위에서 방문과 세션을 식별한다.
+- 명상 콘텐츠를 고르고, 배변과 동시에 세션을 시작한다.
+- 콘텐츠마다 시간 구조, 안내 방식, 입력 또는 제스처, 진행과 완료 조건을
+  가진다.
+- 세션의 시작, 경과 시간, 콘텐츠 진행, 인터랙션, 완료 또는 이탈을 정확히
+  기록한다.
+- 화면의 문장, 타이밍, 애니메이션, 음향과 피드백은 일반 웰니스 서비스의
+  완성도와 진지함을 유지한다.
+- 데이터 풍자를 설명하는 카피, 자조적 농담, 전시장용 해설을 모바일 UI에
+  넣지 않는다.
 
-After exactly three seconds, the identity content yields to a minimal nickname
-form while the gradient continues uninterrupted. The nickname screen has no
-bottom identity or slogan footer.
+콘텐츠가 여러 개로 확장되더라도 모두 같은 형식을 복제할 필요는 없다. 각
+콘텐츠는 고유한 명상 구조와 인터랙션을 가질 수 있지만, 하나의 신뢰할 수
+있는 `똥멍` 제품군으로 보여야 한다.
 
-The main route briefly explains that `ddong-meong` turns time spent waiting
-for a bowel movement into time attending to breath and bodily sensation. Below
-that introduction is a vertically scrollable meditation playlist. Every
-catalog record owns a stable slug, title, description, image path, and duration
-in `<iteration>/model/content-catalog.ts`; every duration is currently 4 minutes 33
-seconds. The first and only record is the temporary `dummy` content. The whole
-content card is one accessible link to its own iteration's `dummy` route;
-there is no bottom navigation.
+### 2. 전시장: 사적 세션을 공개 데이터로 바꾸는 화면
 
-The dummy content route starts its own timer when mounted. Its reading screen
-shows `elapsed / 4:33` and a matching progress bar at the top beside a
-`ddong-meong` wordmark that returns to the main playlist. Every line uses
-the same brand type treatment and occupies a `40svh` scene. Symmetrical
-`30svh` document padding still places the first and final lines at the exact
-viewport center, while keeping consecutive lines close together. A single
-GPU-transformed text layer advances linearly over the full duration while the
-native scroll container remains manually operable. A fixed vertical alpha mask
-keeps text at full opacity near the center and fades it continuously to zero at
-the upper and lower viewport edges without adding per-line animation. The
-current copy is explicitly temporary, user-provided text stored as stable-ID
-records in each iteration's `model/reading-script.ts`; replace only the working
-variant dataset when the final instruction text arrives unless a new archive
-snapshot is explicitly requested.
+전시장 화면은 장식적인 보조 화면이 아니라 비판이 발생하는 핵심 장치다.
 
-Each variant's mobile, main, contents, model, surface, transport, screen,
-asset, socket room, event namespace, runtime archive, and tests are owned by
-that variant and do not import from the other. The current reading mobile does
-not emit the discarded breathing-session events; each independent transport
-and screen remains available for a later screen contract.
+- 전 세계 또는 현재 배포 범위에서 접속한 이용자의 진행 중인 똥멍 세션을
+  실시간으로 보여준다.
+- 완료된 세션을 누적 데이터로 보여준다.
+- 시간, 콘텐츠, 상호작용, 이름 등 어떤 기록을 얼마나 직접적으로 공개할지는
+  의도와 개인정보 경계를 함께 고려해 정한다.
+- 모바일의 평범한 웰니스 기록이 공개 화면에서는 집계, 비교, 분류 또는
+  놀림거리로 전환되는 간극을 드러낸다.
+- 이 비판을 별도의 설명문이나 풍자 문구로 대신하지 않는다.
 
-## Scope of this pass
+“전 세계”와 “누적”은 기술적 요구다. 단일 서버 프로세스의 메모리나 현재
+연결자 수를 그렇게 부르면 안 된다. 실제 배포 범위, 영속 저장, 중복 처리,
+날짜 경계와 집계 규칙이 구현되어야 그 표현을 사용할 수 있다.
 
-This is a light skeleton, not a completed meditation product. It establishes:
+## 현재 구현 리뷰 — 2026-08-04
 
-- one branded mobile entry and nickname flow;
-- one Calm-like mobile discovery screen with a minimal content catalog;
-- one 4 minute 33 second timed reading content;
-- one matching exhibition screen;
-- anonymous live participation and an in-memory completion archive.
+현재 구현은 **여섯 개 콘텐츠를 가진 모바일 명상 UI와 독립된 전시 화면/소켓
+골격**까지 만들어져 있다. 그러나 두 구조가 실제 세션 데이터로 연결되어
+있지 않아 작품의 핵심 명제는 아직 작동하지 않는다.
 
-It does not add a broader production content library, onboarding questionnaire,
-account, subscription, teacher system, personalization, streak, database, or
-invented product dashboard.
+### 경로와 변형
 
-The premise combines `ddong` with `meong`: a person pauses digital activity
-while seated on a toilet, and the familiar act of blankly resting attention
-meets literal bodily release. Meditation remains the interaction format, but
-it is no longer part of the project name. This is a parody of a commercial
-meditation interface, not a medical or therapeutic product.
+- `/ddong-meong`은 작업 중인 `/ddong-meong/2`로 리다이렉트한다.
+- `/ddong-meong/1`은 보존된 `archive`, `/ddong-meong/2`는 `working`으로
+  등록되어 있다.
+- 각 변형은 진입 `/ddong-meong/<variant>`, 목록
+  `/ddong-meong/<variant>/main`, 콘텐츠
+  `/ddong-meong/<variant>/dummy`, 전시 화면
+  `/ddong-meong/<variant>/screen`을 가진다.
+- `1`과 `2`는 서로 import하지 않는 물리적 복사본이다. `1`은 초기 구조를
+  보존하고, `2`에는 Pretendard 디자인 토큰, 중앙 스크롤 소유권, 추가 명상
+  콘텐츠 다섯 개와 `dummy`의 particle-field 배경 시험이 있다. 두 변형의
+  시각과 행동이 동일하다는 과거 기록은 더 이상 사실이 아니다.
 
-## Final visual authority
+### 현재 모바일 흐름
 
-The mobile skeleton deliberately follows the actual Calm application UI shown
-in Calm's publisher-provided App Store screenshot gallery. The primary visible
-invariants are:
+1. 갈색 계열 애니메이션 그라디언트 위에 `ddong-meong`, `똥멍`, 안내 문구가
+   3초간 나타난다.
+2. 닉네임을 최대 16자로 입력한다. 공백 제거 후 변형별 `sessionStorage`에
+   저장하고 420ms 퇴장 애니메이션 뒤 `main`으로 이동한다.
+3. `main`은 4분 33초짜리 `보내는 연습`과 4분짜리 정통 명상 콘텐츠 다섯
+   개를 보여준다.
+4. 콘텐츠에 들어가면 페이지 마운트 시점부터 각 콘텐츠 타이머가 자동으로
+   시작된다. 문장은 선형 자동 이동하고 사용자가 수동으로 스크롤할 수도 있다.
+5. 타이머는 각 길이에서 멈춰 보이지만 완료 화면, 일시정지, 재시작, 명시적
+   종료 동작은 없다.
 
-- a full-viewport, quiet landscape photograph;
-- white script wordmark and restrained white interface text over the image;
-- a brief greeting and one dominant recommendation;
-- a single rounded Daily Calm-style content card;
-- a circular play action;
-- a compact four-item bottom navigation;
-- a quieter, reduced-control session view after starting.
+`dummy`의 문장은 최종 명상 원고가 아니라 임시 데이터다. 가사형 문장과
+마지막의 변비 관련 반전이 직접 웃음을 만들기 때문에, “정통 명상 앱은 끝까지
+진지해야 한다”는 최종 방향과 아직 완전히 일치하지 않는다. 추가된 다섯 원고는
+진지한 명상 언어로 작성되었지만 실제 사용 시간의 호흡과 줄 전환은 아직
+브라우저에서 관찰하지 않았다.
 
-The implementation changes only the experience name, Korean copy, the session
-subject, and the accent color. Brown is a limited accent on the play action,
-breathing circle, and live-participant marks; it is not a brown theme applied
-to every surface.
+### 2026-08-04 디자인 시스템 소규모 시도
 
-The exhibition screen is not a separate dashboard aesthetic. It uses the same
-photograph, white typography, script wordmark, translucent white content
-surface, and brown state mark. Its only additional jobs are to show anonymous
-current sessions and recent completed sessions.
+작업 변형 `2`의 레이아웃, 갈색 그라디언트, 풍경 이미지, 필기체 워드마크,
+컴포넌트 형상과 모션 타이밍은 유지하면서 본문·데이터·컨트롤 서체만 자체
+호스팅한 Pretendard Variable로 통일했다. 폰트는 `next/font/local`로 `2`의
+모바일 셸과 전시 화면에만 적용되며 보존 변형 `1`에는 영향을 주지 않는다.
 
-Primary visual evidence:
-[Calm App Store UI gallery](https://apps.apple.com/us/app/calm/id571800810).
-The landscape photograph is stored locally for exhibition reliability and is
-credited to
-[Saul Brotheridge on Unsplash](https://unsplash.com/photos/a-body-of-water-surrounded-by-a-forest-SneyzBq7nNk).
+반복되던 본문색, 표면색, 행동색, 데이터색, 24px 모바일 gutter와 주요
+radius는 `2/design-system/theme.module.css`의 변형 전용 토큰으로 모았다.
+필기체 워드마크는 현재 인상을 보존하기 위해 별도 역할로 남겼다. 실제 날짜
+필터가 없는 전시 기록의 `TODAY` 표기는 데이터 사실에 맞게 `RECENT`로
+교체했다.
 
-## Interface contract
+모바일 셸은 동적 viewport에 고정하고 문서 바깥쪽의 스크롤을 차단했다. 메인
+목록의 유일한 세로 스크롤 소유자는 가운데 최대 480px 인터페이스이며,
+overscroll도 바깥 문서로 전달하지 않는다. 닉네임 화면은 모바일 키보드로
+가용 높이가 줄어들 때에만 같은 중앙 인터페이스 안에서 스크롤할 수 있다.
 
-1. **Participant situation:** a person privately holds a phone while seated on
-   a toilet; several phones may be active while a public screen is visible
-   elsewhere in an exhibition.
-2. **Primary parameter:** whether a sitting is active, its abstract breath
-   phase, and the completed breath-cycle count.
-3. **Perceptual job:** the phone makes one slow breathing cycle legible; the
-   public screen makes simultaneous private sittings and accumulated
-   completions visible without identifying anyone.
-4. **Interaction job:** one action starts the sitting and one action ends it.
-   The phone advances through arriving, breathing, and releasing.
-5. **Wrapper justification:** the Calm-like wrapper is explicitly required for
-   the parody to remain recognizable. It is a reference-fidelity constraint,
-   not permission to invent a general wellness brand.
-6. **System family:** both devices share one scenic photograph, white sans
-   typography, a script wordmark, rounded white content surfaces, and a single
-   restrained brown accent.
-7. **Removal test:** retain the wordmark, greeting, one daily card, start/end
-   action, breathing circle, live marks, and archive. Remove check-ins,
-   character art, colorful category systems, editorial serif styling, metrics,
-   badges, ornamental charts, and explanatory chrome.
+- 변경 변수: 본문 서체의 재현성, 반복 시각 값의 소유 위치
+- 유지한 불변항: 화면 구조, 크기 위계, 배경, 카드와 입력 형상, 콘텐츠,
+  이동 경로, 모션 시간
+- 정적 결과: `2`의 모든 화면이 하나의 Pretendard 인스턴스와 공통 토큰을
+  공유한다.
+- 미확인 사항: 실제 기기에서의 한글 자폭, 줄바꿈, 광학적 굵기와 전시 화면
+  가독성은 브라우저 검증 전까지 관찰 결과로 간주하지 않는다.
 
-## Mobile UI audit
+### 2026-08-04 `dummy`: 배경 실험 피드백 감사와 전면 재검토
 
-The following audit was performed from the actual application screenshots in
-each publisher-provided Apple App Store gallery on 2026-07-28. These are direct
-application/service UI references, not service homepages. Screenshot galleries
-show selected publisher representations rather than every state of the live
-product, so observations below are visual observations only.
+#### 참여자 상황과 지각 과제
 
-| Service | Application UI visible in the screenshot gallery | Disposition |
-| --- | --- | --- |
-| [Calm](https://apps.apple.com/us/app/calm/id571800810) | Full-bleed landscape home, white script identity, greeting, Daily Calm recommendation card, circular play action, and bottom navigation; separate blue Meditation and purple Sleep browse screens | Sole visual authority for this skeleton |
-| [Headspace](https://apps.apple.com/us/app/headspace-sleep-meditation/id493145008) | Flat orange, yellow, and purple fields; illustrated category tile grid; white session card and blue play action | Surveyed only; color blocks and illustration system rejected |
-| [Insight Timer](https://apps.apple.com/us/app/insight-timer-meditate-sleep/id337472899) | Blue background, white rounded home panel, greeting, practice shortcut icons, and image-led content cards | Surveyed only; shortcut dashboard rejected |
-| [Balance](https://apps.apple.com/us/app/balance-meditation-sleep/id1361356590) | Pale surfaces with compact illustrated recommendation and category cards | Surveyed only; personalization/card stack rejected |
-| [Waking Up](https://apps.apple.com/us/app/waking-up-meditation-wisdom/id1307736395) | Dark navy editorial lesson and course cards | Surveyed only; dark editorial treatment rejected |
-| [Medito](https://apps.apple.com/us/app/medito-mindfulness-meditation/id1500780518) | Dark application home with stacked meditation content cards | Surveyed only; dark library structure rejected |
-| [Healthy Minds Program](https://apps.apple.com/us/app/healthy-minds-program-by-humin/id1326310617) | Blue application screens with greeting, structured path cards, and lesson/practice states | Surveyed only; program-path system rejected |
-| [Happier Meditation](https://apps.apple.com/us/app/happier-meditation/id992210239) | Cream and black surfaces, warm recommendation cards, morning check-in, and progress curves | Surveyed only; check-in and progress treatment rejected |
-| [Breethe](https://apps.apple.com/us/app/breethe-sleep-meditation/id920161006) | Dark, photographic content surfaces organized around sleep and practice categories | Surveyed only; multi-category library rejected |
-| [Aura](https://apps.apple.com/us/app/aura-meditation-sleep-cbt/id1114223104) | Dark and white library grids, category cards, and coach-led content | Surveyed only; coaching/library density rejected |
-| [Plum Village](https://apps.apple.com/us/app/plum-village-mindfulness/id1273719339) | Orange content lists and an audio player with waveform and transport controls | Surveyed only; audio-player complexity rejected |
-| [Simple Habit](https://apps.apple.com/us/app/simple-habit-sleep-meditation/id1093360165) | Photo recommendation cards, For You and Sleep areas, and short-session browsing | Surveyed only; multiple recommendation rails rejected |
-| [Smiling Mind](https://apps.apple.com/us/app/smiling-mind-mental-wellbeing/id560442518) | Off-white surfaces, heavy rounded sans type, purple accents, mood row, and routine cards | Surveyed only; mood check-in and purple system rejected |
+- 참여자는 화장실에서 4분 33초짜리 진지한 명상 콘텐츠를 보고 있다.
+- 가장 중요한 값은 콘텐츠의 경과율이다.
+- 경과율이 숫자뿐 아니라 검정 화면이 서서히 브라운 물질로 채워지는 환경
+  변화로 느껴져야 한다.
+- 텍스트 읽기와 수동 스크롤은 그대로 가능해야 하며 배경은 별도 조작을
+  요구하지 않는다.
+- 이 배경은 똥을 그림으로 재현하는 장식이 아니라, 사적인 배변 시간이
+  플랫폼 안에서 측정되고 축적되는 것을 하나의 지속적인 물질 변화로 만든다.
 
-The survey establishes context but does not authorize a hybrid. The final
-design decision is intentionally narrow: clone Calm's mobile hierarchy and
-surface grammar, then apply only the required `ddong-meong` copy and brown
-accent.
+#### 직접 받은 피드백과 실패 판정
 
-## Rejected overreach and durable correction
+다음은 코드 설명이 아니라 실제 화면에 대한 사용자 피드백이다.
 
-Two earlier directions violated the requested boundary:
+- literal 똥 이미지가 떨어지고 하단에 개별 덩어리로 남는 첫 시도는 너무
+  직접적이고 값싸게 보였다.
+- 이미지를 2D 액체에 흡수시키는 두 번째 시도 역시 explicit한 오브젝트가 먼저
+  보여 폐기되었다.
+- 단일 fragment shader의 SDF 수면과 타원형 metaball을 사용한 세 번째 시도는
+  낙하물이 캡슐 또는 뭉친 덩어리처럼 보였고 전혀 자연스럽지 않았다.
+- 머리, 꼬리, bead와 충돌 파동을 추가한 네 번째 시도도 같은 조형 문법을
+  유지했기 때문에 근본적으로 달라지지 않았다. 수면은 여전히 마스크가
+  올라오는 것처럼 보였고, 요구한 sophisticated media-art와 premium wellness
+  감성에 도달하지 못했다.
+- 이전 기록은 구현한 기능을 나열했지만 무엇이 실제로 실패했는지 분명히
+  판정하지 않았다. 따라서 성공 기록으로 간주하지 않는다.
+- particle veil과 rising field로 전환한 다섯 번째 시도는 이전보다 낫다는
+  피드백을 받았지만 아직 sophisticated한 낙하 물질로 보이지 않았다. 또한
+  초기 수위가 viewport 아래의 음수 좌표에서 시작하고 진행률 reveal이 별도로
+  걸려 있어 iPhone과 Android 모두 첫 몇 초 동안 축적이 전혀 보이지 않았다.
+  이는 기기 문제가 아니라 시작 좌표와 reveal 설계의 오류다.
+- 이를 고치기 위해 6.2%의 얇은 초기 수위를 둔 여섯 번째 조정은 “0%는 완전한
+  바닥이어야 한다”는 요구와 맞지 않았다. 또한 낙하 입자의 밀도와 대비가 너무
+  낮아 검정 화면에서 똥의 지속적인 흐름이 충분히 읽히지 않았다.
+- 0% 바닥 시작과 입자 밀도를 고친 뒤에도 쌓인 영역의 좁은 mask transition과
+  별도 copper `surfaceVeil`이 수면을 한 줄로 강조했다. 이 선은 액체의 깊이보다
+  그래픽 효과의 경계를 먼저 드러내 촌스럽게 보인다는 피드백을 받았다.
+- 수면선을 제거한 버전의 낙하는 밀도와 비중은 적절하지만 쉬지 않고 일정하게
+  흘러 폭포처럼 보였다. 실제 배변의 리듬처럼 더 빠르게 떨어지되, 불규칙하게
+  배출과 휴지가 교대해야 한다는 피드백이 추가되었다.
 
-- a sage, serif, organic-form wellness concept invented a new identity instead
-  of following the named reference;
-- a later mood check-in, history tab, colorful category, and character-driven
-  version blended Headspace and Smiling Mind patterns into a product that was
-  never requested.
+#### 계속 유지할 조건
 
-Both also treated “skeleton” as permission to design a fuller service. The
-durable rule for this experiment is: Calm is the primary and visible UI source;
-the wider audit is research context only. Do not reintroduce a blended visual
-system or expand the information architecture unless the user explicitly asks.
+- 주변 환경은 갈색 기운과 grain 없이 확실한 검정으로 시작하되, 첫 렌더
+  프레임부터 중앙의 낙하 흐름과 하단의 얇은 축적은 보여야 한다. 검정 시작은
+  빈 화면을 뜻하지 않는다.
+- 완료 시에는 메인 페이지의 그라디언트와 같은 계열의 깊은 브라운이 화면을
+  완전히 채워야 한다.
+- 낙하는 반복되는 덩어리가 아니라 가는 입자 흐름이어야 한다. 그러나 계속
+  켜진 폭포가 되어서는 안 되며, 배출 중에는 이어지고 배출 사이에는 완전히
+  쉬는 불연속적인 리듬을 가져야 한다.
+- 아래쪽 축적은 평평한 수위나 개별 물체 더미가 아니라 입자의 밀도, 흐름,
+  그라디언트 경계가 함께 상승하는 장면이어야 한다.
+- 모바일 명상 서비스의 타이머, 본문, 헤더와 조작 방식은 바꾸지 않는다.
 
-## Socket and data boundary
+#### 레퍼런스에서 추출한 규칙
 
-Variant `1` uses room `experiment:ddong-meong:1` and the
-`ddong-meong:1:*` event namespace. Variant `2` uses room
-`experiment:ddong-meong:2` and the `ddong-meong:2:*` event namespace. Each
-namespace owns `join`, `hello`, `state`, and `session:in` events; no event or
-runtime record crosses between iterations.
+- [Chanel `Intangible Matter`](https://www.casestudies.com/company/stink-studios/case-study/the-fifth-sense-customer-case-study): curl noise, shader texture, particle와 제한된
+  조명을 결합해 향을 literal 오브젝트가 아닌 물질적 분위기로 번역한다.
+- [David Li `Volumetric Particle Flow`](https://experiments.withgoogle.com/volumetric-particle-flow): 개별 점보다 흐르는 군집의 밀도와
+  깊이가 먼저 보이게 한다.
+- [David Li `Fluid Particles`](https://experiments.withgoogle.com/fluid-particles): 입자 기반 유체와 spherical ambient occlusion을
+  결합해 입자의 수가 아니라 하나의 물질처럼 읽히게 한다.
+- [Superbien `WebGL Introduction`](https://www.superbien.studio/projects/superbien-webgl-introduction): 많은 효과를 병렬로 장식하지 않고 하나의
+  연속적인 시적 장면과 실시간 색 변화에 집중한다.
+- [Stefan Gustavson `flow noise`](https://stegu.github.io/webgl-noise/): 물리적 유체 해석 없이도 gradient를 회전하고
+  누적 변위시켜 난류의 시각적 인상을 만들 수 있다. 이번 작업에는 정확한
+  유체 역학보다 이 art-directed flow가 적합하다.
 
-The server owns anonymous abstract state only:
+#### 새 시험: particle veil + rising field
 
-- an ephemeral session and socket participant ID;
-- start/update/end timestamps;
-- `arriving`, `breathing`, or `releasing` phase;
-- completed breath-cycle count;
-- completed/left outcome and duration;
-- role counts.
+기존 `metaball drop + SDF surface + discrete timeline`은 전부 제거한다. 새
+WebGL 장면은 다음 세 층만 사용한다.
 
-Each browser derives color, size, motion, text, and layout. No presentation
-state crosses the socket. The archive is process memory capped at 80 entries
-and resets with the socket server; no database or durability is implied.
+1. `atmosphere`: `#020202`에서 시작해 저채도 umber와 walnut의 넓은 흐름이
+   아주 천천히 나타나는 배경.
+2. `intermittent filament`: 화면 위 한 지점에서 작은 입자들이 배출 구간에만
+   방출되어 하나의 가늘고 휘는 섬유를 만든다. 휴지 구간에는 새 입자가 나오지
+   않지만 이미 나온 입자는 계속 낙하한다. 개별 방울, 머리, 꼬리 형태는 만들지
+   않는다.
+3. `rising field`: 아래쪽 입자 군집과 domain-warped 그라디언트 경계가 같은
+   진행률을 공유하며 함께 상승한다. 경계 근처 입자 밀도가 높고 내부는 깊은
+   브라운 공간으로 합쳐진다.
 
-No names, toilet identifiers, free text, location, or device fingerprints are
-collected. Durable exhibition logging would require a separate decision about
-consent, retention, deletion, and the privacy implications of mapping a private
-toilet interaction onto a public screen.
+최신 피드백에 따라 시작 수위는 다시 viewport의 정확한 바닥 `0%`에 둔다.
+surface transition은 수면 위로 번지지 않고 채워진 영역 안쪽에만 생기므로 0초의
+갈색 면적은 0이다. 이후 높이는 `progress^0.86`으로 증가해 선형 진행보다 초반
+변화를 조금 더 빨리 드러내며, 파동과 입자별 높이 편차도 진행률 0에서는 0이고
+즉시 점진적으로 활성화된다. canvas는 `ResizeObserver`, `window.resize`,
+`visualViewport.resize`를 모두 구독해 iOS와 Android의 주소창·동적 viewport
+변화에 다시 맞춘다.
 
-## Verification boundary
+수면을 따라가던 별도 하이라이트 선은 제거한다. mask의 전이는 최대 viewport
+높이 7.5%에 걸쳐 채워진 영역 안쪽으로만 넓게 일어나고, 얕은 시작 구간에서는
+현재 수위의 72%에 맞춰 자동으로 축소된다. 쌓인 영역의 색은 경계선이 아니라
+천천히 이동하는 두 개의 큰 저주파 color pool, domain-warped umber–walnut
+그라디언트와 내부 깊이 변화로 구분한다.
 
-Static checks cover route/component typing, socket registry uniqueness, and
-module-level state validation. They do not prove cross-device timing, viewport
-appearance, or HTTPS socket behavior. Browser/runtime verification is excluded
-unless the user explicitly requests it.
+낙하 입자는 동일한 원형 점을 흩뿌리지 않는다. 작은 고밀도 core와 낮은 alpha의
+큰 veil 입자를 같은 중심선에 배치하고, 각 sprite를 진행 방향으로 길게 늘여
+가느다란 섬유 내부의 서로 다른 밀도층으로 보이게 한다. 밝은 copper 점은
+줄이고 walnut–burnished clay 안의 낮은 명암차로 통일한다.
+
+여섯 번째 조정 이후 filament 입자는 1,800개에서 2,800개로 늘리고, core와
+veil의 alpha·폭을 함께 높였다. 밝은 glow를 추가한 것이 아니라 같은 브라운
+색군 안에서 검정 배경과 구분되는 물질 밀도를 높인 변경이다.
+
+폭포처럼 보인다는 피드백 이후 활동 중 입자 수와 alpha는 유지하면서 낙하
+시간을 약 13–21초에서 1.8–2.7초로 줄였다. 12초짜리 각 phrase 안에는 hash로
+길이가 달라지는 2.8–5초의 첫 배출, 1.6–3초의 휴지, 1.4–3초의 두 번째 배출이
+있고 약 25%의 phrase에만 0.8–1.8초의 세 번째 배출이 생긴다. 각 경계는 약
+0.3–0.46초 동안 천천히 가늘어지거나 굵어진다. 빠른 낙하 속도는 유지하되
+배출의 시작은 덜 자주, 한 번의 배출은 더 길고 찌뿌둥하게 만든 조정이다.
+이 리듬은 deterministic하므로 같은
+경과 시간에는 같은 패턴이 재현되며, 과도하게 긴 연속 배출과 긴 무배출 구간은
+모두 제한된다.
+particle과 background veil은 각 높이에 도달한 입자의 과거 배출 시각을 같은
+함수로 계산한다. 따라서 휴지 순간에 화면 전체 줄이 동시에 꺼지지 않고, 마지막
+입자들이 아래로 이동한 뒤 빈 간격이 위에서부터 내려온다.
+
+팔레트는 `void #020202`, `deep umber #24130f`, `walnut #563326`, `burnished
+clay #96654b`, `soft copper #bc8968`로 제한한다. bloom, neon, 무지개색,
+유리질 광택과 물리 시뮬레이션을 과시하는 UI는 넣지 않는다. signature는
+`낙하하는 하나의 입자 섬유가 아래의 상승하는 입자장으로 조용히 편입되는
+장면` 하나다.
+
+- 변경 변수: 개별 덩어리의 낙하와 수면 마스크를 연속 particle filament와
+  상승하는 flow field로 교체
+- 유지한 불변항: 4분 33초, 원고, 타이머, 진행 바, 텍스트 위치와 자동·수동
+  스크롤, 메인 페이지의 브라운 색군
+- 제거 시험: 입자 섬유를 제거하면 배변의 지속적 낙하가 사라지고, 상승장을
+  제거하면 시간의 축적이 사라진다. 그 외 장식 입자는 추가하지 않는다.
+- 미확인 사항: 새 구현의 움직임과 premium 인상은 실제 브라우저에서 관찰하기
+  전까지 성공으로 기록하지 않는다.
+
+### 2026-08-04 임시 명상 사운드트랙
+
+사용자가 제공한 `/Users/jeongyoonchoi/Downloads/river-flows-in-you.mp3`를 작업
+변형 `2`의 `/public/ddong-meong/2/river-flows-in-you.mp3`로 복사했다. 현재 여섯
+개 명상 콘텐츠가 모두 이 파일을 임시 공통 사운드트랙으로 사용한다.
+
+- 콘텐츠 카드 클릭의 사용자 제스처 안에서 곡을 처음부터 재생한다.
+- 직접 URL로 콘텐츠에 들어와 autoplay가 차단되면 첫 pointer 또는 keyboard
+  입력에서 다시 재생을 시도한다.
+- 곡이 콘텐츠보다 짧으면 loop하며 음량은 `0.68`이다.
+- 콘텐츠 시간이 끝나거나 콘텐츠 화면을 벗어나면 정지하고 재생 위치를 0으로
+  되돌린다.
+- React 개발 모드의 effect 재실행은 실제 이탈과 구분하기 위해 정지를 120ms
+  유예하며, 그 안에 다시 마운트되면 정지를 취소한다.
+- 이 음원은 추후 교체를 전제로 한 임시 선택이다. 저장소 안에는 사용자가
+  제공한 파일 외에 별도 음원 메타데이터나 배포 라이선스 문서가 없다.
+
+### 현재 기록과 식별
+
+- 닉네임은 브라우저 탭의 `sessionStorage`에만 저장된다.
+- 저장된 닉네임을 `main`, 콘텐츠, 소켓, 전시 화면에서 다시 읽거나 사용하지
+  않는다.
+- 쿠키, QR 진입, 로그인, 계정, 광고, 센서, 생체정보, 데이터베이스는 없다.
+- 콘텐츠 경과 시간은 화면 안에서만 계산되며 서버에 전송되지 않는다.
+
+따라서 현재 닉네임 입력은 제품 흐름의 외형만 만들 뿐, 작품이 의도한
+데이터화나 공개 전시에는 참여하지 않는다.
+
+### 현재 전시 화면과 소켓
+
+전시 화면은 호수 사진 위에 다음을 배치한다.
+
+- 현재 세션 수와 세션별 원형 표식
+- `arriving`, `breathing`, `releasing` 단계에 따른 표식 크기
+- 완료 세션의 시간, 호흡 횟수, 종료 시각
+- 프로세스 메모리의 완료 기록 수와 최근 12개 항목
+
+변형별 소켓 서버는 방과 이벤트 namespace를 분리하며 모바일만 세션 상태를
+변경할 수 있도록 검사한다. 서버 모델은 시작·갱신·완료·이탈과 최대 80개의
+완료 기록을 지원한다.
+
+그러나 모바일 컴포넌트 어디에서도 `useDdongMeongSocket("mobile")`을
+호출하지 않고 `startSession`, `updateSession`, `completeSession`을 emit하지
+않는다. 소켓 훅은 전시 화면에서만 사용된다. 결과적으로 정상적인 모바일
+사용으로는 진행 중 세션도 완료 기록도 생성되지 않으며, 전시 화면은 비어
+있다.
+
+또한 현재 소켓 아카이브는 서버 재시작 시 사라지는 프로세스 메모리이고
+80개로 제한된다. 화면의 `RECENT` 목록은 최근 12개만 렌더링하며, 현재 상태를
+전 세계 누적 데이터라고 부를 수 없다. 닉네임도 서버 payload와 전시 화면에
+포함되지 않는다. 전시 데이터 모델의 호흡 단계와 호흡 횟수는 현재 텍스트
+자동 이동 콘텐츠의 실제 상호작용과도 연결되어 있지 않다.
+
+변형 `1`의 클라이언트 타입에는 `experimentId`는 `ddong-meong-1`인데
+`variantId` 리터럴이 `"2"`로 남아 있는 불일치가 있다. 서버의 실제 변형 값은
+`"1"`이다.
+
+### 현재 완성도 판단
+
+잘 형성된 부분:
+
+- 진입, 닉네임, 콘텐츠 목록, 재생 화면이 분리된 모바일 정보 구조
+- 안정적인 콘텐츠 slug와 문장 ID
+- 작은 화면, safe area, 모션 감소 설정을 고려한 스타일
+- 변형 간 코드·에셋·소켓 namespace의 물리적 독립
+- 화면 클라이언트가 시각 상태를 계산하고 서버는 추상 상태만 소유하는 경계
+- 서버의 역할 검사, 방 격리, 완료 기록에 대한 모듈 테스트
+
+아직 목표에 도달하지 못한 부분:
+
+- 모바일 세션과 전시 화면의 실제 실시간 연결
+- 영속 누적 데이터와 배포 범위에 맞는 전 세계 집계
+- 닉네임, 쿠키, QR이 하나의 의도적인 식별 흐름으로 작동하는 구조
+- 현재 콘텐츠의 실제 인터랙션을 표현하는 서버 데이터 모델
+- 여러 개의 정교한 명상 콘텐츠와 콘텐츠별 상호작용
+- 시작, 일시정지, 완료, 이탈을 포함한 명확한 세션 생명주기
+- 데이터가 공개되는 순간의 풍자적 전환과 개인정보 경계
+- 임시 가사 대신 끝까지 진지한 정통 명상 언어
+
+## 다음 구현의 우선순위
+
+핵심 관계를 한 번에 검증할 수 있는 가장 작은 다음 시도는 변형 `2` 안에서
+진행한다.
+
+1. 현재 4분 33초 콘텐츠의 시작·경과·완료·이탈을 정확히 정의한다.
+2. 모바일 콘텐츠를 변형 `2` 소켓에 연결하고, 화면 표현이 아니라 추상적인
+   세션/콘텐츠/인터랙션 상태만 전송한다.
+3. 전시 화면이 그 실제 payload로 실시간 세션과 완료 기록을 표시하게 한다.
+4. 닉네임이 어디까지 저장되고 어떻게 공개 변환되는지 결정한다.
+5. 이 연결이 작동한 뒤에만 QR, 쿠키, 영속 저장과 전 세계 집계를 각각
+   별도의 제한된 시도로 확장한다.
+
+이 순서는 최종 디자인을 고정하는 로드맵이 아니라, 모바일의 사적 행위가
+공개 데이터가 되는 핵심 관계를 먼저 시험하기 위한 순서다. 보존된 변형 `1`은
+수정하지 않는다.
+
+## 구현 및 보존 규칙
+
+- 번호가 붙은 변형은 완전하고 독립된 경험이다. 한 변형은 다른 변형의
+  컴포넌트, 모델, 전송 계층, 에셋 또는 소켓 구현을 import하지 않는다.
+- `1`은 보존본, `2`는 현재 작업본이다. 다음 변경은 명시적인 요청이 없는 한
+  `2`에만 적용한다.
+- `mobile/index.tsx`는 데이터, 상태, 타이머, 전송, 화면 선택을 조정하는
+  orchestrator로 유지한다. 각 페이지의 마크업과 스타일은 해당 페이지 폴더가
+  소유한다.
+- 모바일과 전시 화면은 같은 시스템에 속하지만 같은 레이아웃일 필요는 없다.
+  모바일은 신뢰할 만한 명상 서비스, 전시 화면은 데이터 공개 장치라는 서로
+  다른 지각·상호작용 과제를 수행한다.
+- 소켓 서버는 세션, 시간, 콘텐츠, 입력 같은 추상 상태만 소유한다. 색, 크기,
+  위치, 애니메이션 단계, 강조 여부 같은 표현 상태는 각 브라우저가 계산한다.
+- 새 풍자 설명, 장식적 배지, 가짜 지표를 UI에 덧붙여 개념을 설명하지 않는다.
+
+## 검증 경계
+
+정적 검사와 소켓 모듈 테스트는 타입, 이벤트 격리, 상태 변경 권한을 확인할 수
+있다. 실제 모바일-전시 연결, HTTPS 소켓, 타이밍, 반응형 레이아웃과 브라우저
+저장 동작은 런타임 검증 없이는 확인되었다고 말하지 않는다.

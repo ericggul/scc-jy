@@ -1,6 +1,13 @@
 "use client";
 
-import { useMemo, useState, type CSSProperties } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type FormEvent,
+} from "react";
 import {
   createInitialCValSnapshot,
   type CValBookLevel,
@@ -56,20 +63,33 @@ function PanelTitle({ title, detail }: { title: string; detail: string }) {
 }
 
 function ProcessRibbon({ snapshot }: { snapshot: CValSnapshot }) {
+  const humanControl = snapshot.humanControl ?? {
+    contributors: 0,
+  };
   const stages = [
     {
       id: "conditions",
       number: "01",
       label: "MARKET CONDITIONS",
-      primary: `V ${Math.round(snapshot.parameters.volatility * 100)}  A ${Math.round(snapshot.parameters.activity * 100)}  L ${Math.round(snapshot.parameters.liquidity * 100)}`,
-      secondary: "phone input · 0–100",
+      primary:
+        snapshot.phase === "waiting"
+          ? "NO HUMAN INPUT"
+          : `V ${Math.round(snapshot.parameters.volatility * 100)}  A ${Math.round(snapshot.parameters.activity * 100)}  L ${Math.round(snapshot.parameters.liquidity * 100)}`,
+      secondary:
+        snapshot.phase === "waiting" ? "market held at 100" : "direct phone input · 0–100",
     },
     {
       id: "orders",
       number: "02",
       label: "AGENT DECISIONS",
-      primary: `${snapshot.market.submittedOrders} orders  ·  ${snapshot.market.cancelledOrders} cancelled`,
-      secondary: "participant response",
+      primary:
+        snapshot.phase === "waiting"
+          ? "0 participants"
+          : `${snapshot.market.submittedOrders} orders · ${snapshot.market.executions} trades`,
+      secondary:
+        snapshot.phase === "waiting"
+          ? "opens on first phone movement"
+          : `${humanControl.contributors} human · participant response`,
     },
     {
       id: "book",
@@ -153,7 +173,7 @@ function MarketConditions({ snapshot }: { snapshot: CValSnapshot }) {
       </div>
       <div className={styles.conditionList} aria-label="Volatility activity and liquidity values">
         <ConditionRow code="V" name="VOLATILITY" explanation="valuation dispersion · quote defence" value={snapshot.parameters.volatility} series={snapshot.history.volatility} toneName="volatility" />
-        <ConditionRow code="A" name="ACTIVITY" explanation="order arrival · participation" value={snapshot.parameters.activity} series={snapshot.history.activity} toneName="activity" />
+        <ConditionRow code="A" name="ACTIVITY" explanation="sell ← directional activity → buy" value={snapshot.parameters.activity} series={snapshot.history.activity} toneName="activity" />
         <ConditionRow code="L" name="LIQUIDITY" explanation="resting supply · replenishment" value={snapshot.parameters.liquidity} series={snapshot.history.liquidity} toneName="liquidity" />
       </div>
     </section>
@@ -382,14 +402,82 @@ function ExecutionsPanel({ snapshot }: { snapshot: CValSnapshot }) {
 
 export default function CValController() {
   const [fallback] = useState(() => createInitialCValSnapshot());
-  const { connected, state, resetSystem } = useCValSocket({ role: "controller" });
+  const [recordCommand, setRecordCommand] = useState("RECORD 30");
+  const [recordCommandResult, setRecordCommandResult] = useState("READY");
+  const recordAckTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { connected, state, sendRecordingCommand, resetSystem } =
+    useCValSocket({
+      role: "controller",
+      onRecordingStatus: ({ status, message }) => {
+        if (recordAckTimerRef.current) {
+          clearTimeout(recordAckTimerRef.current);
+          recordAckTimerRef.current = null;
+        }
+        setRecordCommandResult(`${status.toUpperCase()} · ${message.toUpperCase()}`);
+      },
+    });
   const snapshot = state ?? fallback;
+
+  useEffect(() => {
+    return () => {
+      if (recordAckTimerRef.current) clearTimeout(recordAckTimerRef.current);
+    };
+  }, []);
+
+  async function submitRecordCommand(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (recordAckTimerRef.current) {
+      clearTimeout(recordAckTimerRef.current);
+      recordAckTimerRef.current = null;
+    }
+    const normalized = recordCommand.trim().toUpperCase();
+    const recordMatch = normalized.match(/^RECORD\s+(30|60)$/);
+    if (!recordMatch && normalized !== "STOP") {
+      setRecordCommandResult("USE RECORD 30 · RECORD 60 · STOP");
+      return;
+    }
+    const command = recordMatch
+      ? {
+          action: "start" as const,
+          durationMs: Number(recordMatch[1]) * 1_000,
+        }
+      : { action: "stop" as const };
+    const result = await sendRecordingCommand(command);
+    if (!result.ok) {
+      setRecordCommandResult(result.error?.toUpperCase() ?? "COMMAND FAILED");
+      return;
+    }
+    setRecordCommandResult(
+      `${normalized} SENT · WAITING FOR ${result.mobileCount ?? 0} MOBILE`,
+    );
+    if (command.action === "start") {
+      recordAckTimerRef.current = setTimeout(() => {
+        recordAckTimerRef.current = null;
+        setRecordCommandResult("NO MOBILE RECORDING ACK · CHECK ENABLE MOTION");
+      }, 1_500);
+    }
+  }
 
   return (
     <main className={styles.terminal}>
       <header className={styles.chrome}>
         <div className={styles.identity}><strong>C·VAL / 2</strong><span>CONTINUOUS DOUBLE-AUCTION MARKET</span></div>
         <div className={styles.session}><b>CVAL SIMULATED EQUITY</b><span>1 REAL SECOND = 1 MARKET DAY</span></div>
+        <form className={styles.command} onSubmit={submitRecordCommand}>
+          <label htmlFor="c-val-record-command">REC</label>
+          <input
+            id="c-val-record-command"
+            aria-label="Sensor recording command"
+            autoCapitalize="characters"
+            autoComplete="off"
+            disabled={!connected}
+            spellCheck={false}
+            value={recordCommand}
+            onChange={(event) => setRecordCommand(event.target.value)}
+          />
+          <button type="submit" disabled={!connected}>GO</button>
+          <output>{recordCommandResult}</output>
+        </form>
         <div className={styles.status} data-connected={connected}><i />{connected ? "SERVER CONNECTED" : "CONNECTING"}</div>
         <button type="button" disabled={!connected} onClick={resetSystem}>RESET MARKET</button>
       </header>

@@ -26,8 +26,6 @@ export const cValCalibration = Object.freeze({
   structural: Object.freeze({
     initialPriceTicks: 10_000,
     tickSize: 0.01,
-    minimumPriceTicks: 1_000,
-    maximumPriceTicks: 100_000,
     participantCounts: Object.freeze({
       liquidityProvider: 12,
       fundamental: 12,
@@ -79,4 +77,3 @@ export function interpolateAround(range, center, value) {
   }
   return center + (range[1] - center) * (value - 0.5) * 2;
 }
-
