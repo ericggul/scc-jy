@@ -163,14 +163,22 @@ export class GoldfishScene {
   private readonly floor: THREE.Mesh;
   private readonly nodeEdgeNetwork = new THREE.Group();
   private nodeEdgeNetworkKey = "";
-  private readonly nodeHeightByIndex = new Float32Array(
-    MAX_ATTENTION_CELL_COUNT,
-  );
-  private readonly fishTargetHeights = new Float32Array(MAX_FISH_COUNT);
-  private readonly fishCurrentHeights = new Float32Array(MAX_FISH_COUNT).fill(
-    Number.NaN,
-  );
-  private previousRenderElapsedSeconds = 0;
+  private nodeEdgeNodes: readonly NodeEdgeNetworkNode[] = [];
+  private nodeEdgeEdges: readonly NodeEdgeNetworkEdge[] = [];
+  private nodeEdgeNodeMesh: THREE.InstancedMesh | null = null;
+  private nodeEdgeEdgeMesh: THREE.InstancedMesh | null = null;
+  private nodeEdgeWidth = 1;
+  private nodeEdgeHeight = 1;
+  private nodeEdgeVisibleIndices: Set<number> | null = new Set();
+  private nodeEdgeReveal = new Float32Array(0);
+  private previousNodeEdgeElapsedSeconds = 0;
+  private readonly networkFirstPosition = new THREE.Vector3();
+  private readonly networkSecondPosition = new THREE.Vector3();
+  private readonly networkEndpoint = new THREE.Vector3();
+  private readonly networkMidpoint = new THREE.Vector3();
+  private readonly networkDirection = new THREE.Vector3();
+  private readonly networkVertical = new THREE.Vector3(0, 1, 0);
+  private readonly networkProjection = new THREE.Vector3();
   private readonly mediaTile = new THREE.InstancedBufferAttribute(
     new Float32Array(MAX_ATTENTION_CELL_COUNT),
     1,
@@ -205,6 +213,9 @@ export class GoldfishScene {
   private readonly root = new THREE.Object3D();
   private readonly local = new THREE.Object3D();
   private readonly finalMatrix = new THREE.Matrix4();
+  private readonly forward = new THREE.Vector3(1, 0, 0);
+  private readonly swimDirection = new THREE.Vector3();
+  private readonly rollQuaternion = new THREE.Quaternion();
   private width = 1;
   private height = 1;
   private activeCount: number;
@@ -525,6 +536,8 @@ export class GoldfishScene {
         : [child.material];
       for (const material of materials) material.dispose();
     }
+    this.nodeEdgeNodeMesh = null;
+    this.nodeEdgeEdgeMesh = null;
   }
 
   setNodeEdgeNetwork(
@@ -538,6 +551,15 @@ export class GoldfishScene {
     if (networkKey === this.nodeEdgeNetworkKey) return;
     this.nodeEdgeNetworkKey = networkKey;
     this.clearNodeEdgeNetwork();
+    this.nodeEdgeNodes = nodes;
+    this.nodeEdgeEdges = edges;
+    this.nodeEdgeWidth = width;
+    this.nodeEdgeHeight = height;
+    const previousReveal = this.nodeEdgeReveal;
+    this.nodeEdgeReveal = new Float32Array(nodes.length);
+    this.nodeEdgeReveal.set(
+      previousReveal.subarray(0, Math.min(previousReveal.length, nodes.length)),
+    );
 
     const edgeGeometry = new THREE.CylinderGeometry(1, 1, 1, 6, 1, false);
     const edgeMaterial = new THREE.MeshStandardMaterial({
@@ -553,36 +575,7 @@ export class GoldfishScene {
       edgeMaterial,
       edges.length,
     );
-    const firstPosition = new THREE.Vector3();
-    const secondPosition = new THREE.Vector3();
-    const midpoint = new THREE.Vector3();
-    const direction = new THREE.Vector3();
-    const vertical = new THREE.Vector3(0, 1, 0);
-    edges.forEach((edge, index) => {
-      const first = nodes[edge.first];
-      const second = nodes[edge.second];
-      if (!first || !second) return;
-      firstPosition.set(
-        first.x - width / 2,
-        first.elevation,
-        first.y - height / 2,
-      );
-      secondPosition.set(
-        second.x - width / 2,
-        second.elevation,
-        second.y - height / 2,
-      );
-      midpoint.copy(firstPosition).add(secondPosition).multiplyScalar(0.5);
-      direction.copy(secondPosition).sub(firstPosition);
-      const length = direction.length();
-      direction.normalize();
-      this.local.position.copy(midpoint);
-      this.local.quaternion.setFromUnitVectors(vertical, direction);
-      this.local.scale.set(edge.radius, length, edge.radius);
-      this.local.updateMatrix();
-      edgeMesh.setMatrixAt(index, this.local.matrix);
-    });
-    edgeMesh.instanceMatrix.needsUpdate = true;
+    edgeMesh.count = 0;
     edgeMesh.frustumCulled = false;
     edgeMesh.renderOrder = 1;
 
@@ -599,30 +592,160 @@ export class GoldfishScene {
       nodeMaterial,
       nodes.length,
     );
-    nodes.forEach((node, index) => {
-      this.nodeHeightByIndex[index] = node.elevation;
-      this.local.position.set(
-        node.x - width / 2,
-        node.elevation,
-        node.y - height / 2,
-      );
-      this.local.rotation.set(0, 0, 0);
-      this.local.scale.setScalar(node.radius);
-      this.local.updateMatrix();
-      nodeMesh.setMatrixAt(index, this.local.matrix);
-    });
-    for (let fishId = 0; fishId < MAX_FISH_COUNT; fishId += 1) {
-      const node = nodes[fishId % nodes.length];
-      this.fishTargetHeights[fishId] = node.elevation + 15;
-      this.fishCurrentHeights[fishId] = Number.NaN;
-    }
+    nodeMesh.count = 0;
     const minimumElevation = Math.min(...nodes.map((node) => node.elevation));
     this.floor.position.y = minimumElevation - Math.min(width, height) * 0.16;
     this.floor.updateMatrixWorld();
-    nodeMesh.instanceMatrix.needsUpdate = true;
     nodeMesh.frustumCulled = false;
     nodeMesh.renderOrder = 2;
+    this.nodeEdgeEdgeMesh = edgeMesh;
+    this.nodeEdgeNodeMesh = nodeMesh;
     this.nodeEdgeNetwork.add(edgeMesh, nodeMesh);
+    this.updateNodeEdgeReveal(0, true);
+  }
+
+  setNodeEdgeVisibility(
+    visibleNodeIndices: readonly number[] | null,
+    immediate = false,
+  ) {
+    this.nodeEdgeVisibleIndices =
+      visibleNodeIndices === null ? null : new Set(visibleNodeIndices);
+    if (immediate) this.updateNodeEdgeReveal(0, true);
+  }
+
+  getNodeEdgeIndicesNearScreenPoints(
+    points: readonly { x: number; y: number }[],
+  ) {
+    const brushRadius = Math.max(
+      48,
+      Math.min(96, Math.min(this.width, this.height) * 0.09),
+    );
+    const brushRadiusSquared = brushRadius * brushRadius;
+    const indices = new Set<number>();
+
+    for (const point of points) {
+      let nearestIndex = -1;
+      let nearestDistanceSquared = Number.POSITIVE_INFINITY;
+      let pointMatched = false;
+      for (let index = 0; index < this.nodeEdgeNodes.length; index += 1) {
+        const node = this.nodeEdgeNodes[index];
+        this.networkProjection
+          .set(
+            node.x - this.nodeEdgeWidth / 2,
+            node.elevation,
+            node.y - this.nodeEdgeHeight / 2,
+          )
+          .project(this.camera);
+        const screenX = (this.networkProjection.x * 0.5 + 0.5) * this.width;
+        const screenY = (-this.networkProjection.y * 0.5 + 0.5) * this.height;
+        const distanceSquared =
+          (screenX - point.x) ** 2 + (screenY - point.y) ** 2;
+        if (distanceSquared <= brushRadiusSquared) {
+          indices.add(index);
+          pointMatched = true;
+        }
+        if (distanceSquared < nearestDistanceSquared) {
+          nearestIndex = index;
+          nearestDistanceSquared = distanceSquared;
+        }
+      }
+      if (!pointMatched && nearestIndex >= 0) indices.add(nearestIndex);
+    }
+
+    return [...indices];
+  }
+
+  private updateNodeEdgeReveal(deltaSeconds: number, immediate = false) {
+    const nodeMesh = this.nodeEdgeNodeMesh;
+    const edgeMesh = this.nodeEdgeEdgeMesh;
+    if (!nodeMesh || !edgeMesh) return;
+
+    const follow = immediate ? 1 : 1 - Math.exp(-deltaSeconds * 8.5);
+    let nodeInstance = 0;
+    for (let index = 0; index < this.nodeEdgeNodes.length; index += 1) {
+      const node = this.nodeEdgeNodes[index];
+      const target =
+        this.nodeEdgeVisibleIndices === null ||
+        this.nodeEdgeVisibleIndices.has(index)
+          ? 1
+          : 0;
+      const progress = THREE.MathUtils.lerp(
+        this.nodeEdgeReveal[index],
+        target,
+        follow,
+      );
+      this.nodeEdgeReveal[index] =
+        Math.abs(progress - target) < 0.001 ? target : progress;
+      if (this.nodeEdgeReveal[index] <= 0.001) continue;
+
+      const eased =
+        this.nodeEdgeReveal[index] *
+        this.nodeEdgeReveal[index] *
+        (3 - 2 * this.nodeEdgeReveal[index]);
+      this.local.position.set(
+        node.x - this.nodeEdgeWidth / 2,
+        node.elevation,
+        node.y - this.nodeEdgeHeight / 2,
+      );
+      this.local.rotation.set(0, 0, 0);
+      this.local.scale.setScalar(node.radius * eased);
+      this.local.updateMatrix();
+      nodeMesh.setMatrixAt(nodeInstance, this.local.matrix);
+      nodeInstance += 1;
+    }
+    nodeMesh.count = nodeInstance;
+    nodeMesh.instanceMatrix.needsUpdate = true;
+
+    let edgeInstance = 0;
+    for (const edge of this.nodeEdgeEdges) {
+      const progress = Math.min(
+        this.nodeEdgeReveal[edge.first],
+        this.nodeEdgeReveal[edge.second],
+      );
+      if (progress <= 0.001) continue;
+      const first = this.nodeEdgeNodes[edge.first];
+      const second = this.nodeEdgeNodes[edge.second];
+      if (!first || !second) continue;
+
+      this.networkFirstPosition.set(
+        first.x - this.nodeEdgeWidth / 2,
+        first.elevation,
+        first.y - this.nodeEdgeHeight / 2,
+      );
+      this.networkSecondPosition.set(
+        second.x - this.nodeEdgeWidth / 2,
+        second.elevation,
+        second.y - this.nodeEdgeHeight / 2,
+      );
+      this.networkEndpoint
+        .copy(this.networkFirstPosition)
+        .lerp(this.networkSecondPosition, progress);
+      this.networkMidpoint
+        .copy(this.networkFirstPosition)
+        .add(this.networkEndpoint)
+        .multiplyScalar(0.5);
+      this.networkDirection
+        .copy(this.networkEndpoint)
+        .sub(this.networkFirstPosition);
+      const length = this.networkDirection.length();
+      if (length <= 0.001) continue;
+      this.networkDirection.normalize();
+      this.local.position.copy(this.networkMidpoint);
+      this.local.quaternion.setFromUnitVectors(
+        this.networkVertical,
+        this.networkDirection,
+      );
+      this.local.scale.set(
+        edge.radius * progress,
+        length,
+        edge.radius * progress,
+      );
+      this.local.updateMatrix();
+      edgeMesh.setMatrixAt(edgeInstance, this.local.matrix);
+      edgeInstance += 1;
+    }
+    edgeMesh.count = edgeInstance;
+    edgeMesh.instanceMatrix.needsUpdate = true;
   }
 
   private createMediaPlayback(
@@ -748,7 +871,7 @@ export class GoldfishScene {
 
       this.local.position.set(
         cell.centerX - this.width / 2,
-        this.nodeHeightByIndex[cell.column] + 0.8,
+        cell.centerZ + 0.8,
         cell.centerY - this.height / 2,
       );
       this.local.rotation.set(0, 0, 0);
@@ -908,11 +1031,12 @@ export class GoldfishScene {
     settings: GoldfishRenderSettings,
   ) {
     this.updateMediaPlayback(elapsedSeconds * 1000);
-    const renderDeltaSeconds = Math.min(
+    const nodeEdgeDeltaSeconds = Math.min(
       0.05,
-      Math.max(0, elapsedSeconds - this.previousRenderElapsedSeconds),
+      Math.max(0, elapsedSeconds - this.previousNodeEdgeElapsedSeconds),
     );
-    this.previousRenderElapsedSeconds = elapsedSeconds;
+    this.previousNodeEdgeElapsedSeconds = elapsedSeconds;
+    this.updateNodeEdgeReveal(nodeEdgeDeltaSeconds);
     const count = Math.min(this.activeCount, agents.length);
     if (count !== this.body.count) {
       for (const mesh of this.fishMeshes) mesh.count = count;
@@ -921,30 +1045,13 @@ export class GoldfishScene {
     const scale = settings.agentScale;
     for (let index = 0; index < count; index += 1) {
       const agent = agents[index];
-      const speed = Math.hypot(agent.vx, agent.vy);
-      const heading = Math.atan2(agent.vy, agent.vx);
+      const speed = Math.hypot(agent.vx, agent.vy, agent.vz);
       const phase = elapsedSeconds * (5.2 + speed * 0.018) + agent.id * 1.719;
-      const depthSeed = (Math.sin(agent.id * 9.73) + 1) / 2;
-      const targetSwimHeight =
-        this.fishTargetHeights[agent.id] +
-        (depthSeed - 0.5) * settings.depth * 0.24;
-      if (Number.isNaN(this.fishCurrentHeights[agent.id])) {
-        this.fishCurrentHeights[agent.id] = targetSwimHeight;
-      }
-      const heightFollow = 1 - Math.exp(-renderDeltaSeconds * 1.45);
-      this.fishCurrentHeights[agent.id] = THREE.MathUtils.lerp(
-        this.fishCurrentHeights[agent.id],
-        targetSwimHeight,
-        heightFollow,
-      );
-      const swimHeight =
-        this.fishCurrentHeights[agent.id] +
-        Math.sin(elapsedSeconds * 0.55 + agent.id * 2.173) *
-          settings.depth *
-          0.065;
       const tailAngle = Math.sin(phase) * settings.tailMotion;
       const bodyPulse = 1 + Math.sin(phase * 0.5) * 0.016;
-      const bank = THREE.MathUtils.clamp(agent.vy / 110, -0.24, 0.24);
+      const bank =
+        Math.sin(elapsedSeconds * 0.7 + agent.id * 1.173) * 0.035 +
+        THREE.MathUtils.clamp(agent.vz / 110, -0.08, 0.08);
       const naturalistic = this.fishModelStyle === "naturalistic";
       const tailCant = naturalistic
         ? (agent.id % 2 === 0 ? 1 : -1) * 0.58
@@ -952,10 +1059,21 @@ export class GoldfishScene {
 
       this.root.position.set(
         agent.x - this.width / 2,
-        swimHeight,
+        agent.z,
         agent.y - this.height / 2,
       );
-      this.root.rotation.set(bank * 0.18, -heading, bank);
+      this.swimDirection.set(agent.vx, agent.vz, agent.vy);
+      if (this.swimDirection.lengthSq() < 0.000001) {
+        this.swimDirection.copy(this.forward);
+      } else {
+        this.swimDirection.normalize();
+      }
+      this.root.quaternion.setFromUnitVectors(
+        this.forward,
+        this.swimDirection,
+      );
+      this.rollQuaternion.setFromAxisAngle(this.forward, bank);
+      this.root.quaternion.multiply(this.rollQuaternion);
       this.root.scale.set(scale, scale, scale);
       this.root.updateMatrix();
 

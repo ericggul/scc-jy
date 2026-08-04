@@ -23,7 +23,10 @@ type GoldfishSceneOptions = {
   canvas: HTMLCanvasElement;
   fieldCanvas: HTMLCanvasElement;
   htmlLayer: HTMLDivElement;
-  onHTMLTargetChange: (cellKey: string, active: boolean) => void;
+  onHTMLTargetChange: (
+    cellKey: string,
+    state: { active: boolean; strength: number },
+  ) => void;
   count: number;
   color: string;
   paperColor: string;
@@ -211,7 +214,19 @@ export class GoldfishScene {
   private readonly onHTMLTargetChange: GoldfishSceneOptions["onHTMLTargetChange"];
   private readonly htmlTargets = new Map<
     string,
-    { object: CSS3DObject; button: HTMLButtonElement; active: boolean }
+    {
+      object: CSS3DObject;
+      fieldset: HTMLFieldSetElement;
+      toggle: HTMLInputElement;
+      strength: HTMLInputElement;
+      strengthOutput: HTMLOutputElement;
+      populationOutput: HTMLOutputElement;
+      populationMeter: HTMLMeterElement;
+      cell: SelectedCell;
+      active: boolean;
+      attractionStrength: number;
+      population: number;
+    }
   >();
 
   constructor({
@@ -672,31 +687,85 @@ export class GoldfishScene {
       let target = this.htmlTargets.get(key);
 
       if (!target) {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = "goldfishes-html-target";
-        button.setAttribute("aria-label", "Release this attraction target");
-        button.setAttribute("aria-pressed", "true");
-        button.textContent = "release";
-        const object = new CSS3DObject(button);
+        const fieldset = document.createElement("fieldset");
+        fieldset.className = "goldfishes-html-target";
+        const legend = document.createElement("legend");
+        legend.textContent = `target ${cell.column}.${cell.row}`;
+
+        const toggleLabel = document.createElement("label");
+        toggleLabel.className = "goldfishes-html-toggle";
+        const toggle = document.createElement("input");
+        toggle.type = "checkbox";
+        toggle.checked = true;
+        toggleLabel.append(toggle, document.createTextNode(" gather"));
+
+        const strengthLabel = document.createElement("label");
+        strengthLabel.className = "goldfishes-html-strength";
+        const strengthText = document.createElement("span");
+        strengthText.textContent = "pull";
+        const strengthOutput = document.createElement("output");
+        strengthOutput.textContent = "1.0×";
+        const strength = document.createElement("input");
+        strength.type = "range";
+        strength.min = "0.2";
+        strength.max = "2";
+        strength.step = "0.1";
+        strength.value = "1";
+        strengthLabel.append(strengthText, strengthOutput, strength);
+
+        const populationRow = document.createElement("div");
+        populationRow.className = "goldfishes-html-population";
+        const populationOutput = document.createElement("output");
+        populationOutput.textContent = "0 nearby";
+        const populationMeter = document.createElement("meter");
+        populationMeter.min = 0;
+        populationMeter.max = 12;
+        populationMeter.value = 0;
+        populationRow.append(populationOutput, populationMeter);
+
+        fieldset.append(legend, toggleLabel, strengthLabel, populationRow);
+        const object = new CSS3DObject(fieldset);
         object.rotation.x = -Math.PI / 2;
-        target = { object, button, active: true };
-        button.addEventListener("click", () => {
+        target = {
+          object,
+          fieldset,
+          toggle,
+          strength,
+          strengthOutput,
+          populationOutput,
+          populationMeter,
+          cell,
+          active: true,
+          attractionStrength: 1,
+          population: 0,
+        };
+        toggle.addEventListener("change", () => {
           if (!target) return;
-          target.active = !target.active;
+          target.active = toggle.checked;
           this.updateHTMLTargetElement(target);
-          this.onHTMLTargetChange(key, target.active);
+          this.onHTMLTargetChange(key, {
+            active: target.active,
+            strength: target.attractionStrength,
+          });
+        });
+        strength.addEventListener("input", () => {
+          if (!target) return;
+          target.attractionStrength = Number(strength.value);
+          this.updateHTMLTargetElement(target);
+          this.onHTMLTargetChange(key, {
+            active: target.active,
+            strength: target.attractionStrength,
+          });
         });
         this.htmlTargets.set(key, target);
         this.htmlScene.add(object);
-        this.onHTMLTargetChange(key, true);
+        this.onHTMLTargetChange(key, { active: true, strength: 1 });
       }
 
-      target.button.style.width = `${cell.width}px`;
-      target.button.style.height = `${cell.height}px`;
+      target.cell = cell;
       target.object.position.set(
         cell.centerX - this.width / 2,
-        FLOOR_Y + 0.2,
+        FLOOR_Y + 0.4,
         cell.centerY - this.height / 2,
       );
       this.updateHTMLTargetElement(target);
@@ -705,25 +774,46 @@ export class GoldfishScene {
     for (const [key, target] of this.htmlTargets) {
       if (retainedKeys.has(key)) continue;
       target.object.removeFromParent();
-      target.button.remove();
+      target.fieldset.remove();
       this.htmlTargets.delete(key);
-      this.onHTMLTargetChange(key, false);
+      this.onHTMLTargetChange(key, { active: false, strength: 0 });
     }
   }
 
   private updateHTMLTargetElement(target: {
-    button: HTMLButtonElement;
+    fieldset: HTMLFieldSetElement;
+    toggle: HTMLInputElement;
+    strength: HTMLInputElement;
+    strengthOutput: HTMLOutputElement;
     active: boolean;
+    attractionStrength: number;
   }) {
-    target.button.setAttribute("aria-pressed", String(target.active));
-    target.button.setAttribute(
-      "aria-label",
-      target.active
-        ? "Release this attraction target"
-        : "Activate this attraction target",
+    target.fieldset.dataset.active = String(target.active);
+    target.toggle.checked = target.active;
+    target.strength.value = String(target.attractionStrength);
+    target.strengthOutput.value = `${target.attractionStrength.toFixed(1)}×`;
+  }
+
+  private updateHTMLTargetPopulations(agents: readonly CursorAgent[]) {
+    const radiusSquared = 96 ** 2;
+    const meterMaximum = Math.max(
+      12,
+      Math.ceil(agents.length / Math.max(1, this.htmlTargets.size)),
     );
-    target.button.textContent = target.active ? "release" : "attract";
-    target.button.dataset.active = String(target.active);
+
+    for (const target of this.htmlTargets.values()) {
+      let population = 0;
+      for (const agent of agents) {
+        const dx = agent.x - target.cell.centerX;
+        const dy = agent.y - target.cell.centerY;
+        if (dx * dx + dy * dy <= radiusSquared) population += 1;
+      }
+      target.populationMeter.max = meterMaximum;
+      target.populationMeter.value = Math.min(population, meterMaximum);
+      if (population === target.population) continue;
+      target.population = population;
+      target.populationOutput.value = `${population} nearby`;
+    }
   }
 
   private updateMediaPlayback(elapsedMilliseconds: number) {
@@ -999,6 +1089,7 @@ export class GoldfishScene {
       mesh.instanceMatrix.needsUpdate = true;
     }
     this.renderer.render(this.scene, this.camera);
+    this.updateHTMLTargetPopulations(agents);
     this.htmlRenderer.render(this.htmlScene, this.camera);
   }
 
@@ -1030,7 +1121,7 @@ export class GoldfishScene {
     this.renderer.dispose();
     for (const target of this.htmlTargets.values()) {
       target.object.removeFromParent();
-      target.button.remove();
+      target.fieldset.remove();
     }
     this.htmlTargets.clear();
     this.htmlRenderer.domElement.remove();

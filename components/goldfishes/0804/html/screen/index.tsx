@@ -175,7 +175,9 @@ export default function Goldfishes3D({
   const agentsRef = useRef<CursorAgent[]>([]);
   const gridRef = useRef<Grid | null>(null);
   const selectionRef = useRef<CellAnchor[]>([]);
-  const activeCellKeysRef = useRef(new Set<string>());
+  const htmlTargetStateRef = useRef(
+    new Map<string, { active: boolean; strength: number }>(),
+  );
   const tracePointRef = useRef<TracePoint | null>(null);
   const cameraGestureRef = useRef<CameraGesture | null>(null);
   const cameraInputRef = useRef(true);
@@ -234,9 +236,17 @@ export default function Goldfishes3D({
       width: number,
       height: number,
     ) =>
-      getAnchoredCells(anchors, grid, width, height).filter((cell) =>
-        activeCellKeysRef.current.has(getCellKey(cell.column, cell.row)),
-      ),
+      getAnchoredCells(anchors, grid, width, height).flatMap((cell) => {
+        const state = htmlTargetStateRef.current.get(
+          getCellKey(cell.column, cell.row),
+        );
+        if (!state?.active) return [];
+        const targetShare = Math.max(1, Math.round(state.strength * 2));
+        return Array.from({ length: targetShare }, () => ({
+          ...cell,
+          attractionStrength: state.strength,
+        }));
+      }),
     [],
   );
 
@@ -395,7 +405,10 @@ export default function Goldfishes3D({
         const cellKey = getCellKey(cell.column, cell.row);
         if (existingCellKeys.has(cellKey)) continue;
         existingCellKeys.add(cellKey);
-        activeCellKeysRef.current.add(cellKey);
+        htmlTargetStateRef.current.set(cellKey, {
+          active: true,
+          strength: 1,
+        });
         nextSelections.push({
           xRatio: cell.centerX / canvas.clientWidth,
           yRatio: cell.centerY / canvas.clientHeight,
@@ -467,9 +480,12 @@ export default function Goldfishes3D({
       canvas: threeCanvas,
       fieldCanvas: backgroundCanvas,
       htmlLayer,
-      onHTMLTargetChange: (cellKey, active) => {
-        if (active) activeCellKeysRef.current.add(cellKey);
-        else activeCellKeysRef.current.delete(cellKey);
+      onHTMLTargetChange: (cellKey, state) => {
+        if (state.active || state.strength > 0) {
+          htmlTargetStateRef.current.set(cellKey, state);
+        } else {
+          htmlTargetStateRef.current.delete(cellKey);
+        }
       },
       count: initialCount,
       color: initialFishColor,
@@ -593,7 +609,9 @@ export default function Goldfishes3D({
           interactionCanvas.dataset.performanceAttentionSurface =
             "html";
           interactionCanvas.dataset.performanceSelectedCells = String(
-            activeCellKeysRef.current.size,
+            Array.from(htmlTargetStateRef.current.values()).filter(
+              (state) => state.active,
+            ).length,
           );
 
           metricStartedAt = time;
@@ -740,7 +758,7 @@ export default function Goldfishes3D({
         onKeyDown={(event) => {
           if (event.key === "Escape") {
             selectionRef.current = [];
-            activeCellKeysRef.current.clear();
+            htmlTargetStateRef.current.clear();
             redrawField();
             return;
           }

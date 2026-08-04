@@ -34,8 +34,15 @@ export const goldfishExperiments = [
     key: "0804/html",
     section: "dated",
     date: "2026-08-04",
-    phrase: "Live HTML controls as reversible attraction targets",
+    phrase: "Live HTML forms as bidirectional attraction targets",
     load: () => import("./0804/html"),
+  },
+  {
+    key: "0804/music-sheet",
+    section: "dated",
+    date: "2026-08-04",
+    phrase: "Playable staff notation as fish attraction targets",
+    load: () => import("./0804/music-sheet"),
   },
   {
     key: "0804/node-edge",
@@ -55,7 +62,7 @@ export const goldfishExperiments = [
     key: "0804/sphere",
     section: "dated",
     date: "2026-08-04",
-    phrase: "Atlas-textured spheres distributed through the attention volume",
+    phrase: "Pointer-placed textured spheres distributed through a spatial volume",
     load: () => import("./0804/sphere"),
   },
 ] as const satisfies readonly GoldfishExperiment[];

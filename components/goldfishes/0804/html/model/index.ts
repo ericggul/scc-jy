@@ -23,6 +23,7 @@ export type SelectedCell = {
   height: number;
   centerX: number;
   centerY: number;
+  attractionStrength?: number;
 };
 
 export type CellAnchor = {
@@ -564,6 +565,10 @@ export function stepCursorField(
         : null;
 
     if (attentionCell) {
+      const attractionStrength = Math.max(
+        0,
+        Math.min(2, attentionCell.attractionStrength ?? 1),
+      );
       const targetRank = Math.floor(cursor.id / selectedCells.length);
       const targetIndex = cursor.id % selectedCells.length;
       const orbitPoint = getPerimeterTarget(
@@ -581,8 +586,10 @@ export function stepCursorField(
         const arrival = Math.min(1, distance / 150);
         const desiredVx = (dx / distance) * MAX_SPEED * arrival;
         const desiredVy = (dy / distance) * MAX_SPEED * arrival;
-        accelerationX += (desiredVx - cursor.vx) * 0.72;
-        accelerationY += (desiredVy - cursor.vy) * 0.72;
+        accelerationX +=
+          (desiredVx - cursor.vx) * 0.72 * attractionStrength;
+        accelerationY +=
+          (desiredVy - cursor.vy) * 0.72 * attractionStrength;
       }
     }
 

@@ -1,4 +1,4 @@
-import type { CellAnchor, Grid, SelectedCell } from "../model";
+import type { SelectedCell } from "../model";
 
 type EntropySource = {
   next: () => number;
@@ -348,6 +348,8 @@ function createLayout(width: number, height: number): NodeEdgeLayout {
       height: size,
       centerX: node.screenX,
       centerY: node.screenY,
+      centerZ: node.elevation,
+      radius: node.screenRadius,
     };
   });
   const value = { cells, edges: source.edges, nodes };
@@ -356,12 +358,14 @@ function createLayout(width: number, height: number): NodeEdgeLayout {
 }
 
 export function getNodeEdgeCells(
-  _anchors: readonly CellAnchor[],
-  _grid: Grid,
   width: number,
   height: number,
+  visibleNodeIndices: ReadonlySet<number> | null,
 ) {
-  return createLayout(width, height).cells;
+  const cells = createLayout(width, height).cells;
+  return visibleNodeIndices === null
+    ? cells
+    : cells.filter((cell) => visibleNodeIndices.has(cell.column));
 }
 
 export function getNodeEdgeNetwork(width: number, height: number): {

@@ -1,16 +1,16 @@
 import * as THREE from "three";
-import type { CursorAgent, SelectedCell } from "../model";
+import {
+  ATTENTION_VOLUME_FLOOR_Y,
+  ATTENTION_VOLUME_HEIGHT,
+  MAX_ATTENTION_POINT_COUNT,
+  type AttentionPoint,
+  type CursorAgent,
+} from "../model";
 import { MEDIA_ATLAS_COLUMNS, MEDIA_ATLAS_ROWS, MEDIA_IMAGE_COUNTS, loadMediaAtlas, type AttentionSurface, type MediaSurface } from "./media-atlas";
 
 const MAX_FISH_COUNT = 1000;
-const MAX_ATTENTION_CELL_COUNT = 4096;
 const CAMERA_DISTANCE_MULTIPLIER = 6;
 const VERTICAL_EXTENT_MULTIPLIER = 6;
-const FLOOR_Y = 0;
-const FLOOR_SURFACE_Y = FLOOR_Y - 0.6;
-const MAX_ATTENTION_SPHERE_CENTER_Y = 180 * VERTICAL_EXTENT_MULTIPLIER;
-const MIN_ATTENTION_SPHERE_VOLUME_MULTIPLIER = 1;
-const MAX_ATTENTION_SPHERE_VOLUME_MULTIPLIER = 8;
 const INITIAL_CAMERA_ELEVATION = Math.PI / 2;
 
 type GoldfishSceneOptions = {
@@ -19,7 +19,7 @@ type GoldfishSceneOptions = {
   count: number;
   color: string;
   paperColor: string;
-  blockColor: string;
+  sphereColor: string;
   cameraProjection?: CameraProjection;
   fishModelStyle?: FishModelStyle;
 };
@@ -31,11 +31,6 @@ export type GoldfishRenderSettings = {
   agentScale: number;
   depth: number;
   tailMotion: number;
-};
-
-export type FieldPoint = {
-  x: number;
-  y: number;
 };
 
 export type { AttentionSurface };
@@ -73,37 +68,37 @@ function getOtherMediaIndex(playback: MediaPlayback, current: number) {
   return candidate >= current ? candidate + 1 : candidate;
 }
 
-function getSphereHeightUnit(cell: SelectedCell) {
-  let state =
-    (Math.imul(cell.column + 1, 0x45d9f3b) ^
-      Math.imul(cell.row + 1, 0x119de1f3) ^
-      0x73a4f2d1) >>>
-    0;
-  state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
-  return state / 0xffffffff;
-}
-
-function getSphereVolumeUnit(cell: SelectedCell) {
-  let state =
-    (Math.imul(cell.column + 1, 0x27d4eb2d) ^
-      Math.imul(cell.row + 1, 0x165667b1) ^
-      0x5f356495) >>>
-    0;
-  state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
-  return state / 0xffffffff;
-}
-
-function getSphereRotationRate(cell: SelectedCell) {
-  let state =
-    (Math.imul(cell.column + 1, 0x9e3779b1) ^
-      Math.imul(cell.row + 1, 0x85ebca6b) ^
-      0x2c9277b5) >>>
-    0;
+function getSphereRotationRate(point: AttentionPoint) {
+  let state = (Math.imul(point.id + 1, 0x9e3779b1) ^ 0x2c9277b5) >>> 0;
   state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
   const unit = state / 0xffffffff;
   const direction = unit < 0.5 ? -1 : 1;
   const magnitude = 0.65 + Math.abs(unit - 0.5) * 1.4;
   return direction * magnitude;
+}
+
+function getRayBoxInterval(
+  ray: THREE.Ray,
+  minimum: THREE.Vector3,
+  maximum: THREE.Vector3,
+) {
+  let near = 0;
+  let far = Number.POSITIVE_INFINITY;
+  for (const axis of ["x", "y", "z"] as const) {
+    const origin = ray.origin[axis];
+    const direction = ray.direction[axis];
+    if (Math.abs(direction) < 1e-8) {
+      if (origin < minimum[axis] || origin > maximum[axis]) return null;
+      continue;
+    }
+    let axisNear = (minimum[axis] - origin) / direction;
+    let axisFar = (maximum[axis] - origin) / direction;
+    if (axisNear > axisFar) [axisNear, axisFar] = [axisFar, axisNear];
+    near = Math.max(near, axisNear);
+    far = Math.min(far, axisFar);
+    if (near > far) return null;
+  }
+  return { near, far };
 }
 
 function createTailGeometry() {
@@ -163,16 +158,17 @@ export class GoldfishScene {
   private fishModelStyle: FishModelStyle;
   private currentColor: string;
   private readonly raycaster = new THREE.Raycaster();
-  private readonly floorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -FLOOR_Y);
   private readonly hitPoint = new THREE.Vector3();
+  private readonly volumeMinimum = new THREE.Vector3();
+  private readonly volumeMaximum = new THREE.Vector3();
   private readonly ndc = new THREE.Vector2();
   private readonly fieldTexture: THREE.CanvasTexture;
   private readonly floorMaterial: THREE.MeshBasicMaterial;
   private readonly floor: THREE.Mesh;
   private readonly attentionSphereMaterial: THREE.ShaderMaterial;
   private readonly attentionSpheres: THREE.InstancedMesh;
-  private readonly mediaTile = new THREE.InstancedBufferAttribute(new Float32Array(MAX_ATTENTION_CELL_COUNT), 1);
-  private readonly sphereRotationRate = new THREE.InstancedBufferAttribute(new Float32Array(MAX_ATTENTION_CELL_COUNT), 1);
+  private readonly mediaTile = new THREE.InstancedBufferAttribute(new Float32Array(MAX_ATTENTION_POINT_COUNT), 1);
+  private readonly sphereRotationRate = new THREE.InstancedBufferAttribute(new Float32Array(MAX_ATTENTION_POINT_COUNT), 1);
   private readonly bodyMaterial = new THREE.MeshStandardMaterial({
     roughness: 0.38,
     metalness: 0.02,
@@ -210,18 +206,18 @@ export class GoldfishScene {
   private cameraZoom = 1;
   private attentionSurface: AttentionSurface = "cat";
   private mediaSpeed = 24;
-  private attentionCells: SelectedCell[] = [];
+  private attentionPoints: AttentionPoint[] = [];
   private readonly mediaAtlasTextures = new Map<MediaSurface, THREE.CanvasTexture>();
   private readonly mediaAtlasLoading = new Set<MediaSurface>();
   private mediaPlayback: MediaPlayback[] = [];
-  private readonly mediaPlaybackByCell = new Map<string, MediaPlayback>();
+  private readonly mediaPlaybackByPoint = new Map<string, MediaPlayback>();
   private lastElapsedMilliseconds = 0;
   private sphereRotationSpeed = 0.25;
   private sphereRotationAngle = 0;
   private lastRenderElapsedSeconds: number | null = null;
   private disposed = false;
 
-  constructor({ canvas, fieldCanvas, count, color, paperColor, blockColor, cameraProjection = "perspective", fishModelStyle = "minimal" }: GoldfishSceneOptions) {
+  constructor({ canvas, fieldCanvas, count, color, paperColor, sphereColor, cameraProjection = "perspective", fishModelStyle = "minimal" }: GoldfishSceneOptions) {
     this.cameraProjection = cameraProjection;
     this.fishModelStyle = fishModelStyle;
     this.currentColor = color;
@@ -248,12 +244,12 @@ export class GoldfishScene {
     const floorGeometry = new THREE.PlaneGeometry(1, 1);
     floorGeometry.rotateX(-Math.PI / 2);
     this.floor = new THREE.Mesh(floorGeometry, this.floorMaterial);
-    this.floor.position.y = FLOOR_SURFACE_Y;
+    this.floor.position.y = ATTENTION_VOLUME_FLOOR_Y;
     this.scene.add(this.floor);
 
     this.attentionSphereMaterial = new THREE.ShaderMaterial({
       uniforms: {
-        sphereColor: { value: new THREE.Color(blockColor) },
+        sphereColor: { value: new THREE.Color(sphereColor) },
         paperColor: { value: new THREE.Color(paperColor) },
         mediaAtlas: { value: null },
         useMediaTexture: { value: 0 },
@@ -344,7 +340,7 @@ export class GoldfishScene {
     const attentionSphereGeometry = new THREE.SphereGeometry(0.5, 32, 20);
     attentionSphereGeometry.setAttribute("mediaTile", this.mediaTile);
     attentionSphereGeometry.setAttribute("sphereRotationRate", this.sphereRotationRate);
-    this.attentionSpheres = new THREE.InstancedMesh(attentionSphereGeometry, this.attentionSphereMaterial, MAX_ATTENTION_CELL_COUNT);
+    this.attentionSpheres = new THREE.InstancedMesh(attentionSphereGeometry, this.attentionSphereMaterial, MAX_ATTENTION_POINT_COUNT);
     this.attentionSpheres.count = 0;
     this.attentionSpheres.frustumCulled = false;
     this.attentionSpheres.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
@@ -459,14 +455,14 @@ export class GoldfishScene {
     this.fieldTexture.needsUpdate = true;
   }
 
-  private createMediaPlayback(cell: SelectedCell, surface: MediaSurface) {
+  private createMediaPlayback(point: AttentionPoint, surface: MediaSurface) {
     const surfaceSeed = {
       cat: 0x2c9277b5,
       kiss: 0x165667b1,
       politician: 0x7f4a7c15,
       company: 0x6f2e9b41,
     }[surface];
-    const randomState = (Math.imul(cell.column + 1, 0x45d9f3b) ^ Math.imul(cell.row + 1, 0x119de1f3) ^ surfaceSeed) >>> 0;
+    const randomState = (Math.imul(point.id + 1, 0x45d9f3b) ^ surfaceSeed) >>> 0;
     const playback: MediaPlayback = {
       current: 0,
       imageCount: MEDIA_IMAGE_COUNTS[surface],
@@ -525,12 +521,12 @@ export class GoldfishScene {
     }
 
     this.attentionSphereMaterial.uniforms.useMediaTexture.value = 0;
-    this.setAttentionCells(this.attentionCells);
+    this.setAttentionPoints(this.attentionPoints);
   }
 
   setMediaSpeed(speed: number) {
     this.mediaSpeed = THREE.MathUtils.clamp(speed, 0, 40);
-    for (const playback of this.mediaPlaybackByCell.values()) {
+    for (const playback of this.mediaPlaybackByPoint.values()) {
       playback.startedAt = this.lastElapsedMilliseconds;
       playback.duration = getPlaybackDuration(playback, this.mediaSpeed);
     }
@@ -540,50 +536,37 @@ export class GoldfishScene {
     this.sphereRotationSpeed = THREE.MathUtils.clamp(speed, 0, 2);
   }
 
-  setAttentionCells(cells: readonly SelectedCell[]) {
-    const count = Math.min(cells.length, MAX_ATTENTION_CELL_COUNT);
-    this.attentionCells = cells.slice(0, count);
+  setAttentionPoints(points: readonly AttentionPoint[]) {
+    const count = Math.min(points.length, MAX_ATTENTION_POINT_COUNT);
+    this.attentionPoints = points.slice(0, count);
     const mediaSurface = this.attentionSurface === "white" ? null : this.attentionSurface;
     const playback: MediaPlayback[] = [];
 
     for (let index = 0; index < count; index += 1) {
-      const cell = cells[index];
-      let cellPlayback: MediaPlayback | null = null;
+      const point = points[index];
+      let pointPlayback: MediaPlayback | null = null;
       if (mediaSurface) {
-        const key = `${mediaSurface}:${cell.column}:${cell.row}`;
-        cellPlayback = this.mediaPlaybackByCell.get(key) ?? null;
-        if (!cellPlayback) {
-          cellPlayback = this.createMediaPlayback(cell, mediaSurface);
-          this.mediaPlaybackByCell.set(key, cellPlayback);
+        const key = `${mediaSurface}:${point.id}`;
+        pointPlayback = this.mediaPlaybackByPoint.get(key) ?? null;
+        if (!pointPlayback) {
+          pointPlayback = this.createMediaPlayback(point, mediaSurface);
+          this.mediaPlaybackByPoint.set(key, pointPlayback);
         }
-        playback.push(cellPlayback);
+        playback.push(pointPlayback);
       }
 
-      const baseDiameter = Math.min(cell.width, cell.height);
-      const volumeMultiplier = THREE.MathUtils.lerp(
-        MIN_ATTENTION_SPHERE_VOLUME_MULTIPLIER,
-        MAX_ATTENTION_SPHERE_VOLUME_MULTIPLIER,
-        getSphereVolumeUnit(cell),
-      );
-      const diameter = baseDiameter * Math.cbrt(volumeMultiplier);
-      const radius = diameter / 2;
-      const availableHeight = Math.max(0, MAX_ATTENTION_SPHERE_CENTER_Y - radius * 2);
-      const centerY =
-        FLOOR_SURFACE_Y +
-        radius +
-        getSphereHeightUnit(cell) * availableHeight;
-
+      const diameter = point.radius * 2;
       this.local.position.set(
-        cell.centerX - this.width / 2,
-        centerY,
-        cell.centerY - this.height / 2,
+        point.x - this.width / 2,
+        point.height,
+        point.y - this.height / 2,
       );
       this.local.rotation.set(0, 0, 0);
       this.local.scale.setScalar(diameter);
       this.local.updateMatrix();
       this.attentionSpheres.setMatrixAt(index, this.local.matrix);
-      this.mediaTile.setX(index, cellPlayback?.current ?? 0);
-      this.sphereRotationRate.setX(index, getSphereRotationRate(cell));
+      this.mediaTile.setX(index, pointPlayback?.current ?? 0);
+      this.sphereRotationRate.setX(index, getSphereRotationRate(point));
     }
 
     this.mediaPlayback = playback;
@@ -634,15 +617,43 @@ export class GoldfishScene {
     }
   }
 
-  screenToField(screenX: number, screenY: number): FieldPoint | null {
+  screenToVolumeAnchor(
+    screenX: number,
+    screenY: number,
+    radius: number,
+    placementUnit: number,
+  ) {
     this.ndc.set((screenX / this.width) * 2 - 1, -(screenY / this.height) * 2 + 1);
     this.raycaster.setFromCamera(this.ndc, this.camera);
-    const hit = this.raycaster.ray.intersectPlane(this.floorPlane, this.hitPoint);
-    if (!hit) return null;
-
+    const minimumX = -this.width / 2;
+    const maximumX = this.width / 2;
+    const minimumY = ATTENTION_VOLUME_FLOOR_Y + radius;
+    const maximumY = ATTENTION_VOLUME_FLOOR_Y + ATTENTION_VOLUME_HEIGHT - radius;
+    const minimumZ = -this.height / 2;
+    const maximumZ = this.height / 2;
+    if (minimumX > maximumX || minimumY > maximumY || minimumZ > maximumZ) {
+      return null;
+    }
+    this.volumeMinimum.set(minimumX, minimumY, minimumZ);
+    this.volumeMaximum.set(maximumX, maximumY, maximumZ);
+    const interval = getRayBoxInterval(
+      this.raycaster.ray,
+      this.volumeMinimum,
+      this.volumeMaximum,
+    );
+    if (!interval) return null;
+    this.raycaster.ray.at(
+      THREE.MathUtils.lerp(
+        interval.near,
+        interval.far,
+        THREE.MathUtils.clamp(placementUnit, 0, 1),
+      ),
+      this.hitPoint,
+    );
     return {
-      x: THREE.MathUtils.clamp(hit.x + this.width / 2, 0, this.width),
-      y: THREE.MathUtils.clamp(hit.z + this.height / 2, 0, this.height),
+      xRatio: (this.hitPoint.x - minimumX) / Math.max(1e-8, maximumX - minimumX),
+      yRatio: (this.hitPoint.y - minimumY) / Math.max(1e-8, maximumY - minimumY),
+      zRatio: (this.hitPoint.z - minimumZ) / Math.max(1e-8, maximumZ - minimumZ),
     };
   }
 
@@ -684,7 +695,7 @@ export class GoldfishScene {
     this.attentionSphereMaterial.uniforms.paperColor.value.set(color);
   }
 
-  setBlockColor(color: string) {
+  setSphereColor(color: string) {
     this.attentionSphereMaterial.uniforms.sphereColor.value.set(color);
   }
 

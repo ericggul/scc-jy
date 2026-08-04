@@ -6,28 +6,19 @@ export type CursorAgent = {
   vy: number;
 };
 
-export type Grid = {
-  cellSize: number;
-  originX: number;
-  originY: number;
-  columns: number;
-  rows: number;
-};
-
-export type SelectedCell = {
-  column: number;
-  row: number;
+export type AttentionPoint = {
+  id: number;
   x: number;
   y: number;
-  width: number;
   height: number;
-  centerX: number;
-  centerY: number;
+  radius: number;
 };
 
-export type CellAnchor = {
+export type SpatialAnchor = {
+  id: number;
   xRatio: number;
   yRatio: number;
+  zRatio: number;
 };
 
 export type AttentionZoneBehavior =
@@ -35,26 +26,27 @@ export type AttentionZoneBehavior =
   | "open-perimeter";
 
 export type CursorFieldSettings = {
-  cellMin: number;
-  cellMax: number;
-  cellDivisor: number;
   clearance: number;
   minDistance: number;
   collisionBuffer: number;
   collisionPasses: number;
 };
 
-export const GOLDFISHES_2D_ONE_SETTINGS: CursorFieldSettings = {
-  cellMin: 20,
-  cellMax: 30,
-  cellDivisor: 30,
+export const GOLDFISHES_SPHERE_FIELD_SETTINGS: CursorFieldSettings = {
   clearance: 6,
   minDistance: 16,
   collisionBuffer: 2,
   collisionPasses: 8,
 };
 
-export const GOLDFISHES_PRIMARY_GRID_SCALE = 2;
+const MIN_ATTENTION_SPHERE_DIAMETER = 40;
+const MAX_ATTENTION_SPHERE_DIAMETER = 60;
+const ATTENTION_SPHERE_DIAMETER_DIVISOR = 30;
+const MIN_ATTENTION_SPHERE_VOLUME_MULTIPLIER = 0.5 ** 3;
+const MAX_ATTENTION_SPHERE_VOLUME_MULTIPLIER = 2 ** 3;
+export const ATTENTION_VOLUME_FLOOR_Y = -0.6;
+export const ATTENTION_VOLUME_HEIGHT = 1_080;
+export const MAX_ATTENTION_POINT_COUNT = 4_096;
 
 export function scaleCursorFieldSettings(
   settings: CursorFieldSettings,
@@ -89,65 +81,56 @@ function limitVector(x: number, y: number, maximum: number) {
   return { x: x * scale, y: y * scale };
 }
 
-export function createGrid(
-  width: number,
-  height: number,
-  settings: CursorFieldSettings,
-  gridScale = 1,
-): Grid {
-  const baseCellSize = Math.max(
-    settings.cellMin,
+function getAttentionPointUnit(id: number, salt: number) {
+  let state = (Math.imul(id + 1, 0x45d9f3b) ^ salt) >>> 0;
+  state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+  return state / 0xffffffff;
+}
+
+export function getAttentionPointPlacementUnit(id: number) {
+  return getAttentionPointUnit(id, 0x73a4f2d1);
+}
+
+export function getAttentionPointSpacing(width: number, height: number) {
+  return Math.max(
+    MIN_ATTENTION_SPHERE_DIAMETER,
     Math.min(
-      settings.cellMax,
-      Math.round(Math.min(width, height) / settings.cellDivisor),
+      MAX_ATTENTION_SPHERE_DIAMETER,
+      Math.round(Math.min(width, height) / ATTENTION_SPHERE_DIAMETER_DIVISOR) * 2,
     ),
   );
-  const cellSize = baseCellSize * Math.max(0.1, gridScale);
-  const columns = Math.ceil(width / cellSize) + 1;
-  const rows = Math.ceil(height / cellSize) + 1;
-
-  return {
-    cellSize,
-    originX: (width - columns * cellSize) / 2,
-    originY: (height - rows * cellSize) / 2,
-    columns,
-    rows,
-  };
 }
 
-export function getCellAtPoint(x: number, y: number, grid: Grid): SelectedCell {
-  const column = Math.min(
-    grid.columns - 1,
-    Math.max(0, Math.floor((x - grid.originX) / grid.cellSize)),
-  );
-  const row = Math.min(
-    grid.rows - 1,
-    Math.max(0, Math.floor((y - grid.originY) / grid.cellSize)),
-  );
-  const cellX = grid.originX + column * grid.cellSize;
-  const cellY = grid.originY + row * grid.cellSize;
-
-  return {
-    column,
-    row,
-    x: cellX,
-    y: cellY,
-    width: grid.cellSize,
-    height: grid.cellSize,
-    centerX: cellX + grid.cellSize / 2,
-    centerY: cellY + grid.cellSize / 2,
-  };
-}
-
-export function getAnchoredCells(
-  anchors: readonly CellAnchor[],
-  grid: Grid,
+export function getAttentionPointRadius(
+  id: number,
   width: number,
   height: number,
 ) {
-  return anchors.map((anchor) =>
-    getCellAtPoint(anchor.xRatio * width, anchor.yRatio * height, grid),
-  );
+  const baseDiameter = getAttentionPointSpacing(width, height);
+  const volumeMultiplier =
+    MIN_ATTENTION_SPHERE_VOLUME_MULTIPLIER +
+    getAttentionPointUnit(id, 0x5f356495) *
+      (MAX_ATTENTION_SPHERE_VOLUME_MULTIPLIER -
+        MIN_ATTENTION_SPHERE_VOLUME_MULTIPLIER);
+  return (baseDiameter * Math.cbrt(volumeMultiplier)) / 2;
+}
+
+export function getAnchoredAttentionPoints(
+  anchors: readonly SpatialAnchor[],
+  width: number,
+  height: number,
+) {
+  return anchors.map((anchor): AttentionPoint => {
+    const radius = getAttentionPointRadius(anchor.id, width, height);
+    const availableHeight = Math.max(0, ATTENTION_VOLUME_HEIGHT - radius * 2);
+    return {
+      id: anchor.id,
+      x: anchor.xRatio * width,
+      y: anchor.zRatio * height,
+      height: ATTENTION_VOLUME_FLOOR_Y + radius + anchor.yRatio * availableHeight,
+      radius,
+    };
+  });
 }
 
 export function createCursorField(
@@ -208,26 +191,16 @@ export function createCursorField(
   });
 }
 
-function perimeterPoint(cell: SelectedCell, angle: number, padding: number) {
-  const directionX = Math.cos(angle);
-  const directionY = Math.sin(angle);
-  const halfWidth = cell.width / 2 + padding;
-  const halfHeight = cell.height / 2 + padding;
-  const distance =
-    1 /
-    Math.max(
-      Math.abs(directionX) / halfWidth,
-      Math.abs(directionY) / halfHeight,
-    );
-
+function perimeterPoint(point: AttentionPoint, angle: number, padding: number) {
+  const distance = point.radius + padding;
   return {
-    x: cell.centerX + directionX * distance,
-    y: cell.centerY + directionY * distance,
+    x: point.x + Math.cos(angle) * distance,
+    y: point.y + Math.sin(angle) * distance,
   };
 }
 
 function getPerimeterTarget(
-  cell: SelectedCell,
+  point: AttentionPoint,
   targetRank: number,
   targetIndex: number,
   elapsedSeconds: number,
@@ -239,7 +212,7 @@ function getPerimeterTarget(
   let padding = settings.clearance + collisionDistance;
 
   while (true) {
-    const perimeter = 2 * (cell.width + cell.height + padding * 4);
+    const perimeter = Math.PI * 2 * (point.radius + padding);
     const capacity = Math.max(8, Math.floor(perimeter / collisionDistance));
 
     if (remainingRank < capacity) {
@@ -247,7 +220,7 @@ function getPerimeterTarget(
       const phase =
         (remainingRank / capacity) * Math.PI * 2 +
         elapsedSeconds * 0.22 * direction;
-      return perimeterPoint(cell, phase, padding);
+      return perimeterPoint(point, phase, padding);
     }
 
     remainingRank -= capacity;
@@ -256,88 +229,65 @@ function getPerimeterTarget(
   }
 }
 
-function isInsideProtectedCell(
+function isInsideProtectedPoint(
   x: number,
   y: number,
-  cell: SelectedCell,
+  point: AttentionPoint,
   settings: CursorFieldSettings,
 ) {
-  return (
-    x > cell.x - settings.clearance &&
-    x < cell.x + cell.width + settings.clearance &&
-    y > cell.y - settings.clearance &&
-    y < cell.y + cell.height + settings.clearance
-  );
+  return Math.hypot(x - point.x, y - point.y) < point.radius + settings.clearance;
 }
 
-type ConstraintCandidate = {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-};
-
-function keepOutsideCells(
+function keepOutsideAttentionPoints(
   x: number,
   y: number,
   vx: number,
   vy: number,
-  cells: readonly SelectedCell[],
+  points: readonly AttentionPoint[],
   settings: CursorFieldSettings,
 ) {
-  if (
-    !cells.some((cell) => isInsideProtectedCell(x, y, cell, settings))
-  ) {
-    return { x, y, vx, vy };
+  let nextX = x;
+  let nextY = y;
+  let nextVx = vx;
+  let nextVy = vy;
+
+  for (const point of points) {
+    if (!isInsideProtectedPoint(nextX, nextY, point, settings)) continue;
+    let dx = nextX - point.x;
+    let dy = nextY - point.y;
+    let distance = Math.hypot(dx, dy);
+    if (distance < 0.0001) {
+      dx = 1;
+      dy = 0;
+      distance = 1;
+    }
+    const directionX = dx / distance;
+    const directionY = dy / distance;
+    const boundaryDistance = point.radius + settings.clearance;
+    nextX = point.x + directionX * boundaryDistance;
+    nextY = point.y + directionY * boundaryDistance;
+    const inwardVelocity = nextVx * directionX + nextVy * directionY;
+    if (inwardVelocity < 0) {
+      nextVx -= directionX * inwardVelocity * 1.62;
+      nextVy -= directionY * inwardVelocity * 1.62;
+    }
   }
 
-  const candidates: ConstraintCandidate[] = [];
-
-  for (const cell of cells) {
-    const left = cell.x - settings.clearance;
-    const right = cell.x + cell.width + settings.clearance;
-    const top = cell.y - settings.clearance;
-    const bottom = cell.y + cell.height + settings.clearance;
-    const clampedX = Math.min(right, Math.max(left, x));
-    const clampedY = Math.min(bottom, Math.max(top, y));
-
-    candidates.push(
-      { x: left, y: clampedY, vx: -Math.abs(vx) * 0.62, vy },
-      { x: right, y: clampedY, vx: Math.abs(vx) * 0.62, vy },
-      { x: clampedX, y: top, vx, vy: -Math.abs(vy) * 0.62 },
-      { x: clampedX, y: bottom, vx, vy: Math.abs(vy) * 0.62 },
-    );
-  }
-
-  const validCandidates = candidates.filter(
-    (candidate) =>
-      !cells.some((cell) =>
-        isInsideProtectedCell(candidate.x, candidate.y, cell, settings),
-      ),
-  );
-
-  const nearest = validCandidates.reduce((current, candidate) => {
-    const currentDistance = (current.x - x) ** 2 + (current.y - y) ** 2;
-    const candidateDistance =
-      (candidate.x - x) ** 2 + (candidate.y - y) ** 2;
-    return candidateDistance < currentDistance ? candidate : current;
-  });
-
-  return nearest;
+  return { x: nextX, y: nextY, vx: nextVx, vy: nextVy };
 }
 
-export function evacuateSelectedCells(
+export function evacuateAttentionPoints(
   cursors: CursorAgent[],
-  cells: readonly SelectedCell[],
+  points: readonly AttentionPoint[],
   settings: CursorFieldSettings,
 ) {
   return cursors.map((cursor) => {
-    const constrained = keepOutsideCells(
+    const constrained = keepOutsideAttentionPoints(
       cursor.x,
       cursor.y,
       cursor.vx,
       cursor.vy,
-      cells,
+      points,
       settings,
     );
 
@@ -349,7 +299,7 @@ function resolveCursorCollisions(
   cursors: CursorAgent[],
   width: number,
   height: number,
-  selectedCells: readonly SelectedCell[],
+  attentionPoints: readonly AttentionPoint[],
   settings: CursorFieldSettings,
 ) {
   let resolved = cursors.map((cursor) => ({ ...cursor }));
@@ -425,12 +375,12 @@ function resolveCursorCollisions(
     }
 
     resolved = resolved.map((cursor) => {
-      const constrained = keepOutsideCells(
+      const constrained = keepOutsideAttentionPoints(
         Math.min(width, Math.max(0, cursor.x)),
         Math.min(height, Math.max(0, cursor.y)),
         cursor.vx,
         cursor.vy,
-        selectedCells,
+        attentionPoints,
         settings,
       );
 
@@ -445,14 +395,14 @@ export function settleCursorField(
   cursors: CursorAgent[],
   width: number,
   height: number,
-  selectedCells: readonly SelectedCell[],
+  attentionPoints: readonly AttentionPoint[],
   settings: CursorFieldSettings,
   preventCursorCollisions = true,
   attentionZoneBehavior: AttentionZoneBehavior = "protected-perimeter",
 ) {
   const constrainedCursors =
     attentionZoneBehavior === "protected-perimeter"
-      ? evacuateSelectedCells(cursors, selectedCells, settings)
+      ? evacuateAttentionPoints(cursors, attentionPoints, settings)
       : cursors;
 
   if (!preventCursorCollisions) {
@@ -464,7 +414,7 @@ export function settleCursorField(
     width,
     height,
     attentionZoneBehavior === "protected-perimeter"
-      ? selectedCells
+      ? attentionPoints
       : [],
     settings,
   );
@@ -476,7 +426,7 @@ export function stepCursorField(
   height: number,
   deltaSeconds: number,
   elapsedSeconds: number,
-  selectedCells: readonly SelectedCell[],
+  attentionPoints: readonly AttentionPoint[],
   settings: CursorFieldSettings,
   preventCursorCollisions = true,
   agentScale = 1,
@@ -558,16 +508,16 @@ export function stepCursorField(
         (centerY * inverseCount - cursor.y) * 0.72 * 0.44;
     }
 
-    const attentionCell =
-      selectedCells.length > 0
-        ? selectedCells[cursor.id % selectedCells.length]
+    const attentionPoint =
+      attentionPoints.length > 0
+        ? attentionPoints[cursor.id % attentionPoints.length]
         : null;
 
-    if (attentionCell) {
-      const targetRank = Math.floor(cursor.id / selectedCells.length);
-      const targetIndex = cursor.id % selectedCells.length;
+    if (attentionPoint) {
+      const targetRank = Math.floor(cursor.id / attentionPoints.length);
+      const targetIndex = cursor.id % attentionPoints.length;
       const orbitPoint = getPerimeterTarget(
-        attentionCell,
+        attentionPoint,
         targetRank,
         targetIndex,
         elapsedSeconds,
@@ -623,12 +573,12 @@ export function stepCursorField(
       return { ...cursor, x: nextX, y: nextY, vx, vy };
     }
 
-    const constrained = keepOutsideCells(
+    const constrained = keepOutsideAttentionPoints(
       nextX,
       nextY,
       vx,
       vy,
-      selectedCells,
+      attentionPoints,
       settings,
     );
 
@@ -644,7 +594,7 @@ export function stepCursorField(
     width,
     height,
     attentionZoneBehavior === "protected-perimeter"
-      ? selectedCells
+      ? attentionPoints
       : [],
     settings,
   );

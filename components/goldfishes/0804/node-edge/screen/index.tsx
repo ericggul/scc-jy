@@ -11,14 +11,12 @@ import { button, folder, LevaPanel, useControls, useCreateStore } from "leva";
 import {
   createCursorField,
   createGrid,
-  getCellAtPoint,
   scaleCursorFieldSettings,
   settleCursorField,
   stepCursorField,
   GOLDFISHES_2D_ONE_SETTINGS,
   GOLDFISHES_PRIMARY_GRID_SCALE,
   type AttentionZoneBehavior,
-  type CellAnchor,
   type CursorAgent,
   type Grid,
 } from "../model";
@@ -92,10 +90,6 @@ function getTracePoints(
   });
 }
 
-function getCellKey(column: number, row: number) {
-  return `${column}:${row}`;
-}
-
 type Goldfishes3DProps = {
   attentionZoneBehavior?: AttentionZoneBehavior;
   cameraProjection?: CameraProjection;
@@ -130,7 +124,8 @@ export default function Goldfishes3D({
   const frameRef = useRef<number | null>(null);
   const agentsRef = useRef<CursorAgent[]>([]);
   const gridRef = useRef<Grid | null>(null);
-  const selectionRef = useRef<CellAnchor[]>([]);
+  const revealedNodeIndicesRef = useRef(new Set<number>());
+  const showAllRef = useRef(false);
   const tracePointRef = useRef<TracePoint | null>(null);
   const cameraGestureRef = useRef<CameraGesture | null>(null);
   const cameraInputRef = useRef(true);
@@ -153,6 +148,11 @@ export default function Goldfishes3D({
   const [activeCount, setActiveCount] = useState(initialCount);
   const activeCountRef = useRef(initialCount);
   const [theme, setTheme] = useState<FieldTheme>("dark");
+
+  const getVisibleNodeIndices = useCallback(
+    () => (showAllRef.current ? null : revealedNodeIndicesRef.current),
+    [],
+  );
 
   const redrawField = useCallback(() => {
     const backgroundCanvas = backgroundCanvasRef.current;
@@ -178,16 +178,20 @@ export default function Goldfishes3D({
       interactionCanvas.clientHeight,
       palette.ink,
     );
+    const visibleNodeIndices = getVisibleNodeIndices();
+    sceneRef.current?.setNodeEdgeVisibility(
+      visibleNodeIndices === null ? null : [...visibleNodeIndices],
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    );
     sceneRef.current?.setAttentionCells(
       getNodeEdgeCells(
-        selectionRef.current,
-        grid,
         interactionCanvas.clientWidth,
         interactionCanvas.clientHeight,
+        visibleNodeIndices,
       ),
     );
     sceneRef.current?.updateField();
-  }, []);
+  }, [getVisibleNodeIndices]);
 
   useControls(
     () => ({
@@ -254,6 +258,13 @@ export default function Goldfishes3D({
         }),
       }),
       Field: folder({
+        "show all": {
+          value: false,
+          onChange: (enabled: boolean) => {
+            showAllRef.current = enabled;
+            redrawField();
+          },
+        },
         blocks: {
           value: "white" as AttentionSurface,
           options: {
@@ -344,36 +355,22 @@ export default function Goldfishes3D({
       ) {
         return;
       }
+      if (showAllRef.current) return;
 
-      const currentSelections = selectionRef.current;
-      const existingCellKeys = new Set(
-        getNodeEdgeCells(
-          currentSelections,
-          grid,
-          canvas.clientWidth,
-          canvas.clientHeight,
-        ).map((cell) => getCellKey(cell.column, cell.row)),
-      );
-      const nextSelections = [...currentSelections];
-
-      for (const point of points) {
-        const cell = getCellAtPoint(point.x, point.y, grid);
-        const cellKey = getCellKey(cell.column, cell.row);
-        if (existingCellKeys.has(cellKey)) continue;
-        existingCellKeys.add(cellKey);
-        nextSelections.push({
-          xRatio: cell.centerX / canvas.clientWidth,
-          yRatio: cell.centerY / canvas.clientHeight,
-        });
+      const revealedIndices =
+        sceneRef.current?.getNodeEdgeIndicesNearScreenPoints(points) ?? [];
+      let changed = false;
+      for (const index of revealedIndices) {
+        if (revealedNodeIndicesRef.current.has(index)) continue;
+        revealedNodeIndicesRef.current.add(index);
+        changed = true;
       }
-
-      if (nextSelections.length === currentSelections.length) return;
-      selectionRef.current = nextSelections;
+      if (!changed) return;
+      const visibleNodeIndices = getVisibleNodeIndices();
       const selectedCells = getNodeEdgeCells(
-        nextSelections,
-        grid,
         canvas.clientWidth,
         canvas.clientHeight,
+        visibleNodeIndices,
       );
       agentsRef.current = settleCursorField(
         agentsRef.current,
@@ -386,7 +383,7 @@ export default function Goldfishes3D({
       );
       redrawField();
     },
-    [attentionZoneBehavior, redrawField],
+    [attentionZoneBehavior, getVisibleNodeIndices, redrawField],
   );
 
   useEffect(() => {
@@ -405,16 +402,15 @@ export default function Goldfishes3D({
       canvas.clientWidth,
       canvas.clientHeight,
       getNodeEdgeCells(
-        selectionRef.current,
-        grid,
         canvas.clientWidth,
         canvas.clientHeight,
+        getVisibleNodeIndices(),
       ),
       constraintSettingsRef.current,
       collisionPreventionRef.current,
       attentionZoneBehavior,
     );
-  }, [activeCount, attentionZoneBehavior]);
+  }, [activeCount, attentionZoneBehavior, getVisibleNodeIndices]);
 
   useEffect(() => {
     const backgroundCanvas = backgroundCanvasRef.current;
@@ -477,10 +473,9 @@ export default function Goldfishes3D({
         bounds.width,
         bounds.height,
         getNodeEdgeCells(
-          selectionRef.current,
-          grid,
           bounds.width,
           bounds.height,
+          getVisibleNodeIndices(),
         ),
         constraintSettingsRef.current,
         collisionPreventionRef.current,
@@ -509,15 +504,15 @@ export default function Goldfishes3D({
           deltaSeconds,
           elapsedSeconds,
           getNodeEdgeCells(
-            selectionRef.current,
-            grid,
             width,
             height,
+            getVisibleNodeIndices(),
           ),
           constraintSettingsRef.current,
           collisionPreventionRef.current,
           renderSettingsRef.current.agentScale,
           attentionZoneBehavior,
+          renderSettingsRef.current.depth,
         );
       }
 
@@ -552,7 +547,9 @@ export default function Goldfishes3D({
           interactionCanvas.dataset.performanceAttentionSurface =
             attentionSurfaceRef.current;
           interactionCanvas.dataset.performanceSelectedCells = String(
-            getNodeEdgeNodeCount(),
+            showAllRef.current
+              ? getNodeEdgeNodeCount()
+              : revealedNodeIndicesRef.current.size,
           );
 
           metricStartedAt = time;
@@ -582,6 +579,7 @@ export default function Goldfishes3D({
     fishModelStyle,
     initialCount,
     initialFishColor,
+    getVisibleNodeIndices,
     redrawField,
   ]);
 
@@ -612,7 +610,7 @@ export default function Goldfishes3D({
       <canvas
         ref={interactionCanvasRef}
         className={styles.interactionCanvas}
-        aria-label="A spatial node-edge topology attracting a school of moving goldfish. Alt-drag or right-drag rotates the camera through a full orbit, and the wheel zooms."
+        aria-label="A school of moving goldfish in an initially hidden spatial topology. Click or drag to reveal nearby nodes and edges, Alt-drag or right-drag to orbit, and use the wheel to zoom."
         tabIndex={0}
         onPointerDown={(event) => {
           event.currentTarget.focus();
@@ -631,11 +629,10 @@ export default function Goldfishes3D({
             };
             return;
           }
-          const point = sceneRef.current?.screenToField(
-            event.clientX - bounds.left,
-            event.clientY - bounds.top,
-          );
-          if (!point) return;
+          const point = {
+            x: event.clientX - bounds.left,
+            y: event.clientY - bounds.top,
+          };
           tracePointRef.current = point;
           selectTrace([point]);
         }}
@@ -665,11 +662,10 @@ export default function Goldfishes3D({
             return;
           }
           const bounds = event.currentTarget.getBoundingClientRect();
-          const nextPoint = sceneRef.current?.screenToField(
-            event.clientX - bounds.left,
-            event.clientY - bounds.top,
-          );
-          if (!nextPoint) return;
+          const nextPoint = {
+            x: event.clientX - bounds.left,
+            y: event.clientY - bounds.top,
+          };
           selectTrace(
             getTracePoints(
               previousPoint,
@@ -696,17 +692,14 @@ export default function Goldfishes3D({
         }}
         onKeyDown={(event) => {
           if (event.key === "Escape") {
-            selectionRef.current = [];
+            revealedNodeIndicesRef.current.clear();
             redrawField();
             return;
           }
           if (event.key !== "Enter" && event.key !== " ") return;
           event.preventDefault();
           selectTrace([
-            sceneRef.current?.screenToField(
-              event.currentTarget.clientWidth / 2,
-              event.currentTarget.clientHeight / 2,
-            ) ?? {
+            {
               x: event.currentTarget.clientWidth / 2,
               y: event.currentTarget.clientHeight / 2,
             },

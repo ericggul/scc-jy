@@ -53,25 +53,78 @@
 
 .htmlLayer :global(.goldfishes-html-target) {
   display: grid;
-  place-items: center;
+  grid-template-rows: auto auto auto;
+  gap: 7px;
   box-sizing: border-box;
-  padding: 0;
+  width: 176px;
+  min-width: 176px;
+  height: 122px;
+  margin: 0;
+  padding: 9px 10px 10px;
   border: 1px solid var(--ink);
   border-radius: 0;
-  background: var(--ink);
-  color: var(--paper);
-  font: 600 10px/1 Arial, Helvetica, sans-serif;
-  letter-spacing: -0.02em;
-  cursor: pointer;
+  background: var(--paper);
+  color: var(--ink);
+  font: 600 11px/1.1 Arial, Helvetica, sans-serif;
   pointer-events: auto;
 }
 
-.htmlLayer :global(.goldfishes-html-target[data-active="false"]) {
-  background: var(--paper);
+.htmlLayer :global(.goldfishes-html-target legend) {
+  max-width: 150px;
+  padding: 0 4px;
+  overflow: hidden;
   color: var(--ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.htmlLayer :global(.goldfishes-html-target:focus-visible) {
+.htmlLayer :global(.goldfishes-html-toggle) {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.htmlLayer :global(.goldfishes-html-toggle input) {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  accent-color: var(--ink);
+}
+
+.htmlLayer :global(.goldfishes-html-strength) {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 4px 8px;
+}
+
+.htmlLayer :global(.goldfishes-html-strength input) {
+  grid-column: 1 / -1;
+  width: 100%;
+  margin: 0;
+  accent-color: var(--ink);
+  cursor: ew-resize;
+}
+
+.htmlLayer :global(.goldfishes-html-population) {
+  display: grid;
+  grid-template-columns: 1fr 76px;
+  align-items: center;
+  gap: 8px;
+}
+
+.htmlLayer :global(.goldfishes-html-population meter) {
+  width: 76px;
+  height: 8px;
+  accent-color: var(--ink);
+}
+
+.htmlLayer :global(.goldfishes-html-target[data-active="false"]) {
+  opacity: 0.5;
+}
+
+.htmlLayer :global(.goldfishes-html-target:focus-within) {
   outline: 2px solid var(--paper);
   outline-offset: 2px;
   box-shadow: 0 0 0 3px var(--ink);

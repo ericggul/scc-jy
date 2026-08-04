@@ -104,21 +104,29 @@ but an orbit view reveals the genuinely longer pillars and higher swim layer.
 
 ### 0804/sphere attention volume
 
-Every selected block in `0804/sphere` becomes one instanced sphere rather than a
-rectangular block, cap, or pillar. The selected-cell width defines its minimum
-diameter. A deterministic per-cell sample is uniform in volume from 1× to 8×
-the base volume, producing diameters from 1× to 2× without enforcing touching,
+Every click in `0804/sphere` creates one instanced sphere rather than a
+rectangular selection, cap, or pillar. The pointer casts a camera ray through a
+bounded rectangular 3D volume, and a stable per-sphere sample chooses a point on
+the ray segment inside that volume. The projected sphere centre therefore stays
+on the clicked screen position even from an orbit view. Continuous normalized
+XYZ anchors preserve relative placement across resize. The experiment has no
+floor-plane placement, grid snapping, dot or crossing field, or visible
+selected-cell rectangle. Fish target and protection perimeters are circular
+around the sphere's XZ coordinate and sampled radius.
+
+The former selected-cell width survives only as a responsive 40–60 unit minimum
+diameter scale. A deterministic per-anchor sample is uniform in volume from
+0.5³× (0.125×) to 2³× (8×) the base volume, producing diameters from 0.5× to 2× without enforcing touching,
 separation, or non-overlap. The minimum and maximum volume multipliers remain
-named renderer constants.
+named model constants.
 
-The sphere's XZ centre remains coincident with the cell used by the fish model.
-A separate deterministic hash distributes sphere centres through the same
-1,080-unit vertical extent and 6× camera scale as `0804/pillars`, accounting for
-each sampled radius so every sphere remains fully above the field plane.
+The ray sample distributes sphere centres through the same 1,080-unit vertical
+extent and 6× camera scale as `0804/pillars`, accounting for each sampled radius
+so every sphere remains fully above the field plane.
 
-White uses the selected-cell colour with restrained curvature shading. Company,
+White uses the sphere colour with restrained curvature shading. Company,
 Cat, KISS, and Politician reuse the pillar experiment's local atlas sources,
-per-cell image selection, and staggered playback timing, but map the chosen tile
+per-point image selection, and staggered playback timing, but map the chosen tile
 directly across the sphere UVs. There is no supplementary rectangular media
 surface. `Field > sphere rotation` exposes a `0`–`2` speed range and defaults to
 `0.25`. Stable per-sphere signed rates and one shared shader angle animate the

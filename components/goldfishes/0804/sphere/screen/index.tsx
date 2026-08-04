@@ -10,18 +10,18 @@ import {
 import { button, folder, LevaPanel, useControls, useCreateStore } from "leva";
 import {
   createCursorField,
-  createGrid,
-  getAnchoredCells,
-  getCellAtPoint,
+  getAnchoredAttentionPoints,
+  getAttentionPointPlacementUnit,
+  getAttentionPointRadius,
+  getAttentionPointSpacing,
+  MAX_ATTENTION_POINT_COUNT,
   scaleCursorFieldSettings,
   settleCursorField,
   stepCursorField,
-  GOLDFISHES_2D_ONE_SETTINGS,
-  GOLDFISHES_PRIMARY_GRID_SCALE,
+  GOLDFISHES_SPHERE_FIELD_SETTINGS,
   type AttentionZoneBehavior,
-  type CellAnchor,
   type CursorAgent,
-  type Grid,
+  type SpatialAnchor,
 } from "../model";
 import {
   GoldfishScene,
@@ -33,7 +33,6 @@ import {
 import styles from "./goldfishes.module.css";
 
 type FieldTheme = "light" | "dark";
-type GridMark = "dot" | "cross";
 
 const DEFAULT_SPHERE_ROTATION_SPEED = 0.25;
 const MAX_SPHERE_ROTATION_SPEED = 2;
@@ -47,8 +46,7 @@ type CameraGesture = {
 type FieldPalette = {
   paper: string;
   ink: string;
-  selectedCell: string;
-  grid: string;
+  sphere: string;
   goldfish: string;
 };
 
@@ -56,15 +54,13 @@ const FIELD_PALETTES: Record<FieldTheme, FieldPalette> = {
   light: {
     paper: "#f4f4f1",
     ink: "#11110f",
-    selectedCell: "#11110f",
-    grid: "rgba(17, 17, 15, 0.58)",
+    sphere: "#11110f",
     goldfish: "#a97824",
   },
   dark: {
     paper: "#0d0e0d",
     ink: "#eceee8",
-    selectedCell: "#eceee8",
-    grid: "rgba(236, 238, 232, 0.52)",
+    sphere: "#eceee8",
     goldfish: "#d8a849",
   },
 };
@@ -73,74 +69,29 @@ function drawField(
   context: CanvasRenderingContext2D,
   width: number,
   height: number,
-  grid: Grid,
-  anchors: readonly CellAnchor[],
   palette: FieldPalette,
-  gridMark: GridMark,
 ) {
   context.fillStyle = palette.paper;
   context.fillRect(0, 0, width, height);
-
-  const selectedCells = getAnchoredCells(anchors, grid, width, height);
-  context.fillStyle = palette.selectedCell;
-  for (const selectedCell of selectedCells) {
-    context.fillRect(
-      selectedCell.x,
-      selectedCell.y,
-      selectedCell.width,
-      selectedCell.height,
-    );
-  }
-
-  if (gridMark === "dot") {
-    context.fillStyle = palette.grid;
-    for (let column = 0; column <= grid.columns; column += 1) {
-      const x = Math.round(grid.originX + column * grid.cellSize);
-      for (let row = 0; row <= grid.rows; row += 1) {
-        const y = Math.round(grid.originY + row * grid.cellSize);
-        context.fillRect(x, y, 1, 1);
-      }
-    }
-    return;
-  }
-
-  context.strokeStyle = palette.grid;
-  context.lineWidth = 1;
-  context.beginPath();
-  for (let column = 0; column <= grid.columns; column += 1) {
-    const x = Math.round(grid.originX + column * grid.cellSize) + 0.5;
-    for (let row = 0; row <= grid.rows; row += 1) {
-      const y = Math.round(grid.originY + row * grid.cellSize) + 0.5;
-      context.moveTo(x - 2.25, y);
-      context.lineTo(x + 2.25, y);
-      context.moveTo(x, y - 2.25);
-      context.lineTo(x, y + 2.25);
-    }
-  }
-  context.stroke();
 }
 
 function getTracePoints(
   previousPoint: TracePoint,
   nextPoint: TracePoint,
-  cellSize: number,
+  spacing: number,
 ) {
   const distance = Math.hypot(
     nextPoint.x - previousPoint.x,
     nextPoint.y - previousPoint.y,
   );
-  const steps = Math.max(1, Math.ceil(distance / Math.max(1, cellSize / 3)));
-  return Array.from({ length: steps + 1 }, (_, index) => {
-    const progress = index / steps;
+  const steps = Math.max(1, Math.ceil(distance / Math.max(1, spacing / 3)));
+  return Array.from({ length: steps }, (_, index) => {
+    const progress = (index + 1) / steps;
     return {
       x: previousPoint.x + (nextPoint.x - previousPoint.x) * progress,
       y: previousPoint.y + (nextPoint.y - previousPoint.y) * progress,
     };
   });
-}
-
-function getCellKey(column: number, row: number) {
-  return `${column}:${row}`;
 }
 
 type Goldfishes3DProps = {
@@ -176,14 +127,13 @@ export default function Goldfishes3D({
   const sceneRef = useRef<GoldfishScene | null>(null);
   const frameRef = useRef<number | null>(null);
   const agentsRef = useRef<CursorAgent[]>([]);
-  const gridRef = useRef<Grid | null>(null);
-  const selectionRef = useRef<CellAnchor[]>([]);
+  const selectionRef = useRef<SpatialAnchor[]>([]);
+  const nextAnchorIdRef = useRef(0);
   const tracePointRef = useRef<TracePoint | null>(null);
   const cameraGestureRef = useRef<CameraGesture | null>(null);
   const cameraInputRef = useRef(true);
   const collisionPreventionRef = useRef(false);
   const themeRef = useRef<FieldTheme>("dark");
-  const gridMarkRef = useRef<GridMark>("dot");
   const attentionSurfaceRef = useRef<AttentionSurface>("cat");
   const mediaSpeedRef = useRef(24);
   const sphereRotationSpeedRef = useRef(DEFAULT_SPHERE_ROTATION_SPEED);
@@ -194,7 +144,7 @@ export default function Goldfishes3D({
   });
   const constraintSettingsRef = useRef(
     scaleCursorFieldSettings(
-      GOLDFISHES_2D_ONE_SETTINGS,
+      GOLDFISHES_SPHERE_FIELD_SETTINGS,
       initialAgentScale,
     ),
   );
@@ -202,35 +152,22 @@ export default function Goldfishes3D({
   const [activeCount, setActiveCount] = useState(initialCount);
   const activeCountRef = useRef(initialCount);
   const [theme, setTheme] = useState<FieldTheme>("dark");
-  const [gridMark, setGridMark] = useState<GridMark>("dot");
 
   const redrawField = useCallback(() => {
     const backgroundCanvas = backgroundCanvasRef.current;
     const interactionCanvas = interactionCanvasRef.current;
-    const grid = gridRef.current;
     const context = backgroundCanvas?.getContext("2d");
-    if (!backgroundCanvas || !interactionCanvas || !grid || !context) return;
+    if (!backgroundCanvas || !interactionCanvas || !context) return;
     const palette = FIELD_PALETTES[themeRef.current];
-    const fieldPalette =
-      attentionSurfaceRef.current === "white"
-        ? palette
-        : {
-            ...palette,
-            selectedCell: palette.paper,
-          };
     drawField(
       context,
       interactionCanvas.clientWidth,
       interactionCanvas.clientHeight,
-      grid,
-      selectionRef.current,
-      fieldPalette,
-      gridMarkRef.current,
+      palette,
     );
-    sceneRef.current?.setAttentionCells(
-      getAnchoredCells(
+    sceneRef.current?.setAttentionPoints(
+      getAnchoredAttentionPoints(
         selectionRef.current,
-        grid,
         interactionCanvas.clientWidth,
         interactionCanvas.clientHeight,
       ),
@@ -265,7 +202,7 @@ export default function Goldfishes3D({
           onChange: (value: number) => {
             renderSettingsRef.current.agentScale = value;
             constraintSettingsRef.current = scaleCursorFieldSettings(
-              GOLDFISHES_2D_ONE_SETTINGS,
+              GOLDFISHES_SPHERE_FIELD_SETTINGS,
               value,
             );
           },
@@ -303,7 +240,7 @@ export default function Goldfishes3D({
         }),
       }),
       Field: folder({
-        blocks: {
+        spheres: {
           value: "cat" as AttentionSurface,
           options: {
             COMPANY: "company",
@@ -336,14 +273,6 @@ export default function Goldfishes3D({
           onChange: (speed: number) => {
             sphereRotationSpeedRef.current = speed;
             sceneRef.current?.setSphereRotationSpeed(speed);
-          },
-        },
-        "corner +": {
-          value: false,
-          onChange: (enabled: boolean) => {
-            const nextMark: GridMark = enabled ? "cross" : "dot";
-            gridMarkRef.current = nextMark;
-            setGridMark(nextMark);
           },
         },
       }),
@@ -380,8 +309,8 @@ export default function Goldfishes3D({
             themeRef.current = nextTheme;
             setTheme(nextTheme);
             sceneRef.current?.setPaperColor(FIELD_PALETTES[nextTheme].paper);
-            sceneRef.current?.setBlockColor(
-              FIELD_PALETTES[nextTheme].selectedCell,
+            sceneRef.current?.setSphereColor(
+              FIELD_PALETTES[nextTheme].sphere,
             );
           },
         },
@@ -405,43 +334,44 @@ export default function Goldfishes3D({
   const selectTrace = useCallback(
     (points: readonly TracePoint[]) => {
       const canvas = interactionCanvasRef.current;
-      const grid = gridRef.current;
+      const scene = sceneRef.current;
       if (
         !canvas ||
-        !grid ||
+        !scene ||
         canvas.clientWidth === 0 ||
         canvas.clientHeight === 0
       ) {
         return;
       }
 
-      const currentSelections = selectionRef.current;
-      const existingCellKeys = new Set(
-        getAnchoredCells(
-          currentSelections,
-          grid,
+      const addedSelections: SpatialAnchor[] = [];
+      for (const point of points) {
+        if (
+          selectionRef.current.length + addedSelections.length >=
+          MAX_ATTENTION_POINT_COUNT
+        ) {
+          break;
+        }
+        const id = nextAnchorIdRef.current++;
+        const radius = getAttentionPointRadius(
+          id,
           canvas.clientWidth,
           canvas.clientHeight,
-        ).map((cell) => getCellKey(cell.column, cell.row)),
-      );
-      const nextSelections = [...currentSelections];
-
-      for (const point of points) {
-        const cell = getCellAtPoint(point.x, point.y, grid);
-        const cellKey = getCellKey(cell.column, cell.row);
-        if (existingCellKeys.has(cellKey)) continue;
-        existingCellKeys.add(cellKey);
-        nextSelections.push({
-          xRatio: cell.centerX / canvas.clientWidth,
-          yRatio: cell.centerY / canvas.clientHeight,
-        });
+        );
+        const anchor = scene.screenToVolumeAnchor(
+          point.x,
+          point.y,
+          radius,
+          getAttentionPointPlacementUnit(id),
+        );
+        if (anchor) addedSelections.push({ id, ...anchor });
       }
+      const nextSelections = [...selectionRef.current, ...addedSelections];
 
-      if (nextSelections.length === currentSelections.length) return;
+      if (nextSelections.length === selectionRef.current.length) return;
       selectionRef.current = nextSelections;
-      const selectedCells = getAnchoredCells(
+      const attentionPoints = getAnchoredAttentionPoints(
         nextSelections,
-        grid,
         canvas.clientWidth,
         canvas.clientHeight,
       );
@@ -449,7 +379,7 @@ export default function Goldfishes3D({
         agentsRef.current,
         canvas.clientWidth,
         canvas.clientHeight,
-        selectedCells,
+        attentionPoints,
         constraintSettingsRef.current,
         collisionPreventionRef.current,
         attentionZoneBehavior,
@@ -462,8 +392,7 @@ export default function Goldfishes3D({
   useEffect(() => {
     sceneRef.current?.setCount(activeCount);
     const canvas = interactionCanvasRef.current;
-    const grid = gridRef.current;
-    if (!canvas || !grid) return;
+    if (!canvas) return;
     agentsRef.current = createCursorField(
       activeCount,
       canvas.clientWidth,
@@ -474,9 +403,8 @@ export default function Goldfishes3D({
       agentsRef.current,
       canvas.clientWidth,
       canvas.clientHeight,
-      getAnchoredCells(
+      getAnchoredAttentionPoints(
         selectionRef.current,
-        grid,
         canvas.clientWidth,
         canvas.clientHeight,
       ),
@@ -501,7 +429,7 @@ export default function Goldfishes3D({
       count: initialCount,
       color: initialFishColor,
       paperColor: FIELD_PALETTES.dark.paper,
-      blockColor: FIELD_PALETTES.dark.selectedCell,
+      sphereColor: FIELD_PALETTES.dark.sphere,
       cameraProjection,
       fishModelStyle,
     });
@@ -523,12 +451,6 @@ export default function Goldfishes3D({
     const sizeCanvases = () => {
       const bounds = interactionCanvas.getBoundingClientRect();
       const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
-      const grid = createGrid(
-        bounds.width,
-        bounds.height,
-        GOLDFISHES_2D_ONE_SETTINGS,
-        GOLDFISHES_PRIMARY_GRID_SCALE,
-      );
 
       backgroundCanvas.width = Math.round(bounds.width * pixelRatio);
       backgroundCanvas.height = Math.round(bounds.height * pixelRatio);
@@ -537,7 +459,6 @@ export default function Goldfishes3D({
       backgroundContext.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
       scene.setSize(bounds.width, bounds.height);
 
-      gridRef.current = grid;
       agentsRef.current = createCursorField(
         activeCountRef.current,
         bounds.width,
@@ -548,9 +469,8 @@ export default function Goldfishes3D({
         agentsRef.current,
         bounds.width,
         bounds.height,
-        getAnchoredCells(
+        getAnchoredAttentionPoints(
           selectionRef.current,
-          grid,
           bounds.width,
           bounds.height,
         ),
@@ -570,9 +490,7 @@ export default function Goldfishes3D({
       const frameMilliseconds = time - previousTime;
       const deltaSeconds = Math.min(frameMilliseconds / 1000, 0.032);
       previousTime = time;
-      const grid = gridRef.current;
-
-      if (!reduceMotion.matches && grid) {
+      if (!reduceMotion.matches) {
         elapsedSeconds += deltaSeconds;
         agentsRef.current = stepCursorField(
           agentsRef.current,
@@ -580,9 +498,8 @@ export default function Goldfishes3D({
           height,
           deltaSeconds,
           elapsedSeconds,
-          getAnchoredCells(
+          getAnchoredAttentionPoints(
             selectionRef.current,
-            grid,
             width,
             height,
           ),
@@ -623,7 +540,7 @@ export default function Goldfishes3D({
             String(rendererInfo.triangles);
           interactionCanvas.dataset.performanceAttentionSurface =
             attentionSurfaceRef.current;
-          interactionCanvas.dataset.performanceSelectedCells = String(
+          interactionCanvas.dataset.performanceAttentionPoints = String(
             selectionRef.current.length,
           );
 
@@ -659,7 +576,7 @@ export default function Goldfishes3D({
 
   useEffect(() => {
     redrawField();
-  }, [theme, gridMark, redrawField]);
+  }, [theme, redrawField]);
 
   const finishTrace = (event: PointerEvent<HTMLCanvasElement>) => {
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
@@ -684,7 +601,7 @@ export default function Goldfishes3D({
       <canvas
         ref={interactionCanvasRef}
         className={styles.interactionCanvas}
-        aria-label="A spatial field of moving goldfish and textured spheres. Click or drag across cells to place spheres and gather fish, Alt-drag or right-drag to rotate the camera through a full orbit, and use the wheel to zoom."
+        aria-label="A spatial field of moving goldfish and textured spheres. Click or drag anywhere on the field to place spheres at the pointer position and gather fish, Alt-drag or right-drag to rotate the camera through a full orbit, and use the wheel to zoom."
         tabIndex={0}
         onPointerDown={(event) => {
           event.currentTarget.focus();
@@ -703,11 +620,10 @@ export default function Goldfishes3D({
             };
             return;
           }
-          const point = sceneRef.current?.screenToField(
-            event.clientX - bounds.left,
-            event.clientY - bounds.top,
-          );
-          if (!point) return;
+          const point = {
+            x: event.clientX - bounds.left,
+            y: event.clientY - bounds.top,
+          };
           tracePointRef.current = point;
           selectTrace([point]);
         }}
@@ -737,17 +653,18 @@ export default function Goldfishes3D({
             return;
           }
           const bounds = event.currentTarget.getBoundingClientRect();
-          const nextPoint = sceneRef.current?.screenToField(
-            event.clientX - bounds.left,
-            event.clientY - bounds.top,
-          );
-          if (!nextPoint) return;
+          const nextPoint = {
+            x: event.clientX - bounds.left,
+            y: event.clientY - bounds.top,
+          };
           selectTrace(
             getTracePoints(
               previousPoint,
               nextPoint,
-              gridRef.current?.cellSize ??
-                GOLDFISHES_2D_ONE_SETTINGS.cellMin,
+              getAttentionPointSpacing(
+                event.currentTarget.clientWidth,
+                event.currentTarget.clientHeight,
+              ),
             ),
           );
           tracePointRef.current = nextPoint;
@@ -775,10 +692,7 @@ export default function Goldfishes3D({
           if (event.key !== "Enter" && event.key !== " ") return;
           event.preventDefault();
           selectTrace([
-            sceneRef.current?.screenToField(
-              event.currentTarget.clientWidth / 2,
-              event.currentTarget.clientHeight / 2,
-            ) ?? {
+            {
               x: event.currentTarget.clientWidth / 2,
               y: event.currentTarget.clientHeight / 2,
             },
