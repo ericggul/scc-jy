@@ -1,0 +1,17 @@
+# Goldfishes 0804/pillars
+
+Date: 2026-08-04
+
+Route: `/goldfishes/0804/pillars`
+
+Short description: **Randomized vertical attention pillars.**
+
+Every selected cell becomes a symmetric rectangular pillar with an independently
+sampled vertical extent. The exact-top orthographic footprint stays aligned
+with the default field, while orbiting reveals the distance and height
+variation. Media surfaces cover the pillar faces without changing fish
+movement or selection behavior.
+
+The directory contains its own model, renderer, pillar shader, atlas
+implementations, media-source ledgers, screen, and styles. It is a preserved
+standalone fork rather than an extension of `default`.

@@ -1,4 +1,4 @@
-import type { SelectedCell } from "../../../model";
+import type { SelectedCell } from "../model";
 import {
   MEDIA_ATLAS_COLUMNS,
   MEDIA_ATLAS_TILE_SIZE,
@@ -6,7 +6,7 @@ import {
   loadMediaAtlas,
   type AttentionSurface,
   type MediaSurface,
-} from "../../../rendering/media-atlas";
+} from "./media-atlas";
 
 export type MediaGridMark = "dot" | "cross";
 

@@ -1,4 +1,4 @@
-import type { CursorAgent } from "../../../model";
+import type { CursorAgent } from "../model";
 
 export type CollageEyeShape = "circle" | "rectangle";
 export type CollageGoldfishAssets = Array<HTMLImageElement | null>;

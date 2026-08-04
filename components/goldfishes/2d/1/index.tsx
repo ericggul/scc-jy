@@ -17,7 +17,7 @@ import {
   type CollageGoldfishAssets,
 } from "./rendering/collage-goldfish";
 import type { MediaCellLayer } from "./rendering/media-cell-layer";
-import type { AttentionSurface } from "../../rendering/media-atlas";
+import type { AttentionSurface } from "./rendering/media-atlas";
 import {
   createCursorField,
   createGrid,
@@ -32,7 +32,7 @@ import {
   type CursorAgent,
   type CursorFieldSettings,
   type Grid,
-} from "../../model";
+} from "./model";
 
 type CursorSwarmProps = {
   cursorCount: number;
