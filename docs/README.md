@@ -25,6 +25,7 @@ get a dedicated document.
 - [Next.js notes](./harness/nextjs.md)
 - [HTTPS and sockets](./harness/https-and-sockets.md)
 - [Local image collections](./harness/local-image-collections.md)
+- [Tinkering as the SCC working method](./foundations/tinkering.md)
 - [Common visual design guidelines](./foundations/design-guidelines.md)
 - [Multi-Device Web Artwork](./foundations/mdwa.md)
 - [Parametric détournement research](./foundations/parametric-detournement.md)
@@ -45,7 +46,7 @@ get a dedicated document.
 | `components/standalone/table` | `1`, `2` | [table](./experiments/standalone/table/README.md) |
 | `components/standalone/translate` | `1` | [translate](./experiments/standalone/translate/README.md) |
 | `components/standalone/grid` | `1`, `2` | [grid](./experiments/standalone/grid/README.md) |
-| `components/goldfishes` | `default`, `2d/1`, `0804/tube`, `0804/pillars` | [goldfishes archive](./experiments/goldfishes/README.md) |
+| `components/goldfishes` | `default`, `2d/1`, `0804/tube`, `0804/html`, `0804/node-edge`, `0804/pillars`, `0804/sphere` | [archive](./experiments/goldfishes/README.md), [agent onboarding](./experiments/goldfishes/agent-onboarding.md) |
 | `components/dj` | `1` | [dj](./experiments/dj/README.md) |
 | `components/finger-skating` | `1`, `2` | [finger-skating](./experiments/finger-skating/README.md) |
 | `components/c-val` | `1`, `2` | [c-val](./experiments/c-val/README.md) |

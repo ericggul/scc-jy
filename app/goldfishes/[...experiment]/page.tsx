@@ -1,16 +1,24 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import GoldfishesNavigation from "@/components/goldfishes/navigation";
 import {
   findGoldfishExperiment,
+  getGoldfishExperimentsForDate,
+  goldfishExperimentDateKeys,
   goldfishExperiments,
 } from "@/components/goldfishes/experiments";
 
 export const dynamicParams = false;
 
 export function generateStaticParams() {
-  return goldfishExperiments.map((experiment) => ({
-    experiment: experiment.key.split("/"),
-  }));
+  return [
+    ...goldfishExperimentDateKeys.map((dateKey) => ({
+      experiment: [dateKey],
+    })),
+    ...goldfishExperiments.map((experiment) => ({
+      experiment: experiment.key.split("/"),
+    })),
+  ];
 }
 
 export async function generateMetadata({
@@ -19,6 +27,16 @@ export async function generateMetadata({
   params: Promise<{ experiment: string[] }>;
 }): Promise<Metadata> {
   const { experiment: path } = await params;
+  const dateExperiments =
+    path.length === 1 ? getGoldfishExperimentsForDate(path[0]) : [];
+
+  if (dateExperiments.length > 0) {
+    return {
+      title: `goldfishes ${path[0]}`,
+      description: `Goldfishes experiments archived under ${path[0]}.`,
+    };
+  }
+
   const experiment = findGoldfishExperiment(path);
 
   if (!experiment) return { title: "goldfishes" };
@@ -35,6 +53,19 @@ export default async function GoldfishesExperimentPage({
   params: Promise<{ experiment: string[] }>;
 }) {
   const { experiment: path } = await params;
+  const dateExperiments =
+    path.length === 1 ? getGoldfishExperimentsForDate(path[0]) : [];
+
+  if (dateExperiments.length > 0) {
+    const experiments = dateExperiments.map(
+      ({ key, section, date, phrase }) => ({ key, section, date, phrase }),
+    );
+
+    return (
+      <GoldfishesNavigation experiments={experiments} archiveKey={path[0]} />
+    );
+  }
+
   const experiment = findGoldfishExperiment(path);
 
   if (!experiment) notFound();

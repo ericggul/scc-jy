@@ -31,15 +31,52 @@ export const goldfishExperiments = [
     load: () => import("./0804/tube"),
   },
   {
+    key: "0804/html",
+    section: "dated",
+    date: "2026-08-04",
+    phrase: "Live HTML controls as reversible attraction targets",
+    load: () => import("./0804/html"),
+  },
+  {
+    key: "0804/node-edge",
+    section: "dated",
+    date: "2026-08-04",
+    phrase: "Entropy-generated 3D topology as a persistent attraction field",
+    load: () => import("./0804/node-edge"),
+  },
+  {
     key: "0804/pillars",
     section: "dated",
     date: "2026-08-04",
     phrase: "Randomized vertical attention pillars",
     load: () => import("./0804/pillars"),
   },
+  {
+    key: "0804/sphere",
+    section: "dated",
+    date: "2026-08-04",
+    phrase: "Atlas-textured spheres distributed through the attention volume",
+    load: () => import("./0804/sphere"),
+  },
 ] as const satisfies readonly GoldfishExperiment[];
+
+export const goldfishExperimentDateKeys = Array.from(
+  new Set(
+    goldfishExperiments
+      .filter((experiment) => experiment.section === "dated")
+      .map((experiment) => experiment.key.split("/")[0]),
+  ),
+);
 
 export function findGoldfishExperiment(path: readonly string[]) {
   const key = path.join("/");
   return goldfishExperiments.find((experiment) => experiment.key === key);
+}
+
+export function getGoldfishExperimentsForDate(dateKey: string) {
+  return goldfishExperiments.filter(
+    (experiment) =>
+      experiment.section === "dated" &&
+      experiment.key.startsWith(`${dateKey}/`),
+  );
 }

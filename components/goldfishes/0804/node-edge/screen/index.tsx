@@ -11,7 +11,6 @@ import { button, folder, LevaPanel, useControls, useCreateStore } from "leva";
 import {
   createCursorField,
   createGrid,
-  getAnchoredCells,
   getCellAtPoint,
   scaleCursorFieldSettings,
   settleCursorField,
@@ -31,9 +30,14 @@ import {
   type GoldfishRenderSettings,
 } from "../rendering/goldfish-scene";
 import styles from "./goldfishes.module.css";
+import {
+  drawNodeEdgeField,
+  getNodeEdgeCells,
+  getNodeEdgeNetwork,
+  getNodeEdgeNodeCount,
+} from "./node-edge-field";
 
 type FieldTheme = "light" | "dark";
-type GridMark = "dot" | "cross";
 type TracePoint = { x: number; y: number };
 type CameraGesture = {
   pointerId: number;
@@ -44,8 +48,6 @@ type CameraGesture = {
 type FieldPalette = {
   paper: string;
   ink: string;
-  selectedCell: string;
-  grid: string;
   goldfish: string;
 };
 
@@ -53,15 +55,11 @@ const FIELD_PALETTES: Record<FieldTheme, FieldPalette> = {
   light: {
     paper: "#f4f4f1",
     ink: "#11110f",
-    selectedCell: "#11110f",
-    grid: "rgba(17, 17, 15, 0.58)",
     goldfish: "#a97824",
   },
   dark: {
     paper: "#0d0e0d",
     ink: "#eceee8",
-    selectedCell: "#eceee8",
-    grid: "rgba(236, 238, 232, 0.52)",
     goldfish: "#d8a849",
   },
 };
@@ -70,51 +68,9 @@ function drawField(
   context: CanvasRenderingContext2D,
   width: number,
   height: number,
-  grid: Grid,
-  anchors: readonly CellAnchor[],
   palette: FieldPalette,
-  gridMark: GridMark,
 ) {
-  context.fillStyle = palette.paper;
-  context.fillRect(0, 0, width, height);
-
-  const selectedCells = getAnchoredCells(anchors, grid, width, height);
-  context.fillStyle = palette.selectedCell;
-  for (const selectedCell of selectedCells) {
-    context.fillRect(
-      selectedCell.x,
-      selectedCell.y,
-      selectedCell.width,
-      selectedCell.height,
-    );
-  }
-
-  if (gridMark === "dot") {
-    context.fillStyle = palette.grid;
-    for (let column = 0; column <= grid.columns; column += 1) {
-      const x = Math.round(grid.originX + column * grid.cellSize);
-      for (let row = 0; row <= grid.rows; row += 1) {
-        const y = Math.round(grid.originY + row * grid.cellSize);
-        context.fillRect(x, y, 1, 1);
-      }
-    }
-    return;
-  }
-
-  context.strokeStyle = palette.grid;
-  context.lineWidth = 1;
-  context.beginPath();
-  for (let column = 0; column <= grid.columns; column += 1) {
-    const x = Math.round(grid.originX + column * grid.cellSize) + 0.5;
-    for (let row = 0; row <= grid.rows; row += 1) {
-      const y = Math.round(grid.originY + row * grid.cellSize) + 0.5;
-      context.moveTo(x - 2.25, y);
-      context.lineTo(x + 2.25, y);
-      context.moveTo(x, y - 2.25);
-      context.lineTo(x, y + 2.25);
-    }
-  }
-  context.stroke();
+  drawNodeEdgeField(context, width, height, palette.paper);
 }
 
 function getTracePoints(
@@ -180,8 +136,7 @@ export default function Goldfishes3D({
   const cameraInputRef = useRef(true);
   const collisionPreventionRef = useRef(false);
   const themeRef = useRef<FieldTheme>("dark");
-  const gridMarkRef = useRef<GridMark>("dot");
-  const attentionSurfaceRef = useRef<AttentionSurface>("cat");
+  const attentionSurfaceRef = useRef<AttentionSurface>("white");
   const mediaSpeedRef = useRef(24);
   const renderSettingsRef = useRef<GoldfishRenderSettings>({
     agentScale: initialAgentScale,
@@ -198,7 +153,6 @@ export default function Goldfishes3D({
   const [activeCount, setActiveCount] = useState(initialCount);
   const activeCountRef = useRef(initialCount);
   const [theme, setTheme] = useState<FieldTheme>("dark");
-  const [gridMark, setGridMark] = useState<GridMark>("dot");
 
   const redrawField = useCallback(() => {
     const backgroundCanvas = backgroundCanvasRef.current;
@@ -207,24 +161,25 @@ export default function Goldfishes3D({
     const context = backgroundCanvas?.getContext("2d");
     if (!backgroundCanvas || !interactionCanvas || !grid || !context) return;
     const palette = FIELD_PALETTES[themeRef.current];
-    const fieldPalette =
-      attentionSurfaceRef.current === "white"
-        ? palette
-        : {
-            ...palette,
-            selectedCell: palette.paper,
-          };
     drawField(
       context,
       interactionCanvas.clientWidth,
       interactionCanvas.clientHeight,
-      grid,
-      selectionRef.current,
-      fieldPalette,
-      gridMarkRef.current,
+      palette,
+    );
+    const network = getNodeEdgeNetwork(
+      interactionCanvas.clientWidth,
+      interactionCanvas.clientHeight,
+    );
+    sceneRef.current?.setNodeEdgeNetwork(
+      network.nodes,
+      network.edges,
+      interactionCanvas.clientWidth,
+      interactionCanvas.clientHeight,
+      palette.ink,
     );
     sceneRef.current?.setAttentionCells(
-      getAnchoredCells(
+      getNodeEdgeCells(
         selectionRef.current,
         grid,
         interactionCanvas.clientWidth,
@@ -300,7 +255,7 @@ export default function Goldfishes3D({
       }),
       Field: folder({
         blocks: {
-          value: "cat" as AttentionSurface,
+          value: "white" as AttentionSurface,
           options: {
             COMPANY: "company",
             WHITE: "white",
@@ -322,14 +277,6 @@ export default function Goldfishes3D({
           onChange: (speed: number) => {
             mediaSpeedRef.current = speed;
             sceneRef.current?.setMediaSpeed(speed);
-          },
-        },
-        "corner +": {
-          value: false,
-          onChange: (enabled: boolean) => {
-            const nextMark: GridMark = enabled ? "cross" : "dot";
-            gridMarkRef.current = nextMark;
-            setGridMark(nextMark);
           },
         },
       }),
@@ -366,9 +313,6 @@ export default function Goldfishes3D({
             themeRef.current = nextTheme;
             setTheme(nextTheme);
             sceneRef.current?.setPaperColor(FIELD_PALETTES[nextTheme].paper);
-            sceneRef.current?.setBlockColor(
-              FIELD_PALETTES[nextTheme].selectedCell,
-            );
           },
         },
       }),
@@ -403,7 +347,7 @@ export default function Goldfishes3D({
 
       const currentSelections = selectionRef.current;
       const existingCellKeys = new Set(
-        getAnchoredCells(
+        getNodeEdgeCells(
           currentSelections,
           grid,
           canvas.clientWidth,
@@ -425,7 +369,7 @@ export default function Goldfishes3D({
 
       if (nextSelections.length === currentSelections.length) return;
       selectionRef.current = nextSelections;
-      const selectedCells = getAnchoredCells(
+      const selectedCells = getNodeEdgeCells(
         nextSelections,
         grid,
         canvas.clientWidth,
@@ -460,7 +404,7 @@ export default function Goldfishes3D({
       agentsRef.current,
       canvas.clientWidth,
       canvas.clientHeight,
-      getAnchoredCells(
+      getNodeEdgeCells(
         selectionRef.current,
         grid,
         canvas.clientWidth,
@@ -487,7 +431,6 @@ export default function Goldfishes3D({
       count: initialCount,
       color: initialFishColor,
       paperColor: FIELD_PALETTES.dark.paper,
-      blockColor: FIELD_PALETTES.dark.selectedCell,
       cameraProjection,
       fishModelStyle,
     });
@@ -533,7 +476,7 @@ export default function Goldfishes3D({
         agentsRef.current,
         bounds.width,
         bounds.height,
-        getAnchoredCells(
+        getNodeEdgeCells(
           selectionRef.current,
           grid,
           bounds.width,
@@ -565,7 +508,7 @@ export default function Goldfishes3D({
           height,
           deltaSeconds,
           elapsedSeconds,
-          getAnchoredCells(
+          getNodeEdgeCells(
             selectionRef.current,
             grid,
             width,
@@ -609,7 +552,7 @@ export default function Goldfishes3D({
           interactionCanvas.dataset.performanceAttentionSurface =
             attentionSurfaceRef.current;
           interactionCanvas.dataset.performanceSelectedCells = String(
-            selectionRef.current.length,
+            getNodeEdgeNodeCount(),
           );
 
           metricStartedAt = time;
@@ -644,7 +587,7 @@ export default function Goldfishes3D({
 
   useEffect(() => {
     redrawField();
-  }, [theme, gridMark, redrawField]);
+  }, [theme, redrawField]);
 
   const finishTrace = (event: PointerEvent<HTMLCanvasElement>) => {
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
@@ -669,7 +612,7 @@ export default function Goldfishes3D({
       <canvas
         ref={interactionCanvasRef}
         className={styles.interactionCanvas}
-        aria-label="A perspective field of moving goldfish. Click or drag across cells to gather fish, Alt-drag or right-drag to rotate the camera through a full orbit, and use the wheel to zoom."
+        aria-label="A spatial node-edge topology attracting a school of moving goldfish. Alt-drag or right-drag rotates the camera through a full orbit, and the wheel zooms."
         tabIndex={0}
         onPointerDown={(event) => {
           event.currentTarget.focus();

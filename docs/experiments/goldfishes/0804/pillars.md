@@ -10,7 +10,8 @@ Every selected cell becomes a symmetric rectangular pillar with an independently
 sampled vertical extent. The exact-top orthographic footprint stays aligned
 with the default field, while orbiting reveals the distance and height
 variation. Media surfaces cover the pillar faces without changing fish
-movement or selection behavior.
+movement or selection behavior. Cat is the initial block surface; White and the
+other media collections remain available from the authoring controls.
 
 The directory contains its own model, renderer, pillar shader, atlas
 implementations, media-source ledgers, screen, and styles. It is a preserved

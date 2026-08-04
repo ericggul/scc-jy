@@ -13,6 +13,9 @@ Routes:
 - `/goldfishes/0804/pillars`: an independent copy of `default` whose selected-cell blocks
   rise into independently randomized symmetric pillars while preserving the
   exact-top initial view.
+- `/goldfishes/0804/sphere`: an independent copy of `0804/pillars` whose selected
+  cells become atlas-textured spheres distributed through the same vertical
+  attention volume.
 
 The family is top-level because it is being developed as a larger experience,
 not as another standalone swarm variant. The 2D variant was moved rather than
@@ -25,7 +28,7 @@ the centre and Escape clears all active attractors. Every route owns its own
 model copy inside its experiment directory, so later work cannot silently
 alter an archived experiment.
 
-All three 3D routes default to 100 fish with a `0`–`250` count range. They retain
+The 3D routes default to 100 fish with a `0`–`250` count range. They retain
 scale `2`, the `1`–`4` scale range, perimeter targeting, collision, and
 protected-cell behavior.
 `0804/pillars` preserves the same model behavior and changes only selected-cell
@@ -99,10 +102,35 @@ rendered fish Y positions, and the camera's Y-axis look target. Both currently
 equal `6`. The exact-top orthographic composition therefore remains unchanged,
 but an orbit view reveals the genuinely longer pillars and higher swim layer.
 
+### 0804/sphere attention volume
+
+Every selected block in `0804/sphere` becomes one instanced sphere rather than a
+rectangular block, cap, or pillar. The selected-cell width defines its minimum
+diameter. A deterministic per-cell sample is uniform in volume from 1× to 8×
+the base volume, producing diameters from 1× to 2× without enforcing touching,
+separation, or non-overlap. The minimum and maximum volume multipliers remain
+named renderer constants.
+
+The sphere's XZ centre remains coincident with the cell used by the fish model.
+A separate deterministic hash distributes sphere centres through the same
+1,080-unit vertical extent and 6× camera scale as `0804/pillars`, accounting for
+each sampled radius so every sphere remains fully above the field plane.
+
+White uses the selected-cell colour with restrained curvature shading. Company,
+Cat, KISS, and Politician reuse the pillar experiment's local atlas sources,
+per-cell image selection, and staggered playback timing, but map the chosen tile
+directly across the sphere UVs. There is no supplementary rectangular media
+surface. `Field > sphere rotation` exposes a `0`–`2` speed range and defaults to
+`0.25`. Stable per-sphere signed rates and one shared shader angle animate the
+textures without per-frame instance-matrix uploads or additional draw calls.
+Fish movement, protected-perimeter targeting, collision, camera behavior, and
+other rendering settings remain unchanged from the pillar fork.
+
 ### 3D company-logo surface
 
-All three 3D variants include `COMPANY` in the existing block selector while keeping
-`WHITE` as the default.
+The 3D variants include `COMPANY` in the existing block selector. `default`,
+`0804/tube`, and `0804/node-edge` start with `WHITE`; `0804/pillars` and
+`0804/sphere` start with `CAT`.
 The July 2026 snapshot contains 64 global technology companies spanning AI,
 semiconductors, cloud, enterprise software, consumer hardware, and internet
 platforms. It explicitly includes OpenAI, Anthropic, and SK hynix alongside the
@@ -118,7 +146,7 @@ only shared collection and live outside `components/` under
 
 ### 3D naturalistic model
 
-All three 3D routes start with the same top-view-specific naturalistic model. It keeps the same
+The 3D routes start with the same top-view-specific naturalistic model. It keeps the same
 eight instanced fish-part meshes and geometries as the previous model and
 changes only their per-instance transforms and existing materials.
 The body is stouter, the peduncle is thicker and shorter, the paired pectoral
@@ -140,9 +168,9 @@ that the toggle does not add meshes, textures, or geometry work; it is not a
 frame-rate guarantee for other machines.
 
 The 2D route retains its movement, field, count, scale, collision, corner
-mark, and theme controls. All three 3D routes retain count, collision prevention,
+mark, and theme controls. The 3D routes retain count, collision prevention,
 scale, corner mark, colour, and theme controls, and add depth, tail motion, fin
-opacity, full-orbit camera input, bounded zoom, and view reset. All three use the 100
+opacity, full-orbit camera input, bounded zoom, and view reset. They use the 100
 default and 0–250 range stated above, advancing in steps of 50.
 
 Leva remains an authoring and parameter-adjustment surface, not the artwork's
@@ -229,21 +257,21 @@ constant from `2` back to `1`.
 
 ## Implemented rendering boundary
 
-All three 3D routes use Three.js `WebGLRenderer` with
+The 3D routes use Three.js `WebGLRenderer` with
 an `OrthographicCamera` and a viewport-sized frustum. Their initial and reset
 view is exactly top-down, preserving model-plane positions and sizes regardless
 of each fish's rendered height. Full-orbit input begins from that view.
 The grid and selected cells are drawn into a canvas texture on a horizontal
 plane. Pointer positions are ray-cast back onto that plane before entering that
 experiment's field model. Fish move in the model's existing two axes while their
-rendered height varies independently. All three 3D routes compute the original
+rendered height varies independently. The 3D routes compute the original
 perimeter targets, arrival steering, evacuation, and protected-cell collision.
 
 Each 3D experiment owns its own route entry, screen implementation,
 renderer, and stylesheet. `0804/tube` does not import implementation code from
 `default`; changes to one version cannot alter the other's renderer or controls.
 `0804/pillars` likewise owns its renderer, media-atlas modules, model, and media-source
-ledgers. All three reference only the external company-logo asset collection.
+ledgers. They reference only the external company-logo asset collection.
 
 Camera input changes only the active camera transform. It does not add fish
 instances, geometries, simulation work, or draw calls. Its incremental

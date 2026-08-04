@@ -25,7 +25,6 @@ import {
 } from "../model";
 import {
   GoldfishScene,
-  type AttentionSurface,
   type CameraProjection,
   type FishModelStyle,
   type GoldfishRenderSettings,
@@ -169,20 +168,20 @@ export default function Goldfishes3D({
 }: Goldfishes3DProps) {
   const backgroundCanvasRef = useRef<HTMLCanvasElement>(null);
   const threeCanvasRef = useRef<HTMLCanvasElement>(null);
+  const htmlLayerRef = useRef<HTMLDivElement>(null);
   const interactionCanvasRef = useRef<HTMLCanvasElement>(null);
   const sceneRef = useRef<GoldfishScene | null>(null);
   const frameRef = useRef<number | null>(null);
   const agentsRef = useRef<CursorAgent[]>([]);
   const gridRef = useRef<Grid | null>(null);
   const selectionRef = useRef<CellAnchor[]>([]);
+  const activeCellKeysRef = useRef(new Set<string>());
   const tracePointRef = useRef<TracePoint | null>(null);
   const cameraGestureRef = useRef<CameraGesture | null>(null);
   const cameraInputRef = useRef(true);
   const collisionPreventionRef = useRef(false);
   const themeRef = useRef<FieldTheme>("dark");
   const gridMarkRef = useRef<GridMark>("dot");
-  const attentionSurfaceRef = useRef<AttentionSurface>("cat");
-  const mediaSpeedRef = useRef(24);
   const renderSettingsRef = useRef<GoldfishRenderSettings>({
     agentScale: initialAgentScale,
     depth: 64,
@@ -207,13 +206,7 @@ export default function Goldfishes3D({
     const context = backgroundCanvas?.getContext("2d");
     if (!backgroundCanvas || !interactionCanvas || !grid || !context) return;
     const palette = FIELD_PALETTES[themeRef.current];
-    const fieldPalette =
-      attentionSurfaceRef.current === "white"
-        ? palette
-        : {
-            ...palette,
-            selectedCell: palette.paper,
-          };
+    const fieldPalette = { ...palette, selectedCell: palette.paper };
     drawField(
       context,
       interactionCanvas.clientWidth,
@@ -233,6 +226,19 @@ export default function Goldfishes3D({
     );
     sceneRef.current?.updateField();
   }, []);
+
+  const getActiveCells = useCallback(
+    (
+      anchors: readonly CellAnchor[],
+      grid: Grid,
+      width: number,
+      height: number,
+    ) =>
+      getAnchoredCells(anchors, grid, width, height).filter((cell) =>
+        activeCellKeysRef.current.has(getCellKey(cell.column, cell.row)),
+      ),
+    [],
+  );
 
   useControls(
     () => ({
@@ -299,31 +305,6 @@ export default function Goldfishes3D({
         }),
       }),
       Field: folder({
-        blocks: {
-          value: "cat" as AttentionSurface,
-          options: {
-            COMPANY: "company",
-            WHITE: "white",
-            CAT: "cat",
-            KISS: "kiss",
-            POLITICIAN: "politician",
-          },
-          onChange: (surface: AttentionSurface) => {
-            attentionSurfaceRef.current = surface;
-            sceneRef.current?.setAttentionSurface(surface);
-            redrawField();
-          },
-        },
-        "image speed": {
-          value: 24,
-          min: 0,
-          max: 40,
-          step: 1,
-          onChange: (speed: number) => {
-            mediaSpeedRef.current = speed;
-            sceneRef.current?.setMediaSpeed(speed);
-          },
-        },
         "corner +": {
           value: false,
           onChange: (enabled: boolean) => {
@@ -366,9 +347,6 @@ export default function Goldfishes3D({
             themeRef.current = nextTheme;
             setTheme(nextTheme);
             sceneRef.current?.setPaperColor(FIELD_PALETTES[nextTheme].paper);
-            sceneRef.current?.setBlockColor(
-              FIELD_PALETTES[nextTheme].selectedCell,
-            );
           },
         },
       }),
@@ -417,6 +395,7 @@ export default function Goldfishes3D({
         const cellKey = getCellKey(cell.column, cell.row);
         if (existingCellKeys.has(cellKey)) continue;
         existingCellKeys.add(cellKey);
+        activeCellKeysRef.current.add(cellKey);
         nextSelections.push({
           xRatio: cell.centerX / canvas.clientWidth,
           yRatio: cell.centerY / canvas.clientHeight,
@@ -425,7 +404,7 @@ export default function Goldfishes3D({
 
       if (nextSelections.length === currentSelections.length) return;
       selectionRef.current = nextSelections;
-      const selectedCells = getAnchoredCells(
+      const selectedCells = getActiveCells(
         nextSelections,
         grid,
         canvas.clientWidth,
@@ -442,7 +421,7 @@ export default function Goldfishes3D({
       );
       redrawField();
     },
-    [attentionZoneBehavior, redrawField],
+    [attentionZoneBehavior, getActiveCells, redrawField],
   );
 
   useEffect(() => {
@@ -460,7 +439,7 @@ export default function Goldfishes3D({
       agentsRef.current,
       canvas.clientWidth,
       canvas.clientHeight,
-      getAnchoredCells(
+      getActiveCells(
         selectionRef.current,
         grid,
         canvas.clientWidth,
@@ -470,13 +449,16 @@ export default function Goldfishes3D({
       collisionPreventionRef.current,
       attentionZoneBehavior,
     );
-  }, [activeCount, attentionZoneBehavior]);
+  }, [activeCount, attentionZoneBehavior, getActiveCells]);
 
   useEffect(() => {
     const backgroundCanvas = backgroundCanvasRef.current;
     const threeCanvas = threeCanvasRef.current;
+    const htmlLayer = htmlLayerRef.current;
     const interactionCanvas = interactionCanvasRef.current;
-    if (!backgroundCanvas || !threeCanvas || !interactionCanvas) return;
+    if (!backgroundCanvas || !threeCanvas || !htmlLayer || !interactionCanvas) {
+      return;
+    }
 
     const backgroundContext = backgroundCanvas.getContext("2d");
     if (!backgroundContext) return;
@@ -484,16 +466,18 @@ export default function Goldfishes3D({
     const scene = new GoldfishScene({
       canvas: threeCanvas,
       fieldCanvas: backgroundCanvas,
+      htmlLayer,
+      onHTMLTargetChange: (cellKey, active) => {
+        if (active) activeCellKeysRef.current.add(cellKey);
+        else activeCellKeysRef.current.delete(cellKey);
+      },
       count: initialCount,
       color: initialFishColor,
       paperColor: FIELD_PALETTES.dark.paper,
-      blockColor: FIELD_PALETTES.dark.selectedCell,
       cameraProjection,
       fishModelStyle,
     });
     sceneRef.current = scene;
-    scene.setMediaSpeed(mediaSpeedRef.current);
-    scene.setAttentionSurface(attentionSurfaceRef.current);
 
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     let previousTime = performance.now();
@@ -533,7 +517,7 @@ export default function Goldfishes3D({
         agentsRef.current,
         bounds.width,
         bounds.height,
-        getAnchoredCells(
+        getActiveCells(
           selectionRef.current,
           grid,
           bounds.width,
@@ -565,7 +549,7 @@ export default function Goldfishes3D({
           height,
           deltaSeconds,
           elapsedSeconds,
-          getAnchoredCells(
+          getActiveCells(
             selectionRef.current,
             grid,
             width,
@@ -607,9 +591,9 @@ export default function Goldfishes3D({
           interactionCanvas.dataset.performanceTriangles =
             String(rendererInfo.triangles);
           interactionCanvas.dataset.performanceAttentionSurface =
-            attentionSurfaceRef.current;
+            "html";
           interactionCanvas.dataset.performanceSelectedCells = String(
-            selectionRef.current.length,
+            activeCellKeysRef.current.size,
           );
 
           metricStartedAt = time;
@@ -637,6 +621,7 @@ export default function Goldfishes3D({
     attentionZoneBehavior,
     cameraProjection,
     fishModelStyle,
+    getActiveCells,
     initialCount,
     initialFishColor,
     redrawField,
@@ -666,10 +651,11 @@ export default function Goldfishes3D({
         className={styles.threeCanvas}
         aria-hidden="true"
       />
+      <div ref={htmlLayerRef} className={styles.htmlLayer} />
       <canvas
         ref={interactionCanvasRef}
         className={styles.interactionCanvas}
-        aria-label="A perspective field of moving goldfish. Click or drag across cells to gather fish, Alt-drag or right-drag to rotate the camera through a full orbit, and use the wheel to zoom."
+        aria-label="A spatial field of moving goldfish with live HTML attraction controls. Click or drag across cells to create controls, Alt-drag or right-drag to rotate the camera, and use the wheel to zoom."
         tabIndex={0}
         onPointerDown={(event) => {
           event.currentTarget.focus();
@@ -754,6 +740,7 @@ export default function Goldfishes3D({
         onKeyDown={(event) => {
           if (event.key === "Escape") {
             selectionRef.current = [];
+            activeCellKeysRef.current.clear();
             redrawField();
             return;
           }

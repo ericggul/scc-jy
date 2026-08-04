@@ -1,0 +1,100 @@
+.page {
+  --paper: #f4f4f1;
+  --ink: #11110f;
+  position: relative;
+  min-height: 100svh;
+  overflow: hidden;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.page[data-theme="dark"] {
+  --paper: #0d0e0d;
+  --ink: #eceee8;
+}
+
+.backgroundCanvas,
+.threeCanvas,
+.interactionCanvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.backgroundCanvas,
+.threeCanvas {
+  pointer-events: none;
+}
+
+.threeCanvas {
+  z-index: 1;
+}
+
+.interactionCanvas {
+  z-index: 2;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.htmlLayer {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.htmlLayer > div {
+  pointer-events: none;
+}
+
+.htmlLayer :global(.goldfishes-html-target) {
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  padding: 0;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  background: var(--ink);
+  color: var(--paper);
+  font: 600 10px/1 Arial, Helvetica, sans-serif;
+  letter-spacing: -0.02em;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.htmlLayer :global(.goldfishes-html-target[data-active="false"]) {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.htmlLayer :global(.goldfishes-html-target:focus-visible) {
+  outline: 2px solid var(--paper);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px var(--ink);
+}
+
+.interactionCanvas:focus-visible {
+  outline: none;
+}
+
+.parameterPanel {
+  position: absolute;
+  z-index: 4;
+  top: 0.75rem;
+  right: 0.75rem;
+  max-height: calc(100svh - 1.5rem);
+  overflow-y: auto;
+  border: 2px solid var(--ink);
+  outline: 2px solid var(--paper);
+  background: var(--paper);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .interactionCanvas {
+    cursor: default;
+  }
+}

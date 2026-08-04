@@ -47,6 +47,33 @@ This version has breaking changes — APIs, conventions, and file structure may 
   Do not write to Codex-global memory files unless the user explicitly names
   that external location.
 
+## Tinkering and artistic method
+
+- This repository is an experimental instrument, not a single product marching
+  toward a predetermined final form. Read and follow
+  `docs/foundations/tinkering.md` before creating or substantially changing an
+  experiment.
+- Work by bounded, reversible trials: preserve a working baseline, vary the
+  smallest coherent relation that can answer the present question, keep the
+  cost of failure low, and leave successful surprise possible. Do not use a
+  grand redesign to replace learning from the running artifact.
+- Treat code, browser behavior, screens, networks, datasets, found media, and
+  everyday interfaces as artistic material. Paik and Rauschenberg are working
+  precedents for alteration, combination, collaboration, and discovery through
+  making; they are not surface styles to imitate.
+- Preserve trials, including useful failures, with stable routes and concise
+  records of the changed variable, retained invariants, observed result, and
+  unresolved question. Do not rewrite the archive into a false linear success
+  story after the fact.
+- Visual quality and rapid iteration are simultaneous requirements. "Experiment"
+  does not excuse arbitrary decoration, broken interaction, approximate copies,
+  or unfinished presentation; polish the tested relation and remove everything
+  that does not serve it.
+- Assume other agents and the user may be working in parallel. Treat modified
+  and untracked files as owned work, re-read shared files immediately before a
+  patch, keep shared-file edits surgical, and never delete, revert, rename, or
+  finish another task's work unless explicitly assigned.
+
 ## Runtime
 
 - Local development is pinned to Node.js `26.5.1` with its npm `11.17.0` in

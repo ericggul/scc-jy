@@ -34,6 +34,9 @@ import styles from "./goldfishes.module.css";
 
 type FieldTheme = "light" | "dark";
 type GridMark = "dot" | "cross";
+
+const DEFAULT_SPHERE_ROTATION_SPEED = 0.25;
+const MAX_SPHERE_ROTATION_SPEED = 2;
 type TracePoint = { x: number; y: number };
 type CameraGesture = {
   pointerId: number;
@@ -183,6 +186,7 @@ export default function Goldfishes3D({
   const gridMarkRef = useRef<GridMark>("dot");
   const attentionSurfaceRef = useRef<AttentionSurface>("cat");
   const mediaSpeedRef = useRef(24);
+  const sphereRotationSpeedRef = useRef(DEFAULT_SPHERE_ROTATION_SPEED);
   const renderSettingsRef = useRef<GoldfishRenderSettings>({
     agentScale: initialAgentScale,
     depth: 64,
@@ -322,6 +326,16 @@ export default function Goldfishes3D({
           onChange: (speed: number) => {
             mediaSpeedRef.current = speed;
             sceneRef.current?.setMediaSpeed(speed);
+          },
+        },
+        "sphere rotation": {
+          value: DEFAULT_SPHERE_ROTATION_SPEED,
+          min: 0,
+          max: MAX_SPHERE_ROTATION_SPEED,
+          step: 0.01,
+          onChange: (speed: number) => {
+            sphereRotationSpeedRef.current = speed;
+            sceneRef.current?.setSphereRotationSpeed(speed);
           },
         },
         "corner +": {
@@ -493,6 +507,7 @@ export default function Goldfishes3D({
     });
     sceneRef.current = scene;
     scene.setMediaSpeed(mediaSpeedRef.current);
+    scene.setSphereRotationSpeed(sphereRotationSpeedRef.current);
     scene.setAttentionSurface(attentionSurfaceRef.current);
 
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -669,7 +684,7 @@ export default function Goldfishes3D({
       <canvas
         ref={interactionCanvasRef}
         className={styles.interactionCanvas}
-        aria-label="A perspective field of moving goldfish. Click or drag across cells to gather fish, Alt-drag or right-drag to rotate the camera through a full orbit, and use the wheel to zoom."
+        aria-label="A spatial field of moving goldfish and textured spheres. Click or drag across cells to place spheres and gather fish, Alt-drag or right-drag to rotate the camera through a full orbit, and use the wheel to zoom."
         tabIndex={0}
         onPointerDown={(event) => {
           event.currentTarget.focus();
