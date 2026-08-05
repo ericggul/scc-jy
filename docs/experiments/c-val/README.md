@@ -13,12 +13,20 @@ six-area market-workstation controller that was previously served by C-VAL 2.
 
 - **C-VAL 1 is the frozen baseline.** It preserves the promoted implementation
   under the `c-val:1` socket identity and `/c-val/1/*` routes.
-- **C-VAL 2 is the active iteration branch.** It replaces V1's ambiguous three
-  axes with one fixed forward/back beta angle. That angle simultaneously creates
-  V intensity, signed A direction, and inverse L depth; opposite angles create
-  opposite execution-derived price tendencies with symmetric strength. V/A/L
-  remain intermediate state, not GUI controls. V2 also adds the dormant
-  pre-participant phase and keeps its own `c-val:2` identity.
+- **C-VAL 2 is the active WIP iteration branch.** It reads the browser's three
+  alpha/beta/gamma rotation-rate components and applies the same stateless soft
+  response to every axis. Total rotation energy raises V and lowers L; the
+  signed sum drives A. There is no pose, quaternion, mode, learned axis or
+  endpoint clamp. V/A/L remain intermediate state, not GUI controls. Real-phone
+  acceptance is still pending.
+  V2 also adds the dormant pre-participant phase and keeps its own `c-val:2`
+  identity.
+
+C-VAL 2 currently has a temporary three-button mapping comparison inside its
+existing mobile only. It does not introduce another route, screen, market,
+socket room or version. Git `HEAD` remains checkpoint `07a5aaf`; consult the
+[post-checkpoint ledger](./2-iteration-ledger-2026-08-05.md) before touching the
+working-tree WIP.
 
 The two versions intentionally duplicate code. Do not replace that duplication
 with cross-version imports: a later V2 edit must not rewrite the V1 archive.
@@ -26,8 +34,8 @@ with cross-version imports: a later V2 edit must not rewrite the V1 archive.
 ## The system in one pass
 
 ```text
-phone orientation
-  -> calibrated alpha / beta / gamma deltas
+active V2 phone three-axis rotation rate
+  -> one stateless soft V/A/L equation
   -> volatility / activity / liquidity targets
   -> version-owned socket room and 50 ms runtime tick
   -> market participants submit, cancel, and match orders
@@ -55,7 +63,7 @@ Every version is a complete compatible system:
 
 | Role | Route | Responsibility |
 | --- | --- | --- |
-| Mobile | `/c-val/[version]/mobile` | Permission, zero pose, orientation capture, V/A/L preview, input transmission |
+| Mobile | `/c-val/[version]/mobile` | Permission, version-specific sensor capture, V/A/L preview, input transmission |
 | Controller | `/c-val/[version]/controller` | Full market observation and authorized reset |
 | Individual screen | `/c-val/[version]/screen/[screen]` | One display selected from `market`, `news`, `media`, or `employment` |
 | Whole screen set | `/c-val/[version]/screen/whole` | Composes all registered screens |
@@ -109,9 +117,11 @@ Shared files have deliberately narrow jobs:
 | 1 | `c-val:1` | `experiment:c-val:1` | `c-val-1:*` | `[c-val:v1:1s]` |
 | 2 | `c-val:2` | `experiment:c-val:2` | `c-val-2:*` | `[c-val:v2:1s]` |
 
-Only a joined mobile may send input. Only a joined controller may reset. V1
-sends calibrated orientation; V2 sends the same direct mapping as V/A/L plus
-its current engagement state. V2 averages simultaneous active phones equally.
+Only a joined mobile may send input. A joined controller may reset either
+version; C-VAL 2 also permits its joined mobile to reset when its temporary
+mapping-comparison selector changes. V1 sends calibrated orientation. V2 sends
+one of three explicitly selected phone-to-V/A/L mappings into the same unchanged
+C-VAL 2 market runtime and averages simultaneous active phones equally.
 A shared 50 ms timer coalesces input, advances the market, and broadcasts only
 while clients occupy that version's room.
 
@@ -177,6 +187,9 @@ requested, against an already-running HTTPS server.
 
 - [C-VAL 1](./1.md): promoted and frozen behavioral, visual, and market contract.
 - [C-VAL 2](./2.md): active branch contract and future iteration record.
+- [C-VAL 2 post-checkpoint iteration ledger](./2-iteration-ledger-2026-08-05.md):
+  checkpoint, attempted algorithms, observed failures, user feedback, current
+  WIP equation, retained invariants, and pending real-phone gates.
 - [C-VAL 2 rejected interaction](./2-interaction-failure-review.md): low- and
   high-level analysis of the learned-axis, cadence, dwell, pressure, and mobile
   UI failure that must not be repeated.

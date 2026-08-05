@@ -1,3 +1,10 @@
+import {
+  checkpointOrientationToParameters as mapCheckpointOrientationToParameters,
+  cValOneOrientationToParameters as mapCValOneOrientationToParameters,
+  orientationToCValParameters as mapOrientationToCValParameters,
+  rotationRateToCValControl as mapRotationRateToCValControl,
+} from "@/socket/experiments/c-val/2/orientation.mjs";
+
 export const cValParameterIds = [
   "volatility",
   "activity",
@@ -71,6 +78,15 @@ export type CValHumanControlInput = CValParameters & {
   engaged: boolean;
   sampledAt: number;
 };
+
+export type CValRotationControl = {
+  parameters: CValParameters;
+  engaged: boolean;
+  energyDegreesPerSecond: number;
+  signedRotationDegreesPerSecond: number;
+};
+
+export type CValInputMappingId = "c-val-1" | "07a5aaf" | "current";
 
 export type CValHumanControlState = CValParameters & {
   engaged: boolean;
@@ -208,20 +224,28 @@ export const cValParameterLabels: Record<CValParameterId, string> = {
   liquidity: "LIQUIDITY",
 };
 
-function clamp(value: number, minimum: number, maximum: number) {
-  return Math.min(Math.max(value, minimum), maximum);
+export function orientationToCValParameters(
+  orientation: Pick<CValOrientation, "alpha" | "beta" | "gamma">,
+): CValParameters {
+  return mapOrientationToCValParameters(orientation);
 }
 
-export function orientationToCValParameters(
-  orientation: Pick<CValOrientation, "beta">,
+export function cValOneOrientationToParameters(
+  orientation: Pick<CValOrientation, "alpha" | "beta" | "gamma">,
 ): CValParameters {
-  const direction = clamp(orientation.beta / 35, -1, 1);
-  const intensity = Math.abs(direction);
-  return {
-    volatility: 0.5 + 0.5 * intensity,
-    activity: 0.5 + 0.5 * direction,
-    liquidity: 0.5 - 0.5 * intensity,
-  };
+  return mapCValOneOrientationToParameters(orientation);
+}
+
+export function checkpointOrientationToParameters(
+  orientation: Pick<CValOrientation, "alpha" | "beta" | "gamma">,
+): CValParameters {
+  return mapCheckpointOrientationToParameters(orientation);
+}
+
+export function rotationRateToCValControl(
+  rotationRate: CValRotationRate,
+): CValRotationControl {
+  return mapRotationRateToCValControl(rotationRate);
 }
 
 export function createInitialCValSnapshot(): CValSnapshot {

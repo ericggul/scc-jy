@@ -3,6 +3,7 @@ import {
   interpolateAround,
   interpolateRange,
 } from "./calibration.mjs";
+import { orientationToCValParameters } from "./orientation.mjs";
 import {
   bookOrders,
   bookSideOrderCount,
@@ -58,16 +59,10 @@ function pushBounded(list, value, limit) {
   if (list.length > limit) list.splice(0, list.length - limit);
 }
 
-// Shared fixed forward/back mapping used by the runtime harness.
-export function orientationToCValParameters(orientation = {}) {
-  const direction = clamp(orientation.beta / 35, -1, 1);
-  const intensity = Math.abs(direction);
-  return {
-    volatility: 0.5 + 0.5 * intensity,
-    activity: 0.5 + 0.5 * direction,
-    liquidity: 0.5 - 0.5 * intensity,
-  };
-}
+export {
+  orientationToCValParameters,
+  rotationRateToCValControl,
+} from "./orientation.mjs";
 
 /**
  * One fixed bridge from the three intermediate phone conditions to market
@@ -465,8 +460,11 @@ export function setCValOrientation(runtime, orientation, now = Date.now()) {
   };
   runtime.orientationTarget = orientationToCValParameters(runtime.orientation);
   if (
-    Math.abs(runtime.orientation.beta) >=
-    ORIENTATION_ACTIVATION_THRESHOLD_DEGREES
+    Math.max(
+      Math.abs(runtime.orientation.alpha),
+      Math.abs(runtime.orientation.beta),
+      Math.abs(runtime.orientation.gamma),
+    ) >= ORIENTATION_ACTIVATION_THRESHOLD_DEGREES
   ) {
     activateCValRuntime(runtime, now);
   }

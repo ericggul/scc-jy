@@ -1,7 +1,8 @@
 # C-VAL 2 interaction failure review
 
 > Rejected trials on 2026-08-04: learned humane-input mapper; incorrect
-> baseline restoration and GUI-selection proposal; weak multi-axis V/A/L sum.
+> baseline restoration and GUI-selection proposal; weak multi-axis V/A/L sum;
+> persistent-pose quaternion hybrid; motion-path quaternion overcorrection.
 >
 > This document exists to prevent another agent from rebuilding the same
 > failure. It describes a rejected implementation, not the active C-VAL 2
@@ -19,7 +20,7 @@ The participant learns repeatable bodily directions for rise, fall, and relative
 stillness. They do not select V/A/L and do not learn to set precise V/A/L
 numbers. V/A/L are intermediate conditions, not the interaction goal.
 
-Two different implementation mistakes occurred before that task was stated
+Five implementation mistakes occurred while trying to state that task
 correctly in code:
 
 1. **Classifier overdesign:** hidden learned axes, motion RMS, rhythm, dwell,
@@ -33,8 +34,24 @@ correctly in code:
    showed neither large rises/falls nor a learnable angle expectation. It kept
    V1's three-axis ambiguity while reducing V1's dramatic market range. Static
    seed tests proved only the chosen extremes, not a human-discoverable gesture.
+4. **Persistent-pose quaternion hybrid:** full-orientation math removed Euler
+   seams, but absolute distance from the initial pose fed a shared intensity.
+   Real-phone output pinned near `V=89`, `L=11`, and later the whole triple held
+   near `69/32/31` while fresh packets still arrived. It fixed coordinate
+   representation but repeated the perceptual plateau.
+5. **Motion-path quaternion overcorrection:** removing pose lock made V/A/L
+   traverse their numerical range during idealized broad rotations, but normal
+   small phone movements produced weak, brief market drive and little executed-
+   price range. The response then incorrectly proposed prioritizing small-angle
+   use over full-direction response and adding special small-angle, inversion,
+   and quaternion handling. The user explicitly rejected both the priority
+   split and the growing exception list.
 
-None of the rejected states is the active design.
+None of the rejected states is an approved design, and none is the current live
+mapping. The current WIP is the direct rotation-rate equation recorded in
+[`2-iteration-ledger-2026-08-05.md`](./2-iteration-ledger-2026-08-05.md), with a
+temporary within-C-VAL 2 author selector for comparing it against the two exact
+earlier mappings.
 
 ## Intended experience
 
@@ -44,6 +61,12 @@ V/A/L immediately and visibly; those market conditions must alter orders,
 executions, and price quickly enough that the same person can perceive authorship
 of the disturbance. Surrounding screens show how that disturbance reaches
 people outside the controller's position.
+
+Full-direction response and strong ordinary-handheld response are coequal.
+The work must not describe 180/360-degree use as an edge case, and it must not
+describe common 5–20-degree wrist movement as a separate privileged mode. One
+simple mapping must make both materially effective and must create dramatic,
+fun price movement through the existing market path.
 
 Before the first human interaction there must be no simulated market activity:
 price is exactly `100`, there are no participants, orders, executions, or book
@@ -171,6 +194,29 @@ that code responded to signals the code was designed to recognize, not that a
 person could knowingly produce those signals. Passing tests were incorrectly
 treated as evidence of interaction quality.
 
+### 9. Persistent pose was mistaken for ongoing human activity
+
+The quaternion trial combined absolute pose distance with instantaneous motion.
+Once the phone had been flipped far from its initial pose, that pose term stayed
+large regardless of the next movement. V and inverse L therefore became a
+coupled latch, and smoothing extended it. Fresh `signalAgeMs` values near zero
+proved transport was working; the mapping was discarding the new information.
+
+### 10. Mathematical coverage displaced the actual experience
+
+The next trial optimized quaternion continuity, angular velocity and formal
+coverage of inversion and 360-degree paths. That did not answer the embodied
+test: a person holding a phone normally should be able to make the price move
+dramatically without performing an idealized full rotation. Numerical V/A/L
+range coverage was mistaken for enjoyable causal power.
+
+The attempted correction repeated the same mistake in another form by proposing
+small-angle amplification plus separate quaternion and inversion handling. That
+would create ordinary and exceptional paths, more conditions, and more ways for
+the same movement to feel inconsistent. `Simple is best` here means one causal
+relation across the entire movement space, not a simple main path surrounded by
+exceptions.
+
 ## High-level causes
 
 ### The system asked the person to serve the algorithm
@@ -214,9 +260,10 @@ answer:
 4. What should I do to repeat the previous result?
 5. What movement is causing the market response right now?
 
-The screen must mirror the actual operative bodily coordinate. Showing three
-independent axes again would preserve the V1 ambiguity. The active trial shows
-one forward/back angle, its V/A/L intermediate state, and actual executed price.
+The screen must mirror the actual operative bodily relation. Showing three
+independent controls again would preserve the V1 ambiguity. The current WIP
+mobile displays the direct rotation-rate V/A/L state and actual executed price;
+whether that relation is perceptually legible remains a real-phone question.
 
 ## Rules derived from this failure
 
@@ -226,24 +273,28 @@ Do not rebuild any of the following without a new, separately approved trial:
 - RMS windows as the primary V/A/L controls;
 - burst, cadence, dwell, or re-arm gates;
 - a permanent engagement latch disconnected from current input;
+- absolute pose magnitude as persistent V/L activity;
+- deriving V and L as simple inverses of one latched intensity;
 - signed pressure as a fourth hidden control;
 - a privileged operator order path in parallel with V/A/L;
 - simultaneous changes to input semantics and market calibration;
 - synthetic gesture tests presented as human validation;
 - abstract mobile graphics whose motion is not a direct mirror of the sensor
   values that control the system.
+- ranking small ordinary movement above full-direction response, or the reverse;
+- separate rules for small angles, large turns, inversion, or named edge cases;
+- treating V/A/L numerical span or coordinate correctness as proof of fun.
 
 ## Recovery principle
 
-Keep the proven dormant-market lifecycle, but do not restore V1's ambiguous
-three-axis control. Use one fixed bodily direction and derive all intermediate
-conditions from it:
+Keep the proven dormant-market lifecycle and market path. The current direct
+rotation-rate replacement is WIP and not yet accepted. It must satisfy this
+exact chain:
 
 ```text
-first meaningful forward/back beta change
-  -> activate market once
-  -> symmetric direction + intensity
-  -> V/A/L intermediate state
+any ordinary or full-range phone movement
+  -> the same simple fixed mapping
+  -> immediately substantial V/A/L and market drive
   -> ordinary agents and FIFO order-book mechanics
   -> executions
   -> price
@@ -252,12 +303,13 @@ first meaningful forward/back beta change
 One visible input, one market path, one result. Further changes must vary only
 one coherent relation and must be judged with a real person holding the phone.
 
-The replacement trial has three explicit acceptance gates. It is rejected if
+The replacement trial has four explicit acceptance gates. It is rejected if
 any one fails:
 
-1. a person can discover that one forward/back region repeatedly rises and the
-   opposite region repeatedly falls;
-2. both extremes produce an immediate, dramatic executed-price range comparable
-   to or stronger than the useful C-VAL 1 response;
-3. the balanced region is relatively still without adding a hidden classifier,
-   delay, or second control channel.
+1. ordinary small movement produces immediate, dramatic executed-price range
+   comparable to or stronger than the useful Git baseline;
+2. pitch, roll, twist, inversion, 180/360-degree turns and combinations remain
+   materially responsive under that exact same mapping;
+3. opposite repeatable movements produce perceptibly opposite price tendencies;
+4. no hidden classifier, mode, per-angle branch, exception list, delay, or
+   second control channel is introduced.

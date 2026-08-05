@@ -5,7 +5,7 @@ import {
   cValConditionDirection,
   cValModelTiming,
   createCValRuntime,
-  orientationToCValParameters,
+  rotationRateToCValControl,
   setCValHumanControl,
   setCValOrientation,
   snapshotCValRuntime,
@@ -86,19 +86,16 @@ function scenarioMeans(control) {
   );
 }
 
-test("one fixed forward/back beta angle maps to symmetric V/A/L states", () => {
+test("live rotation-rate mapping is neutral at rest and strong before a large turn", () => {
   assert.deepEqual(
-    orientationToCValParameters({ alpha: 0, beta: 0, gamma: 0 }),
+    rotationRateToCValControl({ alpha: 0, beta: 0, gamma: 0 }).parameters,
     { volatility: 0.5, activity: 0.5, liquidity: 0.5 },
   );
-  assert.deepEqual(
-    orientationToCValParameters({ alpha: 90, beta: -35, gamma: 45 }),
-    { volatility: 1, activity: 0, liquidity: 0 },
-  );
-  assert.deepEqual(
-    orientationToCValParameters({ alpha: -90, beta: 35, gamma: -45 }),
-    { volatility: 1, activity: 1, liquidity: 0 },
-  );
+  const ordinary = rotationRateToCValControl({ alpha: 0, beta: 20, gamma: 0 });
+  assert.ok(ordinary.parameters.volatility > 0.79);
+  assert.ok(ordinary.parameters.activity > 0.79);
+  assert.ok(ordinary.parameters.liquidity < 0.21);
+  assert.equal(ordinary.engaged, true);
 });
 
 test("signed A maps to symmetric direction while V and L scale it", () => {
@@ -113,20 +110,23 @@ test("signed A maps to symmetric direction while V and L scale it", () => {
   assert.ok(Math.abs(balanced) < 1e-12);
 });
 
-test("opposite fixed phone directions produce opposite executed-price direction", () => {
+test("opposite ordinary wrist rotations produce opposite executed-price direction", () => {
+  const upwardControl = rotationRateToCValControl({
+    alpha: 0,
+    beta: 20,
+    gamma: 0,
+  }).parameters;
+  const downwardControl = rotationRateToCValControl({
+    alpha: 0,
+    beta: -20,
+    gamma: 0,
+  }).parameters;
+
   for (const seed of [3, 7, 11, 19, 29, 41]) {
     const upward = createCValRuntime(0, `up-${seed}`, seed);
     const downward = createCValRuntime(0, `down-${seed}`, seed);
-    advanceWithFreshSignal(
-      upward,
-      { absolute: false, alpha: 90, beta: 90, gamma: -30 },
-      30,
-    );
-    advanceWithFreshSignal(
-      downward,
-      { absolute: false, alpha: -90, beta: -90, gamma: -30 },
-      30,
-    );
+    advanceWithControl(upward, upwardControl, 100);
+    advanceWithControl(downward, downwardControl, 100);
 
     assert.ok(upward.market.index > 100);
     assert.ok(downward.market.index < 100);
@@ -174,7 +174,7 @@ test("a baseline packet stays dormant and intentional input activates once", () 
 
   setCValOrientation(
     runtime,
-    { absolute: false, alpha: 0, beta: 2, gamma: 0 },
+    { absolute: false, alpha: 2, beta: 0, gamma: 0 },
     1_050,
   );
   assert.equal(runtime.phase, "active");
@@ -185,17 +185,17 @@ test("a baseline packet stays dormant and intentional input activates once", () 
   assert.equal(runtime.activatedAt, 1_050);
 });
 
-test("fresh negative beta drives the coupled state and stale input returns to neutral", () => {
+test("legacy orientation bridge still releases stale input to neutral", () => {
   const runtime = createCValRuntime(0, "signal-test", 1);
   setCValOrientation(
     runtime,
-    { absolute: false, alpha: 90, beta: -35, gamma: 45 },
+    { absolute: false, alpha: 0, beta: -90, gamma: 0 },
     1_000,
   );
   advance(runtime, 8, 1_000);
-  assert.ok(runtime.parameters.volatility > 0.8);
-  assert.ok(runtime.parameters.activity < 0.2);
-  assert.ok(runtime.parameters.liquidity < 0.2);
+  assert.ok(runtime.parameters.volatility > 0.7);
+  assert.ok(runtime.parameters.activity < 0.4);
+  assert.ok(runtime.parameters.liquidity < 0.3);
 
   const releaseStart =
     1_000 +

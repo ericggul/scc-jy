@@ -128,14 +128,35 @@ export default function CValMediaScreen({ snapshot }: { snapshot: CValSnapshot }
     const observer = new ResizeObserver(resize);
     observer.observe(canvas);
     resize();
-    video.currentTime = segment.start;
-    video.muted = true;
-    void video.play().catch(() => undefined);
+    const startPlayback = () => {
+      video.defaultMuted = false;
+      video.muted = false;
+      video.volume = 1;
+      if (video.currentTime < segment.start || video.currentTime >= segment.end) {
+        video.currentTime = segment.start;
+      }
+      void video.play().catch(() => undefined);
+    };
+    const resumeWithSound = () => {
+      video.defaultMuted = false;
+      video.muted = false;
+      video.volume = 1;
+      void video.play().catch(() => undefined);
+    };
+    video.addEventListener("loadedmetadata", startPlayback);
+    video.addEventListener("canplaythrough", startPlayback);
+    window.addEventListener("pointerdown", resumeWithSound);
+    window.addEventListener("keydown", resumeWithSound);
+    startPlayback();
     draw();
 
     return () => {
       disposed = true;
       observer.disconnect();
+      video.removeEventListener("loadedmetadata", startPlayback);
+      video.removeEventListener("canplaythrough", startPlayback);
+      window.removeEventListener("pointerdown", resumeWithSound);
+      window.removeEventListener("keydown", resumeWithSound);
       window.cancelAnimationFrame(frame);
       video.pause();
     };
@@ -144,7 +165,7 @@ export default function CValMediaScreen({ snapshot }: { snapshot: CValSnapshot }
   return (
     <Stage aria-label={layout.direction === "gain" ? `${layout.activeCount} beef dinner scenes` : layout.direction === "loss" ? `${layout.activeCount} falling scenes` : "No market movement yet"}>
       <Canvas ref={canvasRef} role="img" />
-      {segment ? <SourceVideo key={segment.src} ref={videoRef} src={segment.src} preload="auto" playsInline loop muted /> : null}
+      {segment ? <SourceVideo key={segment.src} ref={videoRef} src={segment.src} preload="auto" playsInline loop autoPlay /> : null}
     </Stage>
   );
 }

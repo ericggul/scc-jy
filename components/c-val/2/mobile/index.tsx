@@ -2,11 +2,15 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  checkpointOrientationToParameters,
+  cValOneOrientationToParameters,
   cValParameterLabels,
-  orientationToCValParameters,
+  rotationRateToCValControl,
   type CValHumanControlInput,
+  type CValInputMappingId,
   type CValOrientation,
   type CValRecordingCommand,
+  type CValRecordedMotionEvent,
   type CValRecordedOrientationEvent,
   type CValSensorTrace,
 } from "@/components/c-val/2/model";
@@ -17,10 +21,13 @@ import {
 } from "@/socket/experiments/c-val/2/orientation.mjs";
 
 type MotionPermission = "idle" | "listening" | "denied" | "unavailable";
+type MotionEventConstructor = typeof DeviceMotionEvent & {
+  requestPermission?: () => Promise<"granted" | "denied">;
+};
 type OrientationEventConstructor = typeof DeviceOrientationEvent & {
   requestPermission?: () => Promise<"granted" | "denied">;
 };
-type RawOrientation = { alpha: number; beta: number; gamma: number };
+type RawOrientation = Omit<CValOrientation, "absolute">;
 type RecordingStatus =
   | "idle"
   | "recording"
@@ -29,8 +36,12 @@ type RecordingStatus =
   | "error";
 
 const DEFAULT_RECORDING_DURATION_MS = 12_000;
-const START_DELTA_DEGREES = 2;
-
+const ORIENTATION_ENGAGEMENT_DEGREES = 2;
+const inputMappings: Array<{ id: CValInputMappingId; label: string }> = [
+  { id: "c-val-1", label: "C-VAL 1" },
+  { id: "07a5aaf", label: "07A5AAF" },
+  { id: "current", label: "CURRENT" },
+];
 const initialControl: CValHumanControlInput = {
   volatility: 0.5,
   activity: 0.5,
@@ -39,30 +50,25 @@ const initialControl: CValHumanControlInput = {
   sampledAt: 0,
 };
 
-const initialOrientation: CValOrientation = {
-  absolute: false,
-  alpha: 0,
-  beta: 0,
-  gamma: 0,
-};
-
 function finiteSensorValue(value: number | null) {
   return Number.isFinite(value) ? Number(value) : null;
 }
 
 export default function CValMobile() {
   const [control, setControl] = useState<CValHumanControlInput>(initialControl);
-  const [orientation, setOrientation] =
-    useState<CValOrientation>(initialOrientation);
+  const [inputMapping, setInputMapping] =
+    useState<CValInputMappingId>("current");
   const [permission, setPermission] = useState<MotionPermission>("idle");
+  const inputMappingRef = useRef<CValInputMappingId>("current");
   const baselineRef = useRef<RawOrientation | null>(null);
   const latestRawRef = useRef<RawOrientation | null>(null);
   const lastSentAtRef = useRef(0);
-  const listeningRef = useRef(false);
+  const listeningRef = useRef<"orientation" | "motion" | null>(null);
   const recordingRef = useRef<{
     startedAt: number;
     recordedAt: string;
     orientationEvents: CValRecordedOrientationEvent[];
+    motionEvents: CValRecordedMotionEvent[];
   } | null>(null);
   const recordingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const remoteRecordingCommandRef = useRef<
@@ -72,7 +78,7 @@ export default function CValMobile() {
   const [recordingStatus, setRecordingStatus] =
     useState<RecordingStatus>("idle");
   const [recordingMessage, setRecordingMessage] = useState("");
-  const { connected, presence, state, sendHumanControl, sendSensorTrace, sendRecordingStatus } =
+  const { connected, presence, state, sendHumanControl, sendSensorTrace, sendRecordingStatus, resetSystem } =
     useCValSocket({
       role: "mobile",
       onRecordingCommand: (command) =>
@@ -83,7 +89,6 @@ export default function CValMobile() {
   useEffect(() => {
     remoteControlResetRef.current = () => {
       baselineRef.current = latestRawRef.current;
-      setOrientation(initialOrientation);
       setControl(initialControl);
       sendHumanControl({ ...initialControl, sampledAt: performance.now() });
     };
@@ -98,15 +103,23 @@ export default function CValMobile() {
       };
       latestRawRef.current = raw;
       baselineRef.current ??= raw;
-      const nextOrientation = calibrateRawOrientation(
+      const orientation = calibrateRawOrientation(
         { ...raw, absolute: event.absolute },
         baselineRef.current,
       );
-      setOrientation(nextOrientation);
-
-      const parameters = orientationToCValParameters(nextOrientation);
+      const mapping = inputMappingRef.current;
+      const parameters =
+        mapping === "c-val-1"
+          ? cValOneOrientationToParameters(orientation)
+          : checkpointOrientationToParameters(orientation);
       const engaged =
-        Math.abs(nextOrientation.beta) >= START_DELTA_DEGREES;
+        mapping === "07a5aaf"
+          ? Math.abs(orientation.beta) >= ORIENTATION_ENGAGEMENT_DEGREES
+          : Math.max(
+                Math.abs(orientation.alpha),
+                Math.abs(orientation.beta),
+                Math.abs(orientation.gamma),
+              ) >= ORIENTATION_ENGAGEMENT_DEGREES;
       const sampledAt = performance.now();
       const nextControl = { ...parameters, engaged, sampledAt };
       setControl(nextControl);
@@ -115,26 +128,65 @@ export default function CValMobile() {
         lastSentAtRef.current = sampledAt;
         sendHumanControl(nextControl);
       }
+
+      const recording = recordingRef.current;
+      if (recording) {
+        recording.orientationEvents.push({
+          id: `orientation-${recording.orientationEvents.length + 1}`,
+          tMs: sampledAt - recording.startedAt,
+          absolute: Boolean(event.absolute),
+          alpha: raw.alpha,
+          beta: raw.beta,
+          gamma: raw.gamma,
+        });
+      }
     },
     [sendHumanControl],
   );
 
-  // TEMPORARY RESEARCH INSTRUMENTATION: this listener is attached only while
-  // a recording is active and must be removed after direct-input validation.
-  const captureRecordingOrientation = useCallback(
-    (event: DeviceOrientationEvent) => {
+  const handleMotion = useCallback(
+    (event: DeviceMotionEvent) => {
+      const rotationRate = {
+        alpha: finiteSensorValue(event.rotationRate?.alpha ?? null),
+        beta: finiteSensorValue(event.rotationRate?.beta ?? null),
+        gamma: finiteSensorValue(event.rotationRate?.gamma ?? null),
+      };
+      if (Object.values(rotationRate).every((value) => value === null)) return;
+      const sampledAt = performance.now();
+      const gesture = rotationRateToCValControl(rotationRate);
+      const nextControl = {
+        ...gesture.parameters,
+        engaged: gesture.engaged,
+        sampledAt,
+      };
+      setControl(nextControl);
+
+      if (sampledAt - lastSentAtRef.current >= 16) {
+        lastSentAtRef.current = sampledAt;
+        sendHumanControl(nextControl);
+      }
+
       const recording = recordingRef.current;
-      if (!recording) return;
-      recording.orientationEvents.push({
-        id: `orientation-${recording.orientationEvents.length + 1}`,
-        tMs: performance.now() - recording.startedAt,
-        absolute: Boolean(event.absolute),
-        alpha: finiteSensorValue(event.alpha) ?? 0,
-        beta: finiteSensorValue(event.beta) ?? 0,
-        gamma: finiteSensorValue(event.gamma) ?? 0,
-      });
+      if (recording) {
+        recording.motionEvents.push({
+          id: `motion-${recording.motionEvents.length + 1}`,
+          tMs: sampledAt - recording.startedAt,
+          intervalMs: finiteSensorValue(event.interval),
+          acceleration: {
+            x: finiteSensorValue(event.acceleration?.x ?? null),
+            y: finiteSensorValue(event.acceleration?.y ?? null),
+            z: finiteSensorValue(event.acceleration?.z ?? null),
+          },
+          accelerationIncludingGravity: {
+            x: finiteSensorValue(event.accelerationIncludingGravity?.x ?? null),
+            y: finiteSensorValue(event.accelerationIncludingGravity?.y ?? null),
+            z: finiteSensorValue(event.accelerationIncludingGravity?.z ?? null),
+          },
+          rotationRate,
+        });
+      }
     },
-    [],
+    [sendHumanControl],
   );
 
   const finishRecording = useCallback(async () => {
@@ -145,22 +197,18 @@ export default function CValMobile() {
       clearTimeout(recordingTimerRef.current);
       recordingTimerRef.current = null;
     }
-    window.removeEventListener(
-      "deviceorientation",
-      captureRecordingOrientation,
-    );
     const durationMs = performance.now() - recording.startedAt;
     const trace: CValSensorTrace = {
       schemaVersion: 2,
       kind: "browser-device-motion-orientation",
-      profile: "author-direct-orientation-01",
+      profile: `author-input-comparison-${inputMappingRef.current}`,
       provenance: {
         type: "recorded",
         recordedAt: recording.recordedAt,
       },
       durationMs,
       orientationEvents: recording.orientationEvents,
-      motionEvents: [],
+      motionEvents: recording.motionEvents,
     };
     setRecordingStatus("saving");
     sendRecordingStatus({ status: "saving", message: "SAVING TRACE" });
@@ -182,11 +230,11 @@ export default function CValMobile() {
         message: result.error ?? "SAVE FAILED",
       });
     }
-  }, [captureRecordingOrientation, sendRecordingStatus, sendSensorTrace]);
+  }, [sendRecordingStatus, sendSensorTrace]);
 
   const startRecording = useCallback((durationMs = DEFAULT_RECORDING_DURATION_MS) => {
     if (recordingRef.current) return;
-    if (!listeningRef.current) {
+    if (listeningRef.current === null) {
       setRecordingStatus("error");
       setRecordingMessage("ENABLE MOTION ON MOBILE FIRST");
       sendRecordingStatus({
@@ -200,12 +248,8 @@ export default function CValMobile() {
       startedAt: performance.now(),
       recordedAt: new Date().toISOString(),
       orientationEvents: [],
+      motionEvents: [],
     };
-    window.addEventListener(
-      "deviceorientation",
-      captureRecordingOrientation,
-      { passive: true },
-    );
     setRecordingStatus("recording");
     setRecordingMessage(
       `RECORDING ${(safeDurationMs / 1_000).toFixed(0)}S · SHAKE, TURN, PAUSE, REVERSE`,
@@ -218,7 +262,7 @@ export default function CValMobile() {
       () => void finishRecording(),
       safeDurationMs,
     );
-  }, [captureRecordingOrientation, finishRecording, sendRecordingStatus]);
+  }, [finishRecording, sendRecordingStatus]);
 
   useEffect(() => {
     remoteRecordingCommandRef.current = (command) => {
@@ -231,17 +275,21 @@ export default function CValMobile() {
   }, [finishRecording, startRecording]);
 
   async function enableMotion() {
-    if (!("DeviceOrientationEvent" in window)) {
+    const usesMotion = inputMappingRef.current === "current";
+    const eventAvailable = usesMotion
+      ? "DeviceMotionEvent" in window
+      : "DeviceOrientationEvent" in window;
+    if (!eventAvailable) {
       setPermission("unavailable");
       return;
     }
-    const OrientationEvent =
-      DeviceOrientationEvent as OrientationEventConstructor;
     try {
-      const orientationPermission =
-        await (OrientationEvent.requestPermission?.() ??
-          Promise.resolve("granted"));
-      if (orientationPermission !== "granted") {
+      const sensorPermission = usesMotion
+        ? await ((DeviceMotionEvent as MotionEventConstructor).requestPermission?.() ??
+            Promise.resolve("granted"))
+        : await ((DeviceOrientationEvent as OrientationEventConstructor).requestPermission?.() ??
+            Promise.resolve("granted"));
+      if (sensorPermission !== "granted") {
         setPermission("denied");
         return;
       }
@@ -250,29 +298,48 @@ export default function CValMobile() {
       return;
     }
 
-    if (!listeningRef.current) {
-      listeningRef.current = true;
+    if (listeningRef.current === null && usesMotion) {
+      listeningRef.current = "motion";
+      window.addEventListener("devicemotion", handleMotion);
+    } else if (listeningRef.current === null) {
+      listeningRef.current = "orientation";
       window.addEventListener("deviceorientation", handleOrientation);
     }
     setPermission("listening");
   }
 
+  const stopListening = useCallback(() => {
+    window.removeEventListener("devicemotion", handleMotion);
+    window.removeEventListener("deviceorientation", handleOrientation);
+    listeningRef.current = null;
+  }, [handleMotion, handleOrientation]);
+
+  function selectInputMapping(nextMapping: CValInputMappingId) {
+    stopListening();
+    inputMappingRef.current = nextMapping;
+    setInputMapping(nextMapping);
+    baselineRef.current = null;
+    latestRawRef.current = null;
+    lastSentAtRef.current = 0;
+    setControl(initialControl);
+    setPermission("idle");
+    resetSystem();
+  }
+
   useEffect(() => {
     return () => {
-      listeningRef.current = false;
-      window.removeEventListener("deviceorientation", handleOrientation);
-      window.removeEventListener(
-        "deviceorientation",
-        captureRecordingOrientation,
-      );
+      stopListening();
       if (recordingTimerRef.current) {
         clearTimeout(recordingTimerRef.current);
         recordingTimerRef.current = null;
       }
     };
-  }, [captureRecordingOrientation, handleOrientation]);
+  }, [stopListening]);
 
-  const betaPosition = Math.max(-1, Math.min(orientation.beta / 35, 1));
+  const directionPosition = Math.max(
+    -1,
+    Math.min((control.activity - 0.5) / 0.5, 1),
+  );
   const listenerCount =
     (presence?.controllers ?? 0) + (presence?.screens ?? 0);
   const price = state?.market.index ?? 100;
@@ -293,7 +360,7 @@ export default function CValMobile() {
         : "#ffffff";
 
   return (
-    <main className="relative grid h-dvh w-dvw touch-none grid-rows-[auto_1fr_auto] overflow-hidden bg-[#050505] text-white">
+    <main className="relative grid h-dvh w-dvw touch-none grid-rows-[auto_auto_1fr_auto] overflow-hidden bg-[#050505] text-white">
       <header className="flex items-center justify-between border-b border-white/[0.12] px-4 py-3 font-mono text-[11px] text-[#a1a1a6]">
         <span className={connected ? "text-[#32d74b]" : "text-[#ff453a]"}>
           {connected ? "LIVE" : "OFFLINE"}
@@ -301,6 +368,19 @@ export default function CValMobile() {
         <span style={{ color: priceColor }}>{priceState}</span>
         <span>{listenerCount} LISTENER</span>
       </header>
+
+      <nav className="grid grid-cols-3 border-b border-white/[0.12] font-mono text-[10px]">
+        {inputMappings.map(({ id, label }) => (
+          <button
+            key={id}
+            type="button"
+            className={`px-2 py-3 ${inputMapping === id ? "bg-white text-black" : "text-white/60"}`}
+            onClick={() => selectInputMapping(id)}
+          >
+            {label}
+          </button>
+        ))}
+      </nav>
 
       {recordingStatus !== "idle" && recordingMessage ? (
         <output
@@ -317,7 +397,7 @@ export default function CValMobile() {
       >
         <div
           className="absolute left-0 right-0 h-px bg-white shadow-[0_0_18px_rgba(255,255,255,0.4)]"
-          style={{ top: `${50 + betaPosition * 34}%` }}
+          style={{ top: `${50 + directionPosition * 34}%` }}
         />
         <div className="absolute inset-0 grid place-items-center">
           {permission === "listening" ? (

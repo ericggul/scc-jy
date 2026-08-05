@@ -55,6 +55,11 @@ const Lane = styled.li`
   min-width: 0;
   overflow: hidden;
   contain: strict;
+  border-top: 1px solid rgb(17 17 15 / 0.22);
+
+  &:last-child {
+    border-bottom: 1px solid rgb(17 17 15 / 0.22);
+  }
 `;
 
 const Track = styled.div`

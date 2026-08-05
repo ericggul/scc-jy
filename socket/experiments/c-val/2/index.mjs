@@ -149,7 +149,7 @@ function normalizeSensorTrace(payload = {}) {
 }
 
 async function saveSensorTrace(payload) {
-  if (process.env.NODE_ENV !== "development") {
+  if (process.env.NODE_ENV === "production") {
     return { ok: false, error: "sensor recording is development-only" };
   }
   const trace = normalizeSensorTrace(payload);
@@ -330,8 +330,9 @@ function register({ io, socket }) {
   });
 
   socket.on(events.resetIn, () => {
+    const role = socket.data[id]?.role;
     if (
-      socket.data[id]?.role !== "controller" ||
+      (role !== "controller" && role !== "mobile") ||
       !socket.rooms.has(cValTwoRoom)
     ) {
       return;
