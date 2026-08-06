@@ -1,9 +1,11 @@
 .page {
   width: 100%;
-  height: 100svh;
+  height: 100%;
+  min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
-  color: #f1e7e1;
+  color: var(--dm-color-ink);
+  overscroll-behavior-y: contain;
   scrollbar-width: none;
 }
 
@@ -14,13 +16,13 @@
 .header {
   padding:
     max(26px, env(safe-area-inset-top))
-    24px
+    var(--dm-page-gutter)
     0;
 }
 
 .wordmark {
   display: block;
-  font-family: "Snell Roundhand", "Brush Script MT", cursive;
+  font-family: var(--dm-font-wordmark);
   font-size: 29px;
   line-height: 1;
   letter-spacing: -0.04em;
@@ -29,7 +31,7 @@
 .body {
   padding:
     clamp(70px, 12svh, 112px)
-    24px
+    var(--dm-page-gutter)
     max(54px, calc(34px + env(safe-area-inset-bottom)));
 }
 
@@ -39,7 +41,7 @@
 
 .kicker {
   margin: 0 0 16px;
-  color: rgb(241 231 225 / 64%);
+  color: rgb(var(--dm-color-ink-rgb) / 64%);
   font-size: 12px;
   font-weight: 650;
   letter-spacing: 0.08em;
@@ -57,7 +59,7 @@
 .description {
   max-width: 350px;
   margin: 24px 0 0;
-  color: rgb(241 231 225 / 72%);
+  color: rgb(var(--dm-color-ink-rgb) / 72%);
   font-size: 15px;
   font-weight: 430;
   line-height: 1.7;
@@ -85,10 +87,10 @@
 .contentCard {
   display: block;
   overflow: hidden;
-  border-radius: 22px;
-  background: rgb(245 237 231 / 94%);
+  border-radius: var(--dm-radius-card);
+  background: rgb(var(--dm-color-surface-rgb) / 94%);
   box-shadow: 0 18px 48px rgb(24 14 10 / 22%);
-  color: #30231e;
+  color: var(--dm-color-surface-ink);
   text-decoration: none;
   transform: translateZ(0);
   transition:
@@ -127,7 +129,7 @@
 }
 
 .cardCopy > span {
-  color: rgb(48 35 30 / 64%);
+  color: rgb(var(--dm-color-surface-ink-rgb) / 64%);
   font-size: 13px;
   font-weight: 450;
   line-height: 1.45;
@@ -142,7 +144,7 @@
 }
 
 .duration {
-  color: rgb(48 35 30 / 62%);
+  color: rgb(var(--dm-color-surface-ink-rgb) / 62%);
   font-size: 12px;
   font-weight: 620;
   font-variant-numeric: tabular-nums;
@@ -154,8 +156,8 @@
   height: 42px;
   place-items: center;
   border-radius: 50%;
-  background: #493127;
-  color: #f5ede7;
+  background: var(--dm-color-action);
+  color: var(--dm-color-surface);
 }
 
 .playIcon svg {
@@ -172,7 +174,7 @@
 }
 
 .contentCard:focus-visible {
-  outline: 2px solid #f1e7e1;
+  outline: 2px solid var(--dm-color-ink);
   outline-offset: 4px;
 }
 

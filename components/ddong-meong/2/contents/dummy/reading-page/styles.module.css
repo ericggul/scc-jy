@@ -8,6 +8,16 @@
   animation: pageEnter 360ms ease both;
 }
 
+.meditationBackground {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  animation: backgroundFadeToBlack 2500ms cubic-bezier(0.32, 0, 0.22, 1)
+    120ms both;
+}
+
 .header {
   position: absolute;
   z-index: 3;
@@ -23,6 +33,7 @@
     var(--dm-page-gutter)
     14px;
   color: var(--dm-color-ink);
+  transition: opacity 800ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .wordmark {
@@ -41,21 +52,21 @@
   display: flex;
   align-items: baseline;
   justify-content: flex-end;
+  color: rgb(var(--dm-color-ink-rgb) / 58%);
+  font-size: 10px;
+  font-weight: 550;
   font-variant-numeric: tabular-nums;
+  letter-spacing: -0.025em;
   white-space: nowrap;
 }
 
 .clock time {
-  font-size: 14px;
-  font-weight: 650;
-  letter-spacing: -0.025em;
+  color: inherit;
 }
 
 .clock span {
   margin-left: 4px;
-  color: rgb(var(--dm-color-ink-rgb) / 58%);
-  font-size: 10px;
-  font-weight: 550;
+  color: inherit;
 }
 
 .progressTrack {
@@ -109,6 +120,33 @@
   mask-size: 100% 100%;
   overscroll-behavior: contain;
   scrollbar-width: none;
+  opacity: 0;
+  filter: blur(4px);
+  pointer-events: none;
+  transform: translate3d(0, 44px, 0);
+  animation: firstLineRise 1800ms cubic-bezier(0.16, 1, 0.3, 1) 650ms both;
+}
+
+.isFlushing .header,
+.isFlushing .scroller {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.isFlushing .meditationBackground {
+  opacity: 1;
+  animation: none;
+}
+
+.isFlushing .scroller {
+  animation: none;
+  filter: none;
+  transform: translate3d(0, 0, 0);
+  transition: opacity 800ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.isActive:not(.isFlushing) .scroller {
+  pointer-events: auto;
 }
 
 .scroller::-webkit-scrollbar {
@@ -136,6 +174,63 @@
   text-wrap: balance;
 }
 
+.flushButton {
+  position: absolute;
+  z-index: 4;
+  right: max(20px, calc(env(safe-area-inset-right) + 18px));
+  bottom: max(22px, calc(env(safe-area-inset-bottom) + 18px));
+  display: grid;
+  width: 54px;
+  height: 54px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid rgb(var(--dm-color-surface-rgb) / 30%);
+  border-radius: 50%;
+  background: rgb(var(--dm-color-surface-rgb) / 92%);
+  box-shadow:
+    0 12px 30px rgb(8 4 3 / 30%),
+    inset 0 1px 0 rgb(255 255 255 / 42%);
+  color: var(--dm-color-surface-ink);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+
+.flushIcon {
+  width: 29px;
+  height: 29px;
+  overflow: visible;
+  fill: none;
+  stroke: currentcolor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.55;
+}
+
+.flushButton:focus-visible {
+  outline: 2px solid var(--dm-color-ink);
+  outline-offset: 4px;
+}
+
+.flushButton:active:not(:disabled) {
+  box-shadow:
+    0 6px 18px rgb(8 4 3 / 26%),
+    inset 0 1px 0 rgb(255 255 255 / 32%);
+  transform: scale(0.93);
+}
+
+.flushButton:disabled {
+  cursor: default;
+}
+
+.isFlushing .flushButton {
+  animation: flushControlExit 900ms cubic-bezier(0.22, 1, 0.36, 1)
+    forwards;
+}
+
 @keyframes pageEnter {
   from {
     opacity: 0;
@@ -146,6 +241,57 @@
   }
 }
 
+@keyframes backgroundFadeToBlack {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes firstLineRise {
+  from {
+    opacity: 0;
+    filter: blur(4px);
+    transform: translate3d(0, 44px, 0);
+  }
+
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes flushControlExit {
+  0% {
+    opacity: 1;
+    transform: scale(0.93);
+  }
+
+  36% {
+    opacity: 1;
+    transform: scale(0.82) rotate(7deg);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(0.72) rotate(7deg);
+  }
+}
+
+@media (hover: hover) {
+  .flushButton:hover:not(:disabled) {
+    background: var(--dm-color-surface);
+    box-shadow:
+      0 16px 36px rgb(8 4 3 / 34%),
+      inset 0 1px 0 rgb(255 255 255 / 52%);
+    transform: translateY(-2px);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .page {
     animation: none;
@@ -153,5 +299,30 @@
 
   .progressFill {
     transition: none;
+  }
+
+  .meditationBackground,
+  .scroller {
+    animation: none;
+  }
+
+  .meditationBackground,
+  .scroller {
+    opacity: 1;
+  }
+
+  .scroller {
+    filter: none;
+    transform: none;
+  }
+
+  .header,
+  .isFlushing .scroller {
+    transition: none;
+  }
+
+  .isFlushing .flushButton {
+    opacity: 0;
+    animation: none;
   }
 }

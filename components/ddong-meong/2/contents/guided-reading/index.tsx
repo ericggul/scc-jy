@@ -1,11 +1,9 @@
-"use client";
-
-import { useState } from "react";
 import {
   findGuidedMeditation,
   type GuidedMeditationSlug,
 } from "../../model/guided-meditations";
 import GradientShell from "../../surface/gradient-shell";
+import { guidedAccumulationProfiles } from "../dummy/organic-liquid-background/profiles";
 import ReadingPage from "../dummy/reading-page";
 
 type GuidedReadingProps = {
@@ -13,14 +11,13 @@ type GuidedReadingProps = {
 };
 
 function GuidedReading({ slug }: GuidedReadingProps) {
-  const [startedAt] = useState(() => Date.now());
   const meditation = findGuidedMeditation(slug);
 
   return (
     <GradientShell>
       <ReadingPage
+        accumulationProfile={guidedAccumulationProfiles[slug]}
         lines={meditation.lines}
-        startedAt={startedAt}
         totalMs={meditation.durationSeconds * 1000}
       />
     </GradientShell>

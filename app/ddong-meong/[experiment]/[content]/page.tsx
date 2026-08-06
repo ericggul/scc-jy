@@ -3,6 +3,13 @@ import { notFound } from "next/navigation";
 import type { ComponentType } from "react";
 import DdongMeongOneDummy from "@/components/ddong-meong/1/contents/dummy";
 import {
+  DownwardBreathMeditation as OneDownwardBreathMeditation,
+  LettingGoMeditation as OneLettingGoMeditation,
+  LighterMomentMeditation as OneLighterMomentMeditation,
+  PrivateRoomMeditation as OnePrivateRoomMeditation,
+  WaitingBodyMeditation as OneWaitingBodyMeditation,
+} from "@/components/ddong-meong/1/contents/guided-reading";
+import {
   meditationContents as oneMeditationContents,
   type MeditationContentSlug as OneMeditationContentSlug,
 } from "@/components/ddong-meong/1/model/content-catalog";
@@ -21,6 +28,11 @@ import {
 
 const oneContentComponents = {
   dummy: DdongMeongOneDummy,
+  "letting-go": OneLettingGoMeditation,
+  "waiting-body": OneWaitingBodyMeditation,
+  "downward-breath": OneDownwardBreathMeditation,
+  "private-room": OnePrivateRoomMeditation,
+  "lighter-moment": OneLighterMomentMeditation,
 } satisfies Record<OneMeditationContentSlug, ComponentType>;
 
 const twoContentComponents = {

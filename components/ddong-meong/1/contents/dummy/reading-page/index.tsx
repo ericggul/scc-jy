@@ -7,33 +7,45 @@ import {
   useState,
   type CSSProperties,
 } from "react";
+import {
+  playMeditationSoundtrack,
+  scheduleMeditationSoundtrackStop,
+  stopMeditationSoundtrack,
+} from "../../../media";
 import type { ReadingLine } from "../../../model/reading-script";
+import OrganicLiquidBackground from "../organic-liquid-background";
 import styles from "./styles.module.css";
 
 type ReadingPageProps = {
   lines: ReadingLine[];
-  startedAt: number;
   totalMs: number;
 };
 
 type TimerHeaderProps = {
-  startedAt: number;
+  startedAt: number | null;
   totalMs: number;
 };
+
+const preludeDurationMs = 2000;
 
 function formatClock(totalSeconds: number) {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
-  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
 function TimerHeader({ startedAt, totalMs }: TimerHeaderProps) {
   const [elapsedMs, setElapsedMs] = useState(0);
 
   useEffect(() => {
+    if (startedAt === null) {
+      return;
+    }
+    const meditationStartedAt = startedAt;
+
     function updateTimer() {
       setElapsedMs(
-        Math.min(totalMs, Math.max(0, Date.now() - startedAt)),
+        Math.min(totalMs, Math.max(0, Date.now() - meditationStartedAt)),
       );
     }
 
@@ -69,13 +81,52 @@ function TimerHeader({ startedAt, totalMs }: TimerHeaderProps) {
 
 export default function ReadingPage({
   lines,
-  startedAt,
   totalMs,
 }: ReadingPageProps) {
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const scriptRef = useRef<HTMLDivElement | null>(null);
+  const [startedAt, setStartedAt] = useState<number | null>(null);
 
   useEffect(() => {
+    const preludeTimer = window.setTimeout(() => {
+      setStartedAt(Date.now());
+    }, preludeDurationMs);
+
+    return () => window.clearTimeout(preludeTimer);
+  }, []);
+
+  useEffect(() => {
+    const resumeSoundtrack = () => playMeditationSoundtrack();
+
+    playMeditationSoundtrack();
+    window.addEventListener("pointerdown", resumeSoundtrack, { once: true });
+    window.addEventListener("keydown", resumeSoundtrack, { once: true });
+
+    return () => {
+      window.removeEventListener("pointerdown", resumeSoundtrack);
+      window.removeEventListener("keydown", resumeSoundtrack);
+      scheduleMeditationSoundtrackStop();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (startedAt === null) return;
+
+    const remainingMs = Math.max(
+      0,
+      totalMs - Math.max(0, Date.now() - startedAt),
+    );
+    const stopTimer = window.setTimeout(
+      stopMeditationSoundtrack,
+      remainingMs,
+    );
+
+    return () => window.clearTimeout(stopTimer);
+  }, [startedAt, totalMs]);
+
+  useEffect(() => {
+    if (startedAt === null) return;
+
     const scroller = scrollerRef.current;
     const script = scriptRef.current;
     if (!scroller || !script) return;
@@ -104,10 +155,14 @@ export default function ReadingPage({
     );
 
     return () => animation.cancel();
-  }, [totalMs]);
+  }, [startedAt, totalMs]);
+
+  const phaseClassName = startedAt === null ? "" : styles.isActive;
 
   return (
-    <section className={styles.page}>
+    <section className={`${styles.page} ${phaseClassName}`}>
+      <OrganicLiquidBackground startedAt={startedAt} totalMs={totalMs} />
+      <div className={styles.preludeVeil} aria-hidden="true" />
       <TimerHeader startedAt={startedAt} totalMs={totalMs} />
 
       <div

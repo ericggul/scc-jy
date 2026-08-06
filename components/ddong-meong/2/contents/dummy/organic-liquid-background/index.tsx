@@ -7,16 +7,34 @@ import {
   backgroundVertexShader,
   particleFragmentShader,
   particleVertexShader,
+  solidDropFragmentShader,
+  solidDropVertexShader,
 } from "./shaders";
+import type {
+  AccumulationMaterialKind,
+  AccumulationProfile,
+  NumberRange,
+  RgbColor,
+} from "./profiles";
 import styles from "./styles.module.css";
 
+const materialModeValues = {
+  filament: 0,
+  "viscous-stream": 1,
+  "solid-form": 2,
+  "heavy-column": 3,
+  "drifting-mist": 4,
+  "liquid-burst": 5,
+} satisfies Record<AccumulationMaterialKind, number>;
+
 type OrganicLiquidBackgroundProps = {
-  startedAt: number;
+  flushDurationMs: number;
+  flushStartedAt: number | null;
+  frozenElapsedMs: number | null;
+  profile: AccumulationProfile;
+  startedAt: number | null;
   totalMs: number;
 };
-
-const reservoirParticleCount = 6200;
-const filamentParticleCount = 2800;
 
 function clamp(value: number, minimum = 0, maximum = 1) {
   return Math.min(maximum, Math.max(minimum, value));
@@ -54,11 +72,185 @@ function createParticleGeometry(count: number, seed: number) {
   return geometry;
 }
 
+function createSolidDropGeometry(count: number, seed: number) {
+  const geometry = new THREE.InstancedBufferGeometry();
+  geometry.setAttribute(
+    "position",
+    new THREE.Float32BufferAttribute(
+      [-1, -1, 0, 1, -1, 0, 1, 1, 0, -1, 1, 0],
+      3,
+    ),
+  );
+  geometry.setAttribute(
+    "uv",
+    new THREE.Float32BufferAttribute([0, 0, 1, 0, 1, 1, 0, 1], 2),
+  );
+  geometry.setIndex([0, 1, 2, 0, 2, 3]);
+
+  const seeds = new Float32Array(count * 4);
+  const random = createSeededRandom(seed);
+  for (let index = 0; index < count; index += 1) {
+    const offset = index * 4;
+    seeds[offset] = random();
+    seeds[offset + 1] = index === 0 ? 0 : random();
+    seeds[offset + 2] = random();
+    seeds[offset + 3] = random();
+  }
+  geometry.setAttribute(
+    "aSeed",
+    new THREE.InstancedBufferAttribute(seeds, 4),
+  );
+  geometry.instanceCount = count;
+  return geometry;
+}
+
+function rangeUniform(range: NumberRange) {
+  return { value: new THREE.Vector2(range[0], range[1]) };
+}
+
+function colorUniform(color: RgbColor) {
+  return { value: new THREE.Vector3(color[0], color[1], color[2]) };
+}
+
+function createProfileUniforms(profile: AccumulationProfile) {
+  return {
+    uVoidColor: colorUniform(profile.palette.void),
+    uDeepColor: colorUniform(profile.palette.deep),
+    uMiddleColor: colorUniform(profile.palette.middle),
+    uSurfaceColor: colorUniform(profile.palette.surface),
+    uHighlightColor: colorUniform(profile.palette.highlight),
+    uMaterialMode: { value: materialModeValues[profile.materialKind] },
+    uBoundaryTransitionMaximum: {
+      value: profile.boundary.transitionMaximum,
+    },
+    uBoundaryShallowDepthRatio: {
+      value: profile.boundary.shallowDepthRatio,
+    },
+    uBoundaryWaves: {
+      value: new THREE.Vector3(
+        profile.boundary.broadNoise,
+        profile.boundary.primaryWave,
+        profile.boundary.secondaryWave,
+      ),
+    },
+    uReservoirBoundary: {
+      value: new THREE.Vector3(
+        profile.boundary.reservoirPrimaryWave,
+        profile.boundary.reservoirSecondaryWave,
+        profile.boundary.reservoirHeightVariation,
+      ),
+    },
+    uBoundaryHighlight: {
+      value: new THREE.Vector2(
+        profile.boundary.highlightLineStrength,
+        profile.boundary.highlightLineWidth,
+      ),
+    },
+    uPhraseDuration: { value: profile.emission.phraseDuration },
+    uFirstDuration: rangeUniform(profile.emission.firstDuration),
+    uFirstPause: rangeUniform(profile.emission.firstPause),
+    uSecondDuration: rangeUniform(profile.emission.secondDuration),
+    uSecondPause: rangeUniform(profile.emission.secondPause),
+    uThirdDuration: rangeUniform(profile.emission.thirdDuration),
+    uThirdProbability: { value: profile.emission.thirdProbability },
+    uPressure: rangeUniform(profile.emission.pressure),
+    uPressureFrequency: { value: profile.emission.pressureFrequency },
+    uRhythmSeed: { value: profile.emission.rhythmSeed },
+    uFallDuration: rangeUniform(profile.fall.duration),
+    uBackgroundFallDuration: { value: profile.fall.backgroundDuration },
+    uFallTravelExponent: { value: profile.fall.travelExponent },
+    uFallSpawnHeight: { value: profile.fall.spawnHeight },
+    uFallLaneCenter: { value: profile.fall.laneCenter },
+    uFallWander: {
+      value: new THREE.Vector3(
+        profile.fall.laneDrift,
+        profile.fall.primaryWander,
+        profile.fall.secondaryWander,
+      ),
+    },
+    uFallLaneWidth: rangeUniform(profile.fall.laneWidth),
+    uBackgroundFilamentWidth: rangeUniform(profile.fall.backgroundWidth),
+    uFallWidthPulse: rangeUniform(profile.fall.widthPulse),
+    uFallMicroFlow: { value: profile.fall.microFlow },
+    uFallTurbulence: { value: profile.fall.turbulence },
+    uCompletionProgress: {
+      value: profile.accumulation.completionProgress,
+    },
+    uRiseExponent: { value: profile.accumulation.riseExponent },
+    uFinalHeight: { value: profile.accumulation.finalHeight },
+    uLongSurge: {
+      value: new THREE.Vector3(
+        profile.accumulation.longSurgeAmplitude,
+        profile.accumulation.longSurgeFrequency,
+        profile.accumulation.longSurgePhase,
+      ),
+    },
+    uShortSurge: {
+      value: new THREE.Vector3(
+        profile.accumulation.shortSurgeAmplitude,
+        profile.accumulation.shortSurgeFrequency,
+        profile.accumulation.shortSurgePhase,
+      ),
+    },
+    uFlowSpeed: { value: profile.accumulation.flowSpeed },
+    uReservoirFlow: {
+      value: new THREE.Vector3(
+        profile.accumulation.primaryHorizontalFlow,
+        profile.accumulation.secondaryHorizontalFlow,
+        profile.accumulation.verticalFlow,
+      ),
+    },
+    uReservoirAlpha: rangeUniform(profile.material.reservoirAlpha),
+    uReservoirPointSize: rangeUniform(
+      profile.material.reservoirPointSize,
+    ),
+    uReservoirStretch: rangeUniform(profile.material.reservoirStretch),
+    uReservoirSoftness: rangeUniform(profile.material.reservoirSoftness),
+    uCoreAlpha: rangeUniform(profile.material.coreAlpha),
+    uVeilAlpha: rangeUniform(profile.material.veilAlpha),
+    uVeilThreshold: { value: profile.material.veilThreshold },
+    uCorePointSize: rangeUniform(profile.material.corePointSize),
+    uVeilPointSize: rangeUniform(profile.material.veilPointSize),
+    uCoreStretch: rangeUniform(profile.material.coreStretch),
+    uVeilStretch: rangeUniform(profile.material.veilStretch),
+    uCoreSoftness: { value: profile.material.coreSoftness },
+    uVeilSoftness: { value: profile.material.veilSoftness },
+    uBackgroundFilamentOpacity: {
+      value: profile.material.backgroundOpacity,
+    },
+    uSolidSize: rangeUniform(profile.solid.size),
+    uSolidAspect: rangeUniform(profile.solid.aspect),
+    uSolidHorizontalSpread: { value: profile.solid.horizontalSpread },
+    uSolidCurvature: { value: profile.solid.curvature },
+    uSolidRotation: { value: profile.solid.rotation },
+    uSolidRoughness: { value: profile.solid.roughness },
+  };
+}
+
 export default function OrganicLiquidBackground({
+  flushDurationMs,
+  flushStartedAt,
+  frozenElapsedMs,
+  profile,
   startedAt,
   totalMs,
 }: OrganicLiquidBackgroundProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const timelineRef = useRef({
+    flushDurationMs,
+    flushStartedAt,
+    frozenElapsedMs,
+    startedAt,
+  });
+
+  useEffect(() => {
+    timelineRef.current = {
+      flushDurationMs,
+      flushStartedAt,
+      frozenElapsedMs,
+      startedAt,
+    };
+  }, [flushDurationMs, flushStartedAt, frozenElapsedMs, startedAt]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -87,16 +279,26 @@ export default function OrganicLiquidBackground({
     const timeUniform = { value: 0 };
     const progressUniform = { value: 0 };
     const motionUniform = { value: reducedMotion ? 0 : 1 };
+    const flushProgressUniform = { value: 0 };
     const pixelRatioUniform = { value: 1 };
     const sharedUniforms = {
       uResolution: resolutionUniform,
       uTime: timeUniform,
       uProgress: progressUniform,
       uMotion: motionUniform,
+      uFlushProgress: flushProgressUniform,
       uPixelRatio: pixelRatioUniform,
+      ...createProfileUniforms(profile),
     };
 
-    renderer.setClearColor(0x020202, 1);
+    renderer.setClearColor(
+      new THREE.Color(
+        profile.palette.void[0],
+        profile.palette.void[1],
+        profile.palette.void[2],
+      ),
+      1,
+    );
 
     const backgroundGeometry = new THREE.PlaneGeometry(2, 2);
     const backgroundMaterial = new THREE.ShaderMaterial({
@@ -133,15 +335,42 @@ export default function OrganicLiquidBackground({
     }
 
     const reservoir = createParticleLayer(
-      reservoirParticleCount,
-      0x7a31c2,
+      profile.particles.reservoirCount,
+      profile.particles.reservoirSeed,
       0,
     );
     const filament = createParticleLayer(
-      filamentParticleCount,
-      0xc48f19,
+      profile.particles.filamentCount,
+      profile.particles.filamentSeed,
       1,
     );
+    const solidDropGeometry =
+      profile.solid.count > 0
+        ? createSolidDropGeometry(
+            profile.solid.count,
+            profile.particles.filamentSeed ^ 0x5011d,
+          )
+        : null;
+    const solidDropMaterial = solidDropGeometry
+      ? new THREE.ShaderMaterial({
+          vertexShader: solidDropVertexShader,
+          fragmentShader: solidDropFragmentShader,
+          uniforms: sharedUniforms,
+          transparent: true,
+          blending: THREE.NormalBlending,
+          depthTest: false,
+          depthWrite: false,
+        })
+      : null;
+    const solidDrops =
+      solidDropGeometry && solidDropMaterial
+        ? new THREE.Mesh(solidDropGeometry, solidDropMaterial)
+        : null;
+    if (solidDrops) {
+      solidDrops.frustumCulled = false;
+      solidDrops.renderOrder = 3;
+      scene.add(solidDrops);
+    }
 
     let animationFrame = 0;
     let reducedMotionTimer = 0;
@@ -157,9 +386,24 @@ export default function OrganicLiquidBackground({
     }
 
     function render() {
-      const elapsedMs = clamp(Date.now() - startedAt, 0, totalMs);
+      const timeline = timelineRef.current;
+      const elapsedMs =
+        timeline.frozenElapsedMs ??
+        (timeline.startedAt === null
+          ? 0
+          : clamp(Date.now() - timeline.startedAt, 0, totalMs));
+      const flushProgress =
+        timeline.flushStartedAt === null
+          ? 0
+          : reducedMotion
+            ? 1
+            : clamp(
+                (Date.now() - timeline.flushStartedAt) /
+                  timeline.flushDurationMs,
+              );
       progressUniform.value = totalMs > 0 ? elapsedMs / totalMs : 1;
       timeUniform.value = elapsedMs / 1000;
+      flushProgressUniform.value = flushProgress;
       renderer.render(scene, camera);
     }
 
@@ -194,15 +438,18 @@ export default function OrganicLiquidBackground({
       window.cancelAnimationFrame(animationFrame);
       window.clearInterval(reducedMotionTimer);
       scene.remove(background, reservoir.points, filament.points);
+      if (solidDrops) scene.remove(solidDrops);
       backgroundGeometry.dispose();
       backgroundMaterial.dispose();
       reservoir.geometry.dispose();
       reservoir.material.dispose();
       filament.geometry.dispose();
       filament.material.dispose();
+      solidDropGeometry?.dispose();
+      solidDropMaterial?.dispose();
       renderer.dispose();
     };
-  }, [startedAt, totalMs]);
+  }, [profile, totalMs]);
 
   return (
     <div className={styles.field} aria-hidden="true">

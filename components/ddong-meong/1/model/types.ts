@@ -26,7 +26,7 @@ export type DdongMeongArchiveEntry = {
 
 export type DdongMeongPresence = {
   experimentId: "ddong-meong-1";
-  variantId: "2";
+  variantId: "1";
   total: number;
   mobiles: number;
   screens: number;

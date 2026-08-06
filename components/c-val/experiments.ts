@@ -1,24 +1,33 @@
-export const cValScreenIds = [
+export const cValOneScreenIds = [
   "market",
   "news",
   "media",
   "employment",
 ] as const;
 
-export type CValScreenId = (typeof cValScreenIds)[number];
+export const cValTwoScreenIds = ["rollercoaster", "news", "media"] as const;
+export const cValTwoArchivedScreenIds = ["rollercoaster-legacy"] as const;
+
+export type CValOneScreenId = (typeof cValOneScreenIds)[number];
+export type CValTwoScreenId =
+  | (typeof cValTwoScreenIds)[number]
+  | (typeof cValTwoArchivedScreenIds)[number];
+export type CValScreenId = CValOneScreenId | CValTwoScreenId;
 
 export const cValExperiments = [
   {
     version: "1",
     label: "c-val/1",
     status: "stable",
-    screenIds: cValScreenIds,
+    screenIds: cValOneScreenIds,
+    archivedScreenIds: [],
   },
   {
     version: "2",
     label: "c-val/2",
     status: "experimental",
-    screenIds: cValScreenIds,
+    screenIds: cValTwoScreenIds,
+    archivedScreenIds: cValTwoArchivedScreenIds,
   },
 ] as const;
 
@@ -29,7 +38,18 @@ export function isCValVersion(value: string): value is CValVersion {
 }
 
 export function isCValScreenId(value: string): value is CValScreenId {
-  return cValScreenIds.some((screenId) => screenId === value);
+  return isCValOneScreenId(value) || isCValTwoScreenId(value);
+}
+
+export function isCValOneScreenId(value: string): value is CValOneScreenId {
+  return cValOneScreenIds.some((screenId) => screenId === value);
+}
+
+export function isCValTwoScreenId(value: string): value is CValTwoScreenId {
+  return (
+    cValTwoScreenIds.some((screenId) => screenId === value) ||
+    cValTwoArchivedScreenIds.some((screenId) => screenId === value)
+  );
 }
 
 export function isCValScreenRoute(
@@ -41,6 +61,9 @@ export function isCValScreenRoute(
   );
   return (
     value === "whole" ||
-    Boolean(experiment?.screenIds.some((screenId) => screenId === value))
+    Boolean(
+      experiment?.screenIds.some((screenId) => screenId === value) ||
+      experiment?.archivedScreenIds.some((screenId) => screenId === value),
+    )
   );
 }

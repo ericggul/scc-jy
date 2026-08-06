@@ -1,3 +1,5 @@
+import { guidedMeditations } from "./guided-meditations";
+
 export const meditationContents = [
   {
     slug: "dummy",
@@ -6,6 +8,15 @@ export const meditationContents = [
     durationSeconds: 4 * 60 + 33,
     imagePath: "/ddong-meong/1/misty-lake.jpg",
   },
+  ...guidedMeditations.map(
+    ({ slug, title, description, durationSeconds, imagePath }) => ({
+      slug,
+      title,
+      description,
+      durationSeconds,
+      imagePath,
+    }),
+  ),
 ] as const;
 
 export type MeditationContentSlug =

@@ -1,17 +1,20 @@
 .page {
   display: flex;
   width: 100%;
-  min-height: 100svh;
+  height: 100%;
+  min-height: 0;
   flex-direction: column;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
   padding:
     max(26px, env(safe-area-inset-top))
-    24px
+    var(--dm-page-gutter)
     max(30px, env(safe-area-inset-bottom));
   animation: contentEnter 420ms ease both;
 }
 
 .wordmark {
-  font-family: "Snell Roundhand", "Brush Script MT", cursive;
+  font-family: var(--dm-font-wordmark);
   font-size: 27px;
   line-height: 1;
   letter-spacing: -0.04em;
@@ -36,7 +39,7 @@
 
 .body > p {
   margin: 13px 0 0;
-  color: rgb(241 231 225 / 70%);
+  color: rgb(var(--dm-color-ink-rgb) / 70%);
   font-size: 13px;
   line-height: 1.5;
 }
@@ -56,8 +59,8 @@
   width: 100%;
   min-height: 58px;
   padding: 0 17px;
-  border: 1px solid rgb(241 231 225 / 35%);
-  border-radius: 15px;
+  border: 1px solid rgb(var(--dm-color-ink-rgb) / 35%);
+  border-radius: var(--dm-radius-control);
   outline: none;
   background: rgb(255 255 255 / 10%);
   color: #fff8f3;
@@ -71,8 +74,8 @@
 }
 
 .form input:focus-visible {
-  border-color: rgb(255 248 243 / 82%);
-  box-shadow: 0 0 0 3px rgb(255 248 243 / 12%);
+  border-color: rgb(var(--dm-color-ink-rgb) / 82%);
+  box-shadow: 0 0 0 3px rgb(var(--dm-color-ink-rgb) / 12%);
 }
 
 .form button {
@@ -80,7 +83,7 @@
   margin-top: 4px;
   border: 0;
   border-radius: 999px;
-  background: #f1e7e1;
+  background: var(--dm-color-ink);
   color: #38251d;
   font: inherit;
   font-size: 14px;

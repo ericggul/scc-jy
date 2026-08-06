@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import type { ComponentType } from "react";
 import CValOneScreen, {
   CValScreenExperience as CValOneScreenExperience,
 } from "@/components/c-val/1/screen";
@@ -9,29 +8,17 @@ import CValTwoScreen, {
 } from "@/components/c-val/2/screen";
 import {
   cValExperiments,
-  isCValScreenId,
+  cValOneScreenIds,
+  cValTwoScreenIds,
+  isCValOneScreenId,
   isCValScreenRoute,
+  isCValTwoScreenId,
   isCValVersion,
-  type CValScreenId,
-  type CValVersion,
 } from "@/components/c-val/experiments";
-
-type ScreenProps = { screenId: CValScreenId };
-type ExperienceProps = { screenIds: readonly CValScreenId[] };
-
-const screens: Record<CValVersion, ComponentType<ScreenProps>> = {
-  "1": CValOneScreen,
-  "2": CValTwoScreen,
-};
-
-const experiences: Record<CValVersion, ComponentType<ExperienceProps>> = {
-  "1": CValOneScreenExperience,
-  "2": CValTwoScreenExperience,
-};
 
 export function generateStaticParams() {
   return cValExperiments.flatMap((experiment) =>
-    [...experiment.screenIds, "whole"].map((screen) => ({
+    [...experiment.screenIds, ...experiment.archivedScreenIds, "whole"].map((screen) => ({
       version: experiment.version,
       screen,
     })),
@@ -56,15 +43,18 @@ export default async function CValScreenPage({
   if (!isCValVersion(version) || !isCValScreenRoute(version, screen)) {
     notFound();
   }
-  if (screen === "whole") {
-    const Experience = experiences[version];
-    const screenIds = cValExperiments.find(
-      (experiment) => experiment.version === version,
-    )?.screenIds;
-    if (!screenIds) notFound();
-    return <Experience screenIds={screenIds} />;
+
+  if (version === "1") {
+    if (screen === "whole") {
+      return <CValOneScreenExperience screenIds={cValOneScreenIds} />;
+    }
+    if (!isCValOneScreenId(screen)) notFound();
+    return <CValOneScreen screenId={screen} />;
   }
-  if (!isCValScreenId(screen)) notFound();
-  const Screen = screens[version];
-  return <Screen screenId={screen} />;
+
+  if (screen === "whole") {
+    return <CValTwoScreenExperience screenIds={cValTwoScreenIds} />;
+  }
+  if (!isCValTwoScreenId(screen)) notFound();
+  return <CValTwoScreen screenId={screen} />;
 }

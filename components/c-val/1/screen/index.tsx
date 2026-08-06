@@ -10,7 +10,7 @@ import {
 } from "@/components/c-val/1/model";
 import { cValIndexPath } from "@/components/c-val/1/screen/presenter";
 import { useCValSocket } from "@/components/c-val/1/transport";
-import type { CValScreenId } from "@/components/c-val/experiments";
+import type { CValOneScreenId } from "@/components/c-val/experiments";
 
 const Stage = styled.main`
   position: fixed;
@@ -145,7 +145,7 @@ export function CValInitialWrapper({
   screenId,
   snapshot,
 }: {
-  screenId: CValScreenId;
+  screenId: CValOneScreenId;
   snapshot: CValSnapshot;
 }) {
   const change = snapshot.market.returnPercent;
@@ -186,13 +186,13 @@ export function CValInitialWrapper({
 export function CValScreenExperience({
   screenIds,
 }: {
-  screenIds: readonly CValScreenId[];
+  screenIds: readonly CValOneScreenId[];
 }) {
   const [fallback] = useState(() => createInitialCValSnapshot());
   const { state } = useCValSocket({ role: "screen" });
   const snapshot = state ?? fallback;
 
-  const renderPane = (screenId: CValScreenId, scale: number) => (
+  const renderPane = (screenId: CValOneScreenId, scale: number) => (
     <Pane key={screenId}>
       <Canvas $scale={scale}>
         <CValInitialWrapper screenId={screenId} snapshot={snapshot} />
@@ -216,8 +216,7 @@ export function CValScreenExperience({
 export default function CValScreen({
   screenId,
 }: {
-  screenId: CValScreenId;
+  screenId: CValOneScreenId;
 }) {
   return <CValScreenExperience screenIds={[screenId]} />;
 }
-

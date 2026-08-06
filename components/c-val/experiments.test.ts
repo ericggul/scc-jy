@@ -20,16 +20,16 @@ test("c-val registry exposes two complete version boundaries", () => {
 });
 
 test("each c-val version validates only its declared screen routes", () => {
-  for (const version of ["1", "2"] as const) {
-    for (const screen of [
-      "market",
-      "news",
-      "media",
-      "employment",
-      "whole",
-    ]) {
-      assert.equal(isCValScreenRoute(version, screen), true);
-    }
-    assert.equal(isCValScreenRoute(version, "graphs"), false);
+  for (const screen of ["market", "news", "media", "employment", "whole"]) {
+    assert.equal(isCValScreenRoute("1", screen), true);
   }
+  for (const screen of ["rollercoaster", "news", "media", "whole"]) {
+    assert.equal(isCValScreenRoute("2", screen), true);
+  }
+  assert.equal(isCValScreenRoute("1", "rollercoaster"), false);
+  assert.equal(isCValScreenRoute("2", "market"), false);
+  assert.equal(isCValScreenRoute("2", "employment"), false);
+  assert.equal(isCValScreenRoute("2", "rollercoaster-legacy"), true);
+  assert.equal(isCValScreenRoute("1", "graphs"), false);
+  assert.equal(isCValScreenRoute("2", "graphs"), false);
 });

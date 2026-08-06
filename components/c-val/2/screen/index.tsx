@@ -2,13 +2,13 @@
 
 import { useState } from "react";
 import styled from "styled-components";
-import CValEmploymentScreen from "./employment";
-import CValMarketScreen from "./market";
 import CValMediaScreen from "./media";
 import CValNewsScreen from "./news";
+import CValRollercoasterScreen from "./rollercoaster";
+import CValRollercoasterLegacyScreen from "./rollercoaster-legacy";
 import { createInitialCValSnapshot, type CValSnapshot } from "@/components/c-val/2/model";
 import { useCValSocket } from "@/components/c-val/2/transport";
-import type { CValScreenId } from "@/components/c-val/experiments";
+import type { CValTwoScreenId } from "@/components/c-val/experiments";
 
 const Stage = styled.main`
   position: fixed;
@@ -21,11 +21,11 @@ const WholeGrid = styled.div`
   position: absolute;
   inset: 0;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
   grid-template-rows: repeat(2, minmax(0, 1fr));
 `;
 
-const Pane = styled.div`
+const Pane = styled.div<{ $screenId?: CValTwoScreenId }>`
   position: relative;
   width: 100%;
   height: 100%;
@@ -33,16 +33,20 @@ const Pane = styled.div`
   min-height: 0;
   overflow: hidden;
   container-type: size;
+
+  ${({ $screenId }) => $screenId === "rollercoaster" && "grid-row: 1 / span 2;"}
 `;
 
-function ScreenContent({ screenId, snapshot }: { screenId: CValScreenId; snapshot: CValSnapshot }) {
+function ScreenContent({ screenId, snapshot }: { screenId: CValTwoScreenId; snapshot: CValSnapshot }) {
   if (screenId === "news") return <CValNewsScreen snapshot={snapshot} />;
   if (screenId === "media") return <CValMediaScreen snapshot={snapshot} />;
-  if (screenId === "employment") return <CValEmploymentScreen snapshot={snapshot} />;
-  return <CValMarketScreen snapshot={snapshot} />;
+  if (screenId === "rollercoaster-legacy") {
+    return <CValRollercoasterLegacyScreen snapshot={snapshot} />;
+  }
+  return <CValRollercoasterScreen snapshot={snapshot} />;
 }
 
-export function CValScreenExperience({ screenIds }: { screenIds: readonly CValScreenId[] }) {
+export function CValScreenExperience({ screenIds }: { screenIds: readonly CValTwoScreenId[] }) {
   const [fallback] = useState(() => createInitialCValSnapshot());
   const { state } = useCValSocket({ role: "screen" });
   const snapshot = state ?? fallback;
@@ -55,13 +59,13 @@ export function CValScreenExperience({ screenIds }: { screenIds: readonly CValSc
     <Stage>
       <WholeGrid>
         {screenIds.map((screenId) => (
-          <Pane key={screenId}><ScreenContent screenId={screenId} snapshot={snapshot} /></Pane>
+          <Pane key={screenId} $screenId={screenId}><ScreenContent screenId={screenId} snapshot={snapshot} /></Pane>
         ))}
       </WholeGrid>
     </Stage>
   );
 }
 
-export default function CValScreen({ screenId }: { screenId: CValScreenId }) {
+export default function CValScreen({ screenId }: { screenId: CValTwoScreenId }) {
   return <CValScreenExperience screenIds={[screenId]} />;
 }

@@ -65,11 +65,12 @@ Every version is a complete compatible system:
 | --- | --- | --- |
 | Mobile | `/c-val/[version]/mobile` | Permission, version-specific sensor capture, V/A/L preview, input transmission |
 | Controller | `/c-val/[version]/controller` | Full market observation and authorized reset |
-| Individual screen | `/c-val/[version]/screen/[screen]` | One display selected from `market`, `news`, `media`, or `employment` |
+| Individual screen | `/c-val/[version]/screen/[screen]` | V1 selects `market`, `news`, `media`, or `employment`; V2 selects `rollercoaster`, `news`, or `media` |
 | Whole screen set | `/c-val/[version]/screen/whole` | Composes all registered screens |
 
-`news`, `media`, and `employment` currently reuse the initial market wrapper.
-They do not yet model separate macroeconomic or social systems.
+C-VAL 1 preserves its four-screen initial wrapper. C-VAL 2 uses three
+independent surrounding consequences: the execution-price rollercoaster,
+financial/economic/social news, and audiovisual media.
 
 ## Ownership map
 
