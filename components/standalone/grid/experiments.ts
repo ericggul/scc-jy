@@ -33,6 +33,9 @@ export const gridOneExperiment = {
 export const gridExperiments = [
   { slug: "1", label: "grid/1" },
   { slug: "2", label: "grid/2" },
+  { slug: "3", label: "grid/3" },
+  { slug: "4", label: "grid/4" },
+  { slug: "5", label: "grid/5" },
 ] as const;
 
 export type GridExperimentSlug = (typeof gridExperiments)[number]["slug"];

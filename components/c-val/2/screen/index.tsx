@@ -4,6 +4,7 @@ import { useState } from "react";
 import styled from "styled-components";
 import CValMediaScreen from "./media";
 import CValNewsScreen from "./news";
+import CValCasinoScreen from "./casino";
 import CValRollercoasterScreen from "./rollercoaster";
 import CValRollercoasterLegacyScreen from "./rollercoaster-legacy";
 import { createInitialCValSnapshot, type CValSnapshot } from "@/components/c-val/2/model";
@@ -38,6 +39,7 @@ const Pane = styled.div<{ $screenId?: CValTwoScreenId }>`
 `;
 
 function ScreenContent({ screenId, snapshot }: { screenId: CValTwoScreenId; snapshot: CValSnapshot }) {
+  if (screenId === "casino") return <CValCasinoScreen snapshot={snapshot} />;
   if (screenId === "news") return <CValNewsScreen snapshot={snapshot} />;
   if (screenId === "media") return <CValMediaScreen snapshot={snapshot} />;
   if (screenId === "rollercoaster-legacy") {

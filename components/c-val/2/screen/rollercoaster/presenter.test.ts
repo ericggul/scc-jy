@@ -2,8 +2,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { CValSnapshot } from "../../model";
 import {
+  C_VAL_ROLLERCOASTER_MAX_PRICE,
+  C_VAL_ROLLERCOASTER_MIN_PRICE,
   C_VAL_ROLLERCOASTER_WINDOW,
-  cValRollercoasterPriceDomain,
   cValRollercoasterPrices,
   projectRollercoasterWorld,
 } from "./presenter.ts";
@@ -34,21 +35,28 @@ test("every price in the short window remains a physical rail point", () => {
   assert.ok(points.every((point) => Number.isFinite(point.x) && Number.isFinite(point.y)));
 });
 
-test("prices from one to one hundred thousand always remain in the rail field", () => {
-  const prices = [1, 10, 100, 1_000, 10_000, 100_000];
-  const points = projectRollercoasterWorld(prices, 100);
-  assert.ok(points.every((point) => point.y >= -3.25 && point.y <= 5.1));
-  for (let index = 1; index < points.length; index += 1) {
-    assert.ok(points[index].y > points[index - 1].y);
-  }
+test("the price universe from one to one hundred thousand remains in the rail field", () => {
+  const points = projectRollercoasterWorld([1, 10, 100, 1_000, 10_000, 100_000], 100);
+  assert.ok(points.every((point) => point.y >= -4.4 && point.y <= 4.4));
+  assert.ok(points[0].y < 0);
+  assert.ok(points.at(-1)!.y > 0);
 });
 
-test("local log domain preserves visible variation without exceeding global price bounds", () => {
-  const local = cValRollercoasterPriceDomain([99, 100, 101]);
-  const extreme = cValRollercoasterPriceDomain([1, 100_000]);
-  assert.ok(local.high - local.low >= Math.log10(1.12));
-  assert.equal(extreme.low, 0);
-  assert.equal(extreme.high, 5);
+test("the stable soft projection preserves the direction and relative order of price moves", () => {
+  const points = projectRollercoasterWorld([90, 100, 110, 120], 100);
+  const firstInterval = points[1].y - points[0].y;
+  const secondInterval = points[2].y - points[1].y;
+  assert.ok(firstInterval > 0);
+  assert.ok(secondInterval > 0);
+  assert.ok(points[3].y > points[2].y);
+});
+
+test("invalid and out-of-range input cannot push the rail outside the installation price universe", () => {
+  const points = projectRollercoasterWorld([Number.NaN, -10, 0, 2_000_000], 100);
+  assert.equal(points[0].price, 100);
+  assert.equal(points[1].price, C_VAL_ROLLERCOASTER_MIN_PRICE);
+  assert.equal(points[2].price, C_VAL_ROLLERCOASTER_MIN_PRICE);
+  assert.equal(points[3].price, C_VAL_ROLLERCOASTER_MAX_PRICE);
 });
 
 test("time advances strictly along the world x axis", () => {

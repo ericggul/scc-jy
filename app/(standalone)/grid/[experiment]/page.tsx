@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import GridOne from "@/components/standalone/grid/1";
 import GridTwo from "@/components/standalone/grid/2";
+import GridThree from "@/components/standalone/grid/3";
+import GridFour from "@/components/standalone/grid/4";
+import GridFive from "@/components/standalone/grid/5";
 import {
   gridExperiments,
   isGridExperimentSlug,
@@ -36,5 +39,9 @@ export default async function GridExperimentPage({
     notFound();
   }
 
-  return experiment === "1" ? <GridOne /> : <GridTwo />;
+  if (experiment === "1") return <GridOne />;
+  if (experiment === "2") return <GridTwo />;
+  if (experiment === "3") return <GridThree />;
+  if (experiment === "4") return <GridFour />;
+  return <GridFive />;
 }

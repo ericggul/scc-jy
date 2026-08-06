@@ -18,6 +18,7 @@ import {
   aggregateCValHumanControls,
   normalizeCValHumanControl,
 } from "./multi-user-control.mjs";
+import { createCValDiscordPublisher } from "./external-publisher.mjs";
 
 const familyId = "c-val";
 const version = "2";
@@ -27,6 +28,7 @@ const clients = new Map();
 const humanControls = new Map();
 const runtime = createCValRuntime();
 const diagnostics = createCValDiagnostics();
+const externalPublisher = createCValDiscordPublisher();
 let ioRef = null;
 
 const events = {
@@ -214,6 +216,7 @@ setInterval(() => {
     const state = broadcastState(ioRef);
     observeCValDiagnostics(diagnostics, state);
     flushCValDiagnostics(diagnostics, now);
+    externalPublisher.observe(state);
   } else {
     clearCValDiagnostics(diagnostics, now);
   }

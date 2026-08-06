@@ -65,12 +65,13 @@ Every version is a complete compatible system:
 | --- | --- | --- |
 | Mobile | `/c-val/[version]/mobile` | Permission, version-specific sensor capture, V/A/L preview, input transmission |
 | Controller | `/c-val/[version]/controller` | Full market observation and authorized reset |
-| Individual screen | `/c-val/[version]/screen/[screen]` | V1 selects `market`, `news`, `media`, or `employment`; V2 selects `rollercoaster`, `news`, or `media` |
+| Individual screen | `/c-val/[version]/screen/[screen]` | V1 selects `market`, `news`, `media`, or `employment`; V2 actively composes `rollercoaster`, `news`, and `media`, with `casino` available as an additional standalone screen |
 | Whole screen set | `/c-val/[version]/screen/whole` | Composes all registered screens |
 
-C-VAL 1 preserves its four-screen initial wrapper. C-VAL 2 uses three
-independent surrounding consequences: the execution-price rollercoaster,
-financial/economic/social news, and audiovisual media.
+C-VAL 1 preserves its four-screen initial wrapper. C-VAL 2's active whole set
+remains the execution-price rollercoaster, financial/economic/social news, and
+audiovisual media. The casino is an additional standalone screen trial and
+does not change that composition.
 
 ## Ownership map
 
@@ -188,6 +189,8 @@ requested, against an already-running HTTPS server.
 
 - [C-VAL 1](./1.md): promoted and frozen behavioral, visual, and market contract.
 - [C-VAL 2](./2.md): active branch contract and future iteration record.
+- [C-VAL 2 casino screen](./2-casino.md): execution-return slot-machine
+  presentation contract and retained visual/information boundaries.
 - [C-VAL 2 post-checkpoint iteration ledger](./2-iteration-ledger-2026-08-05.md):
   checkpoint, attempted algorithms, observed failures, user feedback, current
   WIP equation, retained invariants, and pending real-phone gates.

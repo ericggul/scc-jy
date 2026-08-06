@@ -1,6 +1,6 @@
 # C-VAL 2 rollercoaster screen
 
-> Trial date: 2026-08-05  
+> Current redesign date: 2026-08-06
 > Route: `/c-val/2/screen/rollercoaster`  
 > Tested relation: the executed-price history is the physical rail carrying
 > people, rather than a graph that describes a ride from outside.
@@ -42,39 +42,40 @@ irrationality, corporate intent, or a causal account of any real price move.
 4. **Interaction job:** none on this screen. The phone remains the sole input;
    this screen never writes market state.
 5. **Wrapper justification:** the rail is not a finance costume placed behind
-   a chart. Each of the 28 chronological price samples is a rail vertex, the
-   leading car targets the final vertex, and its physical rotation follows a
-   damped local tangent so execution noise cannot shake the vehicle.
+   a chart. Each of the 28 chronological price samples is a rail vertex; two
+   true rails, sleepers, sparse support frames, and visible running/guide/
+   up-stop wheels make the car materially dependent on that history.
 6. **System family:** the same C-VAL 2 socket snapshot drives rollercoaster,
-   news, and media. Korean red-for-rise and blue-for-fall semantics are kept
-   locally on rail segments without adding a new control or model variable.
+   news, and media. The controller's `#20BD68` gain and `#E94A58` loss colours
+   are used as a single changing environmental field without adding a new
+   control or model variable.
 7. **Removal test:** only the two rails, one sleeper per price sample, necessary
-   supports, a restrained rise/fall center filament, and the train remain. The
-   chronological rail, final leading-car target, and local tangent may not.
+   supports, the train, and the colour field remain. The chronological rail,
+   car-to-rail contact, and local tangent may not.
 
 ## Geometry and motion
 
-- X is chronological sample order and is strictly increasing.
-- Prices are clamped only for presentation to the realistic `$1–$100,000`
-  installation range and converted to log-price before projection. The latest
-  28 samples determine a padded local log domain, so ordinary variation remains
-  legible while a move spanning orders of magnitude still fits above the floor
-  and inside the camera. A higher price is always physically higher. Domain
-  expansion is immediate to keep a new extreme visible; contraction uses
-  hysteresis so the rail does not breathe around rolling extrema.
+- X is chronological sample order and is strictly increasing. It is mapped to
+  the viewport width so the full 28-point rail touches the left/right visual
+  field on both the whole-screen pane and the standalone route.
+- Y is a stable soft log return from the opening price. Price input is bounded
+  to the physical installation range `$1–$100,000`; ordinary movement stays
+  legible while any valid extreme remains inside the same camera field. The
+  camera never chases a rolling min/max.
 - The rail uses every sample in the latest 28-sample window. It does not
   simplify, resample, or generate decorative oscillation.
-- Existing price vertices never morph vertically into the next sample. The
-  complete rail group translates left every animation frame; at each 90 ms
-  sample boundary the offscreen point is dropped and the newest executed price
-  enters from the right. This makes the structure scroll continuously instead
-  of writhing like an elastic graph. The camera never moves.
-- The three-car train traverses the rail independently in roughly four seconds.
-  Wheel height is solved against the rail radius, car spacing exceeds body
-  length, and position is sampled directly from the current curve so damping
-  cannot leave it floating. Only rotation is damped.
-- Reduced-motion preference stops autonomous traversal and horizontal
-  interpolation but does not stop price updates.
+- Incoming prices are briskly but continuously damped into the displayed rail.
+  Rails, sleepers, and supports are allocated once and their typed vertex or
+  instance buffers are updated in place on animation frames.
+- The three cars remain coupled to the latest end of the price rail, positioned
+  directly on the curve so the running wheels touch the rail. There is no
+  autonomous lap, camera shake, or conveyor motion independent of executed
+  prices.
+- The background changes smoothly toward the controller's green on a rise and
+  red on a fall; the chassis remains materially neutral so the price signal is
+  strong without turning the rail into a coloured chart.
+- Reduced-motion preference applies the latest prices and train transforms
+  without temporal interpolation.
 - Presentation remains browser-owned. No track point, color, car angle, or
   animation state is added to the socket protocol.
 
@@ -88,17 +89,32 @@ C-VAL 1 retains its archived four-screen contract unchanged.
 ## Current result and unresolved question
 
 The direct `market` graph and C-VAL 2 `employment` screen were removed. The
-bounded trial changes only the surrounding representation and route registry;
-it does not alter phone input, V/A/L equations, market agents, execution logic,
-or transport.
+legacy route remains available at `/c-val/2/screen/rollercoaster-legacy` as a
+preserved two-dimensional Canvas trial and is excluded from the active whole
+composition. The active route uses a responsive perspective camera, saturated
+market-colour field, and deliberately sparse studio architecture: no city,
+crowd, dashboard, labels, logo, particle field, or environmental decoration.
 
-The superseded two-dimensional canvas trial remains available at
-`/c-val/2/screen/rollercoaster-legacy` and is excluded from the active whole
-composition. The current route uses a fixed orthographic camera and a restrained
-Three.js studio field with no city, crowd, dashboard, labels, or environmental
-decoration.
+The redesign changes only surrounding representation and rendering. It does
+not alter phone input, V/A/L equations, market agents, execution logic, or
+transport.
 
-The unresolved perceptual question is whether the local log domain and its
-contraction hysteresis make short-window slopes legible without flattening
-ordinary movement or causing visible rescale events when an extreme leaves the
-window. Judge that only from the running HTTPS route under real phone input.
+The visual research ledger and full design contract are in
+[`2-rollercoaster-references.md`](./2-rollercoaster-references.md). It records
+43 retained visual references and the non-copying rules used to derive the new
+scene.
+
+## Rejected trial: streaming/log-domain pass
+
+The 2026-08-06 pass combined four changes at once: a rolling log-price domain,
+horizontal conveyor motion, an autonomous four-second train loop, and a broad
+geometry/performance rewrite. It was rejected because the train no longer read
+as a direct consequence of the shared price, the moving rail weakened the
+price-as-physical-track relation, and domain rescaling introduced another
+source of visible instability. Combining those variables also made the visual
+failure impossible to attribute cleanly. It is not the active implementation.
+
+The current unresolved question is visual, not conceptual: whether the new
+camera's rail occupancy and the fast, smooth price interpolation feel forceful
+under live phone input without confusing the train's causal attachment to the
+latest price. That needs to be judged from the HTTPS route.

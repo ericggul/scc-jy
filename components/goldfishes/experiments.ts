@@ -38,13 +38,6 @@ export const goldfishExperiments = [
     load: () => import("./0804/html"),
   },
   {
-    key: "0804/music-sheet",
-    section: "dated",
-    date: "2026-08-04",
-    phrase: "Mahler harmonic score slices revealed as attraction targets",
-    load: () => import("./0804/music-sheet"),
-  },
-  {
     key: "0804/node-edge",
     section: "dated",
     date: "2026-08-04",
@@ -59,11 +52,18 @@ export const goldfishExperiments = [
     load: () => import("./0804/pillars"),
   },
   {
-    key: "0804/sphere",
+    key: "0806/side-view",
     section: "dated",
-    date: "2026-08-04",
-    phrase: "Pointer-placed textured spheres distributed through a spatial volume",
-    load: () => import("./0804/sphere"),
+    date: "2026-08-06",
+    phrase: "Pillars fork with a side-on initial view",
+    load: () => import("./0806/side-view"),
+  },
+  {
+    key: "0806/compositional-grid",
+    section: "dated",
+    date: "2026-08-06",
+    phrase: "Locally reconfiguring composite media grid",
+    load: () => import("./0806/compositional-grid"),
   },
 ] as const satisfies readonly GoldfishExperiment[];
 

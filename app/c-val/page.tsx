@@ -35,6 +35,15 @@ export default function CValPage() {
               {experiment.version}/screen/{screenId}
             </Link>
           )),
+          ...experiment.standaloneScreenIds.map((screenId) => (
+            <Link
+              key={`${experiment.version}-screen-${screenId}`}
+              href={`/c-val/${experiment.version}/screen/${screenId}`}
+              className="border-b border-current py-4 text-[clamp(28px,7vw,72px)] font-black leading-none tracking-[-0.06em] hover:bg-[#151512] hover:text-[#f1f0eb]"
+            >
+              {experiment.version}/screen/{screenId}
+            </Link>
+          )),
           <Link
             key={`${experiment.version}-screen-whole`}
             href={`/c-val/${experiment.version}/screen/whole`}

@@ -13,9 +13,8 @@ Routes:
 - `/goldfishes/0804/pillars`: an independent copy of `default` whose selected-cell blocks
   rise into independently randomized symmetric pillars while preserving the
   exact-top initial view.
-- `/goldfishes/0804/sphere`: an independent copy of `0804/pillars` whose selected
-  cells become atlas-textured spheres distributed through the same vertical
-  attention volume.
+- `/goldfishes/0806/side-view`: an independent Pillars fork that starts and
+  resets from a side-on camera, with its WebGL field plane hidden by default.
 
 The family is top-level because it is being developed as a larger experience,
 not as another standalone swarm variant. The 2D variant was moved rather than
@@ -102,43 +101,11 @@ rendered fish Y positions, and the camera's Y-axis look target. Both currently
 equal `6`. The exact-top orthographic composition therefore remains unchanged,
 but an orbit view reveals the genuinely longer pillars and higher swim layer.
 
-### 0804/sphere attention volume
-
-Every click in `0804/sphere` creates one instanced sphere rather than a
-rectangular selection, cap, or pillar. The pointer casts a camera ray through a
-bounded rectangular 3D volume, and a stable per-sphere sample chooses a point on
-the ray segment inside that volume. The projected sphere centre therefore stays
-on the clicked screen position even from an orbit view. Continuous normalized
-XYZ anchors preserve relative placement across resize. The experiment has no
-floor-plane placement, grid snapping, dot or crossing field, or visible
-selected-cell rectangle. Fish target and protection perimeters are circular
-around the sphere's XZ coordinate and sampled radius.
-
-The former selected-cell width survives only as a responsive 40–60 unit minimum
-diameter scale. A deterministic per-anchor sample is uniform in volume from
-0.5³× (0.125×) to 2³× (8×) the base volume, producing diameters from 0.5× to 2× without enforcing touching,
-separation, or non-overlap. The minimum and maximum volume multipliers remain
-named model constants.
-
-The ray sample distributes sphere centres through the same 1,080-unit vertical
-extent and 6× camera scale as `0804/pillars`, accounting for each sampled radius
-so every sphere remains fully above the field plane.
-
-White uses the sphere colour with restrained curvature shading. Company,
-Cat, KISS, and Politician reuse the pillar experiment's local atlas sources,
-per-point image selection, and staggered playback timing, but map the chosen tile
-directly across the sphere UVs. There is no supplementary rectangular media
-surface. `Field > sphere rotation` exposes a `0`–`2` speed range and defaults to
-`0.25`. Stable per-sphere signed rates and one shared shader angle animate the
-textures without per-frame instance-matrix uploads or additional draw calls.
-Fish movement, protected-perimeter targeting, collision, camera behavior, and
-other rendering settings remain unchanged from the pillar fork.
-
 ### 3D company-logo surface
 
 The 3D variants include `COMPANY` in the existing block selector. `default`,
 `0804/tube`, and `0804/node-edge` start with `WHITE`; `0804/pillars` and
-`0804/sphere` start with `CAT`.
+`0806/side-view` start with `CAT`.
 The July 2026 snapshot contains 64 global technology companies spanning AI,
 semiconductors, cloud, enterprise software, consumer hardware, and internet
 platforms. It explicitly includes OpenAI, Anthropic, and SK hynix alongside the
@@ -231,8 +198,8 @@ This is an architectural workload bound, not a browser FPS measurement.
 
 ## Primary grid scale
 
-`/goldfishes/2d/1`, `/goldfishes/default`, `/goldfishes/0804/tube`, and
-`/goldfishes/0804/pillars` each define their own
+`/goldfishes/2d/1`, `/goldfishes/default`, `/goldfishes/0804/tube`,
+`/goldfishes/0804/pillars`, and `/goldfishes/0806/side-view` each define their own
 `GOLDFISHES_PRIMARY_GRID_SCALE` value of `2`, producing
 cells exactly twice the prior size. Only the grid cell geometry changes: fish
 size, movement, collision clearance, and attention forces retain their existing
@@ -278,8 +245,9 @@ perimeter targets, arrival steering, evacuation, and protected-cell collision.
 Each 3D experiment owns its own route entry, screen implementation,
 renderer, and stylesheet. `0804/tube` does not import implementation code from
 `default`; changes to one version cannot alter the other's renderer or controls.
-`0804/pillars` likewise owns its renderer, media-atlas modules, model, and media-source
-ledgers. They reference only the external company-logo asset collection.
+`0804/pillars` and `0806/side-view` likewise own their renderers, media-atlas
+modules, models, and media-source ledgers. They reference only the external
+company-logo asset collection.
 
 Camera input changes only the active camera transform. It does not add fish
 instances, geometries, simulation work, or draw calls. Its incremental

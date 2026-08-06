@@ -18,7 +18,12 @@ import {
 
 export function generateStaticParams() {
   return cValExperiments.flatMap((experiment) =>
-    [...experiment.screenIds, ...experiment.archivedScreenIds, "whole"].map((screen) => ({
+    [
+      ...experiment.screenIds,
+      ...experiment.standaloneScreenIds,
+      ...experiment.archivedScreenIds,
+      "whole",
+    ].map((screen) => ({
       version: experiment.version,
       screen,
     })),

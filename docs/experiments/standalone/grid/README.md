@@ -1,8 +1,8 @@
 # Grid
 
 `grid` is a standalone, installation-scale family of full-screen portrait media
-fields. It is registered at `/grid` and has two variants: `/grid/1` and
-`/grid/2`.
+fields. It is registered at `/grid` and has five variants: `/grid/1`,
+`/grid/2`, `/grid/3`, `/grid/4`, and `/grid/5`.
 
 ## Shared spatial contract
 
@@ -46,6 +46,9 @@ components/standalone/grid/
   experiments.ts                   # grid/1 data and shared variant registry
   1/index.tsx                      # video field composition
   2/index.tsx                      # random image field and Leva controls
+  3/index.tsx                      # mutable rectangular image composition
+  4/index.tsx                      # persistent unit field with flash rectangles
+  5/index.tsx                      # random-coordinate orthogonal composition
   model/
     field.ts                       # stable video-cell records
     media.ts                       # local video manifest
@@ -152,12 +155,120 @@ share a common beat. Reduced-motion preference stops the scheduler.
 - One scheduler performs DOM updates only for cells whose own deadline has
   arrived.
 - Only the selected album is decoded; `ALL` can grow to its full 304-image
-  pool in the background after the first eight images make the work visible.
+pool in the background after the first eight images make the work visible.
 
 This is materially lighter than grid/1's 80 independently decoded videos, but
 `speed: 24` with high diversity can still produce a large number of image
 source changes per second. Installation-machine runtime measurement remains
 necessary before declaring a guaranteed frame rate.
+
+## `/grid/3` — mutable rectangular image composition
+
+`grid/3` isolates one change from Grid 2: how the changing image pool is
+composed. It fills the viewport with a dense `28 × 16` rectangular base grid,
+then groups its units into media tiles from `1 × 1` through `5 × 5`, including
+`4 × 4`, `4 × 5`, and `5 × 4` blocks. Each local reconfiguration samples six
+complete rectangular packings, then chooses the proposal with the strongest
+mix of large squares, asymmetric blocks, and span diversity. Instead of a
+global re-layout, a single staggered scheduler repeatedly chooses a local
+neighbourhood, expands it only to include whole current tiles, and immediately
+repacks that area. The field is therefore a **locally reconfiguring
+variable-span grid**: its changes are dispersed and abrupt, not synchronized
+movements or tile swaps.
+
+The Grid 2-derived CAT, KISS, FRENCH, and POLITICIANS pool is decoded with the
+same first-eight threshold and later grows sequentially in the background. A
+single animation-frame scheduler changes the visible image of each active tile
+independently at `72` changes-per-second—three times Grid 2's default—with
+`0.72` speed diversity. The local layout scheduler waits a randomized `22`–`54ms` between
+pulses and only replaces the tiles inside its selected region. Reduced-motion
+preference freezes both the image changes and the composition after its initial
+layout.
+
+### Grid/3 preservation contract
+
+```text
+question:   How does variable rectangular scale alter the perception of a
+            rapid, mixed-image field?
+baseline:   /grid/2
+mutation:   A dense 28 × 16 field abruptly and locally repacks media across
+            a scored vocabulary of rectangular spans from 1 × 1 to 5 × 5.
+invariants: Full-screen black ground; no feed wrapper, captions, or decorative
+            chrome; local image pool; independent image changes; no per-tile
+            timer.
+evidence:   Local areas flicker into new scale, neighbourhood, and cropping
+            relations while the rest of the field retains its current state.
+```
+
+## `/grid/4` — flash rectangles over a persistent unit field
+
+`grid/4` forks Grid 3's dense `28 × 16` media scale, but rejects persistent
+multi-unit layouts. Every base position remains a `1 × 1` image cell. At each
+of 60 field iterations per second, fifteen to sixty `2 × 1` through `5 × 5`
+image rectangles are placed above that base field. This is five times Grid 4's
+original maximum appearance capacity. Each rectangle receives an
+independent random lifespan from its next visible field tick to one second; it
+then disappears, and an empty slot may later receive a new rectangle. Its
+geometry persists for that lifespan, while its image continues to change on
+every 60fps field iteration.
+
+All rapid media is rendered through one canvas. Sources decode once and remain
+in an in-memory image pool; each iteration selects and draws all 448 base cells
+plus the active flashes without DOM image-source writes, React renders, layout,
+or repeated decoder work. Placement first preserves non-overlap; once the dense
+field cannot fit another rectangle, later flashes intentionally overflow over
+existing ones so the requested quantity remains visible.
+
+### Grid/4 preservation contract
+
+```text
+question:   What happens when variable rectangular media is only a brief
+            interruption of a persistent image-unit field?
+baseline:   /grid/3
+mutation:   Remove every persistent multi-unit tile. Flash several temporary
+            multi-unit image rectangles for a random duration up to one second.
+invariants: Dense full-screen 1 × 1 field; black ground; local image pool;
+            no feed wrapper, labels, movement interpolation, or per-cell timer.
+evidence:   Rectangles are perceived as abrupt, short-lived media events, not
+            as a layout that settles into place.
+```
+
+## `/grid/5` — random-coordinate orthogonal media field
+
+`grid/5` isolates the coordinate system as its changed variable. It preserves
+Grid 4's persistent media ground, rapid image iteration, and short-lived
+rectangular interruptions, but removes the shared `28 × 16` lattice. The base
+field is a guillotine partition: it begins as the full viewport and repeatedly
+splits a randomly selected large region at a continuous random X or Y position.
+The resulting 240 axis-aligned rectangles cover the screen exactly without
+rows, columns, gaps, or snapped spans. Splits favour compact, near-cell-scale
+regions so the visual rhythm is dominated by the equivalent of `1 × 1` media.
+
+Six to twenty-two temporary rectangles appear above that covering partition.
+Eighty-two percent are sampled from a compact, approximately square range; the
+remaining larger rectangles are bounded to a much smaller maximum than the
+first Grid 5 trial. Their X and Y positions remain continuous random values.
+Placement first seeks non-overlap and then permits overlap when the field is too
+dense, matching Grid 4's compositional pressure without borrowing its cell
+coordinates. Geometry persists for an independently random lifetime of up to
+one second while images continue changing at 60 field iterations per second.
+The same decoded CAT, KISS, FRENCH, and POLITICIANS pool and single-canvas
+rendering boundary remain in use.
+
+### Grid/5 preservation contract
+
+```text
+question:   What happens to Grid 4's dense base-plus-flash composition when no
+            element is positioned by a predefined shared lattice?
+baseline:   /grid/4
+mutation:   Replace every row, column, and integer span with continuous random
+            axis-aligned bounds while retaining complete viewport coverage.
+invariants: Full-screen image field; orthogonal rectangles; black ground;
+            local media pool; rapid image changes; short-lived interruptions;
+            no labels, feed wrapper, interpolation, or per-element timer.
+evidence:   Pending direct observation. The implementation establishes the
+            bounded trial but no browser/runtime result is claimed yet.
+```
 
 ## Verification
 
