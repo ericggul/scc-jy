@@ -194,7 +194,7 @@ export default function Goldfishes3D({
   const collisionPreventionRef = useRef(false);
   const themeRef = useRef<FieldTheme>("dark");
   const gridMarkRef = useRef<GridMark>("dot");
-  const attentionSurfaceRef = useRef<AttentionSurface>("cat");
+  const attentionSurfaceRef = useRef<AttentionSurface>("company");
   const mediaSpeedRef = useRef(12);
   const temporalGrowthRateRef = useRef(1000);
   const renderSettingsRef = useRef<GoldfishRenderSettings>({
@@ -345,7 +345,7 @@ export default function Goldfishes3D({
       }),
       Field: folder({
         blocks: {
-          value: "cat" as AttentionSurface,
+          value: "company" as AttentionSurface,
           options: {
             COMPANY: "company",
             WHITE: "white",

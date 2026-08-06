@@ -85,6 +85,8 @@ their original color. Other media atlases remain opaque.
 retained strata through the same renderer parameter, so faster strata remain a
 continuous stack rather than a separate visual mode.
 
+The default media surface is COMPANY.
+
 ## Open question
 
 At what rate does the downward accumulation remain perceptible as duration,
