@@ -20,6 +20,8 @@ standalone-copy rule, archive workflow, and parallel-work protocol.
 | `/goldfishes/0804/pillars` | 2026-08-04 | Randomized vertical attention pillars | [0804/pillars](./0804/pillars.md) |
 | `/goldfishes/0806/side-view` | 2026-08-06 | Pillars fork with a side-on initial view | [0806/side-view](./0806/side-view.md) |
 | `/goldfishes/0806/compositional-grid` | 2026-08-06 | Locally reconfiguring composite media grid | [0806/compositional-grid](./0806/compositional-grid.md) |
+| `/goldfishes/0806/duration` | 2026-08-06 | Temporal pillars accumulating beneath a fixed present | [0806/duration](./0806/duration.md) |
+| `/goldfishes/0806/temporal-decay` | 2026-08-06 | Short-lived active strata leaving frozen pillars | [0806/temporal-decay](./0806/temporal-decay.md) |
 
 The executable registry at `components/goldfishes/experiments.ts` is the source
 of truth for route validation, navigation metadata, descriptions, dates, and

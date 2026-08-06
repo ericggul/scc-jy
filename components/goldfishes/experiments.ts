@@ -65,6 +65,20 @@ export const goldfishExperiments = [
     phrase: "Locally reconfiguring composite media grid",
     load: () => import("./0806/compositional-grid"),
   },
+  {
+    key: "0806/duration",
+    section: "dated",
+    date: "2026-08-06",
+    phrase: "Temporal pillars accumulating beneath a fixed present",
+    load: () => import("./0806/duration"),
+  },
+  {
+    key: "0806/temporal-decay",
+    section: "dated",
+    date: "2026-08-06",
+    phrase: "Short-lived active strata leaving frozen pillars",
+    load: () => import("./0806/temporal-decay"),
+  },
 ] as const satisfies readonly GoldfishExperiment[];
 
 export const goldfishExperimentDateKeys = Array.from(
