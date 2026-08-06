@@ -72,6 +72,14 @@ strata written in that frame are merged into one GPU attribute upload range.
 This keeps a dense selection from turning a high requested image rate into a
 burst of per-stratum draw calls or texture uploads.
 
+The COMPANY atlas is a transparent logo atlas: its empty tile area is not
+filled white. The current pillar, media top, and retained strata discard
+transparent pixels, leaving only the logo glyphs rather than a rectangular
+pillar background.
+Fully black company marks are converted to white during the one-time atlas
+build so they remain legible against the dark pillar; colored marks stay in
+their original color. Other media atlases remain opaque.
+
 `Duration > pillar growth` controls the time-to-length mapping from `0` to
 `1000` world units per second (default `1000`). It updates the live pillar and all
 retained strata through the same renderer parameter, so faster strata remain a

@@ -206,11 +206,8 @@ async function buildCompanyAtlas() {
   const canvas = document.createElement("canvas");
   canvas.width = MEDIA_ATLAS_COLUMNS * MEDIA_ATLAS_TILE_SIZE;
   canvas.height = MEDIA_ATLAS_ROWS * MEDIA_ATLAS_TILE_SIZE;
-  const context = canvas.getContext("2d", { alpha: false });
+  const context = canvas.getContext("2d", { alpha: true });
   if (!context) throw new Error("Unable to create company logo atlas.");
-
-  context.fillStyle = "#ffffff";
-  context.fillRect(0, 0, canvas.width, canvas.height);
 
   await Promise.all(
     COMPANY_LOGOS.map(async (logo, index) => {
@@ -227,6 +224,19 @@ async function buildCompanyAtlas() {
     }),
   );
 
+  const atlasPixels = context.getImageData(0, 0, canvas.width, canvas.height);
+  for (let index = 0; index < atlasPixels.data.length; index += 4) {
+    const alpha = atlasPixels.data[index + 3];
+    const red = atlasPixels.data[index];
+    const green = atlasPixels.data[index + 1];
+    const blue = atlasPixels.data[index + 2];
+    if (alpha === 0 || Math.max(red, green, blue) > 32) continue;
+    atlasPixels.data[index] = 255;
+    atlasPixels.data[index + 1] = 255;
+    atlasPixels.data[index + 2] = 255;
+  }
+  context.putImageData(atlasPixels, 0, 0);
+
   return canvas;
 }
 
@@ -238,4 +248,3 @@ export function loadMediaAtlas(surface: MediaSurface) {
   });
   return companyAtlasPromise;
 }
-

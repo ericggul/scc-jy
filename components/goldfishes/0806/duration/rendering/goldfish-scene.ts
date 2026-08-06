@@ -5,7 +5,7 @@ import type {
 } from "../model";
 import { MEDIA_ATLAS_COLUMNS, MEDIA_ATLAS_ROWS, MEDIA_IMAGE_COUNTS, loadMediaAtlas, type AttentionSurface, type MediaSurface } from "./media-atlas";
 
-export const DURATION_RENDERER_REVISION = 2;
+export const DURATION_RENDERER_REVISION = 5;
 
 const MAX_FISH_COUNT = 1000;
 const MAX_ATTENTION_CELL_COUNT = 4096;
@@ -257,6 +257,7 @@ export class GoldfishScene {
         paperColor: { value: new THREE.Color(paperColor) },
         mediaAtlas: { value: null },
         useMediaTexture: { value: 0 },
+        companyLogoOnly: { value: 0 },
       },
       vertexShader: `
         attribute float mediaTile;
@@ -280,6 +281,7 @@ export class GoldfishScene {
         uniform vec3 paperColor;
         uniform sampler2D mediaAtlas;
         uniform float useMediaTexture;
+        uniform float companyLogoOnly;
         varying vec3 vPillarNormal;
         varying vec2 vPillarUv;
         varying float vPillarMediaTile;
@@ -317,11 +319,16 @@ export class GoldfishScene {
             mix(pillarColor, paperColor, 0.4),
             bottomFace
           );
-          vec3 mediaColor = texture2D(
+          vec4 mediaSample = texture2D(
             mediaAtlas,
             pillarMediaAtlasUv(vPillarMediaTile)
-          ).rgb;
-          faceColor = mix(faceColor, mediaColor, useMediaTexture);
+          );
+          if (companyLogoOnly > 0.5 && mediaSample.a < 0.01) discard;
+          faceColor = mix(
+            faceColor,
+            mediaSample.rgb,
+            useMediaTexture * mediaSample.a
+          );
           gl_FragColor = vec4(faceColor, 1.0);
           #include <colorspace_fragment>
         }
@@ -403,16 +410,19 @@ export class GoldfishScene {
 
         void main() {
           if (abs(vPillarNormal.y) > 0.5) discard;
-          vec3 mediaColor = texture2D(
+          vec4 mediaSample = texture2D(
             mediaAtlas,
             pillarMediaAtlasUv(vPillarMediaTile)
-          ).rgb;
-          gl_FragColor = vec4(mediaColor, 1.0);
+          );
+          if (mediaSample.a < 0.01) discard;
+          gl_FragColor = mediaSample;
           #include <colorspace_fragment>
         }
       `,
       depthTest: true,
       depthWrite: true,
+      transparent: true,
+      alphaTest: 0.01,
       toneMapped: false,
     });
     this.mediaStrata = new THREE.InstancedMesh(
@@ -477,16 +487,20 @@ export class GoldfishScene {
         }
 
         void main() {
-          gl_FragColor = texture2D(
+          vec4 mediaSample = texture2D(
             mediaAtlas,
             mediaAtlasUv(vMediaTile)
           );
+          if (mediaSample.a < 0.01) discard;
+          gl_FragColor = mediaSample;
           #include <colorspace_fragment>
         }
       `,
       depthTest: true,
       depthWrite: true,
       side: THREE.DoubleSide,
+      transparent: true,
+      alphaTest: 0.01,
       toneMapped: false,
     });
     this.mediaCells = new THREE.InstancedMesh(mediaGeometry, this.mediaMaterial, MAX_ATTENTION_CELL_COUNT);
@@ -683,6 +697,8 @@ export class GoldfishScene {
 
   setAttentionSurface(surface: AttentionSurface) {
     this.attentionSurface = surface;
+    this.attentionPillarMaterial.uniforms.companyLogoOnly.value =
+      surface === "company" ? 1 : 0;
 
     if (surface === "white") {
       this.attentionPillarMaterial.uniforms.useMediaTexture.value = 0;
