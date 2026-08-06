@@ -25,11 +25,11 @@ time *t* creates one 1×1 media surface at the fixed current layer. Its pillar
 length is derived each frame from `now − t`, so earlier selections always have
 more accumulated length and no stored height drifts over time.
 
-`Composition > 2×2+ blocks` is on by default. Each later selection also seeds
-one locally offset 2×2 media pillar. The 1×1 cell remains the only fish
-attraction target, while both sizes share a timestamp, growth rate, media
-surface, and retained-strata behavior. Turning the option off removes only the
-optional 2×2 layer; it does not alter the 1×1 records.
+`Composition > 2×2+ blocks` is off by default. When enabled, each later
+selection also seeds one locally offset 2×2 media pillar. The 1×1 cell remains
+the only fish attraction target, while both sizes share a timestamp, growth
+rate, media surface, and retained-strata behavior. Turning the option off
+removes only the optional 2×2 layer; it does not alter the 1×1 records.
 
 The exact-top camera remains the interaction view: media footprints stay
 coincident with the selection grid. The current layer begins at a fixed
@@ -58,7 +58,8 @@ at the fixed present layer; previously closed intervals occupy the pillar below
 it, so a column becomes a sequence of image-time layers rather than having its
 entire side texture replaced.
 
-The image-speed control is deliberately bounded to `0`–`24`. Strata use one
+The image-speed control is deliberately bounded to `0`–`24` and defaults to
+`12`. Strata use one
 fixed-capacity (2,048-instance) GPU mesh with a ring buffer: a new image change
 updates one instance’s cell position, source tile, and start/end times. Their
 downward movement is derived in the vertex shader from one elapsed-time uniform,
@@ -72,7 +73,7 @@ This keeps a dense selection from turning a high requested image rate into a
 burst of per-stratum draw calls or texture uploads.
 
 `Duration > pillar growth` controls the time-to-length mapping from `0` to
-`1000` world units per second (default `30`). It updates the live pillar and all
+`1000` world units per second (default `1000`). It updates the live pillar and all
 retained strata through the same renderer parameter, so faster strata remain a
 continuous stack rather than a separate visual mode.
 

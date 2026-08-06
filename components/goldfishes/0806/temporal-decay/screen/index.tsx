@@ -190,7 +190,7 @@ export default function Goldfishes3D({
   const gridRef = useRef<Grid | null>(null);
   const selectionRef = useRef<TemporalAnchor[]>([]);
   const compositionAnchorsRef = useRef<TemporalCompositionAnchor[]>([]);
-  const compositionEnabledRef = useRef(true);
+  const compositionEnabledRef = useRef(false);
   const elapsedSecondsRef = useRef(0);
   const tracePointRef = useRef<TracePoint | null>(null);
   const cameraGestureRef = useRef<CameraGesture | null>(null);
@@ -328,7 +328,7 @@ export default function Goldfishes3D({
       }),
       Composition: folder({
         "2×2+ blocks": {
-          value: true,
+          value: false,
           onChange: (enabled: boolean) => {
             compositionEnabledRef.current = enabled;
             if (!enabled) compositionAnchorsRef.current = [];
@@ -776,7 +776,12 @@ export default function Goldfishes3D({
   };
 
   return (
-    <main className={styles.page} data-theme={theme}>
+    <main
+      className={styles.page}
+      data-theme={theme}
+      onContextMenuCapture={(event) => event.preventDefault()}
+      onDragStart={(event) => event.preventDefault()}
+    >
       <canvas
         ref={backgroundCanvasRef}
         className={styles.backgroundCanvas}

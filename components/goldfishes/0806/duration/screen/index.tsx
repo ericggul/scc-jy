@@ -186,7 +186,7 @@ export default function Goldfishes3D({
   const gridRef = useRef<Grid | null>(null);
   const selectionRef = useRef<TemporalAnchor[]>([]);
   const compositionAnchorsRef = useRef<TemporalCompositionAnchor[]>([]);
-  const compositionEnabledRef = useRef(true);
+  const compositionEnabledRef = useRef(false);
   const elapsedSecondsRef = useRef(0);
   const tracePointRef = useRef<TracePoint | null>(null);
   const cameraGestureRef = useRef<CameraGesture | null>(null);
@@ -195,8 +195,8 @@ export default function Goldfishes3D({
   const themeRef = useRef<FieldTheme>("dark");
   const gridMarkRef = useRef<GridMark>("dot");
   const attentionSurfaceRef = useRef<AttentionSurface>("cat");
-  const mediaSpeedRef = useRef(24);
-  const temporalGrowthRateRef = useRef(30);
+  const mediaSpeedRef = useRef(12);
+  const temporalGrowthRateRef = useRef(1000);
   const renderSettingsRef = useRef<GoldfishRenderSettings>({
     agentScale: initialAgentScale,
     depth: 64,
@@ -323,7 +323,7 @@ export default function Goldfishes3D({
       }),
       Composition: folder({
         "2×2+ blocks": {
-          value: true,
+          value: false,
           onChange: (enabled: boolean) => {
             compositionEnabledRef.current = enabled;
             if (!enabled) compositionAnchorsRef.current = [];
@@ -333,7 +333,7 @@ export default function Goldfishes3D({
       }),
       Duration: folder({
         "pillar growth": {
-          value: 30,
+          value: 1000,
           min: 0,
           max: 1000,
           step: 1,
@@ -360,7 +360,7 @@ export default function Goldfishes3D({
           },
         },
         "image speed": {
-          value: 24,
+          value: 12,
           min: 0,
           max: 24,
           step: 1,
@@ -726,7 +726,12 @@ export default function Goldfishes3D({
   };
 
   return (
-    <main className={styles.page} data-theme={theme}>
+    <main
+      className={styles.page}
+      data-theme={theme}
+      onContextMenuCapture={(event) => event.preventDefault()}
+      onDragStart={(event) => event.preventDefault()}
+    >
       <canvas
         ref={backgroundCanvasRef}
         className={styles.backgroundCanvas}

@@ -195,7 +195,7 @@ export default function Goldfishes3D({
   const attentionSurfaceRef = useRef<AttentionSurface>("cat");
   const mediaSpeedRef = useRef(24);
   const mediaTopAlignedRef = useRef(true);
-  const compositionEnabledRef = useRef(true);
+  const compositionEnabledRef = useRef(false);
   const compositionSettingsRef = useRef<CompositionalGridSettings>(
     DEFAULT_COMPOSITION_SETTINGS,
   );
@@ -327,7 +327,7 @@ export default function Goldfishes3D({
       }),
       Composition: folder({
         "2×2+ blocks": {
-          value: true,
+          value: false,
           onChange: (enabled: boolean) => {
             compositionEnabledRef.current = enabled;
             compositionNeedsResetRef.current = true;
@@ -793,7 +793,12 @@ export default function Goldfishes3D({
   };
 
   return (
-    <main className={styles.page} data-theme={theme}>
+    <main
+      className={styles.page}
+      data-theme={theme}
+      onContextMenuCapture={(event) => event.preventDefault()}
+      onDragStart={(event) => event.preventDefault()}
+    >
       <canvas
         ref={backgroundCanvasRef}
         className={styles.backgroundCanvas}

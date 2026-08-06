@@ -22,8 +22,8 @@ without an interaction.
 
 ## Parameters and performance boundary
 
-`Composition > 2×2+ blocks` is enabled by default. When disabled, clicks retain
-the ordinary 1×1 pillars while all larger composition blocks are hidden.
+`Composition > 2×2+ blocks` is disabled by default. When enabled, clicks retain
+the ordinary 1×1 pillars and reveal the larger composition blocks.
 Composition also owns its maximum cell count. It uses two additional instanced
 meshes—one pillar mesh and one media-top mesh—with bounded capacity (72 cells).
 Matrix and atlas attributes update only when a selection adds or clears a local

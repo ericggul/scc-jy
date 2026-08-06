@@ -33,11 +33,11 @@ later click therefore remains active after an earlier block has frozen.
 `pillar growth`, image speed, and `media strata` retain the duration controls
 and behavior during each block's active interval.
 
-`Composition > 2×2+ blocks` is on by default. Each selection also creates one
-locally offset 2×2 media pillar with the same creation and end time. The 1×1
-cell alone remains a fish target; both footprints freeze together at the end of
-the block lifetime. Disabling the option only stops and clears the optional
-2×2 companions.
+`Composition > 2×2+ blocks` is off by default. When enabled, each selection
+also creates one locally offset 2×2 media pillar with the same creation and end
+time. The 1×1 cell alone remains a fish target; both footprints freeze together
+at the end of the block lifetime. Disabling the option only stops and clears
+the optional 2×2 companions.
 
 ## Rendering boundary
 
