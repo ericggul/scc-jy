@@ -58,19 +58,29 @@ market range:
 [ 0 ] [ 9 ] [ 7 ] . [ 8 ] [ 9 ]
 ```
 
-The two recessed plates built into the machine are the actual `CHANGE` and
-`PRICE` controls. Their values remain visible in both modes so the viewer can
-understand what will change before switching.
+The two recessed outer plates built into the machine remain the actual
+`CHANGE` and `PRICE` controls, but their visible labels and values are removed.
+Their accessible names and pressed state preserve the interaction contract.
 
 The server broadcasts snapshots every 50 ms (20 Hz). The reel target therefore
 uses the latest execution values, never the 200 ms history samples. When a
 symbol changes, its lane builds a real circular strip beginning with the prior
 value and ending with `[previous, target, next]`. A normal digit change passes
-one complete 0–9 turn; high movement passes two. The strip crosses its physical
-window in 105–245 ms with only 10 ms of lane staggering, then the target settles
-on the centre payline. A new snapshot that does not change that lane's symbol
-does not restart it. Reduced-motion preference shows the new symbol without
+one complete 0–9 turn; high movement passes two. Each reel always renders three
+complete cells directly: previous, amplified centre, and next. Animation changes
+only the three-cell window's sequence index at frame boundaries, so the centre
+DOM never disappears and no empty inter-glyph space can cross it. The reel crosses
+its numeric sequence
+in 105–245 ms with only 10 ms of lane staggering, then the target settles
+at the visual centre. Incoming 20 Hz values never cancel an active strip: the
+current turn finishes continuously and only the newest queued value becomes the
+next target. A snapshot that does not change that lane's symbol does not enqueue
+another turn. Reduced-motion preference shows the newest symbol without
 interpolation.
+
+The middle member of every three-cell window always receives the amplified
+style. Consequently every interim symbol is fully visible at centre even during
+rapid motion, without a duplicate layer, mask boundary, or competing timeline.
 
 The five reel overlays do not use an equal CSS grid. Their left edge, width,
 top, and height are mapped separately to the perspective-adjusted windows in
@@ -83,14 +93,14 @@ socket.
 
 The screen is one manufactured slot-machine face, edge to edge. The chassis is
 a dedicated 1672 × 941 raster game asset; HTML is responsible only for the
-changing reels, machine name, current state, and two real controls. This avoids
+changing reels, machine name, and two invisible-label controls. This avoids
 rebuilding a finished casino art layer as a collection of CSS cards.
 
 Design backbone:
 
 - **Composition:** substantial empty top marquee; one dominant, recessed 5 × 3
-  reel well; one hard centre payline; an integrated lower deck with two equal
-  control plates and one smaller status plate.
+  reel well with an unmarked visual centre; an integrated lower deck with two
+  equal control plates and one smaller status plate.
 - **Materials:** graphite/black lacquer body, polished chrome edges, warm gold
   retaining bars and bulbs, blue LED separators, smoked navy reel glass, and
   small red enamel strips. Light attaches to manufactured parts rather than
@@ -173,7 +183,10 @@ the displayed outcome remains the actual execution-derived percentage.
 ## Current asset record
 
 - Project asset:
-  `components/c-val/2/screen/casino/assets/casino-chassis-v4.png`
+  `components/c-val/2/screen/casino/assets/casino-chassis-v6.png`
+- The v6 edit removes only the central gold payline and diamond markers. The
+  colour chassis, reel geometry, materials, lighting, and lower plates remain
+  unchanged.
 - Built-in image generation was used once for the project-bound chassis. The
   three user-supplied images were style/composition references, not edit
   targets.

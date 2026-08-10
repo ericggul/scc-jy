@@ -19,7 +19,7 @@
   aspect-ratio: 1672 / 941;
   transform: translate(-50%, -50%);
   container-type: size;
-  background: url("./assets/casino-chassis-v4.png") center / 100% 100% no-repeat;
+  background: url("./assets/casino-chassis-v6.png") center / 100% 100% no-repeat;
 }
 
 .header {
@@ -83,17 +83,16 @@
   isolation: isolate;
 }
 
-.reelStrip {
+.reelCells {
   position: absolute;
   inset: 0;
   display: flex;
   width: 100%;
   height: 100%;
   flex-direction: column;
-  will-change: transform, filter;
 }
 
-.reelStrip > span {
+.reelCells > span {
   display: flex;
   height: 33.333333%;
   flex: 0 0 33.333333%;
@@ -110,7 +109,7 @@
   text-shadow: 0 0.42cqh 0 #62100b, 0 0.72cqh 0.9cqh rgb(0 0 0 / 0.48);
 }
 
-.reelStrip > .reelTarget {
+.reelCells > .reelCenter {
   color: #e73e22;
   font-size: 12.8cqh;
   opacity: 1;
@@ -120,7 +119,7 @@
     0 0.92cqh 1.1cqh rgb(0 0 0 / 0.86);
 }
 
-.reelsign.rise .reelStrip > .reelTarget {
+.reelsign.rise .reelCells > .reelCenter {
   color: #28c96e;
   -webkit-text-stroke-color: #d8ffb6;
   text-shadow:
@@ -128,21 +127,21 @@
     0 0.92cqh 1.1cqh rgb(0 0 0 / 0.86);
 }
 
-.reelsign.fall .reelStrip > .reelTarget {
+.reelsign.fall .reelCells > .reelCenter {
   color: #ef3f31;
 }
 
-.reelinteger .reelStrip > .reelTarget {
+.reelinteger .reelCells > .reelCenter {
   font-size: 11.2cqh;
 }
 
-.reelunit .reelStrip > span:not(.reelTarget) {
+.reelunit .reelCells > span:not(.reelCenter) {
   color: transparent;
   -webkit-text-stroke: 0;
   text-shadow: none;
 }
 
-.reelunit .reelStrip > .reelTarget {
+.reelunit .reelCells > .reelCenter {
   color: #ffe16f;
   font-size: 9.5cqh;
   -webkit-text-stroke-color: #8b200f;
@@ -274,7 +273,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .modeButton,
-  .reelStrip {
+  .reelCells {
     transition: none;
   }
 }

@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { CValCasinoDirection } from "./presenter";
 import {
   buildCasinoRestingSequence,
   buildCasinoSpinSequence,
+  getCasinoVisibleWindow,
   type CasinoReelDefinition,
 } from "./reel-motion";
 import styles from "./casino.module.css";
@@ -22,78 +23,127 @@ export default function CasinoReel({
   strength: number;
   direction: CValCasinoDirection;
 }) {
-  const stripRef = useRef<HTMLDivElement>(null);
-  const previousSymbolRef = useRef(reel.symbol);
+  const definitionRef = useRef(reel);
+  const strengthRef = useRef(strength);
+  const displayedSymbolRef = useRef(reel.symbol);
+  const activeTargetRef = useRef(reel.symbol);
+  const queuedTargetRef = useRef(reel.symbol);
+  const spinningRef = useRef(false);
   const sequenceIdRef = useRef(0);
+  const frameIndexRef = useRef(0);
   const [sequence, setSequence] = useState(() => buildCasinoRestingSequence(reel, 0));
+  const [frameIndex, setFrameIndex] = useState(0);
   const reelId = reel.id;
   const reelKind = reel.kind;
   const reelSymbol = reel.symbol;
 
-  useEffect(() => {
-    if (reelKind === "unit" || previousSymbolRef.current === reelSymbol) return;
+  const beginSpin = useCallback((targetSymbol: string) => {
+    const definition = { ...definitionRef.current, symbol: targetSymbol };
     sequenceIdRef.current += 1;
-    const previousSymbol = previousSymbolRef.current;
-    previousSymbolRef.current = reelSymbol;
+    activeTargetRef.current = targetSymbol;
+    spinningRef.current = true;
+    frameIndexRef.current = 0;
+    setFrameIndex(0);
     setSequence(buildCasinoSpinSequence(
-      { id: reelId, kind: reelKind, symbol: reelSymbol },
-      previousSymbol,
+      definition,
+      displayedSymbolRef.current,
       sequenceIdRef.current,
-      strength,
+      strengthRef.current,
     ));
-  }, [reelId, reelKind, reelSymbol, strength]);
+  }, []);
+
+  useEffect(() => {
+    definitionRef.current = { id: reelId, kind: reelKind, symbol: reelSymbol };
+    strengthRef.current = strength;
+    queuedTargetRef.current = reelSymbol;
+
+    if (reelKind === "unit") {
+      displayedSymbolRef.current = reelSymbol;
+      activeTargetRef.current = reelSymbol;
+      spinningRef.current = false;
+      return;
+    }
+
+    if (!spinningRef.current && displayedSymbolRef.current !== reelSymbol) {
+      beginSpin(reelSymbol);
+    }
+  }, [beginSpin, reelId, reelKind, reelSymbol, strength]);
 
   useLayoutEffect(() => {
-    const strip = stripRef.current;
-    if (!strip || !sequence.spinning) return;
+    if (!sequence.spinning) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      const targetSymbol = queuedTargetRef.current;
+      const definition = { ...definitionRef.current, symbol: targetSymbol };
+      displayedSymbolRef.current = targetSymbol;
+      activeTargetRef.current = targetSymbol;
+      spinningRef.current = false;
+      frameIndexRef.current = 0;
       const frame = window.requestAnimationFrame(() => {
-        setSequence(buildCasinoRestingSequence(
-          { id: reelId, kind: reelKind, symbol: reelSymbol },
-          sequence.id,
-        ));
+        setFrameIndex(0);
+        setSequence(buildCasinoRestingSequence(definition, sequence.id));
       });
       return () => window.cancelAnimationFrame(frame);
     }
 
-    const travel = sequence.steps * 100 / 3;
     const duration = Math.min(245, 105 + sequence.steps * 9);
-    const animation = strip.animate(
-      [
-        { transform: "translateY(0)", filter: "blur(0)" },
-        { transform: `translateY(-${travel * 0.3}%)`, filter: "blur(4px)", offset: 0.22 },
-        { transform: `translateY(-${travel * 0.91}%)`, filter: "blur(2.4px)", offset: 0.79 },
-        { transform: `translateY(-${travel}%)`, filter: "blur(0)" },
-      ],
-      {
-        duration,
-        delay,
-        easing: "cubic-bezier(.12,.72,.18,1)",
-        fill: "forwards",
-      },
-    );
+    let frame = 0;
+    let startedAt: number | null = null;
 
-    animation.onfinish = () => {
+    const settleOrContinue = () => {
+      const settledSymbol = activeTargetRef.current;
+      displayedSymbolRef.current = settledSymbol;
+      const queuedSymbol = queuedTargetRef.current;
+
+      if (queuedSymbol !== settledSymbol) {
+        beginSpin(queuedSymbol);
+        return;
+      }
+
+      spinningRef.current = false;
+      frameIndexRef.current = 0;
+      setFrameIndex(0);
       setSequence((current) => current.id === sequence.id
         ? buildCasinoRestingSequence(
-          { id: reelId, kind: reelKind, symbol: reelSymbol },
+          { ...definitionRef.current, symbol: settledSymbol },
           current.id,
         )
         : current);
     };
-    return () => animation.cancel();
-  }, [delay, reelId, reelKind, reelSymbol, sequence]);
 
-  const targetIndex = sequence.spinning ? sequence.steps + 1 : 1;
+    const tick = (time: number) => {
+      if (startedAt === null) startedAt = time + delay;
+      if (time < startedAt) {
+        frame = window.requestAnimationFrame(tick);
+        return;
+      }
+
+      const progress = Math.min(1, (time - startedAt) / duration);
+      const eased = 1 - (1 - progress) ** 3;
+      const completedSteps = Math.min(sequence.steps, Math.floor(eased * (sequence.steps + 1)));
+      if (completedSteps !== frameIndexRef.current) {
+        frameIndexRef.current = completedSteps;
+        setFrameIndex(completedSteps);
+      }
+
+      if (progress < 1) {
+        frame = window.requestAnimationFrame(tick);
+        return;
+      }
+
+      settleOrContinue();
+    };
+
+    frame = window.requestAnimationFrame(tick);
+    return () => window.cancelAnimationFrame(frame);
+  }, [beginSpin, delay, sequence]);
+
+  const visibleSymbols = getCasinoVisibleWindow(sequence, frameIndex);
 
   return (
     <div className={`${styles.reel} ${styles[`reel${reel.kind}`]} ${styles[direction]}`}>
-      <div className={styles.reelStrip} ref={stripRef}>
-        {sequence.symbols.map((symbol, index) => (
-          <span
-            className={index === targetIndex ? styles.reelTarget : undefined}
-            key={`${sequence.id}-${index}`}
-          >
+      <div className={styles.reelCells}>
+        {visibleSymbols.map((symbol, index) => (
+          <span className={index === 1 ? styles.reelCenter : undefined} key={["top", "center", "bottom"][index]}>
             {symbol}
           </span>
         ))}

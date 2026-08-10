@@ -6,6 +6,12 @@ import {
   handleSocketHealth,
 } from "./socket/create-socket-server.mjs";
 
+try {
+  process.loadEnvFile(".env");
+} catch (error) {
+  if (error?.code !== "ENOENT") throw error;
+}
+
 const hostname = process.env.SOCKET_HOST || "0.0.0.0";
 const port = Number.parseInt(process.env.SOCKET_PORT || process.env.PORT || "4000", 10);
 const certDir = join(process.cwd(), "certificates");

@@ -36,10 +36,6 @@ function buildReels(presentation: CValCasinoPresentation): CasinoReelDefinition[
   ];
 }
 
-function modeValue(snapshot: CValSnapshot, mode: CValCasinoMode) {
-  return presentCValCasino(snapshot, mode).text;
-}
-
 export default function CValCasinoScreen({ snapshot }: { snapshot: CValSnapshot }) {
   const [mode, setMode] = useState<CValCasinoMode>("change");
   const presentation = presentCValCasino(snapshot, mode);
@@ -58,7 +54,7 @@ export default function CValCasinoScreen({ snapshot }: { snapshot: CValSnapshot 
       <section className={styles.machine}>
         <header className={styles.header}>
           <span className={styles.brand}>C·VAL</span>
-          <span className={styles.machineName}>{mode === "change" ? "ONE SECOND CHANGE" : "CURRENT PRICE"}</span>
+          {mode === "change" ? <span className={styles.machineName}>ONE SECOND CHANGE</span> : null}
         </header>
 
         <div className={styles.reelMatrix} style={matrixStyle} aria-hidden="true">
@@ -78,27 +74,25 @@ export default function CValCasinoScreen({ snapshot }: { snapshot: CValSnapshot 
           <button
             className={`${styles.modeButton} ${mode === "change" ? styles.modeButtonActive : ""}`}
             type="button"
+            aria-label="증감률 표시"
             aria-pressed={mode === "change"}
             onClick={() => setMode("change")}
-          >
-            <span>CHANGE</span>
-            <strong>{modeValue(snapshot, "change")}</strong>
-          </button>
+          />
 
-          <div className={styles.livePlate}>
+          <div
+            className={styles.livePlate}
+            aria-label={snapshot.phase === "active" ? "체결 활성" : "시장 대기 중"}
+          >
             <span className={styles.liveLamp} aria-hidden="true" />
-            <span>{snapshot.phase === "active" ? "EXECUTION ACTIVE" : "WAITING FOR MARKET"}</span>
           </div>
 
           <button
             className={`${styles.modeButton} ${mode === "price" ? styles.modeButtonActive : ""}`}
             type="button"
+            aria-label="현재 가격 표시"
             aria-pressed={mode === "price"}
             onClick={() => setMode("price")}
-          >
-            <span>PRICE</span>
-            <strong>{modeValue(snapshot, "price")}</strong>
-          </button>
+          />
         </footer>
       </section>
     </main>

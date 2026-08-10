@@ -11,6 +11,8 @@ export type CasinoReelSequence = {
   spinning: boolean;
 };
 
+export type CasinoVisibleReelWindow = [top: string, center: string, bottom: string];
+
 const DIGITS = Array.from({ length: 10 }, (_, index) => String(index));
 const SIGNS = ["−", "—", "+"];
 
@@ -69,4 +71,17 @@ export function buildCasinoSpinSequence(
   );
 
   return { id, symbols: strip, steps, spinning: true };
+}
+
+export function getCasinoVisibleWindow(
+  sequence: CasinoReelSequence,
+  frameIndex: number,
+): CasinoVisibleReelWindow {
+  const maximumIndex = Math.max(0, sequence.symbols.length - 3);
+  const index = Math.min(Math.max(0, frameIndex), maximumIndex);
+  return [
+    sequence.symbols[index] ?? "",
+    sequence.symbols[index + 1] ?? "",
+    sequence.symbols[index + 2] ?? "",
+  ];
 }

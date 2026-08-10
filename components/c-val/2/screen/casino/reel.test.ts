@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildCasinoSpinSequence, type CasinoReelDefinition } from "./reel-motion.ts";
+import {
+  buildCasinoSpinSequence,
+  getCasinoVisibleWindow,
+  type CasinoReelDefinition,
+} from "./reel-motion.ts";
 
 function reel(
   kind: CasinoReelDefinition["kind"],
@@ -30,4 +34,14 @@ test("the multi-digit change lane moves through real adjacent integers", () => {
   assert.equal(sequence.steps, 9);
   assert.deepEqual(sequence.symbols.slice(0, 3), ["2", "3", "4"]);
   assert.deepEqual(sequence.symbols.slice(-3), ["11", "12", "13"]);
+});
+
+test("every rapid-spin frame keeps one complete symbol amplified at centre", () => {
+  const sequence = buildCasinoSpinSequence(reel("digit", "7"), "1", 4, 1);
+
+  for (let frame = 0; frame <= sequence.steps; frame += 1) {
+    const window = getCasinoVisibleWindow(sequence, frame);
+    assert.equal(window.length, 3);
+    assert.notEqual(window[1], "");
+  }
 });

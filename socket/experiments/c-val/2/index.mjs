@@ -28,7 +28,7 @@ const clients = new Map();
 const humanControls = new Map();
 const runtime = createCValRuntime();
 const diagnostics = createCValDiagnostics();
-const externalPublisher = createCValDiscordPublisher();
+let externalPublisher = null;
 let ioRef = null;
 
 const events = {
@@ -216,7 +216,7 @@ setInterval(() => {
     const state = broadcastState(ioRef);
     observeCValDiagnostics(diagnostics, state);
     flushCValDiagnostics(diagnostics, now);
-    externalPublisher.observe(state);
+    externalPublisher?.observe(state);
   } else {
     clearCValDiagnostics(diagnostics, now);
   }
@@ -224,6 +224,7 @@ setInterval(() => {
 
 function register({ io, socket }) {
   ioRef = io;
+  externalPublisher ??= createCValDiscordPublisher();
 
   socket.on(events.join, ({ role, version: requestedVersion } = {}) => {
     if (requestedVersion !== version) return;
