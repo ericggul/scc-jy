@@ -150,9 +150,12 @@ Speed on the surrounding screens is role-specific rather than a terminal skin:
 - the rollercoaster keeps its executed-price-to-rail relation and its sparse
   physical scene; it may share gain/loss semantic colour but must not gain
   controller panels or terminal labels;
-- the news screen remains a white, moving information field whose 20–360 px/s
-  velocity comes from a bounded market-intensity mapping; it is not a ticker
-  pasted into terminal chrome;
+- the news screen is a separately bounded Bloomberg-news wire trial: distinct
+  editorial stories derived from material market-state transitions accumulate
+  in one newest-first 54-record log across two continuous columns. Raw trades,
+  orders, depth, and spread are internal evidence only, never headlines. Its rejected
+  card/lead, red-chrome, fixed-topic, and history-filler trials are recorded in
+  [`2-news-bloomberg-migration-2026-08-10.md`](./2-news-bloomberg-migration-2026-08-10.md);
 - the media screen remains a black canvas whose tile count/direction derives
   from execution-price change; it must not invent market analytics;
 - the casino retains its three-drum, execution-price representation and its

@@ -2,7 +2,7 @@ const soundtrackElementId = "ddong-meong-3-meditation-soundtrack";
 let scheduledStop = 0;
 
 export const meditationSoundtrackPath =
-  "/ddong-meong/3/river-flows-in-you.mp3";
+  "/ddong-meong/3/audio/river-flows-in-you.mp3";
 
 function getSoundtrackElement() {
   if (typeof document === "undefined") return null;

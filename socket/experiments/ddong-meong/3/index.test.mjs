@@ -39,20 +39,31 @@ test("ddong-meong 3 joins its own isolated room", () => {
   assert.deepEqual([...socket.rooms], ["experiment:ddong-meong:3"]);
 });
 
-test("ddong-meong 3 completes its own anonymous session", () => {
+test("ddong-meong 3 archives a named content session", () => {
   const { broadcasts, handlers } = createHarness();
   const sessionHandler = handlers.get(
     ddongMeongThreeExperiment.events.sessionIn,
   );
 
-  sessionHandler({ action: "start" });
-  sessionHandler({ action: "update", phase: "releasing", cycleCount: 3 });
-  sessionHandler({ action: "complete" });
+  sessionHandler({
+    action: "start",
+    contentSlug: "private-room",
+    nickname: "노라조",
+    participantId: "participant-1",
+  });
+  sessionHandler({
+    action: "update",
+    phase: "releasing",
+    interactionCount: 3,
+  });
+  sessionHandler({ action: "complete", outcome: "flushed" });
 
   const latest = broadcasts.at(-1)?.payload;
   assert.equal(latest.activeSessions.length, 0);
-  assert.equal(latest.archive[0].cycleCount, 3);
-  assert.equal(latest.archive[0].outcome, "completed");
+  assert.equal(latest.archive[0].contentSlug, "private-room");
+  assert.equal(latest.archive[0].interactionCount, 3);
+  assert.equal(latest.archive[0].nickname, "노라조");
+  assert.equal(latest.archive[0].outcome, "flushed");
 });
 
 test("ddong-meong 3 screen cannot mutate session state", () => {

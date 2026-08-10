@@ -1,26 +1,16 @@
-import {
-  findGuidedMeditation,
-  type GuidedMeditationSlug,
-} from "../../../model/guided-meditations";
-import GradientShell from "../../surface/gradient-shell";
-import { guidedAccumulationProfiles } from "../dummy/organic-liquid-background/profiles";
-import ReadingPage from "../dummy/reading-page";
+import type { GuidedMeditationSlug } from "../../../model/guided-meditations";
+import MeditationContentExperience from "../../content/experience";
+import { findMobileMeditationContent } from "../../content/registry";
 
 type GuidedReadingProps = {
   slug: GuidedMeditationSlug;
 };
 
 function GuidedReading({ slug }: GuidedReadingProps) {
-  const meditation = findGuidedMeditation(slug);
-
   return (
-    <GradientShell>
-      <ReadingPage
-        accumulationProfile={guidedAccumulationProfiles[slug]}
-        lines={meditation.lines}
-        totalMs={meditation.durationSeconds * 1000}
-      />
-    </GradientShell>
+    <MeditationContentExperience
+      content={findMobileMeditationContent(slug)}
+    />
   );
 }
 

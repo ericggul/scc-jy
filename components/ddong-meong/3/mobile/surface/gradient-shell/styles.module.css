@@ -9,6 +9,17 @@
   overflow: hidden;
   background: var(--dm-color-canvas);
   color: var(--dm-color-ink);
+  touch-action: pan-y;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.shell * {
+  -webkit-touch-callout: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .shell::before {

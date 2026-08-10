@@ -7,21 +7,31 @@ export type DdongMeongPhase =
   | "complete";
 
 export type DdongMeongSession = {
+  contentSlug: string;
+  contentTitle: string;
   id: string;
+  interactionCount: number;
+  nickname: string;
   participantId: string;
   startedAt: number;
   updatedAt: number;
   phase: Exclude<DdongMeongPhase, "complete">;
-  cycleCount: number;
 };
 
+export type DdongMeongSessionOutcome = "completed" | "flushed" | "left";
+
 export type DdongMeongArchiveEntry = {
+  contentSlug: string;
+  contentTitle: string;
+  dayKey: string;
   id: string;
+  interactionCount: number;
+  nickname: string;
+  participantId: string;
   startedAt: number;
   endedAt: number;
   durationMs: number;
-  cycleCount: number;
-  outcome: "completed" | "left";
+  outcome: DdongMeongSessionOutcome;
 };
 
 export type DdongMeongPresence = {
@@ -37,4 +47,9 @@ export type DdongMeongSnapshot = {
   activeSessions: DdongMeongSession[];
   archive: DdongMeongArchiveEntry[];
   presence: DdongMeongPresence;
+  today: {
+    completedSessions: number;
+    dayKey: string;
+    participantCount: number;
+  };
 };

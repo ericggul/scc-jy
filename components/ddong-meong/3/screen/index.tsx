@@ -1,16 +1,18 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useDdongMeongSocket } from "./transport/use-ddong-meong-socket";
 import type {
   DdongMeongArchiveEntry,
   DdongMeongSession,
+  DdongMeongSessionOutcome,
 } from "../model/types";
 import { ddongMeongSans } from "../design-system/fonts";
 import theme from "../design-system/theme.module.css";
 import styles from "./styles.module.css";
 
 function formatDuration(durationMs: number) {
-  const seconds = Math.max(1, Math.round(durationMs / 1000));
+  const seconds = Math.max(0, Math.floor(durationMs / 1000));
   const minutes = Math.floor(seconds / 60);
   return `${minutes}:${String(seconds % 60).padStart(2, "0")}`;
 }
@@ -23,69 +25,103 @@ function formatTime(timestamp: number) {
   }).format(timestamp);
 }
 
-function LiveMark({ session }: { session: DdongMeongSession }) {
+function phaseLabel(session: DdongMeongSession) {
+  if (session.phase === "arriving") return "자리 잡는 중";
+  if (session.phase === "releasing") return "비우는 중";
+  return "머무는 중";
+}
+
+function outcomeLabel(outcome: DdongMeongSessionOutcome) {
+  if (outcome === "flushed") return "물 내림";
+  if (outcome === "left") return "자리 떠남";
+  return "마침";
+}
+
+function useClock() {
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  return now;
+}
+
+function LiveSession({ now, session }: { now: number; session: DdongMeongSession }) {
   return (
-    <li
-      className={`${styles.liveMark} ${styles[session.phase]}`}
-      aria-label={`${session.cycleCount + 1}번째 호흡 진행 중`}
-    />
+    <li className={`${styles.liveSession} ${styles[session.phase]}`}>
+      <div className={styles.liveSessionHead}>
+        <strong>{session.nickname}</strong>
+        <span>{phaseLabel(session)}</span>
+      </div>
+      <p>{session.contentTitle}</p>
+      <div className={styles.liveSessionMeta}>
+        <time dateTime={new Date(session.startedAt).toISOString()}>
+          {formatTime(session.startedAt)}에 앉음
+        </time>
+        <strong>{formatDuration(now - session.startedAt)}</strong>
+      </div>
+    </li>
   );
 }
 
 function ArchiveRow({ entry }: { entry: DdongMeongArchiveEntry }) {
   return (
     <li className={styles.archiveRow}>
-      <div>
-        <strong>{formatDuration(entry.durationMs)}</strong>
-        <span>{entry.cycleCount}번의 호흡</span>
+      <div className={styles.archiveIdentity}>
+        <strong>{entry.nickname}</strong>
+        <span>{entry.contentTitle}</span>
       </div>
-      <time dateTime={new Date(entry.endedAt).toISOString()}>
-        {formatTime(entry.endedAt)}
-      </time>
+      <div className={styles.archiveMeta}>
+        <span>{formatDuration(entry.durationMs)}</span>
+        <time dateTime={new Date(entry.endedAt).toISOString()}>
+          {formatTime(entry.endedAt)} · {outcomeLabel(entry.outcome)}
+        </time>
+      </div>
     </li>
   );
 }
 
 export default function DdongMeongThreeScreen() {
   const { connected, snapshot } = useDdongMeongSocket("screen");
+  const now = useClock();
   const activeSessions = snapshot?.activeSessions ?? [];
   const archive = snapshot?.archive ?? [];
+  const today = snapshot?.today;
 
   return (
     <main
       className={`${ddongMeongSans.variable} ${theme.theme} ${styles.page}`}
       lang="ko"
     >
-      <div className={styles.photoShade} />
-
       <header className={styles.header}>
         <h1>ddong-meong</h1>
         <p>
-          {connected
-            ? `${activeSessions.length}명이 지금 함께 앉아 있어요`
-            : "전시 화면에 연결하는 중"}
+          {connected && today
+            ? `오늘 ${today.participantCount}명 · ${today.completedSessions}회 비움`
+            : "연결 중"}
         </p>
       </header>
 
       <section className={styles.live} aria-labelledby="live-title">
-        <p>LIVE MEDITATION</p>
-        <h2 id="live-title">
-          잠시 앉아,
-          <br />
-          가볍게 비우는 시간.
-        </h2>
+        <p className={styles.eyebrow}>NOW SITTING</p>
+        <div className={styles.liveHeading}>
+          <h2 id="live-title">지금 앉아 있는 사람</h2>
+          <strong>{activeSessions.length}</strong>
+        </div>
 
         {activeSessions.length > 0 ? (
-          <ul className={styles.liveMarks}>
+          <ul className={styles.liveSessions}>
             {activeSessions.map((session) => (
-              <LiveMark key={session.id} session={session} />
+              <LiveSession key={session.id} now={now} session={session} />
             ))}
           </ul>
         ) : (
           <p className={styles.emptyLive}>
-            모바일에서 명상을 시작하면
+            아직 조용합니다.
             <br />
-            이곳에 조용히 나타납니다.
+            누군가 명상을 시작하면 이곳에 나타납니다.
           </p>
         )}
       </section>
@@ -93,22 +129,20 @@ export default function DdongMeongThreeScreen() {
       <aside className={styles.archive} aria-labelledby="archive-title">
         <div className={styles.archiveHeading}>
           <div>
-            <span>RECENT</span>
-            <h2 id="archive-title">비운 기록</h2>
+            <span>오늘의 기록</span>
+            <h2 id="archive-title">비운 사람들</h2>
           </div>
-          <strong>{archive.length}</strong>
+          <strong>{today?.completedSessions ?? 0}</strong>
         </div>
 
         {archive.length > 0 ? (
           <ol>
-            {archive.slice(0, 12).map((entry) => (
+            {archive.map((entry) => (
               <ArchiveRow key={entry.id} entry={entry} />
             ))}
           </ol>
         ) : (
-          <p className={styles.emptyArchive}>
-            아직 끝난 명상이 없습니다.
-          </p>
+          <p className={styles.emptyArchive}>아직 오늘의 기록이 없습니다.</p>
         )}
       </aside>
     </main>

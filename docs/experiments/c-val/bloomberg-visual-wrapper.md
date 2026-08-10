@@ -15,9 +15,10 @@ terminal chrome onto unrelated work.
 
 The C-VAL controller is a valid use because its job is simultaneous comparison
 of conditions, agent intent, FIFO supply, executions, and outcomes. The
-rollercoaster, news, media, casino, and mobile routes have different jobs.
-They belong to the same market artwork, but most must not become mini
-workstations.
+rollercoaster, media, casino, and mobile routes have different jobs and must
+not become mini-workstations. News has a separately documented, observer-facing
+wire trial: it renders the actual market-to-public-signal transmission as one
+continuous record field, rather than treating terminal chrome as atmosphere.
 
 The wrapper is deliberately C-VAL-version scoped today. Its primitives contain
 no model data or controller logic, so a later experiment with the same
@@ -201,7 +202,7 @@ Motion on C-VAL's other screens remains specific to their own representation:
 | --- | --- | --- | --- |
 | controller | `workstation` | full token set and all observation primitives | real causal chain; no invented terminal content |
 | rollercoaster | `physicalInstrument` | gain/loss semantic direction when it aids reading | executed-price rail and sparse physical scene; no panels, tables, or terminal labels |
-| news | `typographicField` | financial hierarchy and bounded intensity-to-speed relation | white kinetic field and actual headline transformation; no dark terminal shell |
+| news | `newsWire` | thin wire-specific header and a continuous two-column archive of actual editorial stories | real market-to-public transmission; raw trades, orders, depth and spreads may be evidence but never news titles; no invented source, time, external feed, alert, red command strip, card grid, fixed-topic cycle, or generic dashboard metric |
 | media | `fullBleedMedia` | state-derived direction only | black full-bleed audiovisual grid; no data overlay merely to look financial |
 | casino | `physicalInstrument` | actual execution price and meaningful state colour | mechanical three-reel representation; no monitor chrome |
 | mobile | `feedbackInstrument` | semantic gain/loss only where it explains real feedback | one physical input and immediate response; never a condensed controller |
@@ -222,7 +223,9 @@ Earlier attempts in both C-VAL and `stock/3` establish hard constraints:
    domain data or irregular state history, never a recognizable decorative
    recipe.
 4. Do not let a generic terminal wrapper overwrite the surrounding artwork's
-   perceptual task. Screen identity is not a brand inconsistency.
+   perceptual task. The news-wire trial is permitted only because its continuous
+   event records make the actual market-to-public-signal transmission easier to
+   scan; it does not authorize terminal chrome for the other screens.
 5. Do not create simulated monitoring fiction: command prompts, alerts, live
    badges, timestamps, news, securities, and portfolio tools require a real
    C-VAL function before they can appear.

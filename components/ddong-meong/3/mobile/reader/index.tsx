@@ -2,16 +2,36 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { playMeditationSoundtrack, scheduleMeditationSoundtrackStop, stopMeditationSoundtrack } from "../../../media";
-import type { ReadingLine } from "../../../../model/reading-script";
-import OrganicLiquidBackground from "../organic-liquid-background";
-import type { AccumulationProfile } from "../organic-liquid-background/profiles";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
+import {
+  playMeditationSoundtrack,
+  scheduleMeditationSoundtrackStop,
+  stopMeditationSoundtrack,
+} from "../media";
+import type {
+  DdongMeongPhase,
+  DdongMeongSessionOutcome,
+} from "../../model/types";
+import type { ReadingLine } from "../../model/reading-script";
+import InteractiveAccumulationBackground from "../background/interactive-accumulation";
+import { useDropInteraction } from "../background/interaction/use-drop-interaction";
+import type { AccumulationProfile } from "../background/profiles";
 import styles from "./styles.module.css";
 
 type ReadingPageProps = {
   accumulationProfile: AccumulationProfile;
   lines: ReadingLine[];
+  onSessionComplete?: (outcome: DdongMeongSessionOutcome) => void;
+  onSessionPhaseChange?: (
+    phase: Exclude<DdongMeongPhase, "complete">,
+    interactionCount: number,
+  ) => void;
   totalMs: number;
 };
 
@@ -116,14 +136,25 @@ function FlushIcon() {
 export default function ReadingPage({
   accumulationProfile,
   lines,
+  onSessionComplete,
+  onSessionPhaseChange,
   totalMs,
 }: ReadingPageProps) {
   const router = useRouter();
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const scriptRef = useRef<HTMLDivElement | null>(null);
   const scrollAnimationRef = useRef<Animation | null>(null);
+  const sessionCompletedRef = useRef(false);
   const [startedAt, setStartedAt] = useState<number | null>(null);
+  const [settledDropCount, setSettledDropCount] = useState(0);
   const [flushState, setFlushState] = useState<FlushState | null>(null);
+  const interactionDisabled = startedAt === null || flushState !== null;
+  const { activeDrops, interactionProps, stopDrops } = useDropInteraction({
+    disabled: interactionDisabled,
+    onDropSettled: (amount) =>
+      setSettledDropCount((count) => count + amount),
+    profile: accumulationProfile,
+  });
 
   useEffect(() => {
     if (flushState !== null) return;
@@ -134,6 +165,17 @@ export default function ReadingPage({
 
     return () => window.clearTimeout(preludeTimer);
   }, [flushState]);
+
+  const completeSession = useCallback((outcome: DdongMeongSessionOutcome) => {
+    if (sessionCompletedRef.current) return;
+    sessionCompletedRef.current = true;
+    onSessionComplete?.(outcome);
+  }, [onSessionComplete]);
+
+  useEffect(() => {
+    if (startedAt === null || flushState !== null) return;
+    onSessionPhaseChange?.("breathing", settledDropCount);
+  }, [flushState, onSessionPhaseChange, settledDropCount, startedAt]);
 
   useEffect(() => {
     if (flushState !== null) {
@@ -158,10 +200,13 @@ export default function ReadingPage({
     if (startedAt === null || flushState !== null) return;
 
     const remainingMs = Math.max(0, totalMs - Math.max(0, Date.now() - startedAt));
-    const stopTimer = window.setTimeout(stopMeditationSoundtrack, remainingMs);
+    const stopTimer = window.setTimeout(() => {
+      stopMeditationSoundtrack();
+      completeSession("completed");
+    }, remainingMs);
 
     return () => window.clearTimeout(stopTimer);
-  }, [flushState, startedAt, totalMs]);
+  }, [completeSession, flushState, startedAt, totalMs]);
 
   useEffect(() => {
     if (startedAt === null) return;
@@ -223,6 +268,9 @@ export default function ReadingPage({
 
     stopMeditationSoundtrack();
     scrollAnimationRef.current?.pause();
+    stopDrops();
+    onSessionPhaseChange?.("releasing", settledDropCount);
+    completeSession("flushed");
     setFlushState({ frozenElapsedMs, startedAt: now });
   }
 
@@ -235,11 +283,13 @@ export default function ReadingPage({
       className={`${styles.page} ${phaseClassName} ${flushClassName}`}
     >
       <div className={styles.meditationBackground} aria-hidden="true">
-        <OrganicLiquidBackground
+        <InteractiveAccumulationBackground
           profile={accumulationProfile}
           flushDurationMs={flushDrainDurationMs}
           flushStartedAt={flushState?.startedAt ?? null}
           frozenElapsedMs={flushState?.frozenElapsedMs ?? null}
+          activeDrops={activeDrops}
+          settledDropCount={settledDropCount}
           startedAt={startedAt}
           totalMs={totalMs}
         />
@@ -250,7 +300,15 @@ export default function ReadingPage({
         totalMs={totalMs}
       />
 
-      <div ref={scrollerRef} className={styles.scroller} aria-label="자동으로 진행되는 명상 문장">
+      <div
+        ref={scrollerRef}
+        aria-disabled={interactionDisabled}
+        aria-label="누른 위치에서 물질 배출하기"
+        className={styles.scroller}
+        {...interactionProps}
+        role="button"
+        tabIndex={interactionDisabled ? -1 : 0}
+      >
         <div ref={scriptRef} className={styles.script}>
           {lines.map((line) => (
             <p key={line.id} className={styles.line}>

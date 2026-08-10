@@ -594,10 +594,10 @@ const privateRoomProfile = defineAccumulationProfile({
   id: "private-room",
   materialKind: "drifting-mist",
   palette: {
-    deep: [0.026, 0.021, 0.022],
-    middle: [0.075, 0.056, 0.057],
-    surface: [0.16, 0.118, 0.11],
-    highlight: [0.27, 0.205, 0.18],
+    deep: [0.06, 0.044, 0.04],
+    middle: [0.18, 0.126, 0.11],
+    surface: [0.29, 0.21, 0.18],
+    highlight: [0.4, 0.31, 0.26],
   },
   particles: {
     reservoirCount: 5400,
@@ -650,8 +650,8 @@ const privateRoomProfile = defineAccumulationProfile({
     verticalFlow: 0.002,
   },
   material: {
-    reservoirAlpha: [0.05, 0.24],
-    reservoirPointSize: [0.9, 2.8],
+    reservoirAlpha: [0.14, 0.4],
+    reservoirPointSize: [1.2, 3.4],
     coreAlpha: [0.24, 0.6],
     veilAlpha: [0.05, 0.15],
     veilThreshold: 0.6,
@@ -749,4 +749,4 @@ export const guidedAccumulationProfiles = {
   "private-room": privateRoomProfile,
   "lighter-moment": lighterMomentProfile,
 } satisfies Record<GuidedMeditationSlug, AccumulationProfile>;
-import type { GuidedMeditationSlug } from "../../../../model/guided-meditations";
+import type { GuidedMeditationSlug } from "../../model/guided-meditations";

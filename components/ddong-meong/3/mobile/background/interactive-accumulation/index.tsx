@@ -15,7 +15,13 @@ import type {
   AccumulationProfile,
   NumberRange,
   RgbColor,
-} from "./profiles";
+} from "../profiles";
+import {
+  accumulationProgressFromInteractions,
+  particlesPerInteractiveDrop,
+  particlesPerInteractiveTrace,
+} from "../interaction-progress";
+import type { ActiveBackgroundDrop } from "../types";
 import styles from "./styles.module.css";
 
 const materialModeValues = {
@@ -27,11 +33,13 @@ const materialModeValues = {
   "liquid-burst": 5,
 } satisfies Record<AccumulationMaterialKind, number>;
 
-type OrganicLiquidBackgroundProps = {
+type InteractiveAccumulationBackgroundProps = {
+  activeDrops: ActiveBackgroundDrop[];
   flushDurationMs: number;
   flushStartedAt: number | null;
   frozenElapsedMs: number | null;
   profile: AccumulationProfile;
+  settledDropCount: number;
   startedAt: number | null;
   totalMs: number;
 };
@@ -56,6 +64,11 @@ function createParticleGeometry(count: number, seed: number) {
   const geometry = new THREE.BufferGeometry();
   const positions = new Float32Array(count * 3);
   const seeds = new Float32Array(count * 4);
+  const dropOrigins = new Float32Array(count * 2);
+  const dropPreviousOrigins = new Float32Array(count * 2);
+  const dropStartedAts = new Float32Array(count);
+  const dropActives = new Float32Array(count);
+  const dropVisualStrengths = new Float32Array(count);
   const random = createSeededRandom(seed);
 
   for (let index = 0; index < count; index += 1) {
@@ -68,6 +81,20 @@ function createParticleGeometry(count: number, seed: number) {
 
   geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
   geometry.setAttribute("aSeed", new THREE.BufferAttribute(seeds, 4));
+  geometry.setAttribute("aDropOrigin", new THREE.BufferAttribute(dropOrigins, 2));
+  geometry.setAttribute(
+    "aDropPreviousOrigin",
+    new THREE.BufferAttribute(dropPreviousOrigins, 2),
+  );
+  geometry.setAttribute(
+    "aDropStartedAt",
+    new THREE.BufferAttribute(dropStartedAts, 1),
+  );
+  geometry.setAttribute("aDropActive", new THREE.BufferAttribute(dropActives, 1));
+  geometry.setAttribute(
+    "aDropVisualStrength",
+    new THREE.BufferAttribute(dropVisualStrengths, 1),
+  );
   geometry.setDrawRange(0, count);
   return geometry;
 }
@@ -227,30 +254,54 @@ function createProfileUniforms(profile: AccumulationProfile) {
   };
 }
 
-export default function OrganicLiquidBackground({
+type DropBatchResource = {
+  active: THREE.BufferAttribute;
+  geometry: THREE.BufferGeometry;
+  material: THREE.ShaderMaterial;
+  object: THREE.Object3D;
+  origin: THREE.BufferAttribute;
+  previousOrigin: THREE.BufferAttribute;
+  setVisibleSlotCount: (count: number) => void;
+  startedAt: THREE.BufferAttribute;
+  itemsPerDrop: number;
+  visualStrength: THREE.BufferAttribute;
+};
+
+type DropBatch = {
+  dispose: () => void;
+  sync: (drops: ActiveBackgroundDrop[]) => void;
+};
+
+export default function InteractiveAccumulationBackground({
+  activeDrops,
   flushDurationMs,
   flushStartedAt,
   frozenElapsedMs,
   profile,
+  settledDropCount,
   startedAt,
   totalMs,
-}: OrganicLiquidBackgroundProps) {
+}: InteractiveAccumulationBackgroundProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const timelineRef = useRef({
+    activeDrops,
     flushDurationMs,
     flushStartedAt,
     frozenElapsedMs,
     startedAt,
+    settledDropCount,
   });
 
   useEffect(() => {
     timelineRef.current = {
+      activeDrops,
       flushDurationMs,
       flushStartedAt,
       frozenElapsedMs,
       startedAt,
+      settledDropCount,
     };
-  }, [flushDurationMs, flushStartedAt, frozenElapsedMs, startedAt]);
+  }, [activeDrops, flushDurationMs, flushStartedAt, frozenElapsedMs, startedAt, settledDropCount]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -277,15 +328,21 @@ export default function OrganicLiquidBackground({
     const camera = new THREE.Camera();
     const resolutionUniform = { value: new THREE.Vector2(1, 1) };
     const timeUniform = { value: 0 };
+    const interactionTimeUniform = { value: 0 };
     const progressUniform = { value: 0 };
     const motionUniform = { value: reducedMotion ? 0 : 1 };
+    const dropAgeUniform = { value: -1 };
+    const dropOriginUniform = { value: new THREE.Vector2(0.5, 1) };
     const flushProgressUniform = { value: 0 };
     const pixelRatioUniform = { value: 1 };
     const sharedUniforms = {
       uResolution: resolutionUniform,
       uTime: timeUniform,
+      uInteractionTime: interactionTimeUniform,
       uProgress: progressUniform,
       uMotion: motionUniform,
+      uDropAge: dropAgeUniform,
+      uDropOrigin: dropOriginUniform,
       uFlushProgress: flushProgressUniform,
       uPixelRatio: pixelRatioUniform,
       ...createProfileUniforms(profile),
@@ -339,46 +396,251 @@ export default function OrganicLiquidBackground({
       profile.particles.reservoirSeed,
       0,
     );
-    const filament = createParticleLayer(
-      profile.particles.filamentCount,
-      profile.particles.filamentSeed,
-      1,
-    );
-    const solidDropGeometry =
-      profile.solid.count > 0
-        ? createSolidDropGeometry(
-            profile.solid.count,
-            profile.particles.filamentSeed ^ 0x5011d,
-          )
-        : null;
-    const solidDropMaterial = solidDropGeometry
-      ? new THREE.ShaderMaterial({
-          vertexShader: solidDropVertexShader,
-          fragmentShader: solidDropFragmentShader,
-          uniforms: sharedUniforms,
-          transparent: true,
-          blending: THREE.NormalBlending,
-          depthTest: false,
-          depthWrite: false,
-        })
-      : null;
-    const solidDrops =
-      solidDropGeometry && solidDropMaterial
-        ? new THREE.Mesh(solidDropGeometry, solidDropMaterial)
-        : null;
-    if (solidDrops) {
-      solidDrops.frustumCulled = false;
-      solidDrops.renderOrder = 3;
-      scene.add(solidDrops);
+    const interactionEpochMs = Date.now();
+    const initialDropCapacity = 48;
+
+    function createParticleDropResource(
+      capacity: number,
+      particlesPerDrop: number,
+    ): DropBatchResource {
+      const geometry = createParticleGeometry(
+        capacity * particlesPerDrop,
+        profile.particles.filamentSeed,
+      );
+      const material = new THREE.ShaderMaterial({
+        vertexShader: particleVertexShader,
+        fragmentShader: particleFragmentShader,
+        uniforms: {
+          ...sharedUniforms,
+          uLayer: { value: 1 },
+        },
+        transparent: true,
+        blending: THREE.NormalBlending,
+        depthTest: false,
+        depthWrite: false,
+      });
+      const points = new THREE.Points(geometry, material);
+      points.frustumCulled = false;
+      points.renderOrder = 2;
+      scene.add(points);
+
+      return {
+        active: geometry.getAttribute("aDropActive") as THREE.BufferAttribute,
+        geometry,
+        material,
+        object: points,
+        itemsPerDrop: particlesPerDrop,
+        origin: geometry.getAttribute("aDropOrigin") as THREE.BufferAttribute,
+        previousOrigin: geometry.getAttribute(
+          "aDropPreviousOrigin",
+        ) as THREE.BufferAttribute,
+        setVisibleSlotCount: (slotCount) => {
+          geometry.setDrawRange(0, slotCount * particlesPerDrop);
+        },
+        startedAt: geometry.getAttribute(
+          "aDropStartedAt",
+        ) as THREE.BufferAttribute,
+        visualStrength: geometry.getAttribute(
+          "aDropVisualStrength",
+        ) as THREE.BufferAttribute,
+      };
     }
+
+    function createSolidDropResource(capacity: number): DropBatchResource {
+      const geometry = createSolidDropGeometry(
+        capacity,
+        profile.particles.filamentSeed,
+      );
+      const origin = new THREE.InstancedBufferAttribute(
+        new Float32Array(capacity * 2),
+        2,
+      );
+      const previousOrigin = new THREE.InstancedBufferAttribute(
+        new Float32Array(capacity * 2),
+        2,
+      );
+      const startedAt = new THREE.InstancedBufferAttribute(
+        new Float32Array(capacity),
+        1,
+      );
+      const active = new THREE.InstancedBufferAttribute(
+        new Float32Array(capacity),
+        1,
+      );
+      const visualStrength = new THREE.InstancedBufferAttribute(
+        new Float32Array(capacity),
+        1,
+      );
+      geometry.setAttribute("aDropOrigin", origin);
+      geometry.setAttribute("aDropPreviousOrigin", previousOrigin);
+      geometry.setAttribute("aDropStartedAt", startedAt);
+      geometry.setAttribute("aDropActive", active);
+      geometry.setAttribute("aDropVisualStrength", visualStrength);
+      const material = new THREE.ShaderMaterial({
+        vertexShader: solidDropVertexShader,
+        fragmentShader: solidDropFragmentShader,
+        uniforms: sharedUniforms,
+        transparent: true,
+        blending: THREE.NormalBlending,
+        depthTest: false,
+        depthWrite: false,
+      });
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.frustumCulled = false;
+      mesh.renderOrder = 3;
+      scene.add(mesh);
+
+      return {
+        active,
+        geometry,
+        material,
+        object: mesh,
+        itemsPerDrop: 1,
+        origin,
+        previousOrigin,
+        setVisibleSlotCount: (slotCount) => {
+          geometry.instanceCount = slotCount;
+        },
+        startedAt,
+        visualStrength,
+      };
+    }
+
+    function createDropBatch(
+      createResource: (capacity: number) => DropBatchResource,
+    ): DropBatch {
+      let capacity = initialDropCapacity;
+      let resource = createResource(capacity);
+      const slotByDropId = new Map<number, number>();
+      let slotDropIds: Array<number | null> = Array.from(
+        { length: capacity },
+        () => null,
+      );
+      let freeSlots: number[] = [];
+      let nextSlot = 0;
+
+      function markAttributesForUpdate() {
+        resource.active.needsUpdate = true;
+        resource.origin.needsUpdate = true;
+        resource.previousOrigin.needsUpdate = true;
+        resource.startedAt.needsUpdate = true;
+        resource.visualStrength.needsUpdate = true;
+      }
+
+      function setVisibleSlots() {
+        let slotCount = slotDropIds.length;
+        while (slotCount > 0 && slotDropIds[slotCount - 1] === null) {
+          slotCount -= 1;
+        }
+        resource.setVisibleSlotCount(slotCount);
+      }
+
+      function disposeResource() {
+        scene.remove(resource.object);
+        resource.geometry.dispose();
+        resource.material.dispose();
+      }
+
+      function grow(minimumCapacity: number) {
+        let nextCapacity = capacity;
+        while (nextCapacity < minimumCapacity) nextCapacity *= 2;
+        disposeResource();
+        capacity = nextCapacity;
+        resource = createResource(capacity);
+        slotByDropId.clear();
+        slotDropIds = Array.from({ length: capacity }, () => null);
+        freeSlots = [];
+        nextSlot = 0;
+      }
+
+      function activate(drop: ActiveBackgroundDrop) {
+        const slot = freeSlots.pop() ?? nextSlot;
+        nextSlot = Math.max(nextSlot, slot + 1);
+        slotByDropId.set(drop.id, slot);
+        slotDropIds[slot] = drop.id;
+
+        const itemCount = resource.itemsPerDrop;
+        const start = slot * itemCount;
+        const end = start + itemCount;
+        const originValues = resource.origin.array as Float32Array;
+        const previousOriginValues = resource.previousOrigin.array as Float32Array;
+        const startedAtValues = resource.startedAt.array as Float32Array;
+        const activeValues = resource.active.array as Float32Array;
+        const visualStrengthValues = resource.visualStrength.array as Float32Array;
+        const interactionStartedAt = (drop.startedAt - interactionEpochMs) / 1000;
+
+        for (let index = start; index < end; index += 1) {
+          const originIndex = index * 2;
+          originValues[originIndex] = drop.origin.x;
+          originValues[originIndex + 1] = drop.origin.y;
+          previousOriginValues[originIndex] = drop.previousOrigin.x;
+          previousOriginValues[originIndex + 1] = drop.previousOrigin.y;
+          startedAtValues[index] = interactionStartedAt;
+          activeValues[index] = 1;
+          visualStrengthValues[index] = drop.visualStrength;
+        }
+        markAttributesForUpdate();
+      }
+
+      function release(dropId: number) {
+        const slot = slotByDropId.get(dropId);
+        if (slot === undefined) return;
+
+        const itemCount = resource.itemsPerDrop;
+        const start = slot * itemCount;
+        const activeValues = resource.active.array as Float32Array;
+        activeValues.fill(0, start, start + itemCount);
+        resource.active.needsUpdate = true;
+        slotByDropId.delete(dropId);
+        slotDropIds[slot] = null;
+        freeSlots.push(slot);
+      }
+
+      return {
+        dispose: disposeResource,
+        sync(drops) {
+          if (drops.length > capacity) grow(drops.length);
+
+          const activeDropIds = new Set(drops.map((drop) => drop.id));
+          for (const dropId of [...slotByDropId.keys()]) {
+            if (!activeDropIds.has(dropId)) release(dropId);
+          }
+          for (const drop of drops) {
+            if (!slotByDropId.has(drop.id)) activate(drop);
+          }
+          setVisibleSlots();
+        },
+      };
+    }
+
+    const pressDropBatch = createDropBatch(
+      profile.materialKind === "solid-form"
+        ? createSolidDropResource
+        : (capacity) =>
+            createParticleDropResource(
+              capacity,
+              particlesPerInteractiveDrop(profile.particles.filamentCount),
+            ),
+    );
+    const traceDropBatch = createDropBatch(
+      profile.materialKind === "solid-form"
+        ? createSolidDropResource
+        : (capacity) =>
+            createParticleDropResource(
+              capacity,
+              particlesPerInteractiveTrace(profile.particles.filamentCount),
+            ),
+    );
 
     let animationFrame = 0;
     let reducedMotionTimer = 0;
     let lastRenderAt = 0;
+    let displayedProgress = 0;
+    let lastProgressUpdateAt = Date.now();
 
     function resize() {
       const { width, height } = activeCanvas.getBoundingClientRect();
-      const pixelRatio = Math.min(window.devicePixelRatio || 1, 1.4);
+      const pixelRatio = Math.min(window.devicePixelRatio || 1, 1.15);
       renderer.setPixelRatio(pixelRatio);
       renderer.setSize(Math.max(1, width), Math.max(1, height), false);
       resolutionUniform.value.set(width * pixelRatio, height * pixelRatio);
@@ -387,22 +649,42 @@ export default function OrganicLiquidBackground({
 
     function render() {
       const timeline = timelineRef.current;
+      const now = Date.now();
       const elapsedMs =
         timeline.frozenElapsedMs ??
         (timeline.startedAt === null
           ? 0
-          : clamp(Date.now() - timeline.startedAt, 0, totalMs));
+          : clamp(now - timeline.startedAt, 0, totalMs));
       const flushProgress =
         timeline.flushStartedAt === null
           ? 0
           : reducedMotion
             ? 1
             : clamp(
-                (Date.now() - timeline.flushStartedAt) /
+                (now - timeline.flushStartedAt) /
                   timeline.flushDurationMs,
               );
-      progressUniform.value = totalMs > 0 ? elapsedMs / totalMs : 1;
+      const targetProgress = accumulationProgressFromInteractions(
+        timeline.settledDropCount,
+      );
+      const progressDeltaMs = Math.max(0, now - lastProgressUpdateAt);
+      lastProgressUpdateAt = now;
+      if (targetProgress < displayedProgress) {
+        displayedProgress = targetProgress;
+      } else {
+        const blend = 1 - Math.exp(-progressDeltaMs / 430);
+        displayedProgress += (targetProgress - displayedProgress) * blend;
+      }
+      progressUniform.value = displayedProgress;
       timeUniform.value = elapsedMs / 1000;
+      interactionTimeUniform.value = (now - interactionEpochMs) / 1000;
+      dropAgeUniform.value = -1;
+      pressDropBatch.sync(
+        timeline.activeDrops.filter((drop) => drop.source === "press"),
+      );
+      traceDropBatch.sync(
+        timeline.activeDrops.filter((drop) => drop.source === "trace"),
+      );
       flushProgressUniform.value = flushProgress;
       renderer.render(scene, camera);
     }
@@ -437,16 +719,13 @@ export default function OrganicLiquidBackground({
       window.visualViewport?.removeEventListener("resize", resize);
       window.cancelAnimationFrame(animationFrame);
       window.clearInterval(reducedMotionTimer);
-      scene.remove(background, reservoir.points, filament.points);
-      if (solidDrops) scene.remove(solidDrops);
+      scene.remove(background, reservoir.points);
+      pressDropBatch.dispose();
+      traceDropBatch.dispose();
       backgroundGeometry.dispose();
       backgroundMaterial.dispose();
       reservoir.geometry.dispose();
       reservoir.material.dispose();
-      filament.geometry.dispose();
-      filament.material.dispose();
-      solidDropGeometry?.dispose();
-      solidDropMaterial?.dispose();
       renderer.dispose();
     };
   }, [profile, totalMs]);

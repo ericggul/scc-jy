@@ -1,11 +1,24 @@
 import { randomUUID } from "node:crypto";
+import {
+  loadDdongMeongArchive,
+  saveDdongMeongArchive,
+} from "./archive-store.mjs";
 
 const id = "ddong-meong-3";
 const variantId = "3";
 const room = `experiment:ddong-meong:${variantId}`;
-const archiveLimit = 80;
+const archiveLimit = 5_000;
 const activeSessions = new Map();
-const archive = [];
+const archive = loadDdongMeongArchive();
+
+const contents = {
+  dummy: "보내는 연습",
+  "letting-go": "놓아보내는 연습",
+  "waiting-body": "기다리는 몸",
+  "downward-breath": "아래로 흐르는 숨",
+  "private-room": "혼자 있는 방",
+  "lighter-moment": "가벼워지는 순간",
+};
 
 const events = {
   join: "ddong-meong:3:join",
@@ -13,6 +26,23 @@ const events = {
   state: "ddong-meong:3:state",
   sessionIn: "ddong-meong:3:session:in",
 };
+
+function koreanDay(timestamp = Date.now()) {
+  const values = new Intl.DateTimeFormat("en", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+  }).formatToParts(timestamp);
+  const part = (type) => values.find((value) => value.type === type)?.value;
+  return `${part("year")}-${part("month")}-${part("day")}`;
+}
+
+function cleanText(value, fallback, maximumLength) {
+  if (typeof value !== "string") return fallback;
+  const cleaned = value.trim().replace(/\s+/g, " ").slice(0, maximumLength);
+  return cleaned || fallback;
+}
 
 function getPresence(io) {
   const sockets = [...io.sockets.sockets.values()].filter((socket) =>
@@ -32,10 +62,24 @@ function getPresence(io) {
 }
 
 function getSnapshot(io) {
+  const dayKey = koreanDay();
+  const todayArchive = archive.filter((entry) => entry.dayKey === dayKey);
+  const todayParticipants = new Set(
+    todayArchive.map((entry) => entry.participantId),
+  );
+  for (const session of activeSessions.values()) {
+    todayParticipants.add(session.participantId);
+  }
+
   return {
     activeSessions: [...activeSessions.values()],
-    archive: [...archive],
+    archive: todayArchive,
     presence: getPresence(io),
+    today: {
+      completedSessions: todayArchive.length,
+      dayKey,
+      participantCount: todayParticipants.size,
+    },
   };
 }
 
@@ -46,27 +90,40 @@ function broadcastState(io) {
 function archiveSession(session, outcome) {
   const endedAt = Date.now();
   archive.unshift({
+    contentSlug: session.contentSlug,
+    contentTitle: session.contentTitle,
+    dayKey: koreanDay(endedAt),
     id: randomUUID(),
+    interactionCount: session.interactionCount,
+    nickname: session.nickname,
+    participantId: session.participantId,
     startedAt: session.startedAt,
     endedAt,
     durationMs: Math.max(0, endedAt - session.startedAt),
-    cycleCount: session.cycleCount,
     outcome,
   });
 
   if (archive.length > archiveLimit) archive.length = archiveLimit;
+  saveDdongMeongArchive(archive);
 }
 
-function startSession(socket) {
+function startSession(socket, payload) {
   if (activeSessions.has(socket.id)) return;
+
+  const contentSlug = Object.hasOwn(contents, payload.contentSlug)
+    ? payload.contentSlug
+    : "dummy";
   const now = Date.now();
   activeSessions.set(socket.id, {
+    contentSlug,
+    contentTitle: contents[contentSlug],
     id: randomUUID(),
-    participantId: socket.id,
+    interactionCount: 0,
+    nickname: cleanText(payload.nickname, "이름 없는 사람", 16),
+    participantId: cleanText(payload.participantId, socket.id, 80),
     startedAt: now,
     updatedAt: now,
     phase: "arriving",
-    cycleCount: 0,
   });
 }
 
@@ -79,14 +136,14 @@ function updateSession(socket, payload) {
     payload.phase === "releasing"
       ? payload.phase
       : current.phase;
-  const cycleCount = Number.isFinite(payload.cycleCount)
-    ? Math.max(0, Math.min(999, Math.floor(payload.cycleCount)))
-    : current.cycleCount;
+  const interactionCount = Number.isFinite(payload.interactionCount)
+    ? Math.max(0, Math.min(9_999, Math.floor(payload.interactionCount)))
+    : current.interactionCount;
 
   activeSessions.set(socket.id, {
     ...current,
     phase,
-    cycleCount,
+    interactionCount,
     updatedAt: Date.now(),
   });
 }
@@ -95,7 +152,10 @@ function completeSession(socket, outcome = "completed") {
   const session = activeSessions.get(socket.id);
   if (!session) return;
   activeSessions.delete(socket.id);
-  archiveSession(session, outcome);
+  archiveSession(
+    session,
+    outcome === "flushed" || outcome === "left" ? outcome : "completed",
+  );
 }
 
 function register({ io, socket }) {
@@ -117,9 +177,9 @@ function register({ io, socket }) {
       return;
     }
 
-    if (payload.action === "start") startSession(socket);
+    if (payload.action === "start") startSession(socket, payload);
     if (payload.action === "update") updateSession(socket, payload);
-    if (payload.action === "complete") completeSession(socket);
+    if (payload.action === "complete") completeSession(socket, payload.outcome);
     broadcastState(io);
   });
 

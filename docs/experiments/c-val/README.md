@@ -192,6 +192,8 @@ requested, against an already-running HTTPS server.
 - [Bloomberg workstation visual wrapper](./bloomberg-visual-wrapper.md):
   reusable C-VAL observer-workstation tokens, primitives, profile boundaries,
   and adoption review.
+- [C-VAL 2 Bloomberg news migration](./2-news-bloomberg-migration-2026-08-10.md):
+  preserved screen archive and the bounded active news-monitor trial.
 - [C-VAL 2 casino screen](./2-casino.md): execution-return slot-machine
   presentation contract and retained visual/information boundaries.
 - [C-VAL 2 post-checkpoint iteration ledger](./2-iteration-ledger-2026-08-05.md):

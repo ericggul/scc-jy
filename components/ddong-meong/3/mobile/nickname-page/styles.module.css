@@ -67,6 +67,8 @@
   font: inherit;
   font-size: 16px;
   backdrop-filter: blur(12px);
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .form input::placeholder {

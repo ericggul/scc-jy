@@ -1,322 +1,390 @@
 "use client";
 
-import {
-  useEffect,
-  useRef,
-  useState,
-  type RefObject,
-} from "react";
-import { flushSync } from "react-dom";
+import { memo, startTransition, useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 import type { CValSnapshot } from "@/components/c-val/2/model";
+import { CValBloombergWorkstationFrame } from "@/components/c-val/2/visual";
 import {
-  presentCValNews,
-  type CValNewsContext,
-  type CValNewsSignal,
+  cValNewsAdmissionIntervalMs,
+  presentCValNewsEvents,
+  type CValNewsEvent,
 } from "./presenter";
 
-type LaneItem = CValNewsSignal & {
-  key: string;
-  entersWithTyping: boolean;
-};
+const COLUMN_RECORDS = 27;
+const NEWS_CAPACITY = COLUMN_RECORDS * 2;
+const PENDING_NEWS_CAPACITY = 16;
 
-const INITIAL_ROW_COUNT = 14;
-const INITIAL_ITEMS_PER_LANE = 3;
-const MIN_ROW_HEIGHT = 56;
-const MIN_ROW_COUNT = 10;
-const MAX_ROW_COUNT = 20;
-const MINIMUM_SPEED = 20;
-const MAXIMUM_SPEED = 360;
-const SPEED_RESPONSE = 3.2;
+const NewsTerminal = styled(CValBloombergWorkstationFrame)`
+  --news-ink: #000;
+  --news-header: #171717;
+  --news-header-deep: #0c0c0c;
+  --news-rule: #303030;
+  --news-blue: #1559a8;
+  --news-cyan: #70c9e6;
+  --news-wire: #f0a000;
 
-const Stage = styled.main`
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  background: #f4f3ef;
-  color: #11110f;
-  font-family: Arial, Helvetica, sans-serif;
-  isolation: isolate;
-`;
-
-const Feed = styled.ol<{ $rowCount: number }>`
+  background: var(--news-ink);
+  color: #e8e7df;
   display: grid;
-  grid-template-rows: repeat(${({ $rowCount }) => $rowCount}, minmax(0, 1fr));
-  width: 100%;
+  font-size: clamp(10px, min(0.818cqw, 1.6cqh), 22px);
+  grid-template-rows: 2.167em 1.917em minmax(0, 1fr);
   height: 100%;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  contain: layout paint style;
-`;
-
-const Lane = styled.li`
-  position: relative;
-  min-width: 0;
+  min-height: 0;
   overflow: hidden;
-  contain: strict;
-  border-top: 1px solid rgb(17 17 15 / 0.22);
-
-  &:last-child {
-    border-bottom: 1px solid rgb(17 17 15 / 0.22);
-  }
+  width: 100%;
 `;
 
-const Track = styled.div`
-  position: absolute;
-  inset-block: 0;
-  left: 0;
-  display: flex;
-  width: max-content;
-  backface-visibility: hidden;
-  will-change: transform;
+const FunctionStrip = styled.header`
+  align-items: stretch;
+  background: var(--news-header-deep);
+  border-bottom: 1px solid #4d4d4d;
+  display: grid;
+  grid-template-columns: max-content max-content minmax(0, 1fr) max-content;
+  min-width: 0;
 `;
 
-const Headline = styled.span`
-  position: relative;
-  display: flex;
-  flex: 0 0 auto;
+const Function = styled.div<{ $selected?: boolean; $brand?: boolean }>`
   align-items: center;
-  width: max-content;
-  padding-inline: clamp(48px, 6cqw, 108px);
-  color: #11110f;
-  font-size: clamp(15px, min(2.8cqw, 4.5cqh), 52px);
-  font-weight: 700;
-  letter-spacing: -0.045em;
-  line-height: 0.9;
+  background: ${({ $selected }) => ($selected ? "var(--news-blue)" : "transparent")};
+  box-shadow: inset -1px 0 #343434;
+  color: ${({ $brand }) => ($brand ? "var(--news-wire)" : "#f1f1ec")};
+  display: flex;
+  font-family: var(--cval-bloomberg-sans);
+  font-size: 1.08em;
+  font-weight: ${({ $brand }) => ($brand ? 800 : 600)};
+  letter-spacing: ${({ $brand }) => ($brand ? "0.01em" : "-0.015em")};
+  min-width: 0;
+  padding: 0 0.75em;
   white-space: nowrap;
 `;
 
-const HeadlineMeasure = styled.span`
-  visibility: hidden;
-  white-space: pre;
-  pointer-events: none;
+const FunctionSpacer = styled.div`
+  min-width: 0;
 `;
 
-const HeadlineText = styled.span`
-  position: absolute;
-  inset: 0;
-  display: flex;
+const FunctionStatus = styled.div`
   align-items: center;
-  padding-inline: inherit;
-  white-space: pre;
+  color: #d9d8d1;
+  display: flex;
+  font-size: 0.92em;
+  padding: 0 0.8em;
+  white-space: nowrap;
 `;
 
-function clamp(value: number, minimum: number, maximum: number) {
-  return Math.min(Math.max(value, minimum), maximum);
+const StreamBar = styled.div`
+  align-items: center;
+  background: var(--news-header);
+  border-bottom: 1px solid #484848;
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) max-content;
+  min-width: 0;
+`;
+
+const StreamLabel = styled.div`
+  color: var(--news-wire);
+  font-family: var(--cval-bloomberg-sans);
+  font-size: 1.08em;
+  font-weight: 800;
+  padding: 0 0.85em;
+  white-space: nowrap;
+`;
+
+const StreamScope = styled.div`
+  color: #b7b8b1;
+  font-size: 0.92em;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0 0.8em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+const StreamReadout = styled.div`
+  color: var(--news-cyan);
+  font-size: 0.92em;
+  padding: 0 0.85em;
+  white-space: nowrap;
+`;
+
+const NewsColumns = styled.main`
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  min-height: 0;
+  overflow: hidden;
+`;
+
+const WirePane = styled.section`
+  --news-index-column: 3.4ch;
+
+  contain: layout paint;
+  counter-reset: news-index;
+  display: grid;
+  grid-template-rows: 2.05em repeat(${COLUMN_RECORDS}, minmax(1.95em, 1fr));
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+
+  &:first-child { border-right: 1px solid #555; }
+  &:last-child { counter-reset: news-index ${COLUMN_RECORDS}; }
+`;
+
+const PaneHeader = styled.header`
+  align-items: center;
+  border-bottom: 1px solid var(--news-rule);
+  color: #f0f0ec;
+  display: grid;
+  font-family: var(--cval-bloomberg-sans);
+  font-size: 1.14em;
+  font-weight: 600;
+  grid-template-columns: var(--news-index-column) minmax(0, 1fr) 4.35em 5.9em;
+  letter-spacing: -0.015em;
+  min-width: 0;
+  padding: 0 0.52em;
+
+  strong {
+    font: inherit;
+    grid-column: 2;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  span {
+    color: var(--news-cyan);
+    font-family: var(--cval-bloomberg-mono);
+    font-size: 0.72em;
+    font-weight: 500;
+    text-align: right;
+  }
+`;
+
+const WireItem = styled.article`
+  align-items: center;
+  border-bottom: 1px solid #202020;
+  contain: layout paint;
+  counter-increment: news-index;
+  display: grid;
+  font-size: 1.18em;
+  grid-template-columns: var(--news-index-column) minmax(0, 1fr) 4.35em 5.9em;
+  line-height: 1;
+  min-width: 0;
+  padding: 0 0.52em;
+
+  &::before {
+    color: #d8d7d0;
+    content: counter(news-index, decimal-leading-zero) ")";
+    font-family: var(--cval-bloomberg-mono);
+    justify-self: start;
+    text-align: left;
+    width: 3ch;
+  }
+
+  [data-headline] {
+    color: var(--news-wire);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  [data-context] {
+    color: #f0a000;
+    font-size: 0.83em;
+    padding: 0 0.38em;
+    text-align: right;
+  }
+
+  [data-change] {
+    color: #e7e5de;
+    font-size: 0.83em;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  [data-change="positive"] { color: #60cd84; }
+  [data-change="negative"] { color: #ff737e; }
+`;
+
+function signed(value: number, digits = 2) {
+  if (!Number.isFinite(value)) return "—";
+  return `${value >= 0 ? "+" : ""}${value.toFixed(digits)}%`;
 }
 
-function rowCountForHeight(height: number) {
-  return clamp(Math.floor(height / MIN_ROW_HEIGHT), MIN_ROW_COUNT, MAX_ROW_COUNT);
+function changeTone(value: number) {
+  if (!Number.isFinite(value)) return "neutral";
+  if (value > 0.0005) return "positive";
+  if (value < -0.0005) return "negative";
+  return "neutral";
 }
 
-function speedForIntensity(intensity: number) {
-  const safeIntensity = Number.isFinite(intensity) ? clamp(intensity, 0, 1) : 0;
-  return MINIMUM_SPEED + safeIntensity * (MAXIMUM_SPEED - MINIMUM_SPEED);
-}
-
-function makeInitialLane(signals: readonly CValNewsSignal[], rowIndex: number) {
-  const laneSignal = signals[rowIndex % signals.length];
-  return Array.from({ length: INITIAL_ITEMS_PER_LANE }, (_, itemIndex) => ({
-    ...laneSignal,
-    key: `lane-${rowIndex}-initial-${itemIndex}`,
-    entersWithTyping: itemIndex > 0,
-  }));
-}
-
-function TypingHeadline({ item }: { item: LaneItem }) {
-  return (
-    <Headline
-      data-enters-with-typing={item.entersWithTyping ? "true" : "false"}
-      data-full-headline={item.headline}
-    >
-      <HeadlineMeasure aria-hidden="true">{item.headline}</HeadlineMeasure>
-      <HeadlineText data-visible-headline="">
-        {item.entersWithTyping ? "" : item.headline}
-      </HeadlineText>
-    </Headline>
-  );
-}
-
-function NewsLane({
-  rowIndex,
-  initialSignals,
-  signalsRef,
-  intensityRef,
-  revisionRef,
-}: {
-  rowIndex: number;
-  initialSignals: readonly CValNewsSignal[];
-  signalsRef: RefObject<readonly CValNewsSignal[]>;
-  intensityRef: RefObject<Record<CValNewsContext, number>>;
-  revisionRef: RefObject<number>;
-}) {
-  const laneId = initialSignals[rowIndex % initialSignals.length].id;
-  const [items, setItems] = useState<LaneItem[]>(() =>
-    makeInitialLane(initialSignals, rowIndex),
-  );
-  const trackRef = useRef<HTMLDivElement>(null);
-  const itemsRef = useRef(items);
-  const offsetRef = useRef(0);
-  const speedRef = useRef(MINIMUM_SPEED);
-  const sequenceRef = useRef(0);
-  const appliedRevisionRef = useRef(0);
+function useCValNewsWire(snapshot: CValSnapshot) {
+  const previousRef = useRef<CValSnapshot | null>(null);
+  const seenIdsRef = useRef(new Set<string>());
+  const visibleHeadlinesRef = useRef(new Set<string>());
+  const visibleTemplateIdsRef = useRef(new Set<string>());
+  const recordsRef = useRef<CValNewsEvent[]>([]);
+  const pendingRef = useRef<CValNewsEvent[]>([]);
+  const lastAdmissionAtRef = useRef<number | null>(null);
+  const cadenceRef = useRef(cValNewsAdmissionIntervalMs(snapshot.market.oneSecondMovePercent));
+  const scheduleNextRef = useRef<() => void>(() => {});
+  const runRef = useRef(snapshot.runId);
+  const [records, setRecords] = useState<CValNewsEvent[]>([]);
 
   useEffect(() => {
-    itemsRef.current = items;
-  }, [items]);
-
-  useEffect(() => {
-    const track = trackRef.current;
-    if (!track) return;
-    let animationFrame = 0;
-    let previousTime = performance.now();
+    let timer: number | null = null;
     let disposed = false;
-    let positionedInitialTrack = false;
 
-    const appendFromRight = () => {
-      const nextSignal = signalsRef.current.find((signal) => signal.id === laneId);
-      if (!nextSignal) return;
-      const nextItem: LaneItem = {
-        ...nextSignal,
-        key: `lane-${rowIndex}-stream-${sequenceRef.current++}`,
-        entersWithTyping: true,
-      };
-      setItems((current) => [...current.slice(1), nextItem]);
-    };
-
-    const refreshOffscreenIncomingItem = (viewportWidth: number) => {
-      const revision = revisionRef.current;
-      if (revision === appliedRevisionRef.current) return;
-      const lastHeadline = track.lastElementChild as HTMLElement | null;
-      if (!lastHeadline || lastHeadline.getBoundingClientRect().left < viewportWidth) return;
-      const nextSignal = signalsRef.current.find((signal) => signal.id === laneId);
-      if (!nextSignal) return;
-      const currentIncoming = itemsRef.current.at(-1);
-      if (currentIncoming?.signature === nextSignal.signature) {
-        appliedRevisionRef.current = revision;
-        return;
+    const scheduleNext = () => {
+      if (timer != null) {
+        window.clearTimeout(timer);
+        timer = null;
       }
-      const nextItem: LaneItem = {
-        ...nextSignal,
-        key: `lane-${rowIndex}-incoming-${revision}`,
-        entersWithTyping: true,
-      };
-      flushSync(() => {
-        setItems((current) => [...current.slice(0, -1), nextItem]);
-      });
-      appliedRevisionRef.current = revision;
+      if (disposed || pendingRef.current.length === 0) return;
+
+      const now = performance.now();
+      const elapsed = lastAdmissionAtRef.current == null ? Number.POSITIVE_INFINITY : now - lastAdmissionAtRef.current;
+      const delay = Math.max(0, cadenceRef.current - elapsed);
+      timer = window.setTimeout(() => {
+        timer = null;
+        if (disposed) return;
+
+        const [nextStory, ...remaining] = pendingRef.current;
+        pendingRef.current = remaining;
+        if (!nextStory) return;
+
+        const nextRecords = [nextStory, ...recordsRef.current].slice(0, NEWS_CAPACITY);
+        recordsRef.current = nextRecords;
+        visibleHeadlinesRef.current = new Set(nextRecords.map((event) => event.headline));
+        visibleTemplateIdsRef.current = new Set(nextRecords.map((event) => event.templateId));
+        lastAdmissionAtRef.current = performance.now();
+        startTransition(() => setRecords(nextRecords));
+        scheduleNext();
+      }, delay);
     };
 
-    const updateEnteringTypography = (viewportWidth: number) => {
-      const startX = viewportWidth * 0.8;
-      const completeX = viewportWidth * 0.75;
-      const typingDistance = Math.max(1, startX - completeX);
-      track.querySelectorAll<HTMLElement>('[data-enters-with-typing="true"]').forEach((headline) => {
-        const fullHeadline = headline.dataset.fullHeadline ?? "";
-        const visibleHeadline = headline.querySelector<HTMLElement>("[data-visible-headline]");
-        if (!visibleHeadline) return;
-        const progress = clamp((startX - headline.getBoundingClientRect().left) / typingDistance, 0, 1);
-        const nextText = fullHeadline.slice(0, Math.ceil(fullHeadline.length * progress));
-        if (visibleHeadline.textContent !== nextText) visibleHeadline.textContent = nextText;
-      });
-    };
-
-    const animate = (now: number) => {
-      if (disposed) return;
-      const elapsed = Math.min(64, now - previousTime);
-      previousTime = now;
-      const viewportWidth = track.parentElement?.clientWidth ?? window.innerWidth;
-      const firstHeadline = track.firstElementChild as HTMLElement | null;
-      const firstWidth = firstHeadline?.offsetWidth ?? 0;
-
-      if (!positionedInitialTrack && firstWidth > 0) {
-        offsetRef.current = Math.max(0, firstWidth - viewportWidth * 0.82);
-        positionedInitialTrack = true;
-      }
-
-      const targetSpeed = speedForIntensity(intensityRef.current[laneId]);
-      const response = 1 - Math.exp(-SPEED_RESPONSE * (elapsed / 1000));
-      speedRef.current += (targetSpeed - speedRef.current) * response;
-      offsetRef.current += (elapsed / 1000) * speedRef.current;
-
-      if (firstWidth > 0 && offsetRef.current >= firstWidth) {
-        flushSync(appendFromRight);
-        offsetRef.current -= firstWidth;
-      }
-
-      track.style.transform = `translate3d(${-offsetRef.current}px, 0, 0)`;
-      refreshOffscreenIncomingItem(viewportWidth);
-      updateEnteringTypography(viewportWidth);
-      animationFrame = window.requestAnimationFrame(animate);
-    };
-
-    animationFrame = window.requestAnimationFrame(animate);
+    scheduleNextRef.current = scheduleNext;
     return () => {
       disposed = true;
-      window.cancelAnimationFrame(animationFrame);
+      if (timer != null) window.clearTimeout(timer);
+      scheduleNextRef.current = () => {};
     };
-  }, [intensityRef, laneId, revisionRef, rowIndex, signalsRef]);
-
-  return (
-    <Lane>
-      <Track ref={trackRef}>
-        {items.map((item) => <TypingHeadline key={item.key} item={item} />)}
-      </Track>
-    </Lane>
-  );
-}
-
-export default function CValNewsScreen({ snapshot }: { snapshot: CValSnapshot }) {
-  const stageRef = useRef<HTMLElement>(null);
-  const [rowCount, setRowCount] = useState(INITIAL_ROW_COUNT);
-  const [initialSignals] = useState(() => presentCValNews(snapshot));
-  const signalsRef = useRef<readonly CValNewsSignal[]>(initialSignals);
-  const intensityRef = useRef<Record<CValNewsContext, number>>(
-    Object.fromEntries(initialSignals.map((signal) => [signal.id, signal.intensity])) as Record<CValNewsContext, number>,
-  );
-  const revisionRef = useRef(snapshot.revision);
-  const currentSignals = presentCValNews(snapshot);
-
-  useEffect(() => {
-    signalsRef.current = currentSignals;
-    intensityRef.current = Object.fromEntries(
-      currentSignals.map((signal) => [signal.id, signal.intensity]),
-    ) as Record<CValNewsContext, number>;
-    revisionRef.current = snapshot.revision;
-  }, [currentSignals, snapshot.revision]);
-
-  useEffect(() => {
-    const stage = stageRef.current;
-    if (!stage) return;
-    const updateRows = () => setRowCount(rowCountForHeight(stage.clientHeight));
-    const observer = new ResizeObserver(updateRows);
-    observer.observe(stage);
-    updateRows();
-    return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    if (runRef.current !== snapshot.runId) {
+      runRef.current = snapshot.runId;
+      previousRef.current = null;
+      seenIdsRef.current.clear();
+      visibleHeadlinesRef.current.clear();
+      visibleTemplateIdsRef.current.clear();
+      recordsRef.current = [];
+      pendingRef.current = [];
+      lastAdmissionAtRef.current = null;
+      startTransition(() => setRecords(recordsRef.current));
+    }
+
+    if (recordsRef.current.some((event) => !Number.isFinite(event.oneDayMove) || !event.templateId)) {
+      previousRef.current = null;
+      seenIdsRef.current.clear();
+      visibleHeadlinesRef.current.clear();
+      visibleTemplateIdsRef.current.clear();
+      recordsRef.current = [];
+      pendingRef.current = [];
+      lastAdmissionAtRef.current = null;
+      startTransition(() => setRecords(recordsRef.current));
+    }
+
+    cadenceRef.current = cValNewsAdmissionIntervalMs(snapshot.market.oneSecondMovePercent);
+    scheduleNextRef.current();
+    const reservedTemplateIds = new Set([
+      ...visibleTemplateIdsRef.current,
+      ...pendingRef.current.map((event) => event.templateId),
+    ]);
+    const candidates = presentCValNewsEvents(previousRef.current, snapshot, reservedTemplateIds);
+    previousRef.current = snapshot;
+
+    const additions = candidates.filter((event) => !seenIdsRef.current.has(event.id));
+    additions.forEach((event) => seenIdsRef.current.add(event.id));
+
+    const pendingHeadlines = new Set(pendingRef.current.map((event) => event.headline));
+    const pendingTemplateIds = new Set(pendingRef.current.map((event) => event.templateId));
+    const uniqueAdditions = additions.filter((event) => {
+      if (
+        visibleHeadlinesRef.current.has(event.headline)
+        || pendingHeadlines.has(event.headline)
+        || visibleTemplateIdsRef.current.has(event.templateId)
+        || pendingTemplateIds.has(event.templateId)
+      ) return false;
+      pendingHeadlines.add(event.headline);
+      pendingTemplateIds.add(event.templateId);
+      return true;
+    });
+    if (uniqueAdditions.length === 0) return;
+
+    pendingRef.current = [...pendingRef.current, ...uniqueAdditions]
+      .slice(-PENDING_NEWS_CAPACITY);
+    scheduleNextRef.current();
+  }, [snapshot]);
+
+  return records;
+}
+
+const NewsItem = memo(function NewsItem({ event }: { event: CValNewsEvent }) {
+  const oneDayMove = Number.isFinite(event.oneDayMove) ? event.oneDayMove : Number.NaN;
+
   return (
-    <Stage
-      ref={stageRef}
-      aria-label="Market price translated into financial, economic, and social headlines"
-      data-market-revision={snapshot.revision}
-      data-market-index={snapshot.market.index.toFixed(2)}
-      data-market-change={snapshot.market.changeFromOpenPercent.toFixed(2)}
-      data-market-short-move={snapshot.market.oneSecondMovePercent.toFixed(2)}
-    >
-      <Feed $rowCount={rowCount}>
-        {Array.from({ length: rowCount }, (_, rowIndex) => (
-          <NewsLane
-            key={`c-val-news-lane-${rowIndex}`}
-            rowIndex={rowIndex}
-            initialSignals={initialSignals}
-            signalsRef={signalsRef}
-            intensityRef={intensityRef}
-            revisionRef={revisionRef}
-          />
-        ))}
-      </Feed>
-    </Stage>
+    <WireItem data-event-id={event.id}>
+      <span data-headline title={event.headline}>{event.headline}</span>
+      <span data-context>{event.code}</span>
+      <span data-change={changeTone(oneDayMove)}>{signed(oneDayMove)}</span>
+    </WireItem>
+  );
+});
+
+const NewsArchive = memo(function NewsArchive({ records }: { records: CValNewsEvent[] }) {
+  const newest = records.slice(0, COLUMN_RECORDS);
+  const previous = records.slice(COLUMN_RECORDS, NEWS_CAPACITY);
+
+  return (
+    <NewsColumns>
+      <WirePane aria-label="Newest C-VAL news records">
+        <PaneHeader>
+          <strong>Latest News</strong>
+          <span>TYPE</span>
+          <span>1D MOVE</span>
+        </PaneHeader>
+        {newest.map((event) => <NewsItem key={event.id} event={event} />)}
+      </WirePane>
+      <WirePane aria-label="Previous C-VAL news records">
+        <PaneHeader>
+          <strong>Earlier News</strong>
+          <span>TYPE</span>
+          <span>1D MOVE</span>
+        </PaneHeader>
+        {previous.map((event) => <NewsItem key={event.id} event={event} />)}
+      </WirePane>
+    </NewsColumns>
+  );
+});
+
+export default function CValNewsScreen({ snapshot }: { snapshot: CValSnapshot }) {
+  const records = useCValNewsWire(snapshot);
+
+  return (
+    <NewsTerminal aria-label="C-VAL continuously accumulating public-signal news wire">
+      <FunctionStrip>
+        <Function $brand>C-VAL NEWS</Function>
+        <Function $selected>PUBLIC SIGNALS</Function>
+        <FunctionSpacer />
+        <FunctionStatus>CONTINUOUS ARCHIVE</FunctionStatus>
+      </FunctionStrip>
+      <StreamBar>
+        <StreamLabel>MARKET NEWS WIRE</StreamLabel>
+        <StreamScope>NEW, MATERIAL MARKET STATE CHANGES ONLY</StreamScope>
+        <StreamReadout>LAST {snapshot.market.index.toFixed(2)}</StreamReadout>
+      </StreamBar>
+      <NewsArchive records={records} />
+    </NewsTerminal>
   );
 }

@@ -1,20 +1,10 @@
-import { meditationContents } from "../../../model/content-catalog";
-import { readingScript } from "../../../model/reading-script";
-import GradientShell from "../../surface/gradient-shell";
-import { baselineAccumulationProfile } from "./organic-liquid-background/profiles";
-import ReadingPage from "./reading-page";
+import MeditationContentExperience from "../../content/experience";
+import { findMobileMeditationContent } from "../../content/registry";
 
-const dummyContent = meditationContents[0];
-const durationMs = dummyContent.durationSeconds * 1000;
+const dummyContent = findMobileMeditationContent("dummy");
 
 export default function DummyMeditationContent() {
   return (
-    <GradientShell>
-      <ReadingPage
-        accumulationProfile={baselineAccumulationProfile}
-        lines={readingScript}
-        totalMs={durationMs}
-      />
-    </GradientShell>
+    <MeditationContentExperience content={dummyContent} />
   );
 }
