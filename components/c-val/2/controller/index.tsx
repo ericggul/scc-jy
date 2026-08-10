@@ -16,6 +16,7 @@ import {
   type CValTrade,
 } from "@/components/c-val/2/model";
 import { useCValSocket } from "@/components/c-val/2/transport";
+import { CValBloombergWorkstationFrame } from "@/components/c-val/2/visual";
 import styles from "./controller.module.css";
 
 type VisualProperties = CSSProperties & Record<`--${string}`, string>;
@@ -459,7 +460,7 @@ export default function CValController() {
   }
 
   return (
-    <main className={styles.terminal}>
+    <CValBloombergWorkstationFrame className={styles.terminal}>
       <header className={styles.chrome}>
         <div className={styles.identity}><strong>C·VAL / 2</strong><span>CONTINUOUS DOUBLE-AUCTION MARKET</span></div>
         <div className={styles.session}><b>CVAL SIMULATED EQUITY</b><span>1 REAL SECOND = 1 MARKET DAY</span></div>
@@ -490,6 +491,6 @@ export default function CValController() {
         <OrderBookPanel snapshot={snapshot} />
         <ExecutionsPanel snapshot={snapshot} />
       </div>
-    </main>
+    </CValBloombergWorkstationFrame>
   );
 }

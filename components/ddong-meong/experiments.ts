@@ -7,6 +7,11 @@ export const ddongMeongExperiments = [
   {
     slug: "2",
     label: "ddong-meong/2",
+    status: "archive",
+  },
+  {
+    slug: "3",
+    label: "ddong-meong/3",
     status: "working",
   },
 ] as const;

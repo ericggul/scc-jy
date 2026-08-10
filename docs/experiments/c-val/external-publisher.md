@@ -54,9 +54,23 @@ max(
 | `0.50%`–`1.25%` | 400 ms |
 | `1.25%` or above | 200 ms |
 
-The 200 ms value is the V2 request, not a promise that every outbound HTTP post reaches Discord at 200 ms. Discord sets the live webhook route limit through response headers, which must be read rather than hard-coded. With a non-exhausted bucket, the transport spreads the remaining sends across `X-RateLimit-Reset-After`; a `5 / 1 second` response yields a 200 ms network cadence. With an exhausted bucket or `429`, it waits for the returned reset/retry time and then resumes. During either wait it keeps only the most recent market utterance: it does not build a backlog of stale messages. [Discord rate limits](https://docs.discord.com/developers/topics/rate-limits)
+The 200 ms value is the V2 request, not a guarantee that every outbound HTTP
+post reaches Discord at 200 ms. Discord sets the live webhook route limit
+through response headers. With a non-exhausted bucket, the transport spreads
+the remaining sends across `X-RateLimit-Reset-After`; a `5 / 1 second` response
+yields a 200 ms network cadence. If a successful response has no usable rate
+headers, the transport still keeps a conservative 200 ms floor rather than
+bursting. With an exhausted bucket it waits for the returned reset time. A
+`429` drops the now-stale rejected utterance, honors `Retry-After`, and sends
+only a later observation if one arrives; it never retries an old market state
+or builds a backlog. [Discord rate limits](https://docs.discord.com/developers/topics/rate-limits)
 
-The transport reports its configured/enabled state, queue state, sent/coalesced/rate-limited/failed counts, and a terminal response status. A `401`, `403`, or `404` stops further posts from that process; this avoids continuously hammering an invalid/deleted/unauthorized webhook. Restart after correcting its credential. Other failures back off exponentially and retry with later execution states.
+The transport reports its configured/enabled state, queue state, sent,
+coalesced, rate-limited, failed, discarded counts, and last response status. A
+`400`, `401`, `403`, `404`, `405`, or `410` clears queued work and stops further
+posts from that process: these responses will not become a hidden 1/2/4/…
+second backoff that looks like a stalled comment stream. Network and 5xx
+failures retain exponential recovery with later execution states.
 
 ## Commentary stream
 
@@ -99,8 +113,9 @@ Discord work stops at this bounded state until a later C-VAL instruction.
   establish a fixed limit for Execute Webhook `POST`; the transport continues
   to use the `POST` response headers it actually receives.
 - The current V2 requested cadence is 200 ms during a realized sharp move and
-  five seconds in a nearly stationary active market. The network cadence may
-  be slower only when Discord's live `POST` bucket requires it.
+  five seconds in a nearly stationary active market. The transport preserves a
+  200 ms minimum after successful sends even when Discord does not return
+  usable rate headers; live `POST` bucket windows may require a slower pace.
 - The Korean stream uses `오늘 +n.nn%` rather than `일중`; all text remains
   parameterized from actual C-VAL executions.
 

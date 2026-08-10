@@ -1,8 +1,8 @@
 const REQUEST_TIMEOUT_MS = 10_000;
-const MAX_RETRY_AFTER_RATE_LIMIT = 1;
+const DISCORD_WEBHOOK_FALLBACK_INTERVAL_MS = 200;
 const RECOVERABLE_FAILURE_BASE_DELAY_MS = 1_000;
 const RECOVERABLE_FAILURE_MAX_DELAY_MS = 30_000;
-const TERMINAL_STATUS_CODES = new Set([401, 403, 404]);
+const TERMINAL_STATUS_CODES = new Set([400, 401, 403, 404, 405, 410]);
 const DISCORD_MESSAGE_CONTENT_LIMIT = 2_000;
 
 function isEnabled(value) {
@@ -48,9 +48,10 @@ function retryAfterMilliseconds(response, body) {
 }
 
 function rateLimitDelayMilliseconds(response) {
-  const remaining = Number(response.headers?.get?.("x-ratelimit-remaining"));
-  const resetAfterSeconds = Number(
-    response.headers?.get?.("x-ratelimit-reset-after"),
+  const remaining = responseHeaderNumber(response, "x-ratelimit-remaining");
+  const resetAfterSeconds = responseHeaderNumber(
+    response,
+    "x-ratelimit-reset-after",
   );
   return remaining === 0 && Number.isFinite(resetAfterSeconds) && resetAfterSeconds > 0
     ? Math.ceil(resetAfterSeconds * 1_000)
@@ -58,9 +59,10 @@ function rateLimitDelayMilliseconds(response) {
 }
 
 function rateLimitPacingDelayMilliseconds(response) {
-  const remaining = Number(response.headers?.get?.("x-ratelimit-remaining"));
-  const resetAfterSeconds = Number(
-    response.headers?.get?.("x-ratelimit-reset-after"),
+  const remaining = responseHeaderNumber(response, "x-ratelimit-remaining");
+  const resetAfterSeconds = responseHeaderNumber(
+    response,
+    "x-ratelimit-reset-after",
   );
   // Spread the remaining sends across the live window rather than exhausting
   // the bucket in one burst and then appearing to go silent.
@@ -70,6 +72,13 @@ function rateLimitPacingDelayMilliseconds(response) {
     resetAfterSeconds > 0
     ? Math.ceil((resetAfterSeconds * 1_000) / (remaining + 1))
     : 0;
+}
+
+function responseHeaderNumber(response, name) {
+  const value = response.headers?.get?.(name);
+  return value === null || value === undefined || value === ""
+    ? Number.NaN
+    : Number(value);
 }
 
 function normalizePublication(value) {
@@ -118,12 +127,14 @@ export function createDiscordPublisher({
   let terminalFailure = null;
   let consecutiveFailures = 0;
   let rateLimit = null;
+  let lastResponseStatus = null;
   const metrics = {
     accepted: 0,
     sent: 0,
     coalesced: 0,
     rateLimited: 0,
     failed: 0,
+    discarded: 0,
   };
 
   async function waitForRateLimitWindow() {
@@ -145,6 +156,11 @@ export function createDiscordPublisher({
     consecutiveFailures += 1;
     if (TERMINAL_STATUS_CODES.has(status)) {
       terminalFailure = status;
+      metrics.discarded += 1;
+      if (queuedPublication) {
+        metrics.discarded += 1;
+        queuedPublication = null;
+      }
       logger.warn?.(
         "[c-val:external:discord] webhook disabled after terminal response",
         status,
@@ -155,15 +171,9 @@ export function createDiscordPublisher({
   }
 
   function observeRateLimitHeaders(response) {
-    const numericHeader = (name) => {
-      const value = response.headers?.get?.(name);
-      return value === null || value === undefined || value === ""
-        ? Number.NaN
-        : Number(value);
-    };
-    const limit = numericHeader("x-ratelimit-limit");
-    const remaining = numericHeader("x-ratelimit-remaining");
-    const resetAfterSeconds = numericHeader("x-ratelimit-reset-after");
+    const limit = responseHeaderNumber(response, "x-ratelimit-limit");
+    const remaining = responseHeaderNumber(response, "x-ratelimit-remaining");
+    const resetAfterSeconds = responseHeaderNumber(response, "x-ratelimit-reset-after");
     const bucket = response.headers?.get?.("x-ratelimit-bucket") ?? null;
     if (
       !Number.isFinite(limit) &&
@@ -184,65 +194,67 @@ export function createDiscordPublisher({
   }
 
   async function deliver(publication) {
+    if (terminalFailure) return false;
     await waitForRateLimitWindow();
-    for (let attempt = 0; attempt <= MAX_RETRY_AFTER_RATE_LIMIT; attempt += 1) {
-      let response;
-      try {
-        const body = {
-          content: publication.content,
-          allowed_mentions: { parse: [] },
-        };
-        if (publication.username) body.username = publication.username;
-        response = await fetchImpl(webhookUrl, {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify(body),
-          signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-        });
-      } catch (error) {
-        recordFailure("network");
-        logger.warn?.("[c-val:external:discord] delivery failed", error);
-        return false;
-      }
+    if (terminalFailure) return false;
+    let response;
+    try {
+      const body = {
+        content: publication.content,
+        allowed_mentions: { parse: [] },
+      };
+      if (publication.username) body.username = publication.username;
+      response = await fetchImpl(webhookUrl, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      });
+    } catch (error) {
+      recordFailure("network");
+      logger.warn?.("[c-val:external:discord] delivery failed", error);
+      return false;
+    }
 
-      const rateLimitDelay = rateLimitDelayMilliseconds(response);
-      observeRateLimitHeaders(response);
-      if (rateLimitDelay > 0) {
-        nextAllowedAt = Math.max(nextAllowedAt, now() + rateLimitDelay);
-      } else {
-        const pacingDelay = rateLimitPacingDelayMilliseconds(response);
-        if (pacingDelay > 0) {
-          nextAllowedAt = Math.max(nextAllowedAt, now() + pacingDelay);
-        }
-      }
-      if (response.ok) {
-        consecutiveFailures = 0;
-        metrics.sent += 1;
-        return true;
-      }
-      const body = await responseBody(response);
-      if (response.status === 429 && attempt < MAX_RETRY_AFTER_RATE_LIMIT) {
-        metrics.rateLimited += 1;
-        nextAllowedAt = Math.max(
-          nextAllowedAt,
-          now() + retryAfterMilliseconds(response, body),
-        );
-        await waitForRateLimitWindow();
-        continue;
-      }
-      if (response.status === 429) metrics.rateLimited += 1;
-      recordFailure(response.status);
+    lastResponseStatus = response.status;
+    const rateLimitDelay = rateLimitDelayMilliseconds(response);
+    observeRateLimitHeaders(response);
+    if (rateLimitDelay > 0) {
+      nextAllowedAt = Math.max(nextAllowedAt, now() + rateLimitDelay);
+    } else {
+      const pacingDelay = rateLimitPacingDelayMilliseconds(response);
+      nextAllowedAt = Math.max(
+        nextAllowedAt,
+        now() + Math.max(pacingDelay, DISCORD_WEBHOOK_FALLBACK_INTERVAL_MS),
+      );
+    }
+    if (response.ok) {
+      consecutiveFailures = 0;
+      metrics.sent += 1;
+      return true;
+    }
+    const body = await responseBody(response);
+    if (response.status === 429) {
+      metrics.rateLimited += 1;
+      nextAllowedAt = Math.max(
+        nextAllowedAt,
+        now() + retryAfterMilliseconds(response, body),
+      );
       logger.warn?.(
-        "[c-val:external:discord] Discord rejected publication",
-        response.status,
+        "[c-val:external:discord] rate limited; keeping only a newer observation",
       );
       return false;
     }
+    recordFailure(response.status);
+    logger.warn?.(
+      "[c-val:external:discord] Discord rejected publication",
+      response.status,
+    );
     return false;
   }
 
   async function drain() {
-    while (queuedPublication) {
+    while (queuedPublication && !terminalFailure) {
       const publication = queuedPublication;
       queuedPublication = null;
       await deliver(publication);
@@ -291,6 +303,7 @@ export function createDiscordPublisher({
       enabled: enabled && terminalFailure === null,
       configured: enabled,
       terminalFailure,
+      lastResponseStatus,
       queue: {
         draining,
         hasPendingPublication: queuedPublication !== null,

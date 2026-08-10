@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import type { ComponentType } from "react";
 import DdongMeongOneMain from "@/components/ddong-meong/1/main";
 import DdongMeongTwoMain from "@/components/ddong-meong/2/main";
+import DdongMeongThreeMain from "@/components/ddong-meong/3/mobile/main";
 import {
   ddongMeongExperiments,
   isDdongMeongExperimentSlug,
@@ -12,6 +13,7 @@ import {
 const mainByExperiment = {
   "1": DdongMeongOneMain,
   "2": DdongMeongTwoMain,
+  "3": DdongMeongThreeMain,
 } satisfies Record<DdongMeongExperimentSlug, ComponentType>;
 
 export function generateStaticParams() {

@@ -25,6 +25,18 @@ import {
   meditationContents as twoMeditationContents,
   type MeditationContentSlug as TwoMeditationContentSlug,
 } from "@/components/ddong-meong/2/model/content-catalog";
+import DdongMeongThreeDummy from "@/components/ddong-meong/3/mobile/contents/dummy";
+import {
+  DownwardBreathMeditation as ThreeDownwardBreathMeditation,
+  LettingGoMeditation as ThreeLettingGoMeditation,
+  LighterMomentMeditation as ThreeLighterMomentMeditation,
+  PrivateRoomMeditation as ThreePrivateRoomMeditation,
+  WaitingBodyMeditation as ThreeWaitingBodyMeditation,
+} from "@/components/ddong-meong/3/mobile/contents/guided-reading";
+import {
+  meditationContents as threeMeditationContents,
+  type MeditationContentSlug as ThreeMeditationContentSlug,
+} from "@/components/ddong-meong/3/model/content-catalog";
 
 const oneContentComponents = {
   dummy: DdongMeongOneDummy,
@@ -44,6 +56,15 @@ const twoContentComponents = {
   "lighter-moment": LighterMomentMeditation,
 } satisfies Record<TwoMeditationContentSlug, ComponentType>;
 
+const threeContentComponents = {
+  dummy: DdongMeongThreeDummy,
+  "letting-go": ThreeLettingGoMeditation,
+  "waiting-body": ThreeWaitingBodyMeditation,
+  "downward-breath": ThreeDownwardBreathMeditation,
+  "private-room": ThreePrivateRoomMeditation,
+  "lighter-moment": ThreeLighterMomentMeditation,
+} satisfies Record<ThreeMeditationContentSlug, ComponentType>;
+
 const contentRoutes = [
   ...oneMeditationContents.map((meditation) => ({
     experiment: "1" as const,
@@ -54,6 +75,11 @@ const contentRoutes = [
     experiment: "2" as const,
     meditation,
     Content: twoContentComponents[meditation.slug],
+  })),
+  ...threeMeditationContents.map((meditation) => ({
+    experiment: "3" as const,
+    meditation,
+    Content: threeContentComponents[meditation.slug],
   })),
 ];
 

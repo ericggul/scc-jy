@@ -189,6 +189,9 @@ requested, against an already-running HTTPS server.
 
 - [C-VAL 1](./1.md): promoted and frozen behavioral, visual, and market contract.
 - [C-VAL 2](./2.md): active branch contract and future iteration record.
+- [Bloomberg workstation visual wrapper](./bloomberg-visual-wrapper.md):
+  reusable C-VAL observer-workstation tokens, primitives, profile boundaries,
+  and adoption review.
 - [C-VAL 2 casino screen](./2-casino.md): execution-return slot-machine
   presentation contract and retained visual/information boundaries.
 - [C-VAL 2 post-checkpoint iteration ledger](./2-iteration-ledger-2026-08-05.md):

@@ -76,14 +76,13 @@ test("Slack presentation uses a long execution- and agent-based research report"
   assert.match(publication.text, /104\.20/);
   assert.equal(publication.blocks[0].type, "section");
   assert.equal(publication.blocks.length, 1);
-  assert.equal(publication.text.includes("오늘"), false);
-  assert.equal(publication.text.includes("개장 대비"), false);
-  assert.equal(publication.text.includes("{"), false);
+  assert.equal(publication.text.includes("*"), false);
+  assert.equal(publication.blocks[0].text.type, "plain_text");
   assert.ok(publication.wordCount >= 100);
   assert.ok(publication.wordCount <= 200);
   assert.ok(publication.blocks[0].text.text.length <= 3_000);
   assert.match(publication.text, /유동성 공급자/);
-  assert.match(publication.text, /주문 불균형/);
+  assert.match(publication.text, /불균형 \+25\.0%/);
   assert.match(publication.text, /유동성 공급자 18건/);
   assert.match(publication.text, /상위 5호가 8,400주/);
   assert.match(publication.text, /기초가치 102\.50/);
@@ -96,12 +95,13 @@ test("Slack reports use the one-second channel cadence across market conditions"
   assert.equal(cValSlackIntervalMs(activeSnapshot({ dayMove: -2 })), 1_000);
 });
 
-test("Slack research catalog contains 200 distinct report frames within Slack limits", () => {
-  assert.equal(cValSlackReportTemplates.length, 200);
+test("Slack research catalog contains 120 distinct report frames within Slack limits", () => {
+  assert.equal(cValSlackReportTemplates.length, 120);
   assert.equal(
     new Set(cValSlackReportTemplates.map((template) => template.id)).size,
-    200,
+    120,
   );
+  const headlines = new Set();
   for (const [index, template] of cValSlackReportTemplates.entries()) {
     const publication = renderCValSlackReport(
       activeSnapshot({ revision: index + 1, price: 104.2, dayMove: 4.2 }),
@@ -111,7 +111,10 @@ test("Slack research catalog contains 200 distinct report frames within Slack li
     assert.ok(publication.wordCount >= 100);
     assert.ok(publication.wordCount <= 200);
     assert.ok(publication.blocks[0].text.text.length <= 3_000);
+    assert.equal(publication.text.includes("*"), false);
+    headlines.add(publication.text.split("\n", 1)[0]);
   }
+  assert.equal(headlines.size, 120);
 });
 
 test("Slack publisher has no network effect until explicitly enabled with a valid webhook", async () => {

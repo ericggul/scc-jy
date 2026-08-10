@@ -44,8 +44,9 @@ Each message contains:
 - a 100–200어절 Korean report in one Slack `section` block;
 - a plain-text fallback with the same report for notifications and clients that
   do not render Block Kit;
-- a deterministic selection from 200 report frames, with the immediately prior
-  frame excluded for the same run.
+- a deterministic, state-matched selection from 120 report frames: 12 distinct
+  writing forms with 10 parameterized headlines each; the immediately prior
+  frame is excluded for the same run.
 
 The separate `현재 … · 오늘 … · 개장 대비 …` context line is not sent. The report
 instead uses actual server snapshot values: executed price and rolling range;
@@ -54,11 +55,14 @@ fundamental value and price/value gap; recent order and trade flow; and resting
 orders held by the liquidity-provider, fundamental, trend, and noise agents
 shown by the V2 controller.
 
-The textual register is a Korean real-time research desk: compact sections on
-execution, order book, participant layers, valuation gap, and the next
-observation point. The report generator reads those values after executions
-have been produced. It does not create orders, change participant behavior,
-modify the book, or feed any report text back into C-VAL.
+The 12 forms are not one shared mail/report shell with title substitutions.
+They separately organize a sharp rise, sharp fall, quant snapshot, order-book
+reading, order-flow note, liquidity reading, price/value gap, volatility tape,
+agent-layer view, turnover note, risk view, or quiet-market tape. Each title
+and body takes its numbers from the same completed snapshot; rendered Slack
+text uses plain text only, never Markdown markers. The generator reads those
+values after executions have been produced. It does not create orders, change
+participant behavior, modify the book, or feed any report text back into C-VAL.
 
 ## Timing and rate limits
 
@@ -116,5 +120,6 @@ this one-way webhook credential. [Slack Incoming Webhooks](https://api.slack.com
 - A terminal webhook response disables the transport before an in-flight queue
   successor can be sent.
 - V2 presenter tests prove the report uses execution and agent snapshot state,
-  keeps every generated report in the 100–200어절 range, owns 200 distinct
-  report frames, and stays separate from Discord's faster cadence.
+  keeps all 120 generated reports in the 100–200어절 range, gives every frame a
+  distinct headline without Markdown markers, and stays separate from
+  Discord's faster cadence.

@@ -1,6 +1,7 @@
 import { calendarExperiment } from "./calendar/index.mjs";
 import { ddongMeongOneExperiment } from "./ddong-meong/1/index.mjs";
 import { ddongMeongTwoExperiment } from "./ddong-meong/2/index.mjs";
+import { ddongMeongThreeExperiment } from "./ddong-meong/3/index.mjs";
 import { djExperiment } from "./dj/index.mjs";
 import { fingerSkatingExperiment } from "./finger-skating/index.mjs";
 import { networkSystemCompetitiveFirmsExperiment } from "./network-system/competitive-firms/index.mjs";
@@ -15,6 +16,7 @@ import { stockExperiment } from "./stock/index.mjs";
 const registeredExperiments = [
   ddongMeongOneExperiment,
   ddongMeongTwoExperiment,
+  ddongMeongThreeExperiment,
   fingerSkatingExperiment,
   djExperiment,
   calendarExperiment,

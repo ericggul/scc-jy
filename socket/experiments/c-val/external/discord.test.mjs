@@ -159,11 +159,36 @@ test("C-VAL Discord transport spreads sends across a live non-exhausted bucket",
   assert.deepEqual(sleeps, [200]);
 });
 
-test("C-VAL Discord transport retries a rate-limited message and remains live", async () => {
+test("C-VAL Discord transport keeps a 200 ms floor when a successful response omits headers", async () => {
+  const sleeps = [];
+  let time = 0;
+  const publisher = createDiscordPublisher({
+    env: {
+      C_VAL_DISCORD: "true",
+      C_VAL_DISCORD_WEBHOOK_URL:
+        "https://discord.com/api/webhooks/123456/token-value",
+    },
+    fetchImpl: async () => ({ ok: true, status: 204, headers: { get: () => null } }),
+    now: () => time,
+    sleep: async (milliseconds) => {
+      sleeps.push(milliseconds);
+      time += milliseconds;
+    },
+    logger: { warn() {} },
+  });
+
+  publisher.publish("첫 문장");
+  await publisher.flush();
+  publisher.publish("둘째 문장");
+  await publisher.flush();
+
+  assert.deepEqual(sleeps, [200]);
+});
+
+test("C-VAL Discord transport drops a rate-limited stale message and resumes with the newer state", async () => {
   const requests = [];
   const sleeps = [];
   let time = 0;
-  let attempt = 0;
   const publisher = createDiscordPublisher({
     env: {
       C_VAL_DISCORD: "true",
@@ -172,8 +197,7 @@ test("C-VAL Discord transport retries a rate-limited message and remains live", 
     },
     fetchImpl: async (_url, request) => {
       requests.push(JSON.parse(request.body));
-      attempt += 1;
-      if (attempt === 1) {
+      if (requests.length === 1) {
         return {
           ok: false,
           status: 429,
@@ -198,16 +222,15 @@ test("C-VAL Discord transport retries a rate-limited message and remains live", 
 
   assert.equal(publisher.status().enabled, true);
   assert.equal(publisher.status().metrics.rateLimited, 1);
-  assert.equal(publisher.status().metrics.sent, 2);
+  assert.equal(publisher.status().metrics.sent, 1);
   assert.deepEqual(sleeps, [200]);
   assert.deepEqual(requests.map(({ content }) => content), [
-    "급변 첫 문장",
     "급변 첫 문장",
     "회복 뒤 문장",
   ]);
 });
 
-test("C-VAL Discord transport stops retrying a deleted or unauthorized webhook", async () => {
+test("C-VAL Discord transport stops and clears work after a terminal webhook response", async () => {
   let calls = 0;
   const publisher = createDiscordPublisher({
     env: {
@@ -217,7 +240,7 @@ test("C-VAL Discord transport stops retrying a deleted or unauthorized webhook",
     },
     fetchImpl: async () => {
       calls += 1;
-      return { ok: false, status: 404, headers: { get: () => null }, json: async () => ({}) };
+      return { ok: false, status: 400, headers: { get: () => null }, json: async () => ({}) };
     },
     logger: { warn() {} },
   });
@@ -226,5 +249,7 @@ test("C-VAL Discord transport stops retrying a deleted or unauthorized webhook",
   await publisher.flush();
   assert.equal(publisher.publish("둘째 문장"), false);
   assert.equal(calls, 1);
-  assert.equal(publisher.status().terminalFailure, 404);
+  assert.equal(publisher.status().terminalFailure, 400);
+  assert.equal(publisher.status().lastResponseStatus, 400);
+  assert.equal(publisher.status().metrics.discarded, 1);
 });
