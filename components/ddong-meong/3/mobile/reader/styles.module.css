@@ -6,6 +6,16 @@
   min-height: 0;
   overflow: hidden;
   animation: pageEnter 360ms ease both;
+  touch-action: none;
+  -webkit-touch-callout: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.page * {
+  -webkit-touch-callout: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .meditationBackground {
@@ -203,14 +213,11 @@
 }
 
 .flushIcon {
+  display: block;
   width: 29px;
   height: 29px;
-  overflow: visible;
-  fill: none;
-  stroke: currentcolor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 1.55;
+  object-fit: contain;
+  pointer-events: none;
 }
 
 .flushButton:focus-visible {

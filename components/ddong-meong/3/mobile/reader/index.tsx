@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
   useCallback,
@@ -22,6 +23,7 @@ import type { ReadingLine } from "../../model/reading-script";
 import InteractiveAccumulationBackground from "../background/interactive-accumulation";
 import { useDropInteraction } from "../background/interaction/use-drop-interaction";
 import type { AccumulationProfile } from "../background/profiles";
+import InteractionLock from "../../design-system/interaction-lock";
 import styles from "./styles.module.css";
 
 type ReadingPageProps = {
@@ -118,18 +120,15 @@ function TimerHeader({
 
 function FlushIcon() {
   return (
-    <svg
+    <Image
+      alt=""
       aria-hidden="true"
       className={styles.flushIcon}
-      viewBox="0 0 32 32"
-    >
-      <path d="M8.25 4.5h14.5v8.25H8.25z" />
-      <path d="M11.25 8.5h5.5" />
-      <path d="M6.5 13.25h19c-.3 5.8-3.85 9.35-9.5 9.35s-9.2-3.55-9.5-9.35Z" />
-      <path d="M13 22.25v4.25h7.25" />
-      <path d="M19.8 15.7a4.35 4.35 0 0 1-7.4 3.05" />
-      <path d="m11.55 17.05.55 2.45 2.35-.75" />
-    </svg>
+      height={29}
+      src="/ddong-meong/3/icons/toilet-flush.svg"
+      unoptimized
+      width={29}
+    />
   );
 }
 
@@ -155,7 +154,6 @@ export default function ReadingPage({
       setSettledDropCount((count) => count + amount),
     profile: accumulationProfile,
   });
-
   useEffect(() => {
     if (flushState !== null) return;
 
@@ -282,6 +280,7 @@ export default function ReadingPage({
     <section
       className={`${styles.page} ${phaseClassName} ${flushClassName}`}
     >
+      <InteractionLock />
       <div className={styles.meditationBackground} aria-hidden="true">
         <InteractiveAccumulationBackground
           profile={accumulationProfile}

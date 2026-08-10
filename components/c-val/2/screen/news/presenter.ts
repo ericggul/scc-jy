@@ -18,42 +18,30 @@ export type CValNewsEvent = {
 type MarketDirection = "up" | "down" | "flat";
 
 const NEWS_CADENCE_ANCHORS = [
-  { movePercent: 0, intervalMs: 1_000 },
-  { movePercent: 1, intervalMs: 600 },
-  { movePercent: 10, intervalMs: 150 },
-  { movePercent: 20, intervalMs: 50 },
-  { movePercent: 30, intervalMs: 20 },
+  { movePercent: 0, intervalMs: 400 },
+  { movePercent: 30, intervalMs: 30 },
 ] as const;
+const NEWS_CADENCE_EASE_OUT_EXPONENT = 2.2;
 
 /**
  * One second is one C-VAL market day. News stays deliberately slower than the
- * matching engine: quiet markets wait, a ±1% move admits at most one story
- * every 600 ms. A large 10% move is still readable at 150 ms; only a 30%
- * market-day extreme reaches the 20 ms floor. The anchor intervals are
- * interpolated in log space, never with piecewise-linear speed steps.
+ * matching engine: quiet markets wait 400 ms; a 30% market-day extreme reaches
+ * the 30 ms floor. The interval itself is interpolated exponentially in log
+ * space. Its eased input reaches that floor with zero slope, so moves beyond
+ * 30% stay at 30 ms without a visible cadence step.
  */
 export function cValNewsAdmissionIntervalMs(oneSecondMovePercent: number) {
   const highestAnchor = NEWS_CADENCE_ANCHORS.at(-1)!;
-  const magnitude = Math.min(
+  const quietAnchor = NEWS_CADENCE_ANCHORS[0];
+  const magnitude = Math.max(
+    0,
     Math.abs(Number.isFinite(oneSecondMovePercent) ? oneSecondMovePercent : 0),
-    highestAnchor.movePercent,
   );
-  const upperIndex = Math.max(
-    1,
-    NEWS_CADENCE_ANCHORS.findIndex((anchor) => magnitude <= anchor.movePercent),
-  );
-  const lower = NEWS_CADENCE_ANCHORS[upperIndex - 1];
-  const upper = NEWS_CADENCE_ANCHORS[upperIndex];
-  const progress =
-    (Math.log1p(magnitude) - Math.log1p(lower.movePercent))
-    / (Math.log1p(upper.movePercent) - Math.log1p(lower.movePercent));
-
-  return Math.round(
-    Math.exp(
-      Math.log(lower.intervalMs)
-      + (Math.log(upper.intervalMs) - Math.log(lower.intervalMs)) * progress,
-    ),
-  );
+  const normalizedMove = Math.min(magnitude / highestAnchor.movePercent, 1);
+  const easedProgress = 1 - (1 - normalizedMove) ** NEWS_CADENCE_EASE_OUT_EXPONENT;
+  const logInterval = Math.log(quietAnchor.intervalMs)
+    + (Math.log(highestAnchor.intervalMs) - Math.log(quietAnchor.intervalMs)) * easedProgress;
+  return Math.round(Math.exp(logInterval));
 }
 
 function directionFor(change: number): MarketDirection {

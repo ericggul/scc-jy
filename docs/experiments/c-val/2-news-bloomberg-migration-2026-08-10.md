@@ -40,16 +40,15 @@ earlier implementation description in this document that conflicts with it.
    keep existing records stable. Any motion must communicate a real insertion,
    not hide data rate or create decoration.
 8. The user explicitly changed the arrival-speed requirement after the initial
-   consultation: admission cadence now follows the absolute one-second
-   (C-VAL-day) price move. A quiet 0% market admits at most one story per
-   1000 ms; ±1% is 600 ms; ±10% is 150 ms; ±20% is 50 ms; and only an extreme
-   ±30% or larger one-second move reaches 20 ms. Interpolate continuously in
-   logarithmic space between those anchors; do not replace this with linear
-   `if`/`else` ranges. This is a current-state cadence, not a permanent fixed
-   speed.
+   consultation: admission cadence follows the absolute one-second
+   (C-VAL-day) price move on one continuous logarithmic curve with exactly two
+   anchors: 0% is 400 ms, and ±30% or larger is 30 ms. There are no
+   intermediate bands or anchors. This is a current-state cadence, not a
+   permanent fixed speed.
 9. The headline catalog must never claim or name an external live market,
-   source, company, security, or institution. In particular, `코스피` and
-   `나스닥` do not appear in rendered news. Use only C-VAL-grounded Korean
+   source, company, security, or institution. In particular, `C-VAL`, `코스피`,
+   and `나스닥` do not appear in rendered news headlines. Use only
+   C-VAL-grounded Korean
    market language such as `시장`, `주식시장`, `주가`, and `개인투자자`.
 
 ## What this record preserves
@@ -201,33 +200,25 @@ has elapsed. The interval is calculated from
 `abs(snapshot.market.oneSecondMovePercent)`:
 
 ```text
-0%      -> 1000 ms
-±1%     ->  600 ms
-±10%    ->  150 ms
-±20%    ->   50 ms
-±30%+   ->   20 ms (never faster)
+0%      -> 400 ms
+±30%+   ->  30 ms (never faster)
 ```
 
-The anchors are interpolated in logarithmic space on both axes. For a movement
-`m` between adjacent anchors `(m0, i0)` and `(m1, i1)`, the implementation
-uses `t = (log(1+m) - log(1+m0)) / (log(1+m1) - log(1+m0))` and
-`interval = exp(log(i0) + t × (log(i1) - log(i0)))`. This creates one
-continuous perceptual acceleration rather than the visibly stepped behavior of
-linear `if`/`else` branches. These anchors preserve the C-VAL experience rather
-than copying a generic live-feed rate:
+Let `r = min(abs(oneSecondMovePercent) / 30, 1)` and
+`e = 1 - (1 - r)^2.2`. The exact rule is:
 
-- **0–1% — observation:** One real second is one C-VAL market day. A quiet or
-  small-move day must leave time to read a line and inspect the accumulating
-  record field; it is not a newsroom emergency.
-- **1–10% — gathering pressure:** The physical phone gesture is already
-  visibly consequential, but a 10% day is not the maximum market event. The
-  wire tightens from 600 to 150 ms without becoming unreadable texture.
-- **10–20% — violent market:** The field becomes rapidly active, from 150 to
-  50 ms, while each headline remains an individual state-derived record.
-- **20–30%+ — runaway extreme:** Only this dramatic range may become a visual
-  rush. At 30% it reaches 20 ms; 10% must never receive that cadence.
+`intervalMs = round(exp(log(400) + (log(30) - log(400)) × e))`.
 
-The market source samples at 50 ms. To allow a 20 ms extreme wire without
+This is a single nonlinear exponential mapping in log-interval space, not a
+chain of `if`/`else` speed bands. The exponent is curve shape, not an
+additional movement anchor: its practical result is roughly 100 ms at ±10%.
+At 30%, `e` arrives at 1 with zero slope; retaining the 30 ms floor above 30%
+therefore does not make the cadence jump or abruptly accelerate. At a still
+market it is a readable wire: one real second is one C-VAL market day and one
+headline may arrive each second. Intermediate values are derived by the curve
+and are not separate behavioral rules or anchors.
+
+The market source samples at 50 ms. To allow a 30 ms extreme wire without
 inventing a story, a bounded 16-item queue holds distinct editorial candidates
 already derived from actual high-motion snapshots. It drains one record at a
 time only while nonempty. There is no autonomous content source, text rotation,

@@ -127,6 +127,26 @@ function createSolidDropGeometry(count: number, seed: number) {
     "aSeed",
     new THREE.InstancedBufferAttribute(seeds, 4),
   );
+  geometry.setAttribute(
+    "aDropOrigin",
+    new THREE.InstancedBufferAttribute(new Float32Array(count * 2), 2),
+  );
+  geometry.setAttribute(
+    "aDropPreviousOrigin",
+    new THREE.InstancedBufferAttribute(new Float32Array(count * 2), 2),
+  );
+  geometry.setAttribute(
+    "aDropStartedAt",
+    new THREE.InstancedBufferAttribute(new Float32Array(count), 1),
+  );
+  geometry.setAttribute(
+    "aDropActive",
+    new THREE.InstancedBufferAttribute(new Float32Array(count), 1),
+  );
+  geometry.setAttribute(
+    "aDropVisualStrength",
+    new THREE.InstancedBufferAttribute(new Float32Array(count), 1),
+  );
   geometry.instanceCount = count;
   return geometry;
 }
@@ -396,6 +416,41 @@ export default function InteractiveAccumulationBackground({
       profile.particles.reservoirSeed,
       0,
     );
+    const automaticFilament = createParticleLayer(
+      profile.particles.filamentCount,
+      profile.particles.filamentSeed,
+      1,
+    );
+    const automaticSolidGeometry =
+      profile.solid.count > 0
+        ? createSolidDropGeometry(
+            profile.solid.count,
+            profile.particles.filamentSeed ^ 0x5011d,
+          )
+        : null;
+    const automaticSolidMaterial = automaticSolidGeometry
+      ? new THREE.ShaderMaterial({
+          vertexShader: solidDropVertexShader,
+          fragmentShader: solidDropFragmentShader,
+          uniforms: {
+            ...sharedUniforms,
+            uAutomaticEmission: { value: 1 },
+          },
+          transparent: true,
+          blending: THREE.NormalBlending,
+          depthTest: false,
+          depthWrite: false,
+        })
+      : null;
+    const automaticSolidDrops =
+      automaticSolidGeometry && automaticSolidMaterial
+        ? new THREE.Mesh(automaticSolidGeometry, automaticSolidMaterial)
+        : null;
+    if (automaticSolidDrops) {
+      automaticSolidDrops.frustumCulled = false;
+      automaticSolidDrops.renderOrder = 3;
+      scene.add(automaticSolidDrops);
+    }
     const interactionEpochMs = Date.now();
     const initialDropCapacity = 48;
 
@@ -412,7 +467,7 @@ export default function InteractiveAccumulationBackground({
         fragmentShader: particleFragmentShader,
         uniforms: {
           ...sharedUniforms,
-          uLayer: { value: 1 },
+          uLayer: { value: 2 },
         },
         transparent: true,
         blending: THREE.NormalBlending,
@@ -479,7 +534,10 @@ export default function InteractiveAccumulationBackground({
       const material = new THREE.ShaderMaterial({
         vertexShader: solidDropVertexShader,
         fragmentShader: solidDropFragmentShader,
-        uniforms: sharedUniforms,
+        uniforms: {
+          ...sharedUniforms,
+          uAutomaticEmission: { value: 0 },
+        },
         transparent: true,
         blending: THREE.NormalBlending,
         depthTest: false,
@@ -637,6 +695,7 @@ export default function InteractiveAccumulationBackground({
     let lastRenderAt = 0;
     let displayedProgress = 0;
     let lastProgressUpdateAt = Date.now();
+    const automaticStartedAt = Date.now();
 
     function resize() {
       const { width, height } = activeCanvas.getBoundingClientRect();
@@ -651,10 +710,7 @@ export default function InteractiveAccumulationBackground({
       const timeline = timelineRef.current;
       const now = Date.now();
       const elapsedMs =
-        timeline.frozenElapsedMs ??
-        (timeline.startedAt === null
-          ? 0
-          : clamp(now - timeline.startedAt, 0, totalMs));
+        timeline.frozenElapsedMs ?? Math.max(0, now - automaticStartedAt);
       const flushProgress =
         timeline.flushStartedAt === null
           ? 0
@@ -719,13 +775,18 @@ export default function InteractiveAccumulationBackground({
       window.visualViewport?.removeEventListener("resize", resize);
       window.cancelAnimationFrame(animationFrame);
       window.clearInterval(reducedMotionTimer);
-      scene.remove(background, reservoir.points);
+      scene.remove(background, reservoir.points, automaticFilament.points);
+      if (automaticSolidDrops) scene.remove(automaticSolidDrops);
       pressDropBatch.dispose();
       traceDropBatch.dispose();
       backgroundGeometry.dispose();
       backgroundMaterial.dispose();
       reservoir.geometry.dispose();
       reservoir.material.dispose();
+      automaticFilament.geometry.dispose();
+      automaticFilament.material.dispose();
+      automaticSolidGeometry?.dispose();
+      automaticSolidMaterial?.dispose();
       renderer.dispose();
     };
   }, [profile, totalMs]);

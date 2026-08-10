@@ -8,6 +8,7 @@ import type {
   DdongMeongSessionOutcome,
 } from "../model/types";
 import { ddongMeongSans } from "../design-system/fonts";
+import InteractionLock from "../design-system/interaction-lock";
 import theme from "../design-system/theme.module.css";
 import styles from "./styles.module.css";
 
@@ -28,7 +29,7 @@ function formatTime(timestamp: number) {
 function phaseLabel(session: DdongMeongSession) {
   if (session.phase === "arriving") return "자리 잡는 중";
   if (session.phase === "releasing") return "비우는 중";
-  return "머무는 중";
+  return "똥싸는 중";
 }
 
 function outcomeLabel(outcome: DdongMeongSessionOutcome) {
@@ -95,6 +96,7 @@ export default function DdongMeongThreeScreen() {
       className={`${ddongMeongSans.variable} ${theme.theme} ${styles.page}`}
       lang="ko"
     >
+      <InteractionLock />
       <header className={styles.header}>
         <h1>ddong-meong</h1>
         <p>
@@ -130,7 +132,7 @@ export default function DdongMeongThreeScreen() {
         <div className={styles.archiveHeading}>
           <div>
             <span>오늘의 기록</span>
-            <h2 id="archive-title">비운 사람들</h2>
+            <h2 id="archive-title">똥싼 사람들</h2>
           </div>
           <strong>{today?.completedSessions ?? 0}</strong>
         </div>

@@ -129,8 +129,6 @@ export const backgroundFragmentShader = `
   uniform float uTime;
   uniform float uProgress;
   uniform float uMotion;
-  uniform float uDropAge;
-  uniform vec2 uDropOrigin;
   uniform float uFlushProgress;
   uniform vec3 uVoidColor;
   uniform vec3 uDeepColor;
@@ -145,6 +143,8 @@ export const backgroundFragmentShader = `
   uniform float uFlowSpeed;
   uniform float uBackgroundFallDuration;
   uniform float uFallTravelExponent;
+  uniform float uFallSpawnHeight;
+  uniform float uFallLaneCenter;
   uniform vec3 uFallWander;
   uniform vec2 uBackgroundFilamentWidth;
   uniform float uFallTurbulence;
@@ -277,16 +277,11 @@ export const backgroundFragmentShader = `
       boundaryHighlight * uBoundaryHighlight.x * (1.0 - drainProgress)
     );
 
-    float spawnY = uDropOrigin.y;
-    float fallTarget = min(localFront, spawnY - 0.025);
-    float fallSpan = max(spawnY - fallTarget, 0.08);
-    float normalizedFall = clamp((spawnY - uv.y) / fallSpan, 0.0, 1.0);
-    float filamentTravel = pow(normalizedFall, 1.0 / uFallTravelExponent);
-    float spine = uDropOrigin.x;
-    spine += sin(flowTime * 0.052) * uFallWander.x * filamentTravel;
-    spine += sin(uv.y * 4.6 + flowTime * 0.2) * uFallWander.y * filamentTravel;
-    spine += sin(uv.y * 11.0 - flowTime * 0.11) * uFallWander.z * filamentTravel;
-    spine += (fbm(vec2(uv.y * 2.3, flowTime * 0.019)) - 0.5) * uFallTurbulence * filamentTravel;
+    float spine = uFallLaneCenter;
+    spine += sin(flowTime * 0.052) * uFallWander.x;
+    spine += sin(uv.y * 4.6 + flowTime * 0.2) * uFallWander.y;
+    spine += sin(uv.y * 11.0 - flowTime * 0.11) * uFallWander.z;
+    spine += (fbm(vec2(uv.y * 2.3, flowTime * 0.019)) - 0.5) * uFallTurbulence;
     float filamentDistance = abs(uv.x - spine) * aspect;
     if (uMaterialMode > 4.5) {
       float leftDistance = abs(uv.x - (spine - 0.13)) * aspect;
@@ -298,12 +293,13 @@ export const backgroundFragmentShader = `
       uBackgroundFilamentWidth.y,
       filamentDistance
     );
-    filament *= smoothstep(fallTarget - 0.015, fallTarget + 0.055, uv.y);
-    filament *= 1.0 - smoothstep(spawnY - 0.012, spawnY + 0.028, uv.y);
-    float dropAgeAtHeight = uDropAge - filamentTravel * uBackgroundFallDuration;
-    float dropTrail = smoothstep(0.0, 0.08, dropAgeAtHeight);
-    dropTrail *= 1.0 - smoothstep(0.18, 0.42, dropAgeAtHeight);
-    filament *= dropTrail;
+    filament *= smoothstep(localFront - 0.015, localFront + 0.055, uv.y);
+    filament *= 1.0 - smoothstep(0.97, 1.08, uv.y);
+    float fallSpan = max(uFallSpawnHeight - localFront, 0.08);
+    float normalizedFall = clamp((uFallSpawnHeight - uv.y) / fallSpan, 0.0, 1.0);
+    float filamentTravel = pow(normalizedFall, 1.0 / uFallTravelExponent);
+    float filamentEmissionTime = time - filamentTravel * uBackgroundFallDuration;
+    filament *= emissionStrength(filamentEmissionTime);
     filament *= 1.0 - smoothstep(0.0, 0.14, flushProgress);
     if (uMaterialMode > 1.5 && uMaterialMode < 2.5) filament = 0.0;
     if (uMaterialMode > 3.5 && uMaterialMode < 4.5) filament = 0.0;
@@ -337,8 +333,6 @@ export const particleVertexShader = `
   uniform float uInteractionTime;
   uniform float uProgress;
   uniform float uMotion;
-  uniform float uDropAge;
-  uniform vec2 uDropOrigin;
   uniform float uFlushProgress;
   uniform float uPixelRatio;
   uniform float uLayer;
@@ -349,6 +343,8 @@ export const particleVertexShader = `
   uniform vec3 uReservoirFlow;
   uniform vec2 uFallDuration;
   uniform float uFallTravelExponent;
+  uniform float uFallSpawnHeight;
+  uniform float uFallLaneCenter;
   uniform vec3 uFallWander;
   uniform vec2 uFallLaneWidth;
   uniform vec2 uFallWidthPulse;
@@ -420,6 +416,67 @@ export const particleVertexShader = `
       pointSize *= mix(1.0, 0.58, drainProgress);
       vStretch = mix(uReservoirStretch.x, uReservoirStretch.y, aSeed.z);
       vSoftness = mix(uReservoirSoftness.x, uReservoirSoftness.y, aSeed.w);
+    } else if (uLayer < 1.5) {
+      float fallDuration = mix(uFallDuration.x, uFallDuration.y, aSeed.z);
+      float travel = fract(aSeed.y + time / fallDuration);
+      float emissionTime = time - travel * fallDuration;
+      float emission = emissionStrength(emissionTime);
+      float easedTravel = pow(travel, uFallTravelExponent);
+      float target = min(front, 0.99);
+      float particleY = mix(uFallSpawnHeight, target, easedTravel);
+      float spine = uFallLaneCenter + sin(flowTime * 0.052) * uFallWander.x;
+      spine += sin(particleY * 4.6 + flowTime * 0.2) * uFallWander.y;
+      spine += sin(particleY * 11.0 - flowTime * 0.11) * uFallWander.z;
+      float pulse = 0.5 + 0.5 * sin(flowTime * 0.23 - travel * 8.0);
+      float filamentWidth = mix(uFallLaneWidth.x, uFallLaneWidth.y, sin(travel * 3.14159265));
+      filamentWidth *= mix(uFallWidthPulse.x, uFallWidthPulse.y, pulse);
+      float lane = (aSeed.x - 0.5) * filamentWidth;
+      float filamentFlow = sin(travel * 14.0 + aSeed.z * 7.0 + flowTime * 0.13) * uFallMicroFlow;
+      particlePosition = vec2(spine + lane / aspect + filamentFlow / aspect, particleY);
+
+      if (uMaterialMode > 2.5 && uMaterialMode < 3.5) {
+        float columnLane = (aSeed.x - 0.5) * filamentWidth * 2.8;
+        float columnDepth = (aSeed.w - 0.5) * 0.028;
+        particlePosition = vec2(
+          spine + columnLane / aspect + filamentFlow / aspect,
+          particleY + columnDepth
+        );
+      }
+      if (uMaterialMode > 3.5 && uMaterialMode < 4.5) {
+        float mistDrift = sin(
+          flowTime * 0.11 + aSeed.z * 9.0 + particleY * 5.0
+        ) * 0.045;
+        particlePosition.x = fract(aSeed.x + mistDrift);
+        particlePosition.y += (aSeed.w - 0.5) * 0.045;
+      }
+      if (uMaterialMode > 4.5) {
+        float side = step(0.5, aSeed.x) * 2.0 - 1.0;
+        float localSeed = fract(aSeed.x * 2.0);
+        float burstLane = (localSeed - 0.5) * filamentWidth * 2.2;
+        float spray = sin(travel * 18.0 + aSeed.z * 11.0) * 0.012;
+        particlePosition.x = spine + side * 0.13;
+        particlePosition.x += (burstLane + spray) / aspect;
+        particlePosition.y += (aSeed.w - 0.5) * 0.035;
+      }
+
+      float endFade = pow(sin(travel * 3.14159265), 0.34);
+      float veilParticle = smoothstep(uVeilThreshold, 1.0, aSeed.w);
+      float coreAlpha = mix(uCoreAlpha.x, uCoreAlpha.y, aSeed.w);
+      float veilAlpha = mix(uVeilAlpha.x, uVeilAlpha.y, aSeed.z);
+      vAlpha = endFade * emission * mix(coreAlpha, veilAlpha, veilParticle);
+      vAlpha *= 1.0 - smoothstep(0.0, 0.12, flushProgress);
+      if (uMaterialMode > 1.5 && uMaterialMode < 2.5) vAlpha = 0.0;
+      pointSize = mix(
+        mix(uCorePointSize.x, uCorePointSize.y, aSeed.w),
+        mix(uVeilPointSize.x, uVeilPointSize.y, aSeed.z),
+        veilParticle
+      );
+      vStretch = mix(
+        mix(uCoreStretch.x, uCoreStretch.y, aSeed.z),
+        mix(uVeilStretch.x, uVeilStretch.y, aSeed.z),
+        veilParticle
+      );
+      vSoftness = mix(uCoreSoftness, uVeilSoftness, veilParticle);
     } else {
       float fallDuration = mix(uFallDuration.x, uFallDuration.y, aSeed.z);
       float localDropAge = uInteractionTime - aDropStartedAt;
@@ -546,15 +603,17 @@ export const solidDropVertexShader = `
   uniform float uInteractionTime;
   uniform float uProgress;
   uniform float uMotion;
-  uniform float uDropAge;
-  uniform vec2 uDropOrigin;
   uniform float uFlushProgress;
   uniform vec2 uFallDuration;
   uniform float uFallTravelExponent;
+  uniform float uFallSpawnHeight;
+  uniform float uFallLaneCenter;
   uniform vec3 uFallWander;
   uniform vec2 uSolidSize;
   uniform vec2 uSolidAspect;
+  uniform float uSolidHorizontalSpread;
   uniform float uSolidRotation;
+  uniform float uAutomaticEmission;
 
   ${sharedAccumulationShader}
 
@@ -566,19 +625,35 @@ export const solidDropVertexShader = `
     float time = uTime * uMotion;
     float aspect = uResolution.x / max(uResolution.y, 1.0);
     float fallDuration = mix(uFallDuration.x, uFallDuration.y, aSeed.z);
-    float localDropAge = uInteractionTime - aDropStartedAt;
-    float travel = clamp(localDropAge / fallDuration, 0.0, 1.0);
-    float emission = aDropActive * step(0.0, localDropAge);
-    emission *= 1.0 - step(fallDuration, localDropAge);
     float front = risingHeight(uProgress);
-    vec2 spawnOrigin = mix(aDropPreviousOrigin, aDropOrigin, aSeed.x);
-    float spawnY = spawnOrigin.y;
-    float target = min(front, spawnY - 0.025);
-    float easedTravel = pow(travel, uFallTravelExponent);
-    float centerY = mix(spawnY, target, easedTravel);
+    float travel;
+    float emission;
+    float target;
+    float centerY;
+    float centerX;
 
-    float slowWander = sin(time * 0.052 + aSeed.z * 5.7) * uFallWander.x * travel;
-    float centerX = spawnOrigin.x + slowWander;
+    if (uAutomaticEmission > 0.5) {
+      travel = fract(aSeed.y + time / fallDuration);
+      float emissionTime = time - travel * fallDuration;
+      emission = emissionStrength(emissionTime);
+      target = min(front, 0.99);
+      float easedTravel = pow(travel, uFallTravelExponent);
+      centerY = mix(uFallSpawnHeight, target, easedTravel);
+      float lane = (aSeed.x - 0.5) * uSolidHorizontalSpread;
+      float slowWander = sin(time * 0.052 + aSeed.z * 5.7) * uFallWander.x;
+      centerX = uFallLaneCenter + lane + slowWander;
+    } else {
+      float localDropAge = uInteractionTime - aDropStartedAt;
+      travel = clamp(localDropAge / fallDuration, 0.0, 1.0);
+      emission = aDropActive * step(0.0, localDropAge);
+      emission *= 1.0 - step(fallDuration, localDropAge);
+      vec2 spawnOrigin = mix(aDropPreviousOrigin, aDropOrigin, aSeed.x);
+      target = min(front, spawnOrigin.y - 0.025);
+      float easedTravel = pow(travel, uFallTravelExponent);
+      centerY = mix(spawnOrigin.y, target, easedTravel);
+      float slowWander = sin(time * 0.052 + aSeed.z * 5.7) * uFallWander.x * travel;
+      centerX = spawnOrigin.x + slowWander;
+    }
 
     float size = mix(uSolidSize.x, uSolidSize.y, aSeed.w);
     float solidAspect = mix(uSolidAspect.x, uSolidAspect.y, aSeed.z);
@@ -590,7 +665,8 @@ export const solidDropVertexShader = `
 
     float arrivalFade = smoothstep(0.0, 0.075, centerY - target);
     float travelFade = pow(max(sin(travel * 3.14159265), 0.0), 0.22);
-    vSolidAlpha = emission * arrivalFade * travelFade * aDropVisualStrength;
+    float visualStrength = mix(aDropVisualStrength, 1.0, step(0.5, uAutomaticEmission));
+    vSolidAlpha = emission * arrivalFade * travelFade * visualStrength;
     vSolidAlpha *= 1.0 - smoothstep(0.0, 0.12, uFlushProgress);
     vSolidUv = uv;
     vSolidSeed = aSeed.xz;

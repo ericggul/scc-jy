@@ -128,12 +128,9 @@
 }
 
 .flushIcon {
+  display: block;
   width: 29px;
   height: 29px;
-  overflow: visible;
-  fill: none;
-  stroke: currentcolor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 1.55;
+  object-fit: contain;
+  pointer-events: none;
 }
