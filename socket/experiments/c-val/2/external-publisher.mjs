@@ -1,4 +1,5 @@
 import { createDiscordPublisher } from "../external/discord.mjs";
+import { cValExecutionIntensity } from "./market-intensity.mjs";
 import {
   cValMarketAccents,
   cValMarketCommentPools,
@@ -46,20 +47,7 @@ function replaceParameters(template, parameters) {
   );
 }
 
-/**
- * Measures only already-realized execution movement in the compressed
- * one-market-day window. Phone input and visual state never enter here.
- */
-export function cValExternalIntensity(snapshot) {
-  const market = snapshot.market ?? {};
-  const price = Math.max(finite(market.index, 100), Number.EPSILON);
-  const dayMove = Math.abs(finite(market.oneSecondMovePercent));
-  const dayRange =
-    (Math.abs(finite(market.oneSecondHigh) - finite(market.oneSecondLow)) / price) *
-    100;
-  const realizedVolatility = Math.abs(finite(market.realizedVolatilityBps)) / 100;
-  return Math.max(dayMove, dayRange, realizedVolatility);
-}
+export const cValExternalIntensity = cValExecutionIntensity;
 
 /** Requested cadence. Discord's live response headers can impose a slower one. */
 export function cValExternalIntervalMs(snapshot) {

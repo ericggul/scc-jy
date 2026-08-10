@@ -201,3 +201,9 @@ requested, against an already-running HTTPS server.
   motion verification.
 - [Voice iteration](./voice-iteration.md): version-independent emotional speech
   batch generator and prompt ledger.
+- [Discord external publisher](./external-publisher.md): C-VAL-wide Discord
+  transport and the V2 community-stream interpreter.
+- [Slack external publisher](./slack-publisher.md): C-VAL-wide Slack Incoming
+  Webhook transport and V2 one-second Korean research-report projection.
+- [Telegram external publisher](./telegram-publisher.md): C-VAL-wide Telegram
+  Bot API transport and V2 silent channel-bulletin projection.

@@ -30,6 +30,7 @@ test("each c-val version validates only its declared screen routes", () => {
   assert.equal(isCValScreenRoute("2", "market"), false);
   assert.equal(isCValScreenRoute("2", "employment"), false);
   assert.equal(isCValScreenRoute("2", "rollercoaster-legacy"), true);
+  assert.equal(isCValScreenRoute("2", "casino-legacy"), true);
   assert.equal(isCValScreenRoute("1", "graphs"), false);
   assert.equal(isCValScreenRoute("2", "graphs"), false);
 });
@@ -38,4 +39,5 @@ test("casino is standalone and does not rewrite the existing C-VAL 2 screen set"
   const cValTwo = cValExperiments.find(({ version }) => version === "2");
   assert.deepEqual(cValTwo?.screenIds, ["rollercoaster", "news", "media"]);
   assert.deepEqual(cValTwo?.standaloneScreenIds, ["casino"]);
+  assert.deepEqual(cValTwo?.archivedScreenIds, ["rollercoaster-legacy", "casino-legacy"]);
 });

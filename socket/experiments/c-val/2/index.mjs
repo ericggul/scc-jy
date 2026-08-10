@@ -19,6 +19,8 @@ import {
   normalizeCValHumanControl,
 } from "./multi-user-control.mjs";
 import { createCValDiscordPublisher } from "./external-publisher.mjs";
+import { createCValSlackPublisher } from "./slack-publisher.mjs";
+import { createCValTelegramPublisher } from "./telegram-publisher.mjs";
 
 const familyId = "c-val";
 const version = "2";
@@ -29,6 +31,8 @@ const humanControls = new Map();
 const runtime = createCValRuntime();
 const diagnostics = createCValDiagnostics();
 let externalPublisher = null;
+let externalSlackPublisher = null;
+let externalTelegramPublisher = null;
 let ioRef = null;
 
 const events = {
@@ -217,6 +221,8 @@ setInterval(() => {
     observeCValDiagnostics(diagnostics, state);
     flushCValDiagnostics(diagnostics, now);
     externalPublisher?.observe(state);
+    externalSlackPublisher?.observe(state);
+    externalTelegramPublisher?.observe(state);
   } else {
     clearCValDiagnostics(diagnostics, now);
   }
@@ -225,6 +231,8 @@ setInterval(() => {
 function register({ io, socket }) {
   ioRef = io;
   externalPublisher ??= createCValDiscordPublisher();
+  externalSlackPublisher ??= createCValSlackPublisher();
+  externalTelegramPublisher ??= createCValTelegramPublisher();
 
   socket.on(events.join, ({ role, version: requestedVersion } = {}) => {
     if (requestedVersion !== version) return;
