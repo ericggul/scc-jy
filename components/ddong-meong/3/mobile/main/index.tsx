@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { playMeditationSoundtrack } from "../media";
 import { meditationContents } from "../../model/content-catalog";
 import GradientShell from "../surface/gradient-shell";
 import styles from "./styles.module.css";
@@ -43,9 +42,9 @@ export default function DdongMeongThreeMain() {
                   key={content.slug}
                   className={styles.contentCard}
                   href={`/ddong-meong/3/${content.slug}`}
-                  onClick={() =>
-                    playMeditationSoundtrack({ restart: true })
-                  }
+                  prefetch={false}
+                  rel="noopener noreferrer"
+                  target="_blank"
                   aria-label={`${content.title}, ${formatDuration(content.durationSeconds)} 재생`}
                 >
                   <span

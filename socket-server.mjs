@@ -22,13 +22,16 @@ const serverOptions = {
   ca: readFileSync(join(certDir, "rootCA.pem")),
 };
 
+let handleExperimentRequest;
+
 const httpServer = createServer(serverOptions, (req, res) => {
   if (handleSocketHealth(req, res, certDir)) return;
+  if (handleExperimentRequest?.(req, res)) return;
   res.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
   res.end("Not found\n");
 });
 
-createExperimentSocketServer(httpServer);
+({ handleExperimentRequest } = createExperimentSocketServer(httpServer));
 
 httpServer.listen(port, hostname, () => {
   console.log(`> SCC Socket.IO relay ready on https://${hostname}:${port}`);

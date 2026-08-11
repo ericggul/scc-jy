@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { io, type Socket } from "socket.io-client";
 import type {
+  DdongMeongDisengagementSignal,
+  DdongMeongEngagementState,
   DdongMeongPhase,
   DdongMeongRole,
   DdongMeongSessionOutcome,
@@ -15,6 +17,8 @@ const events = {
   state: "ddong-meong:3:state",
   sessionIn: "ddong-meong:3:session:in",
 } as const;
+
+const disengagementEndpoint = "/ddong-meong/3/disengagement";
 
 export type StartDdongMeongSessionInput = {
   contentSlug: string;
@@ -97,12 +101,50 @@ export function useDdongMeongSocket(role: DdongMeongRole) {
     socketRef.current?.emit(events.sessionIn, { action: "complete", outcome });
   }, []);
 
+  const updateEngagement = useCallback(
+    (engagement: DdongMeongEngagementState) => {
+      socketRef.current?.emit(events.sessionIn, {
+        action: "engagement",
+        engagement,
+      });
+    },
+    [],
+  );
+
+  const sendDisengagementBeacon = useCallback(
+    ({
+      participantId,
+      signal,
+    }: {
+      participantId: string;
+      signal: DdongMeongDisengagementSignal;
+    }) => {
+      const socketId = socketRef.current?.id;
+      if (!socketId || typeof navigator === "undefined") return false;
+
+      try {
+        return navigator.sendBeacon(
+          new URL(disengagementEndpoint, getSocketOrigin()).toString(),
+          new Blob(
+            [JSON.stringify({ participantId, signal, socketId })],
+            { type: "text/plain;charset=UTF-8" },
+          ),
+        );
+      } catch {
+        return false;
+      }
+    },
+    [],
+  );
+
   return {
     connected,
     connectionError,
+    completeSession,
+    sendDisengagementBeacon,
     snapshot,
     startSession,
+    updateEngagement,
     updateSession,
-    completeSession,
   };
 }

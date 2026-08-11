@@ -33,6 +33,13 @@ export async function generateMetadata({
     return {};
   }
 
+  if (experiment === "3") {
+    return {
+      title: "똥멍",
+      description: "A toilet-seat meditation for letting go.",
+    };
+  }
+
   return {
     title: `ddong-meong ${experiment}`,
     description: "A toilet-seat meditation for letting go.",

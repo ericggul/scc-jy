@@ -3,7 +3,7 @@ export type DropOrigin = {
   y: number;
 };
 
-export type DropSource = "press" | "trace";
+export type DropSource = "press" | "trace" | "hold";
 
 export type ActiveBackgroundDrop = {
   accumulationAmount: number;
@@ -13,4 +13,8 @@ export type ActiveBackgroundDrop = {
   source: DropSource;
   startedAt: number;
   visualStrength: number;
+};
+
+export type ActiveDropStream = {
+  getDrops: (source: DropSource) => ActiveBackgroundDrop[];
 };

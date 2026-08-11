@@ -90,6 +90,13 @@ export async function generateMetadata({
     return {};
   }
 
+  if (experiment === "3") {
+    return {
+      title: "똥멍",
+      description: route.meditation.description,
+    };
+  }
+
   return {
     title: `${route.meditation.title} — ddong-meong ${experiment}`,
     description: route.meditation.description,

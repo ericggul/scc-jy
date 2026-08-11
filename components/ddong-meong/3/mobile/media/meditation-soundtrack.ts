@@ -44,6 +44,15 @@ export function stopMeditationSoundtrack() {
   audio.currentTime = 0;
 }
 
+export function pauseMeditationSoundtrack() {
+  const audio = getSoundtrackElement();
+  if (!audio) return;
+
+  window.clearTimeout(scheduledStop);
+  scheduledStop = 0;
+  audio.pause();
+}
+
 export function scheduleMeditationSoundtrackStop() {
   if (typeof window === "undefined") return;
 

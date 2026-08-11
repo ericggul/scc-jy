@@ -1,5 +1,6 @@
 export {
   meditationSoundtrackPath,
+  pauseMeditationSoundtrack,
   playMeditationSoundtrack,
   scheduleMeditationSoundtrackStop,
   stopMeditationSoundtrack,

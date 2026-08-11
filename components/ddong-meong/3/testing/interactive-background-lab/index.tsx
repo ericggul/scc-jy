@@ -49,7 +49,7 @@ export default function InteractiveBackgroundLab({
   );
   const [settledDropCount, setSettledDropCount] = useState(0);
   const [flushState, setFlushState] = useState<LabFlushState | null>(null);
-  const { activeDrops, interactionProps, stopDrops } = useDropInteraction({
+  const { dropStream, interactionProps, stopDrops } = useDropInteraction({
     disabled: flushState !== null,
     onDropSettled: (amount) =>
       setSettledDropCount((count) => count + amount),
@@ -86,7 +86,7 @@ export default function InteractiveBackgroundLab({
       <InteractionLock />
       <div className={styles.visual} aria-hidden="true">
         <InteractiveAccumulationBackground
-          activeDrops={activeDrops}
+          dropStream={dropStream}
           flushDurationMs={flushDrainDurationMs}
           flushStartedAt={flushState?.startedAt ?? null}
           frozenElapsedMs={flushState?.frozenElapsedMs ?? null}

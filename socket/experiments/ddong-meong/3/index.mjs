@@ -1,15 +1,11 @@
 import { randomUUID } from "node:crypto";
-import {
-  loadDdongMeongArchive,
-  saveDdongMeongArchive,
-} from "./archive-store.mjs";
 
 const id = "ddong-meong-3";
 const variantId = "3";
 const room = `experiment:ddong-meong:${variantId}`;
 const archiveLimit = 5_000;
 const activeSessions = new Map();
-const archive = loadDdongMeongArchive();
+const archive = [];
 
 const contents = {
   dummy: "보내는 연습",
@@ -26,6 +22,8 @@ const events = {
   state: "ddong-meong:3:state",
   sessionIn: "ddong-meong:3:session:in",
 };
+
+const disengagementPath = "/ddong-meong/3/disengagement";
 
 function koreanDay(timestamp = Date.now()) {
   const values = new Intl.DateTimeFormat("en", {
@@ -104,7 +102,27 @@ function archiveSession(session, outcome) {
   });
 
   if (archive.length > archiveLimit) archive.length = archiveLimit;
-  saveDdongMeongArchive(archive);
+}
+
+function updateEngagement(socketId, engagement) {
+  const current = activeSessions.get(socketId);
+  if (!current) return false;
+  if (engagement !== "active" && engagement !== "paused" && engagement !== "idle") {
+    return false;
+  }
+
+  activeSessions.set(socketId, {
+    ...current,
+    engagement,
+    updatedAt: Date.now(),
+  });
+  return true;
+}
+
+function disconnectOutcome(session) {
+  if (session.engagement === "paused") return "backgrounded";
+  if (session.engagement === "idle") return "idle";
+  return "left";
 }
 
 function startSession(socket, payload) {
@@ -117,6 +135,7 @@ function startSession(socket, payload) {
   activeSessions.set(socket.id, {
     contentSlug,
     contentTitle: contents[contentSlug],
+    engagement: "active",
     id: randomUUID(),
     interactionCount: 0,
     nickname: cleanText(payload.nickname, "이름 없는 사람", 16),
@@ -154,8 +173,72 @@ function completeSession(socket, outcome = "completed") {
   activeSessions.delete(socket.id);
   archiveSession(
     session,
-    outcome === "flushed" || outcome === "left" ? outcome : "completed",
+    outcome === "flushed" ||
+      outcome === "left" ||
+      outcome === "backgrounded" ||
+      outcome === "idle"
+      ? outcome
+      : "completed",
   );
+}
+
+function receiveDisengagementSignal(io, payload) {
+  const socketId = typeof payload.socketId === "string" ? payload.socketId : "";
+  const session = activeSessions.get(socketId);
+  if (!session || session.participantId !== payload.participantId) return false;
+
+  if (payload.signal === "hidden") updateEngagement(socketId, "paused");
+  if (payload.signal === "visible") updateEngagement(socketId, "active");
+  if (payload.signal === "leaving") completeSession({ id: socketId }, "left");
+
+  if (
+    payload.signal !== "hidden" &&
+    payload.signal !== "visible" &&
+    payload.signal !== "leaving"
+  ) {
+    return false;
+  }
+
+  broadcastState(io);
+  return true;
+}
+
+function writeBeaconResponse(response, statusCode) {
+  response.writeHead(statusCode, {
+    "access-control-allow-origin": "*",
+    "cache-control": "no-store",
+  });
+  response.end();
+}
+
+function handleHttpRequest({ io, request, response }) {
+  if (request.url !== disengagementPath) return false;
+
+  if (request.method === "OPTIONS") {
+    writeBeaconResponse(response, 204);
+    return true;
+  }
+
+  if (request.method !== "POST") {
+    writeBeaconResponse(response, 405);
+    return true;
+  }
+
+  let body = "";
+  request.setEncoding("utf8");
+  request.on("data", (chunk) => {
+    body += chunk;
+  });
+  request.on("end", () => {
+    try {
+      const accepted = receiveDisengagementSignal(io, JSON.parse(body));
+      writeBeaconResponse(response, accepted ? 204 : 404);
+    } catch {
+      writeBeaconResponse(response, 400);
+    }
+  });
+  request.on("error", () => writeBeaconResponse(response, 400));
+  return true;
 }
 
 function register({ io, socket }) {
@@ -179,12 +262,16 @@ function register({ io, socket }) {
 
     if (payload.action === "start") startSession(socket, payload);
     if (payload.action === "update") updateSession(socket, payload);
+    if (payload.action === "engagement") {
+      updateEngagement(socket.id, payload.engagement);
+    }
     if (payload.action === "complete") completeSession(socket, payload.outcome);
     broadcastState(io);
   });
 
   socket.on("disconnect", () => {
-    if (activeSessions.has(socket.id)) completeSession(socket, "left");
+    const session = activeSessions.get(socket.id);
+    if (session) completeSession(socket, disconnectOutcome(session));
     if (socket.data[id]?.variantId === variantId) broadcastState(io);
   });
 }
@@ -192,5 +279,6 @@ function register({ io, socket }) {
 export const ddongMeongThreeExperiment = {
   id,
   events,
+  handleHttpRequest,
   register,
 };

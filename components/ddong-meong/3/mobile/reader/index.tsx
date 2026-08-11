@@ -29,6 +29,7 @@ import styles from "./styles.module.css";
 type ReadingPageProps = {
   accumulationProfile: AccumulationProfile;
   lines: ReadingLine[];
+  onSessionActivity?: () => void;
   onSessionComplete?: (outcome: DdongMeongSessionOutcome) => void;
   onSessionPhaseChange?: (
     phase: Exclude<DdongMeongPhase, "complete">,
@@ -39,6 +40,7 @@ type ReadingPageProps = {
 
 type TimerHeaderProps = {
   frozenElapsedMs: number | null;
+  onExit: () => void;
   startedAt: number | null;
   totalMs: number;
 };
@@ -61,6 +63,7 @@ function formatClock(totalSeconds: number) {
 
 function TimerHeader({
   frozenElapsedMs,
+  onExit,
   startedAt,
   totalMs,
 }: TimerHeaderProps) {
@@ -100,7 +103,11 @@ function TimerHeader({
 
   return (
     <header className={styles.header}>
-      <Link className={styles.wordmark} href="/ddong-meong/3/main">
+      <Link
+        className={styles.wordmark}
+        href="/ddong-meong/3/main"
+        onClick={onExit}
+      >
         ddong-meong
       </Link>
       {showTimeBar ? (
@@ -135,6 +142,7 @@ function FlushIcon() {
 export default function ReadingPage({
   accumulationProfile,
   lines,
+  onSessionActivity,
   onSessionComplete,
   onSessionPhaseChange,
   totalMs,
@@ -148,7 +156,7 @@ export default function ReadingPage({
   const [settledDropCount, setSettledDropCount] = useState(0);
   const [flushState, setFlushState] = useState<FlushState | null>(null);
   const interactionDisabled = startedAt === null || flushState !== null;
-  const { activeDrops, interactionProps, stopDrops } = useDropInteraction({
+  const { dropStream, interactionProps, stopDrops } = useDropInteraction({
     disabled: interactionDisabled,
     onDropSettled: (amount) =>
       setSettledDropCount((count) => count + amount),
@@ -287,7 +295,7 @@ export default function ReadingPage({
           flushDurationMs={flushDrainDurationMs}
           flushStartedAt={flushState?.startedAt ?? null}
           frozenElapsedMs={flushState?.frozenElapsedMs ?? null}
-          activeDrops={activeDrops}
+          dropStream={dropStream}
           settledDropCount={settledDropCount}
           startedAt={startedAt}
           totalMs={totalMs}
@@ -295,6 +303,7 @@ export default function ReadingPage({
       </div>
       <TimerHeader
         frozenElapsedMs={flushState?.frozenElapsedMs ?? null}
+        onExit={() => completeSession("left")}
         startedAt={startedAt}
         totalMs={totalMs}
       />
@@ -304,6 +313,17 @@ export default function ReadingPage({
         aria-disabled={interactionDisabled}
         aria-label="누른 위치에서 물질 배출하기"
         className={styles.scroller}
+        onKeyDownCapture={(event) => {
+          if (
+            !interactionDisabled &&
+            (event.key === "Enter" || event.key === " ")
+          ) {
+            onSessionActivity?.();
+          }
+        }}
+        onPointerDownCapture={() => {
+          if (!interactionDisabled) onSessionActivity?.();
+        }}
         {...interactionProps}
         role="button"
         tabIndex={interactionDisabled ? -1 : 0}

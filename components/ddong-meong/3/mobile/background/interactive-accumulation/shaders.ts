@@ -488,9 +488,10 @@ export const particleVertexShader = `
       float spawnY = spawnOrigin.y;
       float target = min(front, spawnY - 0.025);
       float particleY = mix(spawnY, target, easedTravel);
-      float spine = spawnOrigin.x + sin(flowTime * 0.052) * uFallWander.x * travel;
-      spine += sin(particleY * 4.6 + flowTime * 0.2) * uFallWander.y * travel;
-      spine += sin(particleY * 11.0 - flowTime * 0.11) * uFallWander.z * travel;
+      float tracePathAmount = mix(travel, 1.0, step(2.5, uLayer));
+      float spine = spawnOrigin.x + sin(flowTime * 0.052) * uFallWander.x * tracePathAmount;
+      spine += sin(particleY * 4.6 + flowTime * 0.2) * uFallWander.y * tracePathAmount;
+      spine += sin(particleY * 11.0 - flowTime * 0.11) * uFallWander.z * tracePathAmount;
       float pulse = 0.5 + 0.5 * sin(flowTime * 0.23 - travel * 8.0);
       float filamentWidth = mix(uFallLaneWidth.x, uFallLaneWidth.y, sin(travel * 3.14159265));
       filamentWidth *= mix(uFallWidthPulse.x, uFallWidthPulse.y, pulse);
@@ -614,6 +615,7 @@ export const solidDropVertexShader = `
   uniform float uSolidHorizontalSpread;
   uniform float uSolidRotation;
   uniform float uAutomaticEmission;
+  uniform float uHoldTrace;
 
   ${sharedAccumulationShader}
 
@@ -622,6 +624,14 @@ export const solidDropVertexShader = `
   varying vec2 vSolidSeed;
 
   void main() {
+    if (uAutomaticEmission < 0.5 && aDropActive < 0.5) {
+      vSolidUv = vec2(0.0);
+      vSolidAlpha = 0.0;
+      vSolidSeed = vec2(0.0);
+      gl_Position = vec4(2.0, 2.0, 0.0, 1.0);
+      return;
+    }
+
     float time = uTime * uMotion;
     float aspect = uResolution.x / max(uResolution.y, 1.0);
     float fallDuration = mix(uFallDuration.x, uFallDuration.y, aSeed.z);
@@ -651,7 +661,8 @@ export const solidDropVertexShader = `
       target = min(front, spawnOrigin.y - 0.025);
       float easedTravel = pow(travel, uFallTravelExponent);
       centerY = mix(spawnOrigin.y, target, easedTravel);
-      float slowWander = sin(time * 0.052 + aSeed.z * 5.7) * uFallWander.x * travel;
+      float tracePathAmount = mix(travel, 1.0, step(0.5, uHoldTrace));
+      float slowWander = sin(time * 0.052 + aSeed.z * 5.7) * uFallWander.x * tracePathAmount;
       centerX = spawnOrigin.x + slowWander;
     }
 

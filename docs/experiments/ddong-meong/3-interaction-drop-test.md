@@ -25,6 +25,12 @@ material event at that screen coordinate.
   frame. The segment spans its previously rendered coordinate to its current
   coordinate, rather than snapping to fixed spatial steps. Pointer up, cancel,
   and lost capture end only that pointer stream; hover never emits;
+- when a captured pointer remains stationary, it releases a separate `hold`
+  event every profile-scaled 160–280 ms. A hold is anchored at the contact
+  coordinate, contributes one quarter of one press on landing, and uses the
+  automatic fall's full wandering path translated to that coordinate. Any
+  meaningful movement suppresses hold events, so the existing moving trace is
+  retained unchanged;
 - keyboard activation uses the surface centre; wheel input has no visual action;
 - every press produces an immediate falling event. During skating, the trace
   follows the live coordinate once per display frame; there is no input queue,
@@ -66,9 +72,15 @@ The continuous automatic layer has its own static GPU geometry and no manual
 interaction state. Presses and skating traces use separate reusable GPU batches (the solid form
 uses instanced batches). A trace segment has fourteen percent of a press's visible
 particle budget, while its accumulation amount integrates the actual travelled
-distance. Batch allocation grows only when concurrent input actually requires
-it. At count zero, the field remains absent while the independent `/2` fall
-layer is already running.
+distance. Stationary holds use their own batch, keeping their coordinate-local
+automatic path separate from the moving trace. Releases are swept at render
+cadence rather than with one timer per event. The interaction stream mutates
+outside React rendering, so continuous trace events reach WebGL directly and
+only settled height updates re-render the reader. Inactive solid instances are
+clipped in the vertex stage, and the solid renderer reduces then restores its
+pixel ratio only after sustained frame pressure. Batch allocation grows only
+when concurrent input actually requires it. At count zero, the field remains
+absent while the independent `/2` fall layer is already running.
 
 ## Test route and flush definition
 

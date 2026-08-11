@@ -49,5 +49,15 @@ export function createExperimentSocketServer(httpServer) {
     }
   });
 
-  return io;
+  function handleExperimentRequest(request, response) {
+    for (const experiment of experiments) {
+      if (experiment.handleHttpRequest?.({ io, request, response })) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  return { handleExperimentRequest, io };
 }

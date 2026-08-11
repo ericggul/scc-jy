@@ -33,6 +33,13 @@ export async function generateMetadata({
     return {};
   }
 
+  if (experiment === "3") {
+    return {
+      title: "똥멍",
+      description: "4분 33초 동안 몸의 감각과 호흡에 집중하는 명상.",
+    };
+  }
+
   return {
     title: `ddong-meong ${experiment} — 명상 콘텐츠`,
     description: "4분 33초 동안 몸의 감각과 호흡에 집중하는 명상.",

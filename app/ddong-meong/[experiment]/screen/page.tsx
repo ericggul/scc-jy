@@ -33,6 +33,10 @@ export async function generateMetadata({
     return {};
   }
 
+  if (experiment === "3") {
+    return { title: "똥멍: 대시보드" };
+  }
+
   return {
     title: `ddong-meong ${experiment} screen`,
   };

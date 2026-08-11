@@ -20,6 +20,20 @@ The socket server only stores domain state: nickname, browser participant ID,
 content identity, start/end times, elapsed duration, interaction count and
 session outcome. The screen derives elapsed clocks and visual state locally.
 
+## Disengagement boundary
+
+The mobile reader treats `visibilitychange` and bfcache page transitions as a
+pause, not an exit. A real page unload is recorded as a leave. The same signal
+is sent by Socket.IO and a small `sendBeacon` request, so iOS lock/background
+transitions retain a delivery path when JavaScript is suspended. Socket
+disconnect is the final fallback: a paused session becomes `backgrounded`; an
+otherwise active session becomes `left`.
+
+After at least one direct drop interaction, 60 seconds without another direct
+input is represented as an in-progress `idle` state. It does not end the
+session; another input resumes it. The screen maps the resulting domain states
+to `똥 멈춤`, `똥멍 때리다 멈춤`, `똥 싸다 나감`, and `똥 다쌈`.
+
 ## Retained invariants
 
 - Existing mobile routes, reader timing, BGM handling, interaction mechanism,
@@ -30,11 +44,16 @@ session outcome. The screen derives elapsed clocks and visual state locally.
 
 ## Archive boundary
 
-The server writes up to 5,000 records to
-`data/ddong-meong/3/archive.json` when its runtime filesystem permits it. The
-screen exposes only records whose end date is today in Asia/Seoul. If the
-runtime has no writable disk, the same view remains available for the lifetime
-of that socket process.
+The exhibition screen retains up to 500 completed records in its own browser
+`localStorage` for seven days. It merges the socket's current-process session
+feed into that cache, while exposing only records whose end date is today in
+Asia/Seoul. The socket server keeps no file-backed archive: it provides live
+state and the current process's completed-session feed only.
+
+This is intentionally a single-screen, short-lived archive rather than a
+global record. Clearing that browser's site data, using another browser, or a
+screen remaining offline while the socket process restarts loses records that
+were not already received by the screen.
 
 ## Unresolved question
 

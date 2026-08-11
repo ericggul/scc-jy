@@ -6,19 +6,34 @@ export type DdongMeongPhase =
   | "releasing"
   | "complete";
 
+export type DdongMeongEngagementState = "active" | "paused" | "idle";
+
+export type DdongMeongDisengagementSignal =
+  | "hidden"
+  | "visible"
+  | "leaving";
+
 export type DdongMeongSession = {
   contentSlug: string;
   contentTitle: string;
+  engagement: DdongMeongEngagementState;
   id: string;
   interactionCount: number;
   nickname: string;
   participantId: string;
+  pausedAt: number | null;
+  pausedDurationMs: number;
   startedAt: number;
   updatedAt: number;
   phase: Exclude<DdongMeongPhase, "complete">;
 };
 
-export type DdongMeongSessionOutcome = "completed" | "flushed" | "left";
+export type DdongMeongSessionOutcome =
+  | "completed"
+  | "flushed"
+  | "left"
+  | "backgrounded"
+  | "idle";
 
 export type DdongMeongArchiveEntry = {
   contentSlug: string;

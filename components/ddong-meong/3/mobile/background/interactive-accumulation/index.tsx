@@ -21,7 +21,7 @@ import {
   particlesPerInteractiveDrop,
   particlesPerInteractiveTrace,
 } from "../interaction-progress";
-import type { ActiveBackgroundDrop } from "../types";
+import type { ActiveBackgroundDrop, ActiveDropStream } from "../types";
 import styles from "./styles.module.css";
 
 const materialModeValues = {
@@ -34,7 +34,7 @@ const materialModeValues = {
 } satisfies Record<AccumulationMaterialKind, number>;
 
 type InteractiveAccumulationBackgroundProps = {
-  activeDrops: ActiveBackgroundDrop[];
+  dropStream: ActiveDropStream;
   flushDurationMs: number;
   flushStartedAt: number | null;
   frozenElapsedMs: number | null;
@@ -293,7 +293,7 @@ type DropBatch = {
 };
 
 export default function InteractiveAccumulationBackground({
-  activeDrops,
+  dropStream,
   flushDurationMs,
   flushStartedAt,
   frozenElapsedMs,
@@ -304,7 +304,6 @@ export default function InteractiveAccumulationBackground({
 }: InteractiveAccumulationBackgroundProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const timelineRef = useRef({
-    activeDrops,
     flushDurationMs,
     flushStartedAt,
     frozenElapsedMs,
@@ -314,14 +313,13 @@ export default function InteractiveAccumulationBackground({
 
   useEffect(() => {
     timelineRef.current = {
-      activeDrops,
       flushDurationMs,
       flushStartedAt,
       frozenElapsedMs,
       startedAt,
       settledDropCount,
     };
-  }, [activeDrops, flushDurationMs, flushStartedAt, frozenElapsedMs, startedAt, settledDropCount]);
+  }, [flushDurationMs, flushStartedAt, frozenElapsedMs, startedAt, settledDropCount]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -435,6 +433,7 @@ export default function InteractiveAccumulationBackground({
           uniforms: {
             ...sharedUniforms,
             uAutomaticEmission: { value: 1 },
+            uHoldTrace: { value: 0 },
           },
           transparent: true,
           blending: THREE.NormalBlending,
@@ -457,6 +456,7 @@ export default function InteractiveAccumulationBackground({
     function createParticleDropResource(
       capacity: number,
       particlesPerDrop: number,
+      layer: number,
     ): DropBatchResource {
       const geometry = createParticleGeometry(
         capacity * particlesPerDrop,
@@ -467,7 +467,7 @@ export default function InteractiveAccumulationBackground({
         fragmentShader: particleFragmentShader,
         uniforms: {
           ...sharedUniforms,
-          uLayer: { value: 2 },
+          uLayer: { value: layer },
         },
         transparent: true,
         blending: THREE.NormalBlending,
@@ -501,7 +501,10 @@ export default function InteractiveAccumulationBackground({
       };
     }
 
-    function createSolidDropResource(capacity: number): DropBatchResource {
+    function createSolidDropResource(
+      capacity: number,
+      useAutomaticTrace = false,
+    ): DropBatchResource {
       const geometry = createSolidDropGeometry(
         capacity,
         profile.particles.filamentSeed,
@@ -537,6 +540,7 @@ export default function InteractiveAccumulationBackground({
         uniforms: {
           ...sharedUniforms,
           uAutomaticEmission: { value: 0 },
+          uHoldTrace: { value: useAutomaticTrace ? 1 : 0 },
         },
         transparent: true,
         blending: THREE.NormalBlending,
@@ -678,6 +682,7 @@ export default function InteractiveAccumulationBackground({
             createParticleDropResource(
               capacity,
               particlesPerInteractiveDrop(profile.particles.filamentCount),
+              2,
             ),
     );
     const traceDropBatch = createDropBatch(
@@ -687,19 +692,34 @@ export default function InteractiveAccumulationBackground({
             createParticleDropResource(
               capacity,
               particlesPerInteractiveTrace(profile.particles.filamentCount),
+              2,
+            ),
+    );
+    const holdDropBatch = createDropBatch(
+      profile.materialKind === "solid-form"
+        ? (capacity) => createSolidDropResource(capacity, true)
+        : (capacity) =>
+            createParticleDropResource(
+              capacity,
+              particlesPerInteractiveTrace(profile.particles.filamentCount),
+              3,
             ),
     );
 
     let animationFrame = 0;
     let reducedMotionTimer = 0;
     let lastRenderAt = 0;
+    const maximumPixelRatio = profile.materialKind === "solid-form" ? 1 : 1.15;
+    let pixelRatioCap = maximumPixelRatio;
+    let slowSolidFrames = 0;
+    let stableSolidFrames = 0;
     let displayedProgress = 0;
     let lastProgressUpdateAt = Date.now();
     const automaticStartedAt = Date.now();
 
     function resize() {
       const { width, height } = activeCanvas.getBoundingClientRect();
-      const pixelRatio = Math.min(window.devicePixelRatio || 1, 1.15);
+      const pixelRatio = Math.min(window.devicePixelRatio || 1, pixelRatioCap);
       renderer.setPixelRatio(pixelRatio);
       renderer.setSize(Math.max(1, width), Math.max(1, height), false);
       resolutionUniform.value.set(width * pixelRatio, height * pixelRatio);
@@ -735,18 +755,41 @@ export default function InteractiveAccumulationBackground({
       timeUniform.value = elapsedMs / 1000;
       interactionTimeUniform.value = (now - interactionEpochMs) / 1000;
       dropAgeUniform.value = -1;
-      pressDropBatch.sync(
-        timeline.activeDrops.filter((drop) => drop.source === "press"),
-      );
-      traceDropBatch.sync(
-        timeline.activeDrops.filter((drop) => drop.source === "trace"),
-      );
+      pressDropBatch.sync(dropStream.getDrops("press"));
+      traceDropBatch.sync(dropStream.getDrops("trace"));
+      holdDropBatch.sync(dropStream.getDrops("hold"));
       flushProgressUniform.value = flushProgress;
       renderer.render(scene, camera);
     }
 
     function animate(timestamp: number) {
-      if (timestamp - lastRenderAt >= 1000 / 30) {
+      const frameInterval = timestamp - lastRenderAt;
+      if (frameInterval >= 1000 / 30) {
+        if (profile.materialKind === "solid-form" && lastRenderAt > 0) {
+          if (frameInterval > 52) {
+            slowSolidFrames += 1;
+            stableSolidFrames = 0;
+          } else if (frameInterval < 38) {
+            stableSolidFrames += 1;
+            slowSolidFrames = 0;
+          } else {
+            slowSolidFrames = 0;
+            stableSolidFrames = 0;
+          }
+
+          if (slowSolidFrames >= 2 && pixelRatioCap > 0.72) {
+            pixelRatioCap = Math.max(0.72, pixelRatioCap - 0.12);
+            slowSolidFrames = 0;
+            resize();
+          } else if (
+            stableSolidFrames >= 90 &&
+            pixelRatioCap < maximumPixelRatio
+          ) {
+            pixelRatioCap = Math.min(maximumPixelRatio, pixelRatioCap + 0.06);
+            stableSolidFrames = 0;
+            resize();
+          }
+        }
         render();
         lastRenderAt = timestamp;
       }
@@ -779,6 +822,7 @@ export default function InteractiveAccumulationBackground({
       if (automaticSolidDrops) scene.remove(automaticSolidDrops);
       pressDropBatch.dispose();
       traceDropBatch.dispose();
+      holdDropBatch.dispose();
       backgroundGeometry.dispose();
       backgroundMaterial.dispose();
       reservoir.geometry.dispose();
@@ -789,7 +833,7 @@ export default function InteractiveAccumulationBackground({
       automaticSolidMaterial?.dispose();
       renderer.dispose();
     };
-  }, [profile, totalMs]);
+  }, [dropStream, profile, totalMs]);
 
   return (
     <div className={styles.field} aria-hidden="true">
