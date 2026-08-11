@@ -40,7 +40,7 @@ const StreamBar = styled.div`
   background: var(--news-header);
   border-bottom: 1px solid #484848;
   display: grid;
-  grid-template-columns: max-content minmax(0, 1fr) max-content;
+  grid-template-columns: minmax(0, 1fr) max-content;
   min-width: 0;
 `;
 
@@ -50,16 +50,6 @@ const StreamLabel = styled.div`
   font-size: 1.08em;
   font-weight: 800;
   padding: 0 0.85em;
-  white-space: nowrap;
-`;
-
-const StreamScope = styled.div`
-  color: #b7b8b1;
-  font-size: 0.92em;
-  min-width: 0;
-  overflow: hidden;
-  padding: 0 0.8em;
-  text-overflow: ellipsis;
   white-space: nowrap;
 `;
 
@@ -368,8 +358,7 @@ export default function CValNewsScreen({ snapshot }: { snapshot: CValSnapshot })
   return (
     <NewsTerminal aria-label="C-VAL continuously accumulating public-signal news wire">
       <StreamBar>
-        <StreamLabel>NEWS WIRE</StreamLabel>
-        <StreamScope>MARKET / FINANCE + SOCIETY / POLITICS</StreamScope>
+        <StreamLabel>NEWS ROOM</StreamLabel>
         <StreamReadout>LAST {snapshot.market.index.toFixed(2)}</StreamReadout>
       </StreamBar>
       <NewsArchive marketRecords={marketRecords} societyRecords={societyRecords} />

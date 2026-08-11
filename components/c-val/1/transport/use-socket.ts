@@ -3,7 +3,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { io, type Socket } from "socket.io-client";
 import type {
-  CValOrientation,
+  CValHumanControlInput,
+  CValRecordingCommand,
+  CValRecordingStatus,
+  CValSensorTrace,
   CValSnapshot,
 } from "@/components/c-val/1/model";
 
@@ -29,7 +32,13 @@ const events = {
   hello: "c-val-1:hello",
   presence: "c-val-1:presence",
   stateOut: "c-val-1:state",
-  orientationIn: "c-val-1:orientation:in",
+  humanControlIn: "c-val-1:human-control:in",
+  sensorTraceIn: "c-val-1:sensor-trace:in",
+  recordingCommandIn: "c-val-1:recording-command:in",
+  recordingCommandOut: "c-val-1:recording-command:out",
+  recordingStatusIn: "c-val-1:recording-status:in",
+  recordingStatusOut: "c-val-1:recording-status:out",
+  humanControlResetOut: "c-val-1:human-control-reset:out",
   resetIn: "c-val-1:reset:in",
 } as const;
 
@@ -48,14 +57,23 @@ function getSocketOrigin() {
 export function useCValSocket({
   role,
   onState,
+  onRecordingCommand,
+  onRecordingStatus,
+  onHumanControlReset,
   retainState = true,
 }: {
   role: CValRole;
   onState?: (state: CValSnapshot) => void;
+  onRecordingCommand?: (command: CValRecordingCommand) => void;
+  onRecordingStatus?: (status: CValRecordingStatus) => void;
+  onHumanControlReset?: () => void;
   retainState?: boolean;
 }) {
   const socketRef = useRef<Socket | null>(null);
   const onStateRef = useRef(onState);
+  const onRecordingCommandRef = useRef(onRecordingCommand);
+  const onRecordingStatusRef = useRef(onRecordingStatus);
+  const onHumanControlResetRef = useRef(onHumanControlReset);
   const [connected, setConnected] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [presence, setPresence] = useState<CValPresence | null>(null);
@@ -64,6 +82,18 @@ export function useCValSocket({
   useEffect(() => {
     onStateRef.current = onState;
   }, [onState]);
+
+  useEffect(() => {
+    onRecordingCommandRef.current = onRecordingCommand;
+  }, [onRecordingCommand]);
+
+  useEffect(() => {
+    onRecordingStatusRef.current = onRecordingStatus;
+  }, [onRecordingStatus]);
+
+  useEffect(() => {
+    onHumanControlResetRef.current = onHumanControlReset;
+  }, [onHumanControlReset]);
 
   useEffect(() => {
     const socket = io(getSocketOrigin(), {
@@ -108,6 +138,15 @@ export function useCValSocket({
     );
     socket.on(events.presence, setPresence);
     socket.on(events.stateOut, receiveState);
+    socket.on(events.recordingCommandOut, (command: CValRecordingCommand) => {
+      onRecordingCommandRef.current?.(command);
+    });
+    socket.on(events.recordingStatusOut, (status: CValRecordingStatus) => {
+      onRecordingStatusRef.current?.(status);
+    });
+    socket.on(events.humanControlResetOut, () => {
+      onHumanControlResetRef.current?.();
+    });
 
     return () => {
       socket.disconnect();
@@ -115,8 +154,45 @@ export function useCValSocket({
     };
   }, [retainState, role]);
 
-  const sendOrientation = useCallback((orientation: CValOrientation) => {
-    socketRef.current?.emit(events.orientationIn, orientation);
+  const sendHumanControl = useCallback((control: CValHumanControlInput) => {
+    socketRef.current?.emit(events.humanControlIn, control);
+  }, []);
+
+  const sendSensorTrace = useCallback((trace: CValSensorTrace) => {
+    return new Promise<{ ok: boolean; fileName?: string; error?: string }>(
+      (resolve) => {
+        const socket = socketRef.current;
+        if (!socket?.connected) {
+          resolve({ ok: false, error: "socket is not connected" });
+          return;
+        }
+        socket.emit(
+          events.sensorTraceIn,
+          trace,
+          (result: { ok: boolean; fileName?: string; error?: string }) =>
+            resolve(result),
+        );
+      },
+    );
+  }, []);
+
+  const sendRecordingCommand = useCallback((command: CValRecordingCommand) => {
+    return new Promise<{
+      ok: boolean;
+      mobileCount?: number;
+      error?: string;
+    }>((resolve) => {
+      const socket = socketRef.current;
+      if (!socket?.connected) {
+        resolve({ ok: false, error: "socket is not connected" });
+        return;
+      }
+      socket.emit(events.recordingCommandIn, command, resolve);
+    });
+  }, []);
+
+  const sendRecordingStatus = useCallback((status: CValRecordingStatus) => {
+    socketRef.current?.emit(events.recordingStatusIn, status);
   }, []);
 
   const resetSystem = useCallback(() => {
@@ -128,8 +204,10 @@ export function useCValSocket({
     connectionError,
     presence,
     state,
-    sendOrientation,
+    sendHumanControl,
+    sendSensorTrace,
+    sendRecordingCommand,
+    sendRecordingStatus,
     resetSystem,
   };
 }
-

@@ -1,15 +1,19 @@
 export const cValOneScreenIds = [
-  "market",
+  "rollercoaster",
   "news",
   "media",
-  "employment",
 ] as const;
+export const cValOneStandaloneScreenIds = ["casino", "comments"] as const;
+export const cValOneArchivedScreenIds = ["comments-legacy"] as const;
 
-export const cValTwoScreenIds = ["rollercoaster", "news", "media"] as const;
-export const cValTwoStandaloneScreenIds = ["casino", "comments"] as const;
+export const cValTwoScreenIds = ["news", "media"] as const;
+export const cValTwoStandaloneScreenIds = ["comments"] as const;
 export const cValTwoArchivedScreenIds = ["comments-legacy"] as const;
 
-export type CValOneScreenId = (typeof cValOneScreenIds)[number];
+export type CValOneScreenId =
+  | (typeof cValOneScreenIds)[number]
+  | (typeof cValOneStandaloneScreenIds)[number]
+  | (typeof cValOneArchivedScreenIds)[number];
 export type CValTwoScreenId =
   | (typeof cValTwoScreenIds)[number]
   | (typeof cValTwoStandaloneScreenIds)[number]
@@ -22,8 +26,8 @@ export const cValExperiments = [
     label: "c-val/1",
     status: "stable",
     screenIds: cValOneScreenIds,
-    standaloneScreenIds: [],
-    archivedScreenIds: [],
+    standaloneScreenIds: cValOneStandaloneScreenIds,
+    archivedScreenIds: cValOneArchivedScreenIds,
   },
   {
     version: "2",
@@ -46,7 +50,11 @@ export function isCValScreenId(value: string): value is CValScreenId {
 }
 
 export function isCValOneScreenId(value: string): value is CValOneScreenId {
-  return cValOneScreenIds.some((screenId) => screenId === value);
+  return (
+    cValOneScreenIds.some((screenId) => screenId === value) ||
+    cValOneStandaloneScreenIds.some((screenId) => screenId === value) ||
+    cValOneArchivedScreenIds.some((screenId) => screenId === value)
+  );
 }
 
 export function isCValTwoScreenId(value: string): value is CValTwoScreenId {

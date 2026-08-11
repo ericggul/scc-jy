@@ -1,10 +1,17 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import CValMobileV3 from "@/components/c-val/2/mobile/v3";
+import CValOneMobileV3 from "@/components/c-val/1/mobile/v3";
+import CValTwoMobileV3 from "@/components/c-val/2/mobile/v3";
+import { isCValVersion } from "@/components/c-val/experiments";
 
-export const metadata: Metadata = {
-  title: "c-val 2 mobile v3",
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ version: string }>;
+}): Promise<Metadata> {
+  const { version } = await params;
+  return { title: `c-val ${version} mobile v3` };
+}
 
 export default async function CValMobileV3Page({
   params,
@@ -12,6 +19,6 @@ export default async function CValMobileV3Page({
   params: Promise<{ version: string }>;
 }) {
   const { version } = await params;
-  if (version !== "2") notFound();
-  return <CValMobileV3 />;
+  if (!isCValVersion(version)) notFound();
+  return version === "1" ? <CValOneMobileV3 /> : <CValTwoMobileV3 />;
 }

@@ -3,6 +3,7 @@ import {
   interpolateAround,
   interpolateRange,
 } from "./calibration.mjs";
+import { orientationToCValParameters } from "./orientation.mjs";
 import {
   bookOrders,
   bookSideOrderCount,
@@ -29,6 +30,7 @@ const PARAMETER_RESPONSE_PER_SECOND = 8;
 const INTERNAL_TRADE_LIMIT = 240;
 const INTERNAL_FLOW_LIMIT = 480;
 const BOOK_LEVELS_IN_SNAPSHOT = 9;
+const ORIENTATION_ACTIVATION_THRESHOLD_DEGREES = 2;
 
 function clamp(value, minimum, maximum) {
   if (!Number.isFinite(value)) return minimum;
@@ -57,12 +59,28 @@ function pushBounded(list, value, limit) {
   if (list.length > limit) list.splice(0, list.length - limit);
 }
 
-export function orientationToCValParameters(orientation = {}) {
-  return {
-    volatility: clamp(0.5 + 0.5 * (orientation.alpha / 90), 0, 1),
-    activity: clamp(0.5 + 0.5 * (orientation.beta / 90), 0, 1),
-    liquidity: clamp(0.5 + 0.5 * (orientation.gamma / 45), 0, 1),
-  };
+export {
+  orientationToCValParameters,
+  rotationRateToCValControl,
+} from "./orientation.mjs";
+
+/**
+ * One fixed bridge from the three intermediate phone conditions to market
+ * direction. A carries the fixed forward/back sign around 0.5. V carries
+ * gesture intensity and L carries its inverse depth/damping condition.
+ */
+export function cValConditionDirection(parameters = {}) {
+  const signedActivity = (clamp(parameters.activity, 0, 1) - 0.5) * 2;
+  const volatilityGain = 0.25 + 0.75 * clamp(parameters.volatility, 0, 1);
+  const liquidityGain = 1 - 0.75 * clamp(parameters.liquidity, 0, 1);
+  return clamp(signedActivity * volatilityGain * liquidityGain, -1, 1);
+}
+
+function effectiveActivity(parameters) {
+  const directionalIntensity = Math.abs(
+    (clamp(parameters.activity, 0, 1) - 0.5) * 2,
+  );
+  return 0.5 + 0.5 * directionalIntensity;
 }
 
 function nextRandom(runtime) {
@@ -180,11 +198,7 @@ function priceFromTicks(ticks) {
 }
 
 function boundedPriceTicks(ticks) {
-  return clamp(
-    Math.round(ticks),
-    cValCalibration.structural.minimumPriceTicks,
-    cValCalibration.structural.maximumPriceTicks,
-  );
+  return Math.max(1, Math.round(ticks));
 }
 
 function seedBook(runtime, now) {
@@ -343,6 +357,32 @@ function updateMarket(runtime, now) {
   runtime.visibleBook = bookState.book;
 }
 
+function createDormantMarket() {
+  return {
+    index: 100,
+    openingPrice: 100,
+    changeFromOpenPercent: 0,
+    oneSecondMovePercent: 0,
+    oneSecondLow: 100,
+    oneSecondHigh: 100,
+    oneSecondRange: 0,
+    fundamental: 100,
+    bestBid: 100,
+    bestAsk: 100,
+    orderImbalance: 0,
+    returnPercent: 0,
+    turnover: 0,
+    spreadBps: 0,
+    depth: 0,
+    priceImpactBps: 0,
+    realizedVolatilityBps: 0,
+    volatilityRegime: cValNeutralParameters.volatility,
+    submittedOrders: 0,
+    cancelledOrders: 0,
+    executions: 0,
+  };
+}
+
 export function createCValRuntime(
   now = Date.now(),
   runId = createRunId(now),
@@ -350,12 +390,20 @@ export function createCValRuntime(
 ) {
   const runtime = {
     runId,
+    phase: "waiting",
+    activatedAt: null,
     revision: 0,
     serverTime: now,
     randomSeed: randomSeed >>> 0,
     parameters: copyRecord(cValNeutralParameters),
     volatilityRegime: cValNeutralParameters.volatility,
     orientationTarget: copyRecord(cValNeutralParameters),
+    humanControl: {
+      ...copyRecord(cValNeutralParameters),
+      engaged: false,
+      contributors: 0,
+      receivedAt: 0,
+    },
     orientation: {
       absolute: false,
       alpha: 0,
@@ -363,7 +411,7 @@ export function createCValRuntime(
       gamma: 0,
       receivedAt: 0,
     },
-    participants: createParticipants(),
+    participants: [],
     book: createOrderBook(),
     visibleBook: { bids: [], asks: [] },
     fundamentalTicks: cValCalibration.structural.initialPriceTicks,
@@ -378,13 +426,22 @@ export function createCValRuntime(
     recentOrders: [],
     recentTrades: [],
     counters: { submitted: 0, cancelled: 0, executions: 0 },
-    market: null,
+    market: createDormantMarket(),
     history: initialHistory(),
   };
+  return runtime;
+}
+
+export function activateCValRuntime(runtime, now = Date.now()) {
+  if (runtime.phase === "active") return false;
+  runtime.phase = "active";
+  runtime.activatedAt = now;
+  runtime.participants = createParticipants();
+  runtime.book = createOrderBook();
   seedBook(runtime, now);
   updateMarket(runtime, now);
   runtime.history.depth.fill(runtime.market.depth);
-  return runtime;
+  return true;
 }
 
 export function resetCValRuntime(runtime, now = Date.now()) {
@@ -392,6 +449,7 @@ export function resetCValRuntime(runtime, now = Date.now()) {
   return runtime;
 }
 
+// Legacy offline shake-harness bridge only; not reachable from the V2 socket.
 export function setCValOrientation(runtime, orientation, now = Date.now()) {
   runtime.orientation = {
     absolute: Boolean(orientation.absolute),
@@ -401,7 +459,32 @@ export function setCValOrientation(runtime, orientation, now = Date.now()) {
     receivedAt: now,
   };
   runtime.orientationTarget = orientationToCValParameters(runtime.orientation);
+  if (
+    Math.max(
+      Math.abs(runtime.orientation.alpha),
+      Math.abs(runtime.orientation.beta),
+      Math.abs(runtime.orientation.gamma),
+    ) >= ORIENTATION_ACTIVATION_THRESHOLD_DEGREES
+  ) {
+    activateCValRuntime(runtime, now);
+  }
   return runtime.orientation;
+}
+
+export function setCValHumanControl(runtime, input = {}, now = Date.now()) {
+  runtime.humanControl = {
+    volatility: clamp(input.volatility, 0, 1),
+    activity: clamp(input.activity, 0, 1),
+    liquidity: clamp(input.liquidity, 0, 1),
+    engaged: Boolean(input.engaged),
+    contributors: Math.max(
+      0,
+      Math.floor(input.contributors ?? (input.engaged ? 1 : 0)),
+    ),
+    receivedAt: Number.isFinite(input.receivedAt) ? input.receivedAt : now,
+  };
+  if (runtime.humanControl.engaged) activateCValRuntime(runtime, now);
+  return runtime.humanControl;
 }
 
 function signalStrength(runtime, now) {
@@ -418,12 +501,16 @@ function signalStrength(runtime, now) {
 }
 
 function updateParameters(runtime, now, dt) {
-  const strength = signalStrength(runtime, now);
+  const usesHumanControl = runtime.humanControl.engaged;
+  const strength = usesHumanControl ? 1 : signalStrength(runtime, now);
+  const parameterTarget = usesHumanControl
+    ? runtime.humanControl
+    : runtime.orientationTarget;
   const response = 1 - Math.exp(-PARAMETER_RESPONSE_PER_SECOND * dt);
   for (const parameterId of cValParameterIds) {
     const target =
       cValNeutralParameters[parameterId] +
-      (runtime.orientationTarget[parameterId] -
+      (parameterTarget[parameterId] -
         cValNeutralParameters[parameterId]) *
         strength;
     runtime.parameters[parameterId] = clamp(
@@ -478,13 +565,20 @@ function updateFundamental(runtime, dt) {
   const meanReversion =
     (-Math.log(2) * currentLogDistance * marketDays) /
     cValCalibration.scenario.valueMeanReversionHalfLifeDays;
-  const innovation =
+  const direction = cValConditionDirection(runtime.parameters);
+  const randomShare = (1 - Math.abs(direction)) ** 2;
+  const randomInnovation =
     sampleStudentT(
       runtime,
       cValCalibration.scenario.informationTailDegreesOfFreedom,
     ) *
     dailyVolatility *
-    Math.sqrt(marketDays);
+    Math.sqrt(marketDays) *
+    randomShare;
+  const directionalScale = 0.035;
+  const directionalInnovation =
+    direction * directionalScale * Math.sqrt(marketDays);
+  const innovation = randomInnovation + directionalInnovation;
   runtime.fundamentalTicks = boundedPriceTicks(
     runtime.fundamentalTicks * Math.exp(meanReversion + innovation),
   );
@@ -520,6 +614,7 @@ function chooseParticipantType(runtime) {
 }
 
 function sideForParticipant(runtime, participant, bookState) {
+  const conditionDirection = cValConditionDirection(runtime.parameters);
   if (participant.type === "liquidity-provider") {
     const bidDepth = bookState.book.bids
       .slice(0, 5)
@@ -555,11 +650,21 @@ function sideForParticipant(runtime, participant, bookState) {
   }
   if (participant.type === "trend") {
     const trendProbability = clamp(
-      0.5 + 0.38 * Math.tanh(runtime.momentumBps / 2.5),
-      0.1,
-      0.9,
+      0.5 +
+        0.28 * Math.tanh(runtime.momentumBps / 2.5) +
+        0.42 * conditionDirection,
+      0.04,
+      0.96,
     );
     return nextRandom(runtime) < trendProbability ? "buy" : "sell";
+  }
+  if (Math.abs(conditionDirection) >= 0.025) {
+    const buyProbability = clamp(
+      0.5 + 0.46 * conditionDirection,
+      0.04,
+      0.96,
+    );
+    return nextRandom(runtime) < buyProbability ? "buy" : "sell";
   }
   return nextMetaOrderSide(runtime);
 }
@@ -625,7 +730,7 @@ function orderForParticipant(runtime, participant, now) {
   if (participant.type === "liquidity-provider") {
     const informationWeight = clamp(
       0.12 +
-        0.5 * runtime.parameters.activity +
+        0.5 * effectiveActivity(runtime.parameters) +
         0.22 * (1 - runtime.parameters.liquidity),
       0.12,
       0.84,
@@ -908,7 +1013,7 @@ function enforceBookBounds(runtime) {
 function runMarketEvents(runtime, now, dt) {
   const rate = interpolateRange(
     cValCalibration.scenario.orderArrivalRateRange,
-    runtime.parameters.activity,
+    effectiveActivity(runtime.parameters),
   );
   const eventCount = Math.min(samplePoisson(runtime, rate * dt), 12);
 
@@ -953,6 +1058,10 @@ function sampleHistory(runtime) {
 }
 
 export function stepCValRuntime(runtime, now = Date.now(), dt = 0.05) {
+  if (runtime.phase !== "active") {
+    runtime.serverTime = now;
+    return runtime;
+  }
   const safeDt = clamp(dt, 0.001, 0.2);
   runtime.counters = { submitted: 0, cancelled: 0, executions: 0 };
   updateParameters(runtime, now, safeDt);
@@ -984,6 +1093,8 @@ export function snapshotCValRuntime(runtime) {
   return {
     version: cValVersion,
     runId: runtime.runId,
+    phase: runtime.phase,
+    activatedAt: runtime.activatedAt,
     revision: runtime.revision,
     serverTime: runtime.serverTime,
     calibration: {
@@ -992,6 +1103,7 @@ export function snapshotCValRuntime(runtime) {
     },
     parameters: compactRecord(runtime.parameters),
     orientation: { ...runtime.orientation },
+    humanControl: compactRecord(runtime.humanControl),
     market: compactRecord(runtime.market),
     orderBook: {
       bids: runtime.visibleBook.bids.map((level) => ({
@@ -1023,5 +1135,6 @@ export const cValModelTiming = {
   historySampleEvery: cValCalibration.timing.historySampleEvery,
   signalHoldMs: SIGNAL_HOLD_MS,
   signalReleaseMs: SIGNAL_RELEASE_MS,
+  orientationActivationThresholdDegrees:
+    ORIENTATION_ACTIVATION_THRESHOLD_DEGREES,
 };
-

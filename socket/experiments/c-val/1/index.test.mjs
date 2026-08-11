@@ -19,4 +19,3 @@ test("c-val 1 owns an isolated versioned room and event prefix", () => {
     ),
   );
 });
-

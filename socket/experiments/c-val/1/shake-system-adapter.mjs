@@ -1,4 +1,5 @@
 import {
+  activateCValRuntime,
   cValModelTiming,
   createCValRuntime,
   orientationToCValParameters,
@@ -43,6 +44,9 @@ export const cValShakeSystemAdapter = {
       "c-val-1-shake-harness",
       marketSeed,
     );
+    // The legacy harness compares two already-open markets. Production remains
+    // dormant until the phone crosses the intentional-input gate.
+    activateCValRuntime(runtime, startTime);
     return {
       runtime,
       initialTotals: participantTotals(runtime),
@@ -97,4 +101,3 @@ export const cValShakeSystemAdapter = {
     };
   },
 };
-

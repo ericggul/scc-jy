@@ -7,12 +7,14 @@ market. Start here before changing any C-VAL file.
 
 ## Current version state
 
-On 2026-08-04, the former C-VAL 2 implementation was promoted to C-VAL 1. The
-old C-VAL 1 controller is no longer the baseline. Its replacement is the exact
-six-area market-workstation controller that was previously served by C-VAL 2.
+On 2026-08-11, the current C-VAL 2 implementation was synchronized into C-VAL
+1 as an independent version-owned copy. V1 keeps its own component imports,
+socket room, events, model snapshot version, and recording path.
 
-- **C-VAL 1 is the frozen baseline.** It preserves the promoted implementation
-  under the `c-val:1` socket identity and `/c-val/1/*` routes.
+- **C-VAL 1 is the complete independent mirror.** It retains casino,
+  rollercoaster, and `screen-legacy` while serving the synchronized current
+  mobile, controller, news, media, and comments implementations under
+  `c-val:1`.
 - **C-VAL 2 is the active WIP iteration branch.** It reads the browser's three
   alpha/beta/gamma rotation-rate components and applies the same stateless soft
   response to every axis. Total rotation energy raises V and lowers L; the
@@ -68,21 +70,22 @@ Every version is a complete compatible system:
 | --- | --- | --- |
 | Mobile | `/c-val/[version]/mobile` | Permission, version-specific sensor capture, V/A/L preview, input transmission |
 | Controller | `/c-val/[version]/controller` | Full market observation and authorized reset |
-| Individual screen | `/c-val/[version]/screen/[screen]` | V1 selects `market`, `news`, `media`, or `employment`; V2 actively composes `rollercoaster`, `news`, and `media`, with `casino` and `comments` available as additional standalone screens |
+| Individual screen | `/c-val/[version]/screen/[screen]` | V1 exposes `rollercoaster`, `news`, `media`, `casino`, `comments`, and `comments-legacy`; V2 exposes only `news`, `media`, `comments`, and `comments-legacy` |
 | Whole screen set | `/c-val/[version]/screen/whole` | Composes all registered screens |
 
-C-VAL 1 preserves its four-screen initial wrapper. C-VAL 2's active whole set
-remains a carried 28-point price track, a two-thread market/finance and
-society/politics news wire, and audiovisual media. The news columns accumulate
-independently while retaining the same compact visual grammar. Casino is a
-price-register instrument. Comments turns
+C-VAL 1's whole set retains the carried 28-point rollercoaster price track,
+news, and audiovisual media. C-VAL 2's whole set now contains only news and
+media; its casino, rollercoaster, and complete `screen-legacy` source were
+removed on 2026-08-11. The news columns accumulate independently while
+retaining the same compact visual grammar. V1 casino remains a price-register
+instrument. Comments turns
 actual rapid one-second movement into bounded context-minimal voice reactions
 and a typographic comment field. Both are
 additional standalone screens and do not change the active composition.
 
-C-VAL 2 also exposes `/c-val/2/mobile/v2` and `/c-val/2/mobile/v3` as
-presentation-only iterations of its mobile role. The un-suffixed mobile route
-remains the v1 default.
+Both versions expose `/c-val/[version]/mobile/v2` and `/mobile/v3` as
+presentation-only iterations of their own mobile role. Each route imports its
+matching version component; the un-suffixed mobile route remains the default.
 
 ## Ownership map
 

@@ -320,17 +320,6 @@ export const backgroundFragmentShader = `
       float rightDistance = abs(uv.x - (spine + 0.13)) * aspect;
       filamentDistance = min(leftDistance, rightDistance);
     }
-    if (uMaterialMode > 6.5 && uMaterialMode < 7.5) {
-      float coilOffset = sin(uv.y * 21.0 - flowTime * 0.38) * 0.042;
-      coilOffset += sin(uv.y * 8.0 + flowTime * 0.17) * 0.018;
-      filamentDistance = abs(uv.x - (spine + coilOffset)) * aspect;
-    }
-    if (uMaterialMode > 7.5) {
-      float leftDistance = abs(uv.x - (spine - 0.14)) * aspect;
-      float middleDistance = abs(uv.x - spine) * aspect;
-      float rightDistance = abs(uv.x - (spine + 0.12)) * aspect;
-      filamentDistance = min(leftDistance, min(middleDistance, rightDistance));
-    }
     float filament = 1.0 - smoothstep(
       uBackgroundFilamentWidth.x,
       uBackgroundFilamentWidth.y,
@@ -346,7 +335,7 @@ export const backgroundFragmentShader = `
     filament *= 1.0 - smoothstep(0.0, 0.14, flushProgress);
     if (uMaterialMode > 1.5 && uMaterialMode < 2.5) filament = 0.0;
     if (uMaterialMode > 3.5 && uMaterialMode < 4.5) filament = 0.0;
-    if (uMaterialMode > 5.5 && uMaterialMode < 6.5) filament = 0.0;
+    if (uMaterialMode > 5.5) filament = 0.0;
     float filamentTexture = 0.48 + fineFlow * 0.52;
     color = mix(
       color,
@@ -517,19 +506,25 @@ export const particleVertexShader = `
         particlePosition.y += (aSeed.w - 0.5) * 0.035;
       }
       if (uMaterialMode > 6.5 && uMaterialMode < 7.5) {
-        float coil = sin(travel * 20.0 - flowTime * 0.38 + aSeed.z * 6.283);
-        float coilAmplitude = filamentWidth * 1.65 + 0.018;
-        particlePosition.x += coil * coilAmplitude / aspect;
-        particlePosition.y += cos(travel * 20.0 + aSeed.w * 6.283) * 0.012;
+        float segment = floor(aSeed.x * 5.0) - 2.0;
+        float angle = aSeed.z * 6.283 + segment * 0.9;
+        float radius = sqrt(aSeed.w) * 0.052;
+        float lobeWander = sin(travel * 8.0 + segment * 1.7) * 0.013;
+        particlePosition = vec2(
+          spine + (sin(segment * 1.23) * 0.024 + cos(angle) * radius) / aspect,
+          particleY + segment * 0.072 + sin(angle) * radius * 1.24 + lobeWander
+        );
       }
       if (uMaterialMode > 7.5) {
-        float branch = floor(aSeed.x * 3.0) - 1.0;
-        float localSeed = fract(aSeed.x * 3.0);
-        float branchLane = branch * 0.13;
-        branchLane += (localSeed - 0.5) * filamentWidth * 1.8;
-        float branchWobble = sin(travel * 15.0 + aSeed.z * 9.0) * 0.014;
-        particlePosition.x = spine + (branchLane + branchWobble) / aspect;
-        particlePosition.y += (aSeed.w - 0.5) * 0.045;
+        float side = step(0.5, aSeed.y) * 2.0 - 1.0;
+        float lobe = floor(aSeed.x * 3.0) - 1.0;
+        float angle = aSeed.z * 6.283 + lobe * 1.6;
+        float radius = sqrt(aSeed.w) * 0.058;
+        float turn = sin(travel * 7.0 + side * 1.8) * 0.012;
+        particlePosition = vec2(
+          spine + side * 0.155 + (lobe * 0.017 + cos(angle) * radius) / aspect,
+          particleY + lobe * 0.076 + sin(angle) * radius * 1.05 + turn
+        );
       }
 
       float endFade = pow(sin(travel * 3.14159265), 0.34);
@@ -609,19 +604,25 @@ export const particleVertexShader = `
         particlePosition.y += (aSeed.w - 0.5) * 0.035;
       }
       if (uMaterialMode > 6.5 && uMaterialMode < 7.5) {
-        float coil = sin(travel * 20.0 - flowTime * 0.38 + aSeed.z * 6.283);
-        float coilAmplitude = filamentWidth * 1.65 + 0.018;
-        particlePosition.x += coil * coilAmplitude / aspect;
-        particlePosition.y += cos(travel * 20.0 + aSeed.w * 6.283) * 0.012;
+        float segment = floor(aSeed.x * 5.0) - 2.0;
+        float angle = aSeed.z * 6.283 + segment * 0.9;
+        float radius = sqrt(aSeed.w) * 0.052;
+        float lobeWander = sin(travel * 8.0 + segment * 1.7) * 0.013;
+        particlePosition = vec2(
+          spine + (sin(segment * 1.23) * 0.024 + cos(angle) * radius) / aspect,
+          particleY + segment * 0.072 + sin(angle) * radius * 1.24 + lobeWander
+        );
       }
       if (uMaterialMode > 7.5) {
-        float branch = floor(aSeed.x * 3.0) - 1.0;
-        float localSeed = fract(aSeed.x * 3.0);
-        float branchLane = branch * 0.13;
-        branchLane += (localSeed - 0.5) * filamentWidth * 1.8;
-        float branchWobble = sin(travel * 15.0 + aSeed.z * 9.0) * 0.014;
-        particlePosition.x = spine + (branchLane + branchWobble) / aspect;
-        particlePosition.y += (aSeed.w - 0.5) * 0.045;
+        float side = step(0.5, aSeed.y) * 2.0 - 1.0;
+        float lobe = floor(aSeed.x * 3.0) - 1.0;
+        float angle = aSeed.z * 6.283 + lobe * 1.6;
+        float radius = sqrt(aSeed.w) * 0.058;
+        float turn = sin(travel * 7.0 + side * 1.8) * 0.012;
+        particlePosition = vec2(
+          spine + side * 0.155 + (lobe * 0.017 + cos(angle) * radius) / aspect,
+          particleY + lobe * 0.076 + sin(angle) * radius * 1.05 + turn
+        );
       }
 
       float endFade = pow(sin(travel * 3.14159265), 0.34);

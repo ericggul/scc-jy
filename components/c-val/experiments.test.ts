@@ -20,13 +20,14 @@ test("c-val registry exposes two complete version boundaries", () => {
 });
 
 test("each c-val version validates only its declared screen routes", () => {
-  for (const screen of ["market", "news", "media", "employment", "whole"]) {
+  for (const screen of ["rollercoaster", "casino", "comments", "comments-legacy", "news", "media", "whole"]) {
     assert.equal(isCValScreenRoute("1", screen), true);
   }
-  for (const screen of ["rollercoaster", "casino", "comments", "comments-legacy", "news", "media", "whole"]) {
+  for (const screen of ["comments", "comments-legacy", "news", "media", "whole"]) {
     assert.equal(isCValScreenRoute("2", screen), true);
   }
-  assert.equal(isCValScreenRoute("1", "rollercoaster"), false);
+  assert.equal(isCValScreenRoute("2", "rollercoaster"), false);
+  assert.equal(isCValScreenRoute("2", "casino"), false);
   assert.equal(isCValScreenRoute("2", "market"), false);
   assert.equal(isCValScreenRoute("2", "employment"), false);
   assert.equal(isCValScreenRoute("2", "rollercoaster-legacy"), false);
@@ -37,9 +38,13 @@ test("each c-val version validates only its declared screen routes", () => {
   assert.equal(isCValScreenRoute("2", "raw"), false);
 });
 
-test("additional screens remain standalone and do not rewrite the existing C-VAL 2 screen set", () => {
+test("casino and rollercoaster remain in C-VAL 1 but are removed only from C-VAL 2", () => {
+  const cValOne = cValExperiments.find(({ version }) => version === "1");
   const cValTwo = cValExperiments.find(({ version }) => version === "2");
-  assert.deepEqual(cValTwo?.screenIds, ["rollercoaster", "news", "media"]);
-  assert.deepEqual(cValTwo?.standaloneScreenIds, ["casino", "comments"]);
+  assert.deepEqual(cValOne?.screenIds, ["rollercoaster", "news", "media"]);
+  assert.deepEqual(cValOne?.standaloneScreenIds, ["casino", "comments"]);
+  assert.deepEqual(cValOne?.archivedScreenIds, ["comments-legacy"]);
+  assert.deepEqual(cValTwo?.screenIds, ["news", "media"]);
+  assert.deepEqual(cValTwo?.standaloneScreenIds, ["comments"]);
   assert.deepEqual(cValTwo?.archivedScreenIds, ["comments-legacy"]);
 });

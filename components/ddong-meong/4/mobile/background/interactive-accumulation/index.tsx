@@ -32,8 +32,8 @@ const materialModeValues = {
   "drifting-mist": 4,
   "liquid-burst": 5,
   "pellet-cluster": 6,
-  "coiling-stream": 7,
-  "split-stream": 8,
+  "segmented-rope": 7,
+  "counter-plop": 8,
 } satisfies Record<AccumulationMaterialKind, number>;
 
 function usesSolidDrops(profile: AccumulationProfile) {
@@ -41,6 +41,12 @@ function usesSolidDrops(profile: AccumulationProfile) {
     profile.materialKind === "solid-form" ||
     profile.materialKind === "pellet-cluster"
   );
+}
+
+function particlePhaseCount(profile: AccumulationProfile) {
+  if (profile.materialKind === "segmented-rope") return 3;
+  if (profile.materialKind === "counter-plop") return 4;
+  return 0;
 }
 
 function solidItemsPerInteractiveDrop(
@@ -83,7 +89,7 @@ function createSeededRandom(initialSeed: number) {
   };
 }
 
-function createParticleGeometry(count: number, seed: number) {
+function createParticleGeometry(count: number, seed: number, phaseCount = 0) {
   const geometry = new THREE.BufferGeometry();
   const positions = new Float32Array(count * 3);
   const seeds = new Float32Array(count * 4);
@@ -97,7 +103,8 @@ function createParticleGeometry(count: number, seed: number) {
   for (let index = 0; index < count; index += 1) {
     const offset = index * 4;
     seeds[offset] = random();
-    seeds[offset + 1] = random();
+    seeds[offset + 1] =
+      phaseCount > 0 ? (index % phaseCount) / phaseCount : random();
     seeds[offset + 2] = random();
     seeds[offset + 3] = random();
   }
@@ -434,8 +441,13 @@ export default function InteractiveAccumulationBackground({
     background.renderOrder = 0;
     scene.add(background);
 
-    function createParticleLayer(count: number, seed: number, layer: number) {
-      const geometry = createParticleGeometry(count, seed);
+    function createParticleLayer(
+      count: number,
+      seed: number,
+      layer: number,
+      phaseCount = 0,
+    ) {
+      const geometry = createParticleGeometry(count, seed, phaseCount);
       const material = new THREE.ShaderMaterial({
         vertexShader: particleVertexShader,
         fragmentShader: particleFragmentShader,
@@ -464,9 +476,10 @@ export default function InteractiveAccumulationBackground({
       profile.particles.filamentCount,
       profile.particles.filamentSeed,
       1,
+      particlePhaseCount(profile),
     );
     const automaticSolidGeometry =
-      profile.solid.count > 0
+      usesSolidDrops(profile) && profile.solid.count > 0
         ? createSolidDropGeometry(
             profile.solid.count,
             profile.particles.filamentSeed ^ 0x5011d,
@@ -508,6 +521,7 @@ export default function InteractiveAccumulationBackground({
       const geometry = createParticleGeometry(
         capacity * particlesPerDrop,
         profile.particles.filamentSeed,
+        particlePhaseCount(profile),
       );
       const material = new THREE.ShaderMaterial({
         vertexShader: particleVertexShader,

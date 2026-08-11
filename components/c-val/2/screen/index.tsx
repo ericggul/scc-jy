@@ -4,10 +4,8 @@ import { useState } from "react";
 import styled from "styled-components";
 import CValMediaScreen from "./media";
 import CValNewsScreen from "./news";
-import CValCasinoScreen from "./casino";
 import CValCommentsScreen from "./comments";
 import CValCommentsLegacyScreen from "./comments-legacy";
-import CValRollercoasterScreen from "./rollercoaster";
 import { createInitialCValSnapshot, type CValSnapshot } from "@/components/c-val/2/model";
 import { useCValSocket } from "@/components/c-val/2/transport";
 import type { CValTwoScreenId } from "@/components/c-val/experiments";
@@ -23,11 +21,11 @@ const WholeGrid = styled.div`
   position: absolute;
   inset: 0;
   display: grid;
-  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-  grid-template-rows: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: minmax(0, 1fr);
 `;
 
-const Pane = styled.div<{ $screenId?: CValTwoScreenId }>`
+const Pane = styled.div`
   position: relative;
   width: 100%;
   height: 100%;
@@ -36,16 +34,13 @@ const Pane = styled.div<{ $screenId?: CValTwoScreenId }>`
   overflow: hidden;
   container-type: size;
 
-  ${({ $screenId }) => $screenId === "rollercoaster" && "grid-row: 1 / span 2;"}
 `;
 
 function ScreenContent({ screenId, snapshot }: { screenId: CValTwoScreenId; snapshot: CValSnapshot }) {
-  if (screenId === "casino") return <CValCasinoScreen snapshot={snapshot} />;
   if (screenId === "comments") return <CValCommentsScreen snapshot={snapshot} />;
   if (screenId === "comments-legacy") return <CValCommentsLegacyScreen snapshot={snapshot} />;
   if (screenId === "news") return <CValNewsScreen snapshot={snapshot} />;
-  if (screenId === "media") return <CValMediaScreen snapshot={snapshot} />;
-  return <CValRollercoasterScreen snapshot={snapshot} />;
+  return <CValMediaScreen snapshot={snapshot} />;
 }
 
 export function CValScreenExperience({ screenIds }: { screenIds: readonly CValTwoScreenId[] }) {
@@ -61,7 +56,7 @@ export function CValScreenExperience({ screenIds }: { screenIds: readonly CValTw
     <Stage>
       <WholeGrid>
         {screenIds.map((screenId) => (
-          <Pane key={screenId} $screenId={screenId}><ScreenContent screenId={screenId} snapshot={snapshot} /></Pane>
+          <Pane key={screenId}><ScreenContent screenId={screenId} snapshot={snapshot} /></Pane>
         ))}
       </WholeGrid>
     </Stage>
