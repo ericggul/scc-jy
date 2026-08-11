@@ -4,6 +4,11 @@
 > Status: **rejected before acceptance**  
 > Preserved baseline: `components/c-val/2/screen-legacy/news/`
 
+> Historical scope note, 2026-08-11: the later accepted compact wire represented
+> by this document is preserved byte-for-byte under `screen/news-legacy/`. The
+> active renderer now applies the independent two-thread contract recorded in
+> [`2-news-society-split-2026-08-11.md`](./2-news-society-split-2026-08-11.md).
+
 ## Non-negotiable task contract — user instruction, 2026-08-10
 
 This section is the operational memory for this migration. It overrides every

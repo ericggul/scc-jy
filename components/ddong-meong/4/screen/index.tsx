@@ -9,6 +9,7 @@ import type {
   DdongMeongSession,
   DdongMeongSessionOutcome,
 } from "../model/types";
+import { displayMeditationContentTitle } from "../model/content-catalog";
 import { getPausableElapsedMs } from "../model/session-timing";
 import { ddongMeongSans } from "../design-system/fonts";
 import InteractionLock from "../design-system/interaction-lock";
@@ -65,7 +66,12 @@ function LiveSession({ now, session }: { now: number; session: DdongMeongSession
         <strong>{session.nickname}</strong>
         <span>{phaseLabel(session)}</span>
       </div>
-      <p>{session.contentTitle}</p>
+      <p>
+        {displayMeditationContentTitle(
+          session.contentSlug,
+          session.contentTitle,
+        )}
+      </p>
       <div className={styles.liveSessionMeta}>
         <time dateTime={new Date(session.startedAt).toISOString()}>
           {formatTime(session.startedAt)}에 앉음
@@ -81,7 +87,12 @@ function ArchiveRow({ entry }: { entry: DdongMeongArchiveEntry }) {
     <li className={styles.archiveRow}>
       <div className={styles.archiveIdentity}>
         <strong>{entry.nickname}</strong>
-        <span>{entry.contentTitle}</span>
+        <span>
+          {displayMeditationContentTitle(
+            entry.contentSlug,
+            entry.contentTitle,
+          )}
+        </span>
       </div>
       <div className={styles.archiveMeta}>
         <span>{formatDuration(entry.durationMs)}</span>
@@ -93,7 +104,7 @@ function ArchiveRow({ entry }: { entry: DdongMeongArchiveEntry }) {
   );
 }
 
-export default function DdongMeongThreeScreen() {
+export default function DdongMeongFourScreen() {
   const { connected, snapshot } = useDdongMeongSocket("screen");
   const now = useClock();
   const activeSessions = snapshot?.activeSessions ?? [];

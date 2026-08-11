@@ -5,6 +5,7 @@ import DdongMeongOneMobile from "@/components/ddong-meong/1/mobile";
 import DdongMeongTwoMobile from "@/components/ddong-meong/2/mobile";
 import DdongMeongThreeMobile from "@/components/ddong-meong/3/mobile";
 import DdongMeongFourMobile from "@/components/ddong-meong/4/mobile";
+import { entryContextFromQuery } from "@/components/ddong-meong/4/model/entry-context";
 import {
   ddongMeongExperiments,
   isDdongMeongExperimentSlug,
@@ -57,13 +58,22 @@ export async function generateMetadata({
 
 export default async function DdongMeongExperimentPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ experiment: string }>;
+  searchParams: Promise<{
+    [key: string]: string | string[] | undefined;
+  }>;
 }) {
   const { experiment } = await params;
 
   if (!isDdongMeongExperimentSlug(experiment)) {
     notFound();
+  }
+
+  if (experiment === "4") {
+    const entryContext = entryContextFromQuery(await searchParams);
+    return <DdongMeongFourMobile entryContext={entryContext} />;
   }
 
   const MobileExperience = mobileByExperiment[experiment];

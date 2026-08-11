@@ -23,10 +23,11 @@ six-area market-workstation controller that was previously served by C-VAL 2.
   identity.
 
 C-VAL 2 currently has a temporary three-button mapping comparison shared by two
-mobile presentations. `/c-val/2/mobile` remains v1 and
-`/c-val/2/mobile/v2` is the alpha/beta/gamma gyroscope-interface trial. The
-additional mobile route does not introduce another screen, market, socket room,
-or C-VAL version. Git `HEAD` remains checkpoint `07a5aaf`; consult the
+mobile presentations. `/c-val/2/mobile` remains v1,
+`/c-val/2/mobile/v2` is the alpha/beta/gamma gyroscope-interface trial, and
+`/c-val/2/mobile/v3` combines the v2 globe with the exact v1 bottom V/A/L
+readout. The additional mobile routes do not introduce another screen, market,
+socket room, or C-VAL version. Git `HEAD` remains checkpoint `07a5aaf`; consult the
 [post-checkpoint ledger](./2-iteration-ledger-2026-08-05.md) before touching the
 working-tree WIP.
 
@@ -67,19 +68,21 @@ Every version is a complete compatible system:
 | --- | --- | --- |
 | Mobile | `/c-val/[version]/mobile` | Permission, version-specific sensor capture, V/A/L preview, input transmission |
 | Controller | `/c-val/[version]/controller` | Full market observation and authorized reset |
-| Individual screen | `/c-val/[version]/screen/[screen]` | V1 selects `market`, `news`, `media`, or `employment`; V2 actively composes `rollercoaster`, `news`, and `media`, with `casino`, `graphs`, `raw`, and `comments` available as additional standalone screens |
+| Individual screen | `/c-val/[version]/screen/[screen]` | V1 selects `market`, `news`, `media`, or `employment`; V2 actively composes `rollercoaster`, `news`, and `media`, with `casino` and `comments` available as additional standalone screens |
 | Whole screen set | `/c-val/[version]/screen/whole` | Composes all registered screens |
 
 C-VAL 1 preserves its four-screen initial wrapper. C-VAL 2's active whole set
-remains a carried 28-point price track, financial/economic/social news, and
-audiovisual media. Casino is a price-register instrument, graphs is a
-100-graph market matrix, and raw preserves an intentionally unstyled C-VAL
-text-flow field. Comments turns actual rapid one-second movement into bounded
-context-minimal voice reactions and a typographic comment field. All four are
+remains a carried 28-point price track, a two-thread market/finance and
+society/politics news wire, and audiovisual media. The news columns accumulate
+independently while retaining the same compact visual grammar. Casino is a
+price-register instrument. Comments turns
+actual rapid one-second movement into bounded context-minimal voice reactions
+and a typographic comment field. Both are
 additional standalone screens and do not change the active composition.
 
-C-VAL 2 also exposes `/c-val/2/mobile/v2` as a presentation-only iteration of
-its mobile role. The un-suffixed mobile route remains the v1 default.
+C-VAL 2 also exposes `/c-val/2/mobile/v2` and `/c-val/2/mobile/v3` as
+presentation-only iterations of its mobile role. The un-suffixed mobile route
+remains the v1 default.
 
 ## Ownership map
 
@@ -89,6 +92,7 @@ app/c-val/
   [version]/controller/page.tsx         thin controller dispatcher
   [version]/mobile/page.tsx             thin mobile dispatcher
   [version]/mobile/v2/page.tsx          C-VAL 2 mobile presentation trial
+  [version]/mobile/v3/page.tsx          v2 globe plus v1 V/A/L readout trial
   [version]/screen/[screen]/page.tsx    thin screen dispatcher
 
 components/c-val/
@@ -97,6 +101,7 @@ components/c-val/
     model/                              TypeScript snapshot contract + local initial state
     mobile/                             device orientation and calibration UI
       v2/                               gyroscope presentation and pure readout
+      v3/                               preserved globe and v1 bottom readout
     controller/                         market workstation and its local CSS
     screen/                             display views and presentation helpers
     transport/                          versioned Socket.IO client events
@@ -202,6 +207,11 @@ requested, against an already-running HTTPS server.
 - [C-VAL 2 mobile v2 gyroscope interface](./2-mobile-v2-gyroscope-interface-2026-08-11.md):
   presentation-only alpha/beta/gamma globe, exact live equations, retained
   behavioral invariants, and pending real-phone acceptance.
+- [C-VAL 2 mobile v3](./2-mobile-v3-globe-v1-readout-2026-08-11.md): copied v2
+  globe with the exact v1 bottom V/A/L readout and unchanged behavior.
+- [C-VAL 2 society-news split](./2-news-society-split-2026-08-11.md): independent
+  market/finance and society/politics threads, parametric headline grammar,
+  retained visual invariants, and evidence boundaries.
 - [Bloomberg workstation visual wrapper](./bloomberg-visual-wrapper.md):
   reusable C-VAL observer-workstation tokens, primitives, profile boundaries,
   and adoption review.

@@ -33,3 +33,15 @@ export function ThickPoopImaginationMeditation() {
 export function ConstipationDialogueMeditation() {
   return <GuidedReading slug="constipation-dialogue" />;
 }
+
+export function DogPoopRemedyMeditation() {
+  return <GuidedReading slug="dog-poop-remedy" />;
+}
+
+export function BeforeAfterPoopMeditation() {
+  return <GuidedReading slug="before-after-poop" />;
+}
+
+export function MuddyDogHuskMeditation() {
+  return <GuidedReading slug="muddy-dog-husk" />;
+}

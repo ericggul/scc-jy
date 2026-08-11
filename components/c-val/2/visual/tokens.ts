@@ -91,8 +91,8 @@ export const cValBloombergScreenProfiles = {
     wrapper: "own surface; borrow only semantic hierarchy and bounded motion",
   },
   newsWire: {
-    job: "read newly admitted C-VAL editorial market stories as a compact continuous wire",
-    wrapper: "thin news-function header, two continuous record columns, and snapshot-derived metadata only",
+    job: "read newly admitted C-VAL market and public-consequence stories as two compact concurrent wires",
+    wrapper: "thin news-function header, two independent record columns, and snapshot-derived metadata only",
   },
   fullBleedMedia: {
     job: "make market movement visible through image and sound",

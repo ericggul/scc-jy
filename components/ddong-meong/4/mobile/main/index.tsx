@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { useSyncExternalStore } from "react";
 import { meditationContents } from "../../model/content-catalog";
+import { readDdongMeongGreeting } from "../identity";
 import { playMeditationSoundtrack } from "../media";
 import GradientShell from "../surface/gradient-shell";
 import styles from "./styles.module.css";
@@ -12,7 +14,25 @@ function formatDuration(totalSeconds: number) {
   return `${minutes}:${String(seconds).padStart(2, "0")}`;
 }
 
-export default function DdongMeongThreeMain() {
+function subscribeToBrowserGreeting() {
+  return () => undefined;
+}
+
+function readGreetingMessage() {
+  const savedGreeting = readDdongMeongGreeting();
+  if (!savedGreeting) return "똥멍";
+  return savedGreeting.kind === "first-visit"
+    ? `${savedGreeting.nickname}님, 환영합니다!`
+    : `${savedGreeting.nickname}님, 또 싸러 오셨군요!`;
+}
+
+export default function DdongMeongFourMain() {
+  const greeting = useSyncExternalStore(
+    subscribeToBrowserGreeting,
+    readGreetingMessage,
+    () => "똥멍",
+  );
+
   return (
     <GradientShell>
       <div className={styles.page}>
@@ -22,7 +42,7 @@ export default function DdongMeongThreeMain() {
 
         <div className={styles.body}>
           <section className={styles.introduction}>
-            <p className={styles.kicker}>똥멍</p>
+            <p className={styles.kicker}>{greeting}</p>
             <h1>
               똥 싸는 시간을
               <br />

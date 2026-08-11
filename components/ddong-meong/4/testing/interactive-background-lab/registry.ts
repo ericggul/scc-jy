@@ -41,6 +41,21 @@ export const backgroundExperiments = [
     profile: guidedAccumulationProfiles["celebrity-applause"],
     slug: "liquid-burst",
   },
+  {
+    label: "dog poop remedy",
+    profile: guidedAccumulationProfiles["dog-poop-remedy"],
+    slug: "dog-poop-remedy",
+  },
+  {
+    label: "before and after poop",
+    profile: guidedAccumulationProfiles["before-after-poop"],
+    slug: "before-after-poop",
+  },
+  {
+    label: "muddy dog and husk",
+    profile: guidedAccumulationProfiles["muddy-dog-husk"],
+    slug: "muddy-dog-husk",
+  },
 ] satisfies BackgroundExperiment[];
 
 export function findBackgroundExperiment(slug: string) {

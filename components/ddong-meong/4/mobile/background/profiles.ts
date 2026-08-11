@@ -7,7 +7,10 @@ export type AccumulationMaterialKind =
   | "solid-form"
   | "heavy-column"
   | "drifting-mist"
-  | "liquid-burst";
+  | "liquid-burst"
+  | "pellet-cluster"
+  | "coiling-stream"
+  | "split-stream";
 
 export type AccumulationProfile = {
   id: string;
@@ -95,6 +98,16 @@ export type AccumulationProfile = {
     veilSoftness: number;
     backgroundOpacity: number;
   };
+  interaction: {
+    holdAccumulationAmount: number;
+    holdIntervalMs: number;
+    holdStartDelayMs: number;
+    pressAccumulationAmount: number;
+    pressVisualStrength: number;
+    traceMinimumDistancePx: number;
+    traceVisualStrength: NumberRange;
+    traceVolumeDistancePx: number;
+  };
   solid: {
     count: number;
     size: NumberRange;
@@ -116,6 +129,7 @@ type ProfileOverrides = {
   fall?: Partial<AccumulationProfile["fall"]>;
   accumulation?: Partial<AccumulationProfile["accumulation"]>;
   material?: Partial<AccumulationProfile["material"]>;
+  interaction?: Partial<AccumulationProfile["interaction"]>;
   solid?: Partial<AccumulationProfile["solid"]>;
 };
 
@@ -205,6 +219,16 @@ const baselineValues: AccumulationProfile = {
     veilSoftness: 0.38,
     backgroundOpacity: 0.29,
   },
+  interaction: {
+    holdAccumulationAmount: 0.25,
+    holdIntervalMs: 225,
+    holdStartDelayMs: 72,
+    pressAccumulationAmount: 1,
+    pressVisualStrength: 1,
+    traceMinimumDistancePx: 0.5,
+    traceVisualStrength: [0.28, 1],
+    traceVolumeDistancePx: 260,
+  },
   solid: {
     count: 0,
     size: [0.12, 0.18],
@@ -260,6 +284,7 @@ function assertProfile(profile: AccumulationProfile) {
     profile.material.veilPointSize,
     profile.material.coreStretch,
     profile.material.veilStretch,
+    profile.interaction.traceVisualStrength,
     profile.solid.size,
     profile.solid.aspect,
   ];
@@ -287,6 +312,13 @@ function assertProfile(profile: AccumulationProfile) {
     profile.accumulation.flowSpeed,
     profile.material.coreSoftness,
     profile.material.veilSoftness,
+    profile.interaction.holdAccumulationAmount,
+    profile.interaction.holdIntervalMs,
+    profile.interaction.holdStartDelayMs,
+    profile.interaction.pressAccumulationAmount,
+    profile.interaction.pressVisualStrength,
+    profile.interaction.traceMinimumDistancePx,
+    profile.interaction.traceVolumeDistancePx,
   ];
 
   if (
@@ -324,7 +356,9 @@ function assertProfile(profile: AccumulationProfile) {
   if (
     !Number.isInteger(profile.solid.count) ||
     profile.solid.count < 0 ||
-    (profile.materialKind === "solid-form" && profile.solid.count === 0)
+    ((profile.materialKind === "solid-form" ||
+      profile.materialKind === "pellet-cluster") &&
+      profile.solid.count === 0)
   ) {
     throw new Error(`Invalid solid form count in profile: ${profile.id}`);
   }
@@ -346,6 +380,7 @@ export function defineAccumulationProfile(
       ...overrides.accumulation,
     },
     material: { ...baselineValues.material, ...overrides.material },
+    interaction: { ...baselineValues.interaction, ...overrides.interaction },
     solid: { ...baselineValues.solid, ...overrides.solid },
   };
 
@@ -427,6 +462,9 @@ const morningUrgentProfile = defineAccumulationProfile({
     veilSoftness: 0.42,
     backgroundOpacity: 0.25,
   },
+  interaction: {
+    holdIntervalMs: 175,
+  },
 });
 
 const thickPoopImaginationProfile = defineAccumulationProfile({
@@ -503,6 +541,9 @@ const thickPoopImaginationProfile = defineAccumulationProfile({
     coreSoftness: 0.12,
     veilSoftness: 0.24,
     backgroundOpacity: 0.22,
+  },
+  interaction: {
+    holdIntervalMs: 165,
   },
   solid: {
     count: 6,
@@ -588,6 +629,9 @@ const emergencyChillProfile = defineAccumulationProfile({
     veilSoftness: 0.3,
     backgroundOpacity: 0.38,
   },
+  interaction: {
+    holdIntervalMs: 160,
+  },
 });
 
 const constipationDialogueProfile = defineAccumulationProfile({
@@ -662,6 +706,9 @@ const constipationDialogueProfile = defineAccumulationProfile({
     coreSoftness: 0.18,
     veilSoftness: 0.44,
     backgroundOpacity: 0.17,
+  },
+  interaction: {
+    holdIntervalMs: 280,
   },
 });
 
@@ -740,6 +787,277 @@ const celebrityApplauseProfile = defineAccumulationProfile({
     veilSoftness: 0.47,
     backgroundOpacity: 0.28,
   },
+  interaction: {
+    holdIntervalMs: 160,
+  },
+});
+
+const dogPoopRemedyProfile = defineAccumulationProfile({
+  id: "dog-poop-remedy",
+  materialKind: "pellet-cluster",
+  palette: {
+    deep: [0.06, 0.049, 0.031],
+    middle: [0.18, 0.13, 0.076],
+    surface: [0.37, 0.28, 0.13],
+    highlight: [0.62, 0.49, 0.23],
+  },
+  particles: {
+    reservoirCount: 5200,
+    filamentCount: 1500,
+    reservoirSeed: 0x61ab17,
+    filamentSeed: 0x1f0a5e,
+  },
+  boundary: {
+    transitionMaximum: 0.052,
+    broadNoise: 0.038,
+    primaryWave: 0.003,
+    secondaryWave: 0.0015,
+    reservoirPrimaryWave: 0.004,
+    reservoirSecondaryWave: 0.0018,
+    reservoirHeightVariation: 0.044,
+  },
+  emission: {
+    phraseDuration: 16,
+    firstDuration: [1.1, 1.7],
+    firstPause: [3.8, 5.4],
+    secondDuration: [0.7, 1.2],
+    secondPause: [3.1, 4.8],
+    thirdDuration: [0.45, 0.85],
+    thirdProbability: 0.34,
+    pressure: [0.76, 0.94],
+    pressureFrequency: 0.42,
+    rhythmSeed: 139.1,
+  },
+  fall: {
+    duration: [1.55, 2.35],
+    backgroundDuration: 2,
+    travelExponent: 1.22,
+    laneCenter: 0.45,
+    laneDrift: 0.035,
+    primaryWander: 0.01,
+    secondaryWander: 0.004,
+    laneWidth: [0.012, 0.038],
+    backgroundWidth: [0.003, 0.03],
+    widthPulse: [0.84, 1.12],
+    microFlow: 0.002,
+    turbulence: 0.01,
+  },
+  accumulation: {
+    riseExponent: 1.08,
+    longSurgeAmplitude: 0.006,
+    shortSurgeAmplitude: 0.0018,
+    flowSpeed: 0.22,
+    primaryHorizontalFlow: 0.003,
+    secondaryHorizontalFlow: 0.001,
+    verticalFlow: 0.0015,
+  },
+  material: {
+    reservoirAlpha: [0.05, 0.24],
+    reservoirPointSize: [1, 2.8],
+    coreAlpha: [0.18, 0.5],
+    veilAlpha: [0.035, 0.1],
+    veilThreshold: 0.76,
+    corePointSize: [1, 2.5],
+    veilPointSize: [8, 18],
+    coreStretch: [1.7, 3.1],
+    veilStretch: [3.8, 6.2],
+    coreSoftness: 0.18,
+    veilSoftness: 0.4,
+    backgroundOpacity: 0.18,
+  },
+  interaction: {
+    holdAccumulationAmount: 0.44,
+    holdIntervalMs: 150,
+    holdStartDelayMs: 52,
+    pressAccumulationAmount: 1.45,
+    pressVisualStrength: 1.3,
+    traceMinimumDistancePx: 1.5,
+    traceVisualStrength: [0.62, 1.2],
+    traceVolumeDistancePx: 150,
+  },
+  solid: {
+    count: 9,
+    size: [0.055, 0.098],
+    aspect: [0.82, 1.13],
+    horizontalSpread: 0.075,
+    curvature: 0.06,
+    rotation: 0.34,
+    roughness: 0.12,
+  },
+});
+
+const beforeAfterPoopProfile = defineAccumulationProfile({
+  id: "before-after-poop",
+  materialKind: "coiling-stream",
+  palette: {
+    deep: [0.055, 0.065, 0.058],
+    middle: [0.15, 0.19, 0.135],
+    surface: [0.38, 0.38, 0.2],
+    highlight: [0.72, 0.58, 0.3],
+  },
+  particles: {
+    reservoirCount: 6100,
+    filamentCount: 2900,
+    reservoirSeed: 0x2a170e,
+    filamentSeed: 0x9bf017,
+  },
+  boundary: {
+    transitionMaximum: 0.082,
+    broadNoise: 0.062,
+    primaryWave: 0.007,
+    secondaryWave: 0.003,
+    reservoirPrimaryWave: 0.009,
+    reservoirSecondaryWave: 0.0038,
+    reservoirHeightVariation: 0.071,
+  },
+  emission: {
+    phraseDuration: 12.5,
+    firstDuration: [3.5, 5.2],
+    firstPause: [1.1, 1.9],
+    secondDuration: [1.2, 2.1],
+    secondPause: [2.8, 3.8],
+    thirdDuration: [0.8, 1.4],
+    thirdProbability: 0.42,
+    pressure: [0.82, 1],
+    pressureFrequency: 0.72,
+    rhythmSeed: 151.6,
+  },
+  fall: {
+    duration: [1.2, 2],
+    backgroundDuration: 1.6,
+    travelExponent: 1.25,
+    laneCenter: 0.56,
+    laneDrift: 0.05,
+    primaryWander: 0.018,
+    secondaryWander: 0.007,
+    laneWidth: [0.03, 0.086],
+    backgroundWidth: [0.012, 0.09],
+    widthPulse: [0.78, 1.2],
+    microFlow: 0.006,
+    turbulence: 0.017,
+  },
+  accumulation: {
+    riseExponent: 0.82,
+    longSurgeAmplitude: 0.018,
+    longSurgeFrequency: 13,
+    shortSurgeAmplitude: 0.006,
+    shortSurgeFrequency: 31,
+    flowSpeed: 0.78,
+    primaryHorizontalFlow: 0.009,
+    secondaryHorizontalFlow: 0.004,
+    verticalFlow: 0.006,
+  },
+  material: {
+    reservoirAlpha: [0.08, 0.33],
+    reservoirPointSize: [1.2, 3.6],
+    coreAlpha: [0.3, 0.76],
+    veilAlpha: [0.07, 0.16],
+    veilThreshold: 0.68,
+    corePointSize: [2.1, 5.1],
+    veilPointSize: [13, 30],
+    coreStretch: [2.2, 4.2],
+    veilStretch: [4.1, 7],
+    coreSoftness: 0.16,
+    veilSoftness: 0.36,
+    backgroundOpacity: 0.32,
+  },
+  interaction: {
+    holdAccumulationAmount: 0.34,
+    holdIntervalMs: 175,
+    holdStartDelayMs: 58,
+    pressAccumulationAmount: 1.28,
+    pressVisualStrength: 1.35,
+    traceMinimumDistancePx: 1,
+    traceVisualStrength: [0.5, 1.2],
+    traceVolumeDistancePx: 180,
+  },
+});
+
+const muddyDogHuskProfile = defineAccumulationProfile({
+  id: "muddy-dog-husk",
+  materialKind: "split-stream",
+  palette: {
+    deep: [0.1, 0.067, 0.034],
+    middle: [0.31, 0.23, 0.09],
+    surface: [0.58, 0.46, 0.2],
+    highlight: [0.82, 0.71, 0.43],
+  },
+  particles: {
+    reservoirCount: 5800,
+    filamentCount: 3200,
+    reservoirSeed: 0x6d017b,
+    filamentSeed: 0x814a2d,
+  },
+  boundary: {
+    transitionMaximum: 0.075,
+    broadNoise: 0.096,
+    primaryWave: 0.012,
+    secondaryWave: 0.005,
+    reservoirPrimaryWave: 0.016,
+    reservoirSecondaryWave: 0.007,
+    reservoirHeightVariation: 0.1,
+  },
+  emission: {
+    phraseDuration: 8.5,
+    firstDuration: [0.9, 1.55],
+    firstPause: [0.85, 1.6],
+    secondDuration: [0.65, 1.25],
+    secondPause: [1.4, 2.3],
+    thirdDuration: [0.8, 1.65],
+    thirdProbability: 0.82,
+    pressure: [0.75, 0.96],
+    pressureFrequency: 1.28,
+    rhythmSeed: 163.4,
+  },
+  fall: {
+    duration: [1.45, 2.55],
+    backgroundDuration: 1.9,
+    travelExponent: 1.2,
+    laneCenter: 0.5,
+    laneDrift: 0.09,
+    primaryWander: 0.027,
+    secondaryWander: 0.012,
+    laneWidth: [0.026, 0.112],
+    backgroundWidth: [0.009, 0.105],
+    widthPulse: [0.72, 1.34],
+    microFlow: 0.012,
+    turbulence: 0.029,
+  },
+  accumulation: {
+    riseExponent: 0.84,
+    longSurgeAmplitude: 0.025,
+    longSurgeFrequency: 17,
+    shortSurgeAmplitude: 0.01,
+    shortSurgeFrequency: 43,
+    flowSpeed: 0.96,
+    primaryHorizontalFlow: 0.019,
+    secondaryHorizontalFlow: 0.009,
+    verticalFlow: 0.01,
+  },
+  material: {
+    reservoirAlpha: [0.08, 0.32],
+    reservoirPointSize: [1.1, 3.3],
+    coreAlpha: [0.28, 0.68],
+    veilAlpha: [0.1, 0.24],
+    veilThreshold: 0.56,
+    corePointSize: [1.8, 4.7],
+    veilPointSize: [18, 38],
+    coreStretch: [1.35, 2.5],
+    veilStretch: [2.5, 4.3],
+    coreSoftness: 0.22,
+    veilSoftness: 0.45,
+    backgroundOpacity: 0.31,
+  },
+  interaction: {
+    holdAccumulationAmount: 0.4,
+    holdIntervalMs: 160,
+    holdStartDelayMs: 48,
+    pressAccumulationAmount: 1.35,
+    pressVisualStrength: 1.25,
+    traceMinimumDistancePx: 1,
+    traceVisualStrength: [0.58, 1.25],
+    traceVolumeDistancePx: 135,
+  },
 });
 
 export const guidedAccumulationProfiles = {
@@ -748,5 +1066,8 @@ export const guidedAccumulationProfiles = {
   "celebrity-applause": celebrityApplauseProfile,
   "thick-poop-imagination": thickPoopImaginationProfile,
   "constipation-dialogue": constipationDialogueProfile,
+  "dog-poop-remedy": dogPoopRemedyProfile,
+  "before-after-poop": beforeAfterPoopProfile,
+  "muddy-dog-husk": muddyDogHuskProfile,
 } satisfies Record<GuidedMeditationSlug, AccumulationProfile>;
 import type { GuidedMeditationSlug } from "../../model/guided-meditations";

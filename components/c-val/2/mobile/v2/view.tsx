@@ -74,6 +74,7 @@ export default function CValMobileV2View({
         <nav className={styles.versionNav} aria-label="Mobile interface version">
           <Link className={styles.versionLink} href="/c-val/2/mobile">V1</Link>
           <strong className={styles.currentVersion}>V2</strong>
+          <Link className={styles.versionLink} href="/c-val/2/mobile/v3">V3</Link>
         </nav>
         <output
           className={styles.market}

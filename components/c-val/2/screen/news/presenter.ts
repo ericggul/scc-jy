@@ -9,7 +9,18 @@ export type CValNewsEvent = {
   id: string;
   templateId: string;
   headline: string;
-  code: "MKT" | "BIZ" | "MACRO" | "HH" | "LAB" | "POL";
+  code:
+    | "MKT"
+    | "BIZ"
+    | "MACRO"
+    | "HH"
+    | "LAB"
+    | "POL"
+    | "HOME"
+    | "EDU"
+    | "LIFE"
+    | "SOC"
+    | "MEDIA";
   change: number;
   oneDayMove: number;
   priority: number;

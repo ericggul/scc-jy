@@ -13,6 +13,9 @@ const contents = {
   "celebrity-applause": "유명해지면 똥을 싸도 박수쳐준다",
   "thick-poop-imagination": "굵은 똥이 나오는 상상",
   "constipation-dialogue": "변비와의 긴 대화",
+  "dog-poop-remedy": "개똥도 약에 쓰려면 없다",
+  "before-after-poop": "똥 누러 갈 적 마음 다르고, 올 적 마음 다르다",
+  "muddy-dog-husk": "똥 묻은 개가 겨 묻은 개 나무란다",
 };
 
 const events = {
@@ -39,6 +42,49 @@ function cleanText(value, fallback, maximumLength) {
   if (typeof value !== "string") return fallback;
   const cleaned = value.trim().replace(/\s+/g, " ").slice(0, maximumLength);
   return cleaned || fallback;
+}
+
+function cleanOptionalText(value, maximumLength) {
+  return cleanText(value, "", maximumLength);
+}
+
+function cleanContextAttributeName(value) {
+  if (typeof value !== "string") return "";
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 32);
+}
+
+function cleanEntryContext(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+
+  const raw = value;
+  const entryContext = {};
+  for (const field of ["institution", "building", "floor", "gender"]) {
+    const cleaned = cleanOptionalText(raw[field], 48);
+    if (cleaned) entryContext[field] = cleaned;
+  }
+
+  const attributes = {};
+  if (
+    raw.attributes &&
+    typeof raw.attributes === "object" &&
+    !Array.isArray(raw.attributes)
+  ) {
+    Object.entries(raw.attributes)
+      .slice(0, 12)
+      .forEach(([key, attributeValue]) => {
+        const cleanedKey = cleanContextAttributeName(key);
+        const cleanedValue = cleanOptionalText(attributeValue, 48);
+        if (cleanedKey && cleanedValue) attributes[cleanedKey] = cleanedValue;
+      });
+  }
+  if (Object.keys(attributes).length > 0) entryContext.attributes = attributes;
+
+  return entryContext;
 }
 
 function getPresence(io) {
@@ -92,6 +138,7 @@ function archiveSession(session, outcome) {
     contentSlug: session.contentSlug,
     contentTitle: session.contentTitle,
     dayKey: koreanDay(endedAt),
+    entryContext: session.entryContext,
     id: randomUUID(),
     interactionCount: session.interactionCount,
     nickname: session.nickname,
@@ -151,6 +198,7 @@ function startSession(socket, payload) {
   activeSessions.set(socket.id, {
     contentSlug,
     contentTitle: contents[contentSlug],
+    entryContext: cleanEntryContext(payload.entryContext),
     engagement: "active",
     id: randomUUID(),
     interactionCount: 0,

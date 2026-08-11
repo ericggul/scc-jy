@@ -16,10 +16,6 @@ import type {
   DropSource,
 } from "../types";
 
-const traceVolumeDistancePixels = 260;
-const stationaryMotionDistancePixels = 2.5;
-const heldStreamStartDelayMs = 72;
-const heldDropAccumulationAmount = 0.25;
 const releaseSweepIntervalMs = 34;
 
 function clamp(value: number, minimum = 0, maximum = 1) {
@@ -122,9 +118,7 @@ export function useDropInteraction({
   const releaseFrameRef = useRef<number | null>(null);
   const onDropSettledRef = useRef(onDropSettled);
   const dropDurationMs = Math.ceil(profile.fall.duration[1] * 1000);
-  const heldDropIntervalMs = Math.round(
-    clamp(profile.fall.backgroundDuration * 100, 160, 280),
-  );
+  const heldDropIntervalMs = Math.round(profile.interaction.holdIntervalMs);
 
   useEffect(() => {
     onDropSettledRef.current = onDropSettled;
@@ -240,13 +234,14 @@ export function useDropInteraction({
         persistent: true,
         previousOrigin: origin,
         source: "hold",
+        visualStrength: profile.interaction.pressVisualStrength,
       });
       if (holdDropId === null) return;
 
       pointer.holdDropId = holdDropId;
       pointer.nextHoldSettlementAt = Date.now() + dropDurationMs;
     },
-    [dropDurationMs, requestDrop],
+    [dropDurationMs, profile.interaction.pressVisualStrength, requestDrop],
   );
 
   const stopDrops = useCallback(() => {
@@ -285,7 +280,12 @@ export function useDropInteraction({
       const travelledDistance = pointer.pendingTravelDistance;
       pointer.pendingSample = null;
       pointer.pendingTravelDistance = 0;
-      if (!sample || travelledDistance < 0.5) return;
+      if (
+        !sample ||
+        travelledDistance < profile.interaction.traceMinimumDistancePx
+      ) {
+        return;
+      }
 
       const previousOrigin = toDropOrigin(
         pointer.element,
@@ -298,14 +298,19 @@ export function useDropInteraction({
         sample.clientY,
       );
       requestDrop(origin, {
-        accumulationAmount: travelledDistance / traceVolumeDistancePixels,
+        accumulationAmount:
+          travelledDistance / profile.interaction.traceVolumeDistancePx,
         previousOrigin,
         source: "trace",
-        visualStrength: clamp(travelledDistance / 30, 0.28, 1),
+        visualStrength: clamp(
+          travelledDistance / 30,
+          profile.interaction.traceVisualStrength[0],
+          profile.interaction.traceVisualStrength[1],
+        ),
       });
       pointer.lastEmittedSample = sample;
     },
-    [requestDrop],
+    [profile.interaction, requestDrop],
   );
 
   const scheduleTraceSamples = useCallback(
@@ -336,7 +341,10 @@ export function useDropInteraction({
 
           activePointer.holdTimer = null;
           const now = Date.now();
-          if (now - activePointer.lastMotionAt >= heldStreamStartDelayMs) {
+          if (
+            now - activePointer.lastMotionAt >=
+            profile.interaction.holdStartDelayMs
+          ) {
             startHeldStream(activePointer);
             if (
               activePointer.nextHoldSettlementAt !== null &&
@@ -350,7 +358,7 @@ export function useDropInteraction({
               activePointer.nextHoldSettlementAt +=
                 completedHoldIntervals * heldDropIntervalMs;
               onDropSettledRef.current?.(
-                completedHoldIntervals * heldDropAccumulationAmount,
+                completedHoldIntervals * profile.interaction.holdAccumulationAmount,
               );
             }
           } else {
@@ -360,9 +368,9 @@ export function useDropInteraction({
         }, delayMs);
       }
 
-      scheduleNextHeldCheck(heldStreamStartDelayMs);
+      scheduleNextHeldCheck(profile.interaction.holdStartDelayMs);
     },
-    [heldDropIntervalMs, startHeldStream, stopHeldStream],
+    [heldDropIntervalMs, profile.interaction, startHeldStream, stopHeldStream],
   );
 
   const appendPointerSamples = useCallback(
@@ -383,7 +391,7 @@ export function useDropInteraction({
           Math.hypot(
             nextSample.clientX - pointer.lastMotionSample.clientX,
             nextSample.clientY - pointer.lastMotionSample.clientY,
-          ) >= stationaryMotionDistancePixels
+          ) >= profile.interaction.traceMinimumDistancePx
         ) {
           pointer.lastMotionSample = nextSample;
           pointer.lastMotionAt = Date.now();
@@ -393,7 +401,7 @@ export function useDropInteraction({
         pointer.pendingSample = nextSample;
       }
     },
-    [stopHeldStream],
+    [profile.interaction.traceMinimumDistancePx, stopHeldStream],
   );
 
   const finishPointer = useCallback(
@@ -431,7 +439,10 @@ export function useDropInteraction({
         event.clientX,
         event.clientY,
       );
-      requestDrop(origin);
+      requestDrop(origin, {
+        accumulationAmount: profile.interaction.pressAccumulationAmount,
+        visualStrength: profile.interaction.pressVisualStrength,
+      });
       activePointersRef.current.set(event.pointerId, {
         element: event.currentTarget,
         frameId: null,
@@ -447,7 +458,7 @@ export function useDropInteraction({
       });
       scheduleHeldDrops(event.pointerId);
     },
-    [disabled, requestDrop, scheduleHeldDrops],
+    [disabled, profile.interaction, requestDrop, scheduleHeldDrops],
   );
 
   const onPointerMove = useCallback(
@@ -498,9 +509,13 @@ export function useDropInteraction({
           bounds.left + bounds.width / 2,
           bounds.top + bounds.height / 2,
         ),
+        {
+          accumulationAmount: profile.interaction.pressAccumulationAmount,
+          visualStrength: profile.interaction.pressVisualStrength,
+        },
       );
     },
-    [disabled, requestDrop],
+    [disabled, profile.interaction, requestDrop],
   );
 
   return {

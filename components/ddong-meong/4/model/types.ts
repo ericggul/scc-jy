@@ -16,6 +16,7 @@ export type DdongMeongDisengagementSignal =
 export type DdongMeongSession = {
   contentSlug: string;
   contentTitle: string;
+  entryContext?: DdongMeongEntryContext;
   engagement: DdongMeongEngagementState;
   id: string;
   interactionCount: number;
@@ -39,6 +40,7 @@ export type DdongMeongArchiveEntry = {
   contentSlug: string;
   contentTitle: string;
   dayKey: string;
+  entryContext?: DdongMeongEntryContext;
   id: string;
   interactionCount: number;
   nickname: string;
@@ -68,3 +70,4 @@ export type DdongMeongSnapshot = {
     participantCount: number;
   };
 };
+import type { DdongMeongEntryContext } from "./entry-context";

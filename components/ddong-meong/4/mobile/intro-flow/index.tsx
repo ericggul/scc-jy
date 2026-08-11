@@ -2,7 +2,7 @@ import NicknamePage from "../nickname-page";
 import SplashPage from "../splash-page";
 import styles from "./styles.module.css";
 
-type IntroStage = "splash" | "nickname" | "nickname-exit";
+type IntroStage = "splash" | "nickname" | "nickname-exit" | "returning-exit";
 
 type IntroFlowProps = {
   stage: IntroStage;
@@ -17,22 +17,23 @@ export default function IntroFlow({
   onNicknameChange,
   onContinue,
 }: IntroFlowProps) {
-  const isExiting = stage === "nickname-exit";
+  const isExiting = stage === "nickname-exit" || stage === "returning-exit";
+  const isNicknameStage = stage === "nickname" || stage === "nickname-exit";
 
   return (
     <div
       className={`${styles.flow} ${isExiting ? styles.exiting : ""}`}
     >
       <div className={styles.content}>
-        {stage === "splash" ? (
-          <SplashPage />
-        ) : (
+        {isNicknameStage ? (
           <NicknamePage
             nickname={nickname}
             exiting={isExiting}
             onNicknameChange={onNicknameChange}
             onContinue={onContinue}
           />
+        ) : (
+          <SplashPage />
         )}
       </div>
     </div>

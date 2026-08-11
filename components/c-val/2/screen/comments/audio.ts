@@ -10,10 +10,11 @@ type AudioRequest = {
   entry: CValCommentCorpusEntry;
   beep: CValCommentCorpus["beep"];
   playbackRate: number;
+  detuneCents: number;
 };
 
 export function useCValCommentAudio() {
-  const maximumDecodedBuffers = 24;
+  const maximumDecodedBuffers = 72;
   const contextRef = useRef<AudioContext | null>(null);
   const cacheRef = useRef(new Map<string, Promise<AudioBuffer>>());
   const outputRef = useRef<DynamicsCompressorNode | null>(null);
@@ -68,8 +69,11 @@ export function useCValCommentAudio() {
       const speechGain = context.createGain();
       const sourceTime = context.currentTime + 0.02;
       const playbackRate = Math.max(0.25, request.playbackRate);
+      const detuneCents = Math.max(-1_200, Math.min(1_200, request.detuneCents));
+      const effectivePlaybackRate = playbackRate * 2 ** (detuneCents / 1_200);
       source.buffer = buffer;
       source.playbackRate.setValueAtTime(playbackRate, sourceTime);
+      source.detune.setValueAtTime(detuneCents, sourceTime);
       const output = outputRef.current;
       if (!output) return;
       source.connect(speechGain).connect(output);
@@ -87,8 +91,8 @@ export function useCValCommentAudio() {
           request.beep.fadeSeconds,
           Math.max(0, (profanityEnd - profanityStart) / 2),
         );
-        const muteStart = sourceTime + profanityStart / playbackRate;
-        const muteEnd = sourceTime + profanityEnd / playbackRate;
+        const muteStart = sourceTime + profanityStart / effectivePlaybackRate;
+        const muteEnd = sourceTime + profanityEnd / effectivePlaybackRate;
         speechGain.gain.setValueAtTime(1, Math.max(sourceTime, muteStart - fade));
         speechGain.gain.linearRampToValueAtTime(0, muteStart);
         speechGain.gain.setValueAtTime(0, muteEnd);
@@ -133,12 +137,20 @@ export function useCValCommentAudio() {
     }).catch(() => undefined);
   }, [liveContext, playNow]);
 
+  const prime = useCallback((entries: readonly CValCommentCorpusEntry[]) => {
+    if (disposedRef.current || entries.length === 0) return;
+    const context = liveContext();
+    for (const entry of entries) {
+      void audioBufferFor(context, entry.src).catch(() => undefined);
+    }
+  }, [audioBufferFor, liveContext]);
+
   useEffect(() => {
     disposedRef.current = false;
     const decodedBuffers = cacheRef.current;
     const resume = () => {
-      const context = contextRef.current;
-      if (context?.state === "suspended") {
+      const context = liveContext();
+      if (context.state === "suspended") {
         void context.resume().then(() => {
           if (context.state !== "running" || contextRef.current !== context) return;
           const pending = pendingRef.current;
@@ -162,7 +174,7 @@ export function useCValCommentAudio() {
         void context.close().catch(() => undefined);
       }
     };
-  }, [playNow]);
+  }, [liveContext, playNow]);
 
-  return { speak };
+  return { prime, speak };
 }

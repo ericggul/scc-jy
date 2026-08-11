@@ -39,6 +39,7 @@ export type CValChatCorpusEntry = {
   id: string;
   roomId: CValChatRoomId;
   regime: CValChatRegime;
+  length: "original" | "short";
   author: string;
   text: string;
 };
@@ -174,7 +175,7 @@ export const C_VAL_CHAT_ROOMS: readonly CValChatRoom[] = [
   },
 ] as const;
 
-const observations: Record<CValChatRegime, readonly string[]> = {
+const originalObservations: Record<CValChatRegime, readonly string[]> = {
   flat: [
     "가격은 제자리인데 체결만 이어지네.", "위아래 한 칸씩만 오간다.", "호가가 얇게 멈춰 있다.",
     "방향 잡은 사람 아직 없어 보임.", "고가랑 저가 사이에서 계속 돈다.", "거래는 되는데 가격은 안 움직임.",
@@ -217,7 +218,50 @@ const observations: Record<CValChatRegime, readonly string[]> = {
   ],
 };
 
-const roomClosers: Record<CValChatRoomId, readonly string[]> = {
+const shortObservations: Record<CValChatRegime, readonly string[]> = {
+  flat: [
+    "체결만 이어지네.", "한 칸씩만 오간다.", "호가가 얇게 멈춤.",
+    "아직 방향이 없다.", "고가와 저가 사이.", "거래만 되고 제자리.",
+    "양쪽 다 눈치 보는 중.", "튀는 척 다시 잠잠.", "여기가 제일 애매함.",
+  ],
+  rise: [
+    "위 체결이 붙는다.", "저점이 올라온다.", "매도를 천천히 먹네.",
+    "음봉을 바로 말아 올림.", "급등 전인데 흐름은 위.", "눌림을 안 준다.",
+    "계속 위에서 찍힘.", "매수세가 조용히 붙음.", "고가에서 안 밀림.",
+  ],
+  rally: [
+    "속도가 빨라졌다.", "매도벽을 바로 먹음.", "눌림 없이 고가 재돌파.",
+    "방금 가격이 벌써 아래.", "추격 매수가 붙는다.", "위 체결로 꽉 찬다.",
+    "쉬고 또 고점 돌파.", "팔면 다음 체결이 더 위.", "관망하던 쪽도 붙음.",
+  ],
+  surge: [
+    "가격이 위로 튄다.", "호가를 몇 칸씩 먹음.", "고점 갱신을 못 따라감.",
+    "매도벽이 바로 사라짐.", "방금 가격이 옛날 가격.", "위 체결이 멈추질 않음.",
+    "주문 중에 가격이 바뀜.", "눌림 기다릴 틈도 없다.", "상승폭이 또 벌어짐.",
+  ],
+  fall: [
+    "아래 체결이 쌓인다.", "고점이 낮아진다.", "매수 전에 또 밀림.",
+    "양봉을 바로 눌러버림.", "폭락 전인데 흐름은 아래.", "반등을 안 준다.",
+    "계속 아래서 찍힘.", "매도가 조용히 나온다.", "저가에서 못 올라옴.",
+  ],
+  selloff: [
+    "속도가 더 빨라졌다.", "매수벽을 바로 깬다.", "반등 없이 저가 재이탈.",
+    "방금 가격이 벌써 위.", "손절이 따라 나온다.", "아래 체결로 꽉 찬다.",
+    "받는 척 또 저점 이탈.", "사면 다음 체결이 더 아래.", "버티던 쪽도 던짐.",
+  ],
+  crash: [
+    "가격이 아래로 꺼진다.", "호가를 몇 칸씩 깬다.", "저점 갱신을 못 따라감.",
+    "매수벽이 바로 사라짐.", "방금 가격조차 위.", "아래 체결이 멈추질 않음.",
+    "손절 중에 가격이 바뀜.", "반등 기다릴 틈도 없다.", "하락폭이 또 벌어짐.",
+  ],
+  reversal: [
+    "방향이 바로 뒤집힘.", "위로 치다 바로 접힘.", "아래로 깨다 다시 말아 올림.",
+    "믿으면 바로 반대로 감.", "고가와 저가를 다 찍음.", "체결 방향이 계속 바뀜.",
+    "추세 전에 또 꺾임.", "양쪽이 서로 밀어냄.", "한 칸마다 분위기 반전.",
+  ],
+};
+
+const originalRoomClosers: Record<CValChatRoomId, readonly string[]> = {
   opening: ["시초 기준으로는 조금 더 봐야겠다.", "오늘 첫 방향이 여기서 정해질 듯.", "종가까지 이 흐름이 갈지는 모르겠음.", "개장 때 잡은 평단부터 확인 중."],
   scalpers: ["진입보다 손절 라인부터 잡아야 함.", "지금은 호가 두 칸만 봐도 된다.", "추격하면 체결 한 번에 물릴 수 있음.", "짧게 대응 못 하면 손대기 어렵다."],
   board: ["본전 얘기 나오기 시작하겠네.", "아까 글 쓰던 사람들 어디 갔냐.", "이래도 장투라고 버티는 건가.", "종토방 분위기 곧 바뀌겠다."],
@@ -236,25 +280,51 @@ const roomClosers: Record<CValChatRoomId, readonly string[]> = {
   silent: ["말은 없어도 다들 같은 화면을 보는 중.", "입력창 열었다가 그냥 닫았다.", "이럴 때는 기록만 남기고 손을 멈춘다.", "조용한 방에서도 읽는 속도는 빨라졌다."],
 };
 
+const shortRoomClosers: Record<CValChatRoomId, readonly string[]> = {
+  opening: ["시초는 더 봐야지.", "첫 방향 같음.", "종가까진 모름.", "평단 확인 중."],
+  scalpers: ["손절부터 잡자.", "호가 두 칸만 봄.", "추격은 위험함.", "짧게만 대응."],
+  board: ["본전 얘기 나오네.", "글쓴이 어디 감?", "또 장투 타령.", "분위기 바뀜."],
+  office: ["회의까지만 버텨.", "알림만 봐도 빠름.", "다시 켜기 무섭다.", "점심에 왜 샀지."],
+  campus: ["소액인데 떨림.", "강의 끝이면 딴 가격.", "캡처도 늦음.", "시드 작아 다행."],
+  chart: ["봉과 거래량 확인.", "체결이 먼저다.", "이평은 한 박자 늦음.", "봉 마감 전엔 모름."],
+  signals: ["진입가는 또 사후.", "방장보다 체결.", "인증은 늘 나중.", "관망도 포지션."],
+  stream: ["채팅부터 빨라짐.", "시장이 방송보다 빠름.", "지금 오면 맥락 없음.", "다 같이 치는 중."],
+  longterm: ["원칙은 그대로.", "장기도 신경 쓰임.", "기업은 그대로인데.", "종가와 공시 보자."],
+  futures: ["레버리지는 크게 옴.", "포지션 가볍게.", "증거금 다시 계산.", "양쪽 청산 조심."],
+  newbies: ["주문부터 멈춤.", "지금 사도 됨?", "검색 중 또 변함.", "가만있는 게 답?"],
+  holders: ["평단은 아직 멀다.", "본전 생각뿐.", "추매 다시 계산.", "물리면 다르게 보임."],
+  cash: ["현금도 급해짐.", "계획가까지 대기.", "안 사도 계속 봄.", "한 체결 더 보자."],
+  closing: ["마감가부터 보자.", "동시호가 남았다.", "오버나잇 고민.", "종가가 내일 심리."],
+  overseas: ["환율과 선물 확인.", "해외장까진 모름.", "국내 체결이 먼저.", "밤까지 이어질까."],
+  silent: ["다들 보고는 있음.", "쓰다가 그냥 닫음.", "기록만 남긴다.", "읽는 속도는 빨라짐."],
+};
+
 function buildCorpus() {
   const entries: CValChatCorpusEntry[] = [];
-  for (const room of C_VAL_CHAT_ROOMS) {
-    for (const regime of Object.keys(observations) as CValChatRegime[]) {
-      observations[regime].forEach((observation, observationIndex) => {
-        roomClosers[room.id].forEach((closer, closerIndex) => {
-          entries.push({
-            id: `${room.id}:${regime}:${observationIndex}:${closerIndex}`,
-            roomId: room.id,
-            regime,
-            author: room.authors[(observationIndex + closerIndex) % room.authors.length],
-            text: `${observation} ${closer}`,
+  const lengths = [
+    { id: "original", observations: originalObservations, closers: originalRoomClosers },
+    { id: "short", observations: shortObservations, closers: shortRoomClosers },
+  ] as const;
+  for (const length of lengths) {
+    for (const room of C_VAL_CHAT_ROOMS) {
+      for (const regime of Object.keys(length.observations) as CValChatRegime[]) {
+        length.observations[regime].forEach((observation, observationIndex) => {
+          length.closers[room.id].forEach((closer, closerIndex) => {
+            entries.push({
+              id: `${length.id}:${room.id}:${regime}:${observationIndex}:${closerIndex}`,
+              roomId: room.id,
+              regime,
+              length: length.id,
+              author: room.authors[(observationIndex + closerIndex) % room.authors.length],
+              text: `${observation} ${closer}`,
+            });
           });
         });
-      });
+      }
     }
   }
   return entries;
 }
 
-/** 16 rooms × 8 regimes × 9 observations × 4 room replies = 4,608 entries. */
+/** 2 lengths × 16 rooms × 8 regimes × 9 observations × 4 replies = 9,216. */
 export const C_VAL_CHAT_CORPUS: readonly CValChatCorpusEntry[] = buildCorpus();

@@ -18,3 +18,13 @@ export function isMeditationContentSlug(
 ): value is MeditationContentSlug {
   return meditationContents.some((content) => content.slug === value);
 }
+
+export function displayMeditationContentTitle(
+  slug: string,
+  serverTitle: string,
+) {
+  return (
+    meditationContents.find((content) => content.slug === slug)?.title ??
+    serverTitle
+  );
+}

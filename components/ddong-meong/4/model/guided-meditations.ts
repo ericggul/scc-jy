@@ -1,7 +1,10 @@
+import { beforeAfterPoopScript } from "./scripts/before-after-poop";
 import { celebrityApplauseScript } from "./scripts/celebrity-applause";
 import { emergencyChillScript } from "./scripts/emergency-chill";
 import { morningUrgentScript } from "./scripts/morning-urgent";
 import { constipationDialogueScript } from "./scripts/constipation-dialogue";
+import { dogPoopRemedyScript } from "./scripts/dog-poop-remedy";
+import { muddyDogHuskScript } from "./scripts/muddy-dog-husk";
 import { thickPoopImaginationScript } from "./scripts/thick-poop-imagination";
 
 export const guidedMeditations = [
@@ -44,6 +47,30 @@ export const guidedMeditations = [
     durationSeconds: 4 * 60 + 33,
     imagePath: "/ddong-meong/4/meditations/constipation-dialogue.png",
     lines: constipationDialogueScript,
+  },
+  {
+    slug: "dog-poop-remedy",
+    title: "개똥도 약에 쓰려면 없다",
+    description: "산책줄과 빈 갈색 병 앞에서, 꼭 필요한 것을 기다리는 시간.",
+    durationSeconds: 4 * 60 + 33,
+    imagePath: "/ddong-meong/4/meditations/dog-poop-remedy.png",
+    lines: dogPoopRemedyScript,
+  },
+  {
+    slug: "before-after-poop",
+    title: "똥 누러 갈 적 마음 다르고, 올 적 마음 다르다",
+    description: "떨어진 가방과 가지런한 슬리퍼 사이, 급함이 평온으로 식는 순간.",
+    durationSeconds: 4 * 60 + 33,
+    imagePath: "/ddong-meong/4/meditations/before-after-poop.png",
+    lines: beforeAfterPoopScript,
+  },
+  {
+    slug: "muddy-dog-husk",
+    title: "똥 묻은 개가 겨 묻은 개 나무란다",
+    description: "두 켤레의 슬리퍼와 거울 앞에서 남의 얼룩을 먼저 발견하는 시간.",
+    durationSeconds: 4 * 60 + 33,
+    imagePath: "/ddong-meong/4/meditations/muddy-dog-husk.png",
+    lines: muddyDogHuskScript,
   },
 ] as const;
 

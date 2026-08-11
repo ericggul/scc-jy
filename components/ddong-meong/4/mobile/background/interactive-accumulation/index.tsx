@@ -31,7 +31,28 @@ const materialModeValues = {
   "heavy-column": 3,
   "drifting-mist": 4,
   "liquid-burst": 5,
+  "pellet-cluster": 6,
+  "coiling-stream": 7,
+  "split-stream": 8,
 } satisfies Record<AccumulationMaterialKind, number>;
+
+function usesSolidDrops(profile: AccumulationProfile) {
+  return (
+    profile.materialKind === "solid-form" ||
+    profile.materialKind === "pellet-cluster"
+  );
+}
+
+function solidItemsPerInteractiveDrop(
+  profile: AccumulationProfile,
+  useHoldTrace: boolean,
+) {
+  if (profile.materialKind === "pellet-cluster") {
+    return useHoldTrace ? Math.min(5, profile.solid.count) : 3;
+  }
+
+  return useHoldTrace ? Math.min(3, profile.solid.count) : 1;
+}
 
 type InteractiveAccumulationBackgroundProps = {
   dropStream: ActiveDropStream;
@@ -449,6 +470,7 @@ export default function InteractiveAccumulationBackground({
         ? createSolidDropGeometry(
             profile.solid.count,
             profile.particles.filamentSeed ^ 0x5011d,
+            profile.materialKind === "pellet-cluster" ? 3 : 0,
           )
         : null;
     const automaticSolidMaterial = automaticSolidGeometry
@@ -540,14 +562,17 @@ export default function InteractiveAccumulationBackground({
       capacity: number,
       useAutomaticTrace = false,
     ): DropBatchResource {
-      const itemsPerDrop = useAutomaticTrace
-        ? Math.min(3, profile.solid.count)
-        : 1;
+      const itemsPerDrop = solidItemsPerInteractiveDrop(
+        profile,
+        useAutomaticTrace,
+      );
       const itemCount = capacity * itemsPerDrop;
       const geometry = createSolidDropGeometry(
         itemCount,
         profile.particles.filamentSeed,
-        useAutomaticTrace ? itemsPerDrop : 0,
+        profile.materialKind === "pellet-cluster" || useAutomaticTrace
+          ? itemsPerDrop
+          : 0,
       );
       const origin = new THREE.InstancedBufferAttribute(
         new Float32Array(itemCount * 2),
@@ -740,7 +765,7 @@ export default function InteractiveAccumulationBackground({
     }
 
     const pressDropBatch = createDropBatch(
-      profile.materialKind === "solid-form"
+      usesSolidDrops(profile)
         ? createSolidDropResource
         : (capacity) =>
             createParticleDropResource(
@@ -750,7 +775,7 @@ export default function InteractiveAccumulationBackground({
             ),
     );
     const traceDropBatch = createDropBatch(
-      profile.materialKind === "solid-form"
+      usesSolidDrops(profile)
         ? createSolidDropResource
         : (capacity) =>
             createParticleDropResource(
@@ -761,7 +786,7 @@ export default function InteractiveAccumulationBackground({
       12,
     );
     const holdDropBatch = createDropBatch(
-      profile.materialKind === "solid-form"
+      usesSolidDrops(profile)
         ? (capacity) => createSolidDropResource(capacity, true)
         : (capacity) =>
             createParticleDropResource(
@@ -775,7 +800,7 @@ export default function InteractiveAccumulationBackground({
     let animationFrame = 0;
     let reducedMotionTimer = 0;
     let lastRenderAt = 0;
-    const maximumPixelRatio = profile.materialKind === "solid-form" ? 1 : 1.15;
+    const maximumPixelRatio = usesSolidDrops(profile) ? 1 : 1.15;
     let pixelRatioCap = maximumPixelRatio;
     let slowFrames = 0;
     let stableFrames = 0;
@@ -846,7 +871,7 @@ export default function InteractiveAccumulationBackground({
     function animate(timestamp: number) {
       const frameInterval = timestamp - lastRenderAt;
       if (frameInterval >= 1000 / 30) {
-        if (profile.materialKind === "solid-form" && lastRenderAt > 0) {
+        if (usesSolidDrops(profile) && lastRenderAt > 0) {
           if (frameInterval > 52) {
             slowFrames += 1;
             stableFrames = 0;

@@ -21,6 +21,7 @@ import {
   finiteOrientationValue,
 } from "@/socket/experiments/c-val/2/orientation.mjs";
 import CValMobileV2View from "./v2/view";
+import CValMobileV3View from "./v3/view";
 
 export type MotionPermission = "idle" | "listening" | "denied" | "unavailable";
 type MotionEventConstructor = typeof DeviceMotionEvent & {
@@ -71,19 +72,23 @@ function finiteSensorValue(value: number | null) {
 export default function CValMobile({
   interfaceVersion = "v1",
 }: {
-  interfaceVersion?: "v1" | "v2";
+  interfaceVersion?: "v1" | "v2" | "v3";
 }) {
   const [control, setControl] = useState<CValHumanControlInput>(initialControl);
   const [axisSignal, setAxisSignal] =
+    useState<CValMobileAxisSignal>(initialAxisSignal);
+  const [phoneOrientation, setPhoneOrientation] =
     useState<CValMobileAxisSignal>(initialAxisSignal);
   const [inputMapping, setInputMapping] =
     useState<CValInputMappingId>("current");
   const [permission, setPermission] = useState<MotionPermission>("idle");
   const inputMappingRef = useRef<CValInputMappingId>("current");
   const baselineRef = useRef<RawOrientation | null>(null);
+  const visualBaselineRef = useRef<RawOrientation | null>(null);
   const latestRawRef = useRef<RawOrientation | null>(null);
   const lastSentAtRef = useRef(0);
   const listeningRef = useRef<"orientation" | "motion" | null>(null);
+  const visualOrientationListeningRef = useRef(false);
   const recordingRef = useRef<{
     startedAt: number;
     recordedAt: string;
@@ -127,6 +132,7 @@ export default function CValMobile({
         { ...raw, absolute: event.absolute },
         baselineRef.current,
       );
+      if (interfaceVersion === "v3") setPhoneOrientation(orientation);
       setAxisSignal({
         alpha: orientation.alpha,
         beta: orientation.beta,
@@ -166,7 +172,25 @@ export default function CValMobile({
         });
       }
     },
-    [sendHumanControl],
+    [interfaceVersion, sendHumanControl],
+  );
+
+  const handleVisualOrientation = useCallback(
+    (event: DeviceOrientationEvent) => {
+      const raw = {
+        alpha: finiteOrientationValue(event.alpha),
+        beta: finiteOrientationValue(event.beta),
+        gamma: finiteOrientationValue(event.gamma),
+      };
+      visualBaselineRef.current ??= raw;
+      setPhoneOrientation(
+        calibrateRawOrientation(
+          { ...raw, absolute: event.absolute },
+          visualBaselineRef.current,
+        ),
+      );
+    },
+    [],
   );
 
   const handleMotion = useCallback(
@@ -313,12 +337,27 @@ export default function CValMobile({
       setPermission("unavailable");
       return;
     }
+    let visualOrientationPermission: "granted" | "denied" = "denied";
     try {
-      const sensorPermission = usesMotion
-        ? await ((DeviceMotionEvent as MotionEventConstructor).requestPermission?.() ??
-            Promise.resolve("granted"))
-        : await ((DeviceOrientationEvent as OrientationEventConstructor).requestPermission?.() ??
-            Promise.resolve("granted"));
+      const sensorPermissionRequest = usesMotion
+        ? (DeviceMotionEvent as MotionEventConstructor).requestPermission?.() ??
+          Promise.resolve<"granted" | "denied">("granted")
+        : (DeviceOrientationEvent as OrientationEventConstructor).requestPermission?.() ??
+          Promise.resolve<"granted" | "denied">("granted");
+      const visualOrientationPermissionRequest =
+        interfaceVersion === "v3" &&
+        usesMotion &&
+        "DeviceOrientationEvent" in window
+          ? ((DeviceOrientationEvent as OrientationEventConstructor).requestPermission?.() ??
+              Promise.resolve<"granted" | "denied">("granted"))
+              .catch(() => "denied" as const)
+          : Promise.resolve<"granted" | "denied">("denied");
+      const [sensorPermission, nextVisualOrientationPermission] =
+        await Promise.all([
+          sensorPermissionRequest,
+          visualOrientationPermissionRequest,
+        ]);
+      visualOrientationPermission = nextVisualOrientationPermission;
       if (sensorPermission !== "granted") {
         setPermission("denied");
         return;
@@ -331,6 +370,14 @@ export default function CValMobile({
     if (listeningRef.current === null && usesMotion) {
       listeningRef.current = "motion";
       window.addEventListener("devicemotion", handleMotion);
+      if (
+        interfaceVersion === "v3" &&
+        visualOrientationPermission === "granted" &&
+        !visualOrientationListeningRef.current
+      ) {
+        visualOrientationListeningRef.current = true;
+        window.addEventListener("deviceorientation", handleVisualOrientation);
+      }
     } else if (listeningRef.current === null) {
       listeningRef.current = "orientation";
       window.addEventListener("deviceorientation", handleOrientation);
@@ -341,18 +388,22 @@ export default function CValMobile({
   const stopListening = useCallback(() => {
     window.removeEventListener("devicemotion", handleMotion);
     window.removeEventListener("deviceorientation", handleOrientation);
+    window.removeEventListener("deviceorientation", handleVisualOrientation);
     listeningRef.current = null;
-  }, [handleMotion, handleOrientation]);
+    visualOrientationListeningRef.current = false;
+  }, [handleMotion, handleOrientation, handleVisualOrientation]);
 
   function selectInputMapping(nextMapping: CValInputMappingId) {
     stopListening();
     inputMappingRef.current = nextMapping;
     setInputMapping(nextMapping);
     baselineRef.current = null;
+    visualBaselineRef.current = null;
     latestRawRef.current = null;
     lastSentAtRef.current = 0;
     setControl(initialControl);
     setAxisSignal(initialAxisSignal);
+    setPhoneOrientation(initialAxisSignal);
     setPermission("idle");
     resetSystem();
   }
@@ -389,6 +440,25 @@ export default function CValMobile({
       : priceState === "FALLING"
         ? "#ff453a"
         : "#ffffff";
+
+  if (interfaceVersion === "v3") {
+    return (
+      <CValMobileV3View
+        price={price}
+        priceMove={priceMove}
+        priceState={priceState}
+        inputMappings={inputMappings}
+        inputMapping={inputMapping}
+        permission={permission}
+        control={control}
+        phoneOrientation={phoneOrientation}
+        recordingStatus={recordingStatus}
+        recordingMessage={recordingMessage}
+        onEnableMotion={enableMotion}
+        onSelectInputMapping={selectInputMapping}
+      />
+    );
+  }
 
   if (interfaceVersion === "v2") {
     return (

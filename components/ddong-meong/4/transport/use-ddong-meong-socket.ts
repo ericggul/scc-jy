@@ -10,6 +10,7 @@ import type {
   DdongMeongSessionOutcome,
   DdongMeongSnapshot,
 } from "../model/types";
+import type { DdongMeongEntryContext } from "../model/entry-context";
 
 const events = {
   join: "ddong-meong:4:join",
@@ -23,6 +24,7 @@ const disengagementEndpoint = "/ddong-meong/4/disengagement";
 export type StartDdongMeongSessionInput = {
   contentSlug: string;
   contentTitle: string;
+  entryContext: DdongMeongEntryContext;
   nickname: string;
   participantId: string;
 };

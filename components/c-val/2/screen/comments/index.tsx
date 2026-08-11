@@ -7,9 +7,12 @@ import { C_VAL_CHAT_ROOMS, type CValChatRoomId } from "./corpus";
 import styles from "./comments.module.css";
 import {
   C_VAL_COMMENT_ARCHIVE_PER_ROOM,
+  C_VAL_COMMENT_ORDINARY_PER_VOICE,
   C_VAL_COMMENT_VOICE_TRIGGER_PERCENT,
   cValCommentAdmissionIntervalMs,
+  cValCommentDetuneCents,
   cValCommentPlaybackRate,
+  cValCommentVoiceGapMs,
   cValVisibleChatRoomCount,
   censorCValCommentText,
   presentCValChatMessage,
@@ -79,17 +82,35 @@ function useCValParallelChat(snapshot: CValSnapshot, visibleRoomCount: number) {
   const lastAdmittedMoveRef = useRef<number | null>(null);
   const archiveRef = useRef(archive);
   const sequenceRef = useRef(0);
+  const voiceSequenceRef = useRef(0);
   const runRef = useRef(snapshot.runId);
   const phaseRef = useRef(snapshot.phase);
   const lastVoiceAtRef = useRef(Number.NEGATIVE_INFINITY);
   const loadingAudioRef = useRef(false);
   const audioRetryAtRef = useRef(0);
   const visibleRoomCountRef = useRef(visibleRoomCount);
-  const { speak } = useCValCommentAudio();
+  const { prime, speak } = useCValCommentAudio();
 
   useEffect(() => {
     visibleRoomCountRef.current = visibleRoomCount;
   }, [visibleRoomCount]);
+
+  const voiceDirection = snapshot.market.oneSecondMovePercent >= 0 ? "up" : "down";
+  const voiceWarmupActive = Math.abs(snapshot.market.oneSecondMovePercent)
+    >= C_VAL_COMMENT_VOICE_TRIGGER_PERCENT;
+  useEffect(() => {
+    const current = snapshotRef.current;
+    if (!audioCorpus || current.phase !== "active") return;
+    const move = current.market.oneSecondMovePercent;
+    if (Math.abs(move) < C_VAL_COMMENT_VOICE_TRIGGER_PERCENT) return;
+    const pulse = presentCValCommentPulse(current);
+    if (!pulse) return;
+    const warmPerformances = Array.from(
+      { length: 30 },
+      (_, sequence) => selectCValCommentPerformance(audioCorpus.entries, pulse, sequence),
+    ).filter((entry): entry is NonNullable<typeof entry> => entry != null);
+    prime([...new Map(warmPerformances.map((entry) => [entry.src, entry])).values()]);
+  }, [audioCorpus, prime, snapshot.phase, snapshot.runId, voiceDirection, voiceWarmupActive]);
 
   useEffect(() => {
     snapshotRef.current = snapshot;
@@ -100,6 +121,7 @@ function useCValParallelChat(snapshot: CValSnapshot, visibleRoomCount: number) {
     ) {
       runRef.current = snapshot.runId;
       sequenceRef.current = 0;
+      voiceSequenceRef.current = 0;
       lastAdmittedMoveRef.current = null;
       lastVoiceAtRef.current = Number.NEGATIVE_INFINITY;
       archiveRef.current = emptyArchive();
@@ -143,19 +165,34 @@ function useCValParallelChat(snapshot: CValSnapshot, visibleRoomCount: number) {
         return;
       }
 
-      const sequence = sequenceRef.current;
       const regimeMove = current.market.oneSecondMovePercent;
-      let message = presentCValChatMessage({
-        snapshot: current,
-        previousMovePercent: lastAdmittedMoveRef.current,
-        sequence,
-        roomLimit: visibleRoomCountRef.current,
-        previousRoomMessage: null,
-      });
+      const pulse = presentCValCommentPulse(current);
+      const voiceCadenceActive = audioCorpus !== null && pulse !== null;
+      let nextArchive = archiveRef.current;
+      const appendMessage = (message: CValChatMessage) => {
+        nextArchive = {
+          ...nextArchive,
+          [message.roomId]: [...nextArchive[message.roomId], message]
+            .slice(-C_VAL_COMMENT_ARCHIVE_PER_ROOM),
+        };
+      };
 
-      if (message) {
-        const roomMessages = archiveRef.current[message.roomId];
-        message = presentCValChatMessage({
+      for (
+        let ordinary = 0;
+        ordinary < (voiceCadenceActive ? C_VAL_COMMENT_ORDINARY_PER_VOICE : 1);
+        ordinary += 1
+      ) {
+        const sequence = sequenceRef.current;
+        const provisional = presentCValChatMessage({
+          snapshot: current,
+          previousMovePercent: lastAdmittedMoveRef.current,
+          sequence,
+          roomLimit: visibleRoomCountRef.current,
+          previousRoomMessage: null,
+        });
+        if (!provisional) continue;
+        const roomMessages = nextArchive[provisional.roomId];
+        const message = presentCValChatMessage({
           snapshot: current,
           previousMovePercent: lastAdmittedMoveRef.current,
           sequence,
@@ -163,48 +200,60 @@ function useCValParallelChat(snapshot: CValSnapshot, visibleRoomCount: number) {
           roomMessageCount: roomMessages.length,
           previousRoomMessage: roomMessages.at(-1) ?? null,
         });
+        if (!message) continue;
+        appendMessage(message);
+        lastAdmittedMoveRef.current = regimeMove;
+        sequenceRef.current += 1;
       }
 
-      if (message) {
-        const pulse = presentCValCommentPulse(current);
-        if (
-          audioCorpus
-          && shouldAdmitCValCommentVoice(pulse, lastVoiceAtRef.current, current.serverTime)
-          && pulse
-        ) {
-          const performance = selectCValCommentPerformance(audioCorpus.entries, pulse, sequence);
-          if (performance) {
-            message = {
-              ...message,
-              corpusId: `voice:${performance.id}`,
-              text: censorCValCommentText(performance.text),
-              replyToAuthor: null,
-            };
-            lastVoiceAtRef.current = current.serverTime;
-            speak({
-              entry: performance,
-              beep: audioCorpus.beep,
-              playbackRate: cValCommentPlaybackRate(pulse),
-            });
-          }
+      const voiceNow = globalThis.performance.now();
+      if (
+        audioCorpus
+        && pulse
+        && shouldAdmitCValCommentVoice(pulse, lastVoiceAtRef.current, voiceNow)
+      ) {
+        const voiceSequence = voiceSequenceRef.current;
+        const performance = selectCValCommentPerformance(
+          audioCorpus.entries,
+          pulse,
+          voiceSequence,
+        );
+        const provisional = presentCValChatMessage({
+          snapshot: current,
+          previousMovePercent: lastAdmittedMoveRef.current,
+          sequence: sequenceRef.current,
+          roomLimit: visibleRoomCountRef.current,
+          previousRoomMessage: null,
+        });
+        if (performance && provisional) {
+          appendMessage({
+            ...provisional,
+            corpusId: `voice:${performance.id}`,
+            text: censorCValCommentText(performance.text),
+            replyToAuthor: null,
+          });
+          lastVoiceAtRef.current = voiceNow;
+          voiceSequenceRef.current += 1;
+          sequenceRef.current += 1;
+          speak({
+            entry: performance,
+            beep: audioCorpus.beep,
+            playbackRate: cValCommentPlaybackRate(pulse),
+            detuneCents: cValCommentDetuneCents(pulse),
+          });
         }
+      }
 
-        const nextRoomMessages = [
-          ...archiveRef.current[message.roomId],
-          message,
-        ].slice(-C_VAL_COMMENT_ARCHIVE_PER_ROOM);
-        archiveRef.current = {
-          ...archiveRef.current,
-          [message.roomId]: nextRoomMessages,
-        };
-        lastAdmittedMoveRef.current = regimeMove;
-        setArchive(archiveRef.current);
-        sequenceRef.current += 1;
+      if (nextArchive !== archiveRef.current) {
+        archiveRef.current = nextArchive;
+        setArchive(nextArchive);
       }
 
       timer = window.setTimeout(
         admit,
-        cValCommentAdmissionIntervalMs(regimeMove, sequenceRef.current),
+        voiceCadenceActive && pulse
+          ? cValCommentVoiceGapMs(pulse)
+          : cValCommentAdmissionIntervalMs(regimeMove, sequenceRef.current),
       );
     };
 

@@ -10,16 +10,34 @@ import {
 } from "./corpus.ts";
 
 export const C_VAL_COMMENT_ARCHIVE_PER_ROOM = 28;
-export const C_VAL_COMMENT_VOICE_TRIGGER_PERCENT = 6;
-export const C_VAL_COMMENT_VOICE_SLOWEST_GAP_MS = 2_800;
-export const C_VAL_COMMENT_VOICE_FASTEST_GAP_MS = 900;
-export const C_VAL_COMMENT_MINIMUM_PLAYBACK_RATE = 0.96;
-export const C_VAL_COMMENT_MAXIMUM_PLAYBACK_RATE = 1.24;
+export const C_VAL_COMMENT_ORDINARY_PER_VOICE = 2;
+export const C_VAL_COMMENT_VOICE_TRIGGER_PERCENT = 2;
+export const C_VAL_COMMENT_VOICE_SLOWEST_GAP_MS = 220;
+export const C_VAL_COMMENT_VOICE_FASTEST_GAP_MS = 30;
+export const C_VAL_COMMENT_UP_MINIMUM_PLAYBACK_RATE = 1;
+export const C_VAL_COMMENT_UP_MAXIMUM_PLAYBACK_RATE = 1.2;
+export const C_VAL_COMMENT_DOWN_MINIMUM_PLAYBACK_RATE = 0.96;
+export const C_VAL_COMMENT_DOWN_MAXIMUM_PLAYBACK_RATE = 1.06;
+export const C_VAL_COMMENT_UP_MINIMUM_DETUNE_CENTS = 90;
+export const C_VAL_COMMENT_UP_MAXIMUM_DETUNE_CENTS = 1_200;
+export const C_VAL_COMMENT_DOWN_MINIMUM_DETUNE_CENTS = -120;
+export const C_VAL_COMMENT_DOWN_MAXIMUM_DETUNE_CENTS = -360;
+export const C_VAL_COMMENT_DIALECT_ORDER = [
+  "seoul-casual",
+  "busan-gyeongnam",
+  "daegu-gyeongbuk",
+  "daejeon-chungnam",
+  "gangneung-yeongdong",
+  "gwangju-jeonnam",
+  "jeonju-jeonbuk",
+  "jeju",
+] as const;
 
 export type CValCommentDirection = "up" | "down";
 
 export type CValCommentPulse = {
   signature: string;
+  runId: string;
   direction: CValCommentDirection;
   intensity: number;
   movePercent: number;
@@ -73,17 +91,65 @@ export function cValVisibleChatRoomCount(containerWidth: number) {
   return 16;
 }
 
-const directionStyles: Record<CValCommentDirection, ReadonlySet<string>> = {
-  up: new Set([
-    "startle-flash", "delighted-disbelief", "relief-rebound",
-    "cynical-laughter", "compulsive-focus", "somatic-overload",
-  ]),
-  down: new Set([
-    "startle-flash", "panic-impact", "angry-rejection", "helpless-collapse",
-    "bitter-regret", "numb-flat", "compulsive-focus", "fragile-plea",
-    "somatic-overload",
-  ]),
+const voiceStyleBands: Record<
+  CValCommentDirection,
+  readonly { maximumIntensity: number; styles: ReadonlySet<string> }[]
+> = {
+  up: [
+    {
+      maximumIntensity: 0.2,
+      styles: new Set([
+        "suspended-attention", "delighted-disbelief", "relief-rebound",
+        "cynical-laughter", "compulsive-focus",
+      ]),
+    },
+    {
+      maximumIntensity: 0.55,
+      styles: new Set([
+        "startle-flash", "delighted-disbelief", "suspended-attention",
+        "relief-rebound", "cynical-laughter", "compulsive-focus",
+        "somatic-overload",
+      ]),
+    },
+    {
+      maximumIntensity: 1,
+      styles: new Set([
+        "startle-flash", "delighted-disbelief", "relief-rebound",
+        "cynical-laughter", "compulsive-focus", "somatic-overload",
+      ]),
+    },
+  ],
+  down: [
+    {
+      maximumIntensity: 0.2,
+      styles: new Set([
+        "suspended-attention", "helpless-collapse", "bitter-regret",
+        "numb-flat", "compulsive-focus", "fragile-plea", "cynical-laughter",
+      ]),
+    },
+    {
+      maximumIntensity: 0.55,
+      styles: new Set([
+        "startle-flash", "panic-impact", "angry-rejection",
+        "helpless-collapse", "bitter-regret", "fragile-plea",
+        "somatic-overload",
+      ]),
+    },
+    {
+      maximumIntensity: 1,
+      styles: new Set([
+        "startle-flash", "panic-impact", "angry-rejection",
+        "helpless-collapse", "somatic-overload",
+      ]),
+    },
+  ],
 };
+
+function voiceBandFor(pulse: CValCommentPulse) {
+  return voiceStyleBands[pulse.direction].find(
+    ({ maximumIntensity }) => pulse.intensity <= maximumIntensity,
+  ) ?? voiceStyleBands[pulse.direction].at(-1)!;
+}
 
 const corpusByRoomAndRegime = new Map<string, CValChatCorpusEntry[]>();
 for (const entry of C_VAL_CHAT_CORPUS) {
@@ -171,6 +237,7 @@ function marketParameters(snapshot: CValSnapshot) {
 }
 
 function withMarketFact(entry: CValChatCorpusEntry, snapshot: CValSnapshot, sequence: number) {
+  if (entry.length === "short") return entry.text;
   const values = marketParameters(snapshot);
   const leads: Record<CValChatRoomId, readonly string[]> = {
     opening: [`${values.price}에 ${values.move}.`, `시가 대비 ${values.openMove}.`, "시초 흐름 다시 보니까"],
@@ -228,7 +295,7 @@ export function presentCValChatMessage({
     author: reply
       ? room.authors[(sequence + 1) % room.authors.length]
       : entry.author,
-    text: reply
+    text: reply && entry.length === "original"
       ? `${room.replies[sequence % room.replies.length]}. ${withMarketFact(entry, snapshot, sequence)}`
       : withMarketFact(entry, snapshot, sequence),
     regime,
@@ -246,17 +313,20 @@ export function presentCValCommentPulse(snapshot: CValSnapshot): CValCommentPuls
   const direction = movePercent > 0 ? "up" : "down";
   return {
     signature: `${snapshot.runId}:${direction}:${Math.floor(magnitude)}`,
+    runId: snapshot.runId,
     direction,
-    intensity: Math.min(1, (magnitude - C_VAL_COMMENT_VOICE_TRIGGER_PERCENT) / 24),
+    intensity: Math.min(1, (magnitude - C_VAL_COMMENT_VOICE_TRIGGER_PERCENT) / 13),
     movePercent,
   };
 }
 
 export function cValCommentVoiceGapMs(pulse: CValCommentPulse) {
-  return Math.round(
-    C_VAL_COMMENT_VOICE_SLOWEST_GAP_MS
-      - pulse.intensity
-        * (C_VAL_COMMENT_VOICE_SLOWEST_GAP_MS - C_VAL_COMMENT_VOICE_FASTEST_GAP_MS),
+  return Math.max(
+    C_VAL_COMMENT_VOICE_FASTEST_GAP_MS,
+    Math.min(
+      C_VAL_COMMENT_VOICE_SLOWEST_GAP_MS,
+      Math.round(cValSocialAdmissionIntervalMs(pulse.movePercent) * 0.52),
+    ),
   );
 }
 
@@ -269,9 +339,26 @@ export function shouldAdmitCValCommentVoice(
 }
 
 export function cValCommentPlaybackRate(pulse: CValCommentPulse) {
-  return C_VAL_COMMENT_MINIMUM_PLAYBACK_RATE
-    + pulse.intensity
-      * (C_VAL_COMMENT_MAXIMUM_PLAYBACK_RATE - C_VAL_COMMENT_MINIMUM_PLAYBACK_RATE);
+  const minimum = pulse.direction === "up"
+    ? C_VAL_COMMENT_UP_MINIMUM_PLAYBACK_RATE
+    : C_VAL_COMMENT_DOWN_MINIMUM_PLAYBACK_RATE;
+  const maximum = pulse.direction === "up"
+    ? C_VAL_COMMENT_UP_MAXIMUM_PLAYBACK_RATE
+    : C_VAL_COMMENT_DOWN_MAXIMUM_PLAYBACK_RATE;
+  return minimum + pulse.intensity * (maximum - minimum);
+}
+
+export function cValCommentDetuneCents(pulse: CValCommentPulse) {
+  const minimum = pulse.direction === "up"
+    ? C_VAL_COMMENT_UP_MINIMUM_DETUNE_CENTS
+    : C_VAL_COMMENT_DOWN_MINIMUM_DETUNE_CENTS;
+  const maximum = pulse.direction === "up"
+    ? C_VAL_COMMENT_UP_MAXIMUM_DETUNE_CENTS
+    : C_VAL_COMMENT_DOWN_MAXIMUM_DETUNE_CENTS;
+  const shapedIntensity = pulse.direction === "up"
+    ? pulse.intensity ** 1.7
+    : pulse.intensity;
+  return minimum + shapedIntensity * (maximum - minimum);
 }
 
 export function censorCValCommentText(text: string) {
@@ -285,17 +372,25 @@ export function selectCValCommentPerformance(
 ) {
   const voiceOrder = [...new Set(entries.map(({ voice }) => voice))].sort();
   const preferredVoice = voiceOrder[sequence % Math.max(1, voiceOrder.length)];
-  const allowedStyles = directionStyles[pulse.direction];
-  const allowedValences = pulse.direction === "up"
-    ? new Set(["positive", "mixed"])
-    : new Set(["negative", "mixed"]);
+  const voiceBand = voiceBandFor(pulse);
   const candidates = entries.filter(
     (entry) => entry.voice === preferredVoice
-      && allowedStyles.has(entry.styleId)
-      && allowedValences.has(entry.valence),
+      && voiceBand.styles.has(entry.styleId)
+      && entry.profanityStatus === "present",
   );
   if (candidates.length === 0) return null;
-  const energetic = candidates.filter((entry) => entry.arousal >= 0.72);
-  const pool = energetic.length > 0 ? energetic : candidates;
-  return pool[cValStableHash(`${pulse.signature}:${sequence}`) % pool.length];
+  const voiceSequence = Math.floor(sequence / Math.max(1, voiceOrder.length));
+  const presetIds = [...new Set(candidates.map(({ presetId }) => presetId))].sort();
+  const presetOffset = cValStableHash(
+    `${pulse.runId}:${pulse.direction}:${voiceBand.maximumIntensity}`,
+  ) % presetIds.length;
+  const presetId = presetIds[(presetOffset + voiceSequence) % presetIds.length];
+  const scriptCandidates = candidates.filter((entry) => entry.presetId === presetId);
+  const dialectOffset = cValStableHash(`${pulse.runId}:${preferredVoice}`)
+    % C_VAL_COMMENT_DIALECT_ORDER.length;
+  const dialectId = C_VAL_COMMENT_DIALECT_ORDER[
+    (dialectOffset + voiceSequence) % C_VAL_COMMENT_DIALECT_ORDER.length
+  ];
+  return scriptCandidates.find((entry) => entry.dialectId === dialectId)
+    ?? scriptCandidates[voiceSequence % scriptCandidates.length];
 }

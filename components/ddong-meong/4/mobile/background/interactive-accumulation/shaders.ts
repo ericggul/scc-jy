@@ -315,10 +315,21 @@ export const backgroundFragmentShader = `
     spine += sin(uv.y * 11.0 - flowTime * 0.11) * uFallWander.z;
     spine += (fbm(vec2(uv.y * 2.3, flowTime * 0.019)) - 0.5) * uFallTurbulence;
     float filamentDistance = abs(uv.x - spine) * aspect;
-    if (uMaterialMode > 4.5) {
+    if (uMaterialMode > 4.5 && uMaterialMode < 5.5) {
       float leftDistance = abs(uv.x - (spine - 0.13)) * aspect;
       float rightDistance = abs(uv.x - (spine + 0.13)) * aspect;
       filamentDistance = min(leftDistance, rightDistance);
+    }
+    if (uMaterialMode > 6.5 && uMaterialMode < 7.5) {
+      float coilOffset = sin(uv.y * 21.0 - flowTime * 0.38) * 0.042;
+      coilOffset += sin(uv.y * 8.0 + flowTime * 0.17) * 0.018;
+      filamentDistance = abs(uv.x - (spine + coilOffset)) * aspect;
+    }
+    if (uMaterialMode > 7.5) {
+      float leftDistance = abs(uv.x - (spine - 0.14)) * aspect;
+      float middleDistance = abs(uv.x - spine) * aspect;
+      float rightDistance = abs(uv.x - (spine + 0.12)) * aspect;
+      filamentDistance = min(leftDistance, min(middleDistance, rightDistance));
     }
     float filament = 1.0 - smoothstep(
       uBackgroundFilamentWidth.x,
@@ -335,6 +346,7 @@ export const backgroundFragmentShader = `
     filament *= 1.0 - smoothstep(0.0, 0.14, flushProgress);
     if (uMaterialMode > 1.5 && uMaterialMode < 2.5) filament = 0.0;
     if (uMaterialMode > 3.5 && uMaterialMode < 4.5) filament = 0.0;
+    if (uMaterialMode > 5.5 && uMaterialMode < 6.5) filament = 0.0;
     float filamentTexture = 0.48 + fineFlow * 0.52;
     color = mix(
       color,
@@ -495,7 +507,7 @@ export const particleVertexShader = `
         particlePosition.x = fract(aSeed.x + mistDrift);
         particlePosition.y += (aSeed.w - 0.5) * 0.045;
       }
-      if (uMaterialMode > 4.5) {
+      if (uMaterialMode > 4.5 && uMaterialMode < 5.5) {
         float side = step(0.5, aSeed.x) * 2.0 - 1.0;
         float localSeed = fract(aSeed.x * 2.0);
         float burstLane = (localSeed - 0.5) * filamentWidth * 2.2;
@@ -503,6 +515,21 @@ export const particleVertexShader = `
         particlePosition.x = spine + side * 0.13;
         particlePosition.x += (burstLane + spray) / aspect;
         particlePosition.y += (aSeed.w - 0.5) * 0.035;
+      }
+      if (uMaterialMode > 6.5 && uMaterialMode < 7.5) {
+        float coil = sin(travel * 20.0 - flowTime * 0.38 + aSeed.z * 6.283);
+        float coilAmplitude = filamentWidth * 1.65 + 0.018;
+        particlePosition.x += coil * coilAmplitude / aspect;
+        particlePosition.y += cos(travel * 20.0 + aSeed.w * 6.283) * 0.012;
+      }
+      if (uMaterialMode > 7.5) {
+        float branch = floor(aSeed.x * 3.0) - 1.0;
+        float localSeed = fract(aSeed.x * 3.0);
+        float branchLane = branch * 0.13;
+        branchLane += (localSeed - 0.5) * filamentWidth * 1.8;
+        float branchWobble = sin(travel * 15.0 + aSeed.z * 9.0) * 0.014;
+        particlePosition.x = spine + (branchLane + branchWobble) / aspect;
+        particlePosition.y += (aSeed.w - 0.5) * 0.045;
       }
 
       float endFade = pow(sin(travel * 3.14159265), 0.34);
@@ -512,6 +539,7 @@ export const particleVertexShader = `
       vAlpha = endFade * emission * mix(coreAlpha, veilAlpha, veilParticle);
       vAlpha *= 1.0 - smoothstep(0.0, 0.12, flushProgress);
       if (uMaterialMode > 1.5 && uMaterialMode < 2.5) vAlpha = 0.0;
+      if (uMaterialMode > 5.5 && uMaterialMode < 6.5) vAlpha = 0.0;
       pointSize = mix(
         mix(uCorePointSize.x, uCorePointSize.y, aSeed.w),
         mix(uVeilPointSize.x, uVeilPointSize.y, aSeed.z),
@@ -571,7 +599,7 @@ export const particleVertexShader = `
         );
         particlePosition.y += (aSeed.w - 0.5) * 0.045;
       }
-      if (uMaterialMode > 4.5) {
+      if (uMaterialMode > 4.5 && uMaterialMode < 5.5) {
         float side = step(0.5, aSeed.x) * 2.0 - 1.0;
         float localSeed = fract(aSeed.x * 2.0);
         float burstLane = (localSeed - 0.5) * filamentWidth * 2.2;
@@ -579,6 +607,21 @@ export const particleVertexShader = `
         particlePosition.x = spine + side * 0.13;
         particlePosition.x += (burstLane + spray) / aspect;
         particlePosition.y += (aSeed.w - 0.5) * 0.035;
+      }
+      if (uMaterialMode > 6.5 && uMaterialMode < 7.5) {
+        float coil = sin(travel * 20.0 - flowTime * 0.38 + aSeed.z * 6.283);
+        float coilAmplitude = filamentWidth * 1.65 + 0.018;
+        particlePosition.x += coil * coilAmplitude / aspect;
+        particlePosition.y += cos(travel * 20.0 + aSeed.w * 6.283) * 0.012;
+      }
+      if (uMaterialMode > 7.5) {
+        float branch = floor(aSeed.x * 3.0) - 1.0;
+        float localSeed = fract(aSeed.x * 3.0);
+        float branchLane = branch * 0.13;
+        branchLane += (localSeed - 0.5) * filamentWidth * 1.8;
+        float branchWobble = sin(travel * 15.0 + aSeed.z * 9.0) * 0.014;
+        particlePosition.x = spine + (branchLane + branchWobble) / aspect;
+        particlePosition.y += (aSeed.w - 0.5) * 0.045;
       }
 
       float endFade = pow(sin(travel * 3.14159265), 0.34);
@@ -589,6 +632,7 @@ export const particleVertexShader = `
       vAlpha *= aDropVisualStrength;
       vAlpha *= 1.0 - smoothstep(0.0, 0.12, flushProgress);
       if (uMaterialMode > 1.5 && uMaterialMode < 2.5) vAlpha = 0.0;
+      if (uMaterialMode > 5.5 && uMaterialMode < 6.5) vAlpha = 0.0;
       pointSize = mix(
         mix(uCorePointSize.x, uCorePointSize.y, aSeed.w),
         mix(uVeilPointSize.x, uVeilPointSize.y, aSeed.z),
@@ -669,6 +713,7 @@ export const solidDropVertexShader = `
   uniform float uSolidRotation;
   uniform float uAutomaticEmission;
   uniform float uHoldTrace;
+  uniform float uMaterialMode;
 
   ${sharedAccumulationShader}
 
@@ -726,6 +771,9 @@ export const solidDropVertexShader = `
 
     float size = mix(uSolidSize.x, uSolidSize.y, aSeed.w);
     float solidAspect = mix(uSolidAspect.x, uSolidAspect.y, aSeed.z);
+    if (uMaterialMode > 5.5 && uMaterialMode < 6.5) {
+      size *= 0.9 + aSeed.x * 0.16;
+    }
     float angle = (aSeed.w - 0.5) * 2.0 * uSolidRotation;
     angle += sin(time * 0.17 + aSeed.x * 8.0) * uSolidRotation * 0.22;
     mat2 rotation = mat2(cos(angle), -sin(angle), sin(angle), cos(angle));
@@ -757,6 +805,7 @@ export const solidDropFragmentShader = `
   uniform vec3 uHighlightColor;
   uniform float uSolidCurvature;
   uniform float uSolidRoughness;
+  uniform float uMaterialMode;
 
   varying vec2 vSolidUv;
   varying float vSolidAlpha;
@@ -775,18 +824,26 @@ export const solidDropFragmentShader = `
     curve *= uSolidCurvature * (1.0 - vertical * vertical);
     float localX = point.x - curve;
 
-    float taper = sqrt(max(0.0, 1.0 - vertical * vertical));
-    float contourNoise = sin(vertical * 13.0 + vSolidSeed.y * 17.0);
-    contourNoise += sin(vertical * 29.0 - vSolidSeed.x * 11.0) * 0.45;
-    float width = taper * (0.72 + (vSolidSeed.y - 0.5) * 0.12);
-    width *= 1.0 + contourNoise * uSolidRoughness;
-    float sideDistance = abs(localX) - width;
-    float endDistance = abs(vertical) - 0.965;
-    float signedDistance = max(sideDistance, endDistance);
+    float signedDistance;
+    float across;
+    if (uMaterialMode > 5.5 && uMaterialMode < 6.5) {
+      float pelletRadius = mix(0.68, 0.82, vSolidSeed.y);
+      signedDistance = length(vec2(localX * 1.06, vertical * 0.94)) - pelletRadius;
+      across = clamp(localX / pelletRadius, -1.0, 1.0);
+    } else {
+      float taper = sqrt(max(0.0, 1.0 - vertical * vertical));
+      float contourNoise = sin(vertical * 13.0 + vSolidSeed.y * 17.0);
+      contourNoise += sin(vertical * 29.0 - vSolidSeed.x * 11.0) * 0.45;
+      float width = taper * (0.72 + (vSolidSeed.y - 0.5) * 0.12);
+      width *= 1.0 + contourNoise * uSolidRoughness;
+      float sideDistance = abs(localX) - width;
+      float endDistance = abs(vertical) - 0.965;
+      signedDistance = max(sideDistance, endDistance);
+      across = clamp(localX / max(width, 0.04), -1.0, 1.0);
+    }
     float edge = 1.0 - smoothstep(-0.025, 0.025, signedDistance);
     if (edge <= 0.001 || vSolidAlpha <= 0.001) discard;
 
-    float across = clamp(localX / max(width, 0.04), -1.0, 1.0);
     float diffuse = 0.54 - across * 0.2 + (1.0 - abs(vertical)) * 0.08;
     float surfaceNoise = hash21(
       floor(vSolidUv * vec2(42.0, 68.0) + vSolidSeed * 37.0)

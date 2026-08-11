@@ -1,6 +1,11 @@
 "use client";
 
 import { useMemo, useSyncExternalStore } from "react";
+import {
+  ddongMeongFourCampaignEntryContext,
+  entryContextToQuery,
+  type DdongMeongEntryContext,
+} from "../model/entry-context";
 import { ddongMeongFourEntryPath } from "../model/experiment-route";
 import styles from "./entry-qr.module.css";
 
@@ -347,10 +352,20 @@ function makeMatrix(value: string) {
   return finalMatrix as QrMatrix;
 }
 
-export default function EntryQr() {
+type EntryQrProps = {
+  entryContext?: DdongMeongEntryContext;
+};
+
+export default function EntryQr({
+  entryContext = ddongMeongFourCampaignEntryContext,
+}: EntryQrProps) {
+  const entryQuery = entryContextToQuery(entryContext);
+  const entryPath = entryQuery
+    ? `${ddongMeongFourEntryPath}?${entryQuery}`
+    : ddongMeongFourEntryPath;
   const entryUrl = useSyncExternalStore(
     () => () => undefined,
-    () => `${window.location.origin}${ddongMeongFourEntryPath}`,
+    () => `${window.location.origin}${entryPath}`,
     () => null,
   );
 

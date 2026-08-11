@@ -1,10 +1,16 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import type { CValSnapshot } from "../../model/index.ts";
 import { C_VAL_CHAT_CORPUS, C_VAL_CHAT_ROOMS } from "./corpus.ts";
 import {
   C_VAL_COMMENT_VOICE_TRIGGER_PERCENT,
+  C_VAL_COMMENT_DIALECT_ORDER,
+  C_VAL_COMMENT_ORDINARY_PER_VOICE,
   cValCommentAdmissionIntervalMs,
+  cValCommentDetuneCents,
+  cValCommentPlaybackRate,
+  cValCommentVoiceGapMs,
   cValCommentRegime,
   cValVisibleChatRoomCount,
   censorCValCommentText,
@@ -44,11 +50,13 @@ const entries: CValCommentCorpusEntry[] = [
   },
 ];
 
-test("the authored archive contains sixteen rooms and more than 4,000 stable entries", () => {
+test("the authored archive preserves original comments and adds a short layer", () => {
   assert.equal(C_VAL_CHAT_ROOMS.length, 16);
-  assert.equal(C_VAL_CHAT_CORPUS.length, 4_608);
-  assert.equal(new Set(C_VAL_CHAT_CORPUS.map((entry) => entry.id)).size, 4_608);
-  assert.equal(new Set(C_VAL_CHAT_CORPUS.map((entry) => entry.text)).size, 4_608);
+  assert.equal(C_VAL_CHAT_CORPUS.length, 9_216);
+  assert.equal(new Set(C_VAL_CHAT_CORPUS.map((entry) => entry.id)).size, 9_216);
+  assert.equal(new Set(C_VAL_CHAT_CORPUS.map((entry) => entry.text)).size, 9_216);
+  assert.equal(C_VAL_CHAT_CORPUS.filter((entry) => entry.length === "original").length, 4_608);
+  assert.equal(C_VAL_CHAT_CORPUS.filter((entry) => entry.length === "short").length, 4_608);
   assert.equal(C_VAL_CHAT_CORPUS.some((entry) => entry.text.includes("씨발")), false);
 });
 
@@ -106,6 +114,19 @@ test("every admitted message belongs to one room and uses actual market values",
   assert.match(message.text, /101\.25|\+2\.40%|\+1\.20%/);
 });
 
+test("original and newly added short comments remain mixed in the live stream", () => {
+  const lengths = Array.from({ length: 160 }, (_, sequence) => (
+    presentCValChatMessage({
+      snapshot: activeSnapshot(2.4),
+      previousMovePercent: 2.2,
+      sequence,
+      previousRoomMessage: null,
+    })?.text.length ?? 0
+  ));
+  assert.ok(lengths.some((length) => length <= 30));
+  assert.ok(lengths.some((length) => length >= 40));
+});
+
 test("a room forms a reply chain against its own previous speaker", () => {
   const first = presentCValChatMessage({
     snapshot: activeSnapshot(0.4),
@@ -132,8 +153,21 @@ test("profanity and voice remain unavailable below the extreme threshold", () =>
   assert.equal(presentCValCommentPulse(activeSnapshot(C_VAL_COMMENT_VOICE_TRIGGER_PERCENT - 0.01)), null);
   const pulse = presentCValCommentPulse(activeSnapshot(C_VAL_COMMENT_VOICE_TRIGGER_PERCENT));
   assert.ok(pulse);
-  assert.equal(shouldAdmitCValCommentVoice(pulse, 9_500, 10_000), false);
+  assert.equal(shouldAdmitCValCommentVoice(pulse, 9_900, 10_000), false);
   assert.equal(censorCValCommentText("씨발, 뭐야. 씨발."), "**, 뭐야. **.");
+});
+
+test("voice aggregation accelerates sharply with the same continuous market curve", () => {
+  assert.equal(C_VAL_COMMENT_ORDINARY_PER_VOICE, 2);
+  const threshold = presentCValCommentPulse(activeSnapshot(2));
+  const surge = presentCValCommentPulse(activeSnapshot(6));
+  const extreme = presentCValCommentPulse(activeSnapshot(15));
+  assert.ok(threshold);
+  assert.ok(surge);
+  assert.ok(extreme);
+  assert.ok(cValCommentVoiceGapMs(threshold) <= 150);
+  assert.ok(cValCommentVoiceGapMs(surge) <= 80);
+  assert.equal(cValCommentVoiceGapMs(extreme), 30);
 });
 
 test("voice performance valence follows rise and fall direction", () => {
@@ -143,4 +177,111 @@ test("voice performance valence follows rise and fall direction", () => {
   assert.ok(fall);
   assert.equal(selectCValCommentPerformance(entries, rise, 0)?.valence, "positive");
   assert.equal(selectCValCommentPerformance(entries, fall, 0)?.valence, "negative");
+});
+
+test("rises pitch upward while falls pitch downward with increasing intensity", () => {
+  const mildRise = presentCValCommentPulse(activeSnapshot(2));
+  const extremeRise = presentCValCommentPulse(activeSnapshot(15));
+  const mildFall = presentCValCommentPulse(activeSnapshot(-2));
+  const extremeFall = presentCValCommentPulse(activeSnapshot(-15));
+  assert.ok(mildRise && extremeRise && mildFall && extremeFall);
+  assert.ok(cValCommentDetuneCents(mildRise) > 0);
+  assert.ok(cValCommentDetuneCents(extremeRise) > cValCommentDetuneCents(mildRise));
+  assert.equal(cValCommentDetuneCents(extremeRise), 1_200);
+  assert.equal(cValCommentPlaybackRate(extremeRise), 1.2);
+  assert.ok(cValCommentDetuneCents(mildFall) < 0);
+  assert.ok(cValCommentDetuneCents(extremeFall) < cValCommentDetuneCents(mildFall));
+  assert.ok(cValCommentPlaybackRate(extremeRise) > cValCommentPlaybackRate(extremeFall));
+});
+
+test("dialect remains an eight-way performance color instead of the diversity limit", () => {
+  const dialectEntries = ["cedar", "marin"].flatMap((voice) => (
+    C_VAL_COMMENT_DIALECT_ORDER.flatMap((dialectId) => (
+      Array.from({ length: 2 }, (_, variant) => ({
+        ...entries[0],
+        id: `${voice}:${dialectId}:${variant}`,
+        voice,
+        dialectId,
+        src: `/${voice}/${dialectId}/${variant}.wav`,
+      }))
+    ))
+  ));
+  const pulse = presentCValCommentPulse(activeSnapshot(8));
+  assert.ok(pulse);
+  const selected = Array.from(
+    { length: 16 },
+    (_, sequence) => selectCValCommentPerformance(dialectEntries, pulse, sequence),
+  );
+  for (const voice of ["cedar", "marin"]) {
+    const dialects = selected
+      .filter((entry) => entry?.voice === voice)
+      .map((entry) => entry?.dialectId);
+    assert.equal(dialects.length, C_VAL_COMMENT_DIALECT_ORDER.length);
+    assert.deepEqual(new Set(dialects), new Set(C_VAL_COMMENT_DIALECT_ORDER));
+  }
+});
+
+test("each market band exhausts its distinct scripts before repeating one", () => {
+  const styles = [
+    "startle-flash",
+    "delighted-disbelief",
+    "suspended-attention",
+    "relief-rebound",
+    "cynical-laughter",
+    "compulsive-focus",
+    "somatic-overload",
+  ];
+  const scriptEntries = ["cedar", "marin"].flatMap((voice) => (
+    styles.flatMap((styleId, styleIndex) => (
+      Array.from({ length: 6 }, (_, scriptIndex) => {
+        const presetId = `u${String(styleIndex * 6 + scriptIndex + 1).padStart(3, "0")}`;
+        return C_VAL_COMMENT_DIALECT_ORDER.map((dialectId) => ({
+          ...entries[0],
+          id: `${voice}:${dialectId}:${presetId}`,
+          voice,
+          dialectId,
+          presetId,
+          styleId,
+          src: `/${voice}/${dialectId}/${presetId}.wav`,
+        }));
+      })
+    )).flat()
+  ));
+  const pulse = presentCValCommentPulse(activeSnapshot(6));
+  assert.ok(pulse);
+  const firstCycle = Array.from(
+    { length: 84 },
+    (_, sequence) => selectCValCommentPerformance(scriptEntries, pulse, sequence),
+  );
+  for (const voice of ["cedar", "marin"]) {
+    const voiceScripts = firstCycle
+      .filter((entry) => entry?.voice === voice)
+      .map((entry) => entry?.presetId);
+    assert.equal(voiceScripts.length, 42);
+    assert.equal(new Set(voiceScripts).size, 42);
+  }
+  assert.equal(
+    selectCValCommentPerformance(scriptEntries, pulse, 84)?.presetId,
+    firstCycle[0]?.presetId,
+  );
+});
+
+test("the real corpus exposes all 78 authored scripts across market situations", () => {
+  const corpus = JSON.parse(readFileSync(
+    new URL("../../../../../public/audio/c-val/exclamations/comments-index.json", import.meta.url),
+    "utf8",
+  )) as { entries: CValCommentCorpusEntry[] };
+  const selectedPresetIds = new Set<string>();
+  for (const move of [2.2, 6, 15, -2.2, -6, -15]) {
+    const pulse = presentCValCommentPulse(activeSnapshot(move));
+    assert.ok(pulse);
+    const situationalPresetIds = new Set(
+      Array.from({ length: 240 }, (_, sequence) => (
+        selectCValCommentPerformance(corpus.entries, pulse, sequence)?.presetId
+      )).filter((presetId): presetId is string => Boolean(presetId)),
+    );
+    assert.ok(situationalPresetIds.size >= 30);
+    for (const presetId of situationalPresetIds) selectedPresetIds.add(presetId);
+  }
+  assert.equal(selectedPresetIds.size, 78);
 });

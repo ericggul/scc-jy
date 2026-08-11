@@ -66,18 +66,24 @@ metrics, or simulated controls.
 
 ## Corpus model
 
-`corpus.ts` constructs a fixed, deterministic archive of 4,608 stable-ID
-entries:
+`corpus.ts` constructs a fixed, deterministic archive of 9,216 stable-ID
+entries in two coexisting length layers:
 
 ```text
-16 rooms × 8 regimes × 9 market observations × 4 room-specific continuations
+2 lengths × 16 rooms × 8 regimes × 9 observations × 4 continuations
 ```
 
-These are pre-authored combinations, not generated sentences, remote posts, or
-runtime model output. The same corpus ID always resolves to the same author and
-text. All normal entries are profanity-free. Actual snapshot values are added
-at admission time as current price, one-second move, or move from open; this
-keeps the utterance grounded in C-VAL rather than a fictional ticker.
+The original 4,608 comments remain byte-for-byte present. A separate 4,608-item
+short layer was added rather than shortening or deleting the original material.
+The original layer has a 39-character median before its market lead; the short
+layer has a 22-character median and receives no extra numeric lead or textual
+reply prefix. Both lengths share the live selection pool.
+
+These are pre-authored combinations, not remote posts or runtime model output.
+The same corpus ID always resolves to the same author and text. All normal
+entries are profanity-free. Original-length entries may add an actual current
+price, one-second move, or move-from-open lead; short entries rely on the room
+header's live readout and stay terse.
 
 Every fourth eligible utterance answers the most recent speaker in that room.
 Room archives retain 28 messages each. This yields at most 448 ordinary message
@@ -126,24 +132,56 @@ sequence and regime.
 
 ## Extreme profanity and sound
 
-The 4,608 ordinary entries contain no `씨발`. Existing Cedar and Marin audio is
+The 9,216 ordinary entries contain no `씨발`. Existing Cedar and Marin audio is
 not loaded until the absolute one-second move approaches the voice boundary.
-At `|move| >= 6%`, an extreme text admission may be replaced by one of the 1,248
-recorded exclamations:
+At `|move| >= 2%`, a fast-move text admission may be replaced by one of the
+recorded exclamations whose source audio contains an audited profanity interval:
 
 - upward extremes select positive or mixed high-arousal performances;
 - downward extremes select negative or mixed high-arousal performances;
 - visible `씨발` is always rendered as `**`;
 - only the recorded profanity interval is muted and replaced by the accepted
   1000 Hz broadcast beep;
-- voice spacing contracts from 2.8 seconds toward 0.9 seconds as movement
-  approaches 30%; playback rate contracts from the old 1.42 maximum to 1.24 so
-  the performance does not become a comic pitch effect.
+- voice spacing uses the same continuous news curve at roughly three times the
+  previous density: about 145 ms at 2%, 76 ms at 6%, 45 ms at 10%, and a 30 ms
+  floor from 15% onward. A browser monotonic clock, rather than the 50 ms market
+  snapshot clock, preserves that 30 ms floor. Recorded phrases are
+  therefore intentionally concurrent during a surge or crash, producing a
+  crowd aggregation rather than isolated calls;
+- upward voice starts at +90 cents and rises on a 1.7-power intensity curve to
+  +1200 cents (one octave), keeping ordinary rises restrained while making
+  extreme rallies unmistakably high. Its playback rate moves from 1.00 to
+  1.20; downward voice
+  starts at -120
+  cents and falls continuously to -360 cents while its playback rate moves
+  from 0.96 to 1.06. The split makes rallies brighter and more airborne while
+  crashes accumulate as a lower, heavier crowd. The 1000 Hz censorship beep
+  remains direction-neutral, and its mute interval is corrected by the combined
+  playback-rate and detune ratio so it still covers the recorded profanity.
 
-Decoded audio uses a 24-buffer eviction limit instead of an unbounded cache.
-Speech and beep share a dynamics-compressor output so overlapping extremes do
-not sum directly into the destination. The source WAV files and timestamp
-index remain unchanged.
+Once voice cadence is active, its clock admits two ordinary comments first and
+then appends the due `**` comment as a third record instead of replacing either
+ordinary comment. Thus the extreme-state wall retains at least a 2:1 ordinary-
+to-voice text ratio while the audio itself can run at the full 145/76/45/30 ms
+curve. Outside voice cadence, ordinary comments retain the shared news clock.
+
+The primary diversity axis is the authored `u001`–`u078` script, not dialect.
+For each direction and intensity band, Cedar and Marin alternate while the
+selector exhausts every situation-compatible script ID once before any script
+repeats. Low, middle, and extreme bands expose different combinations of the
+thirteen acting styles; their union covers all 78 scripts. The existing eight
+dialect performances remain a secondary rotating color for each selected
+script and were not expanded. This replaces the previous two-variants-per-
+dialect rule that reduced a direction to roughly twelve recurring scripts.
+
+Decoded audio uses a 72-buffer eviction limit instead of an unbounded cache.
+The first thirty likely clips are decoded as soon as the boundary is entered.
+Speech and beep share a
+dynamics-compressor output so
+overlapping extremes do not sum directly into the destination. The first user
+gesture now creates and resumes the audio context even if it occurs before the
+market reaches the voice boundary. The source WAV files and timestamp index
+remain unchanged.
 
 At the React boundary, each room thread is memoized independently. A new
 message re-renders the changed thread instead of rebuilding the other fifteen
@@ -176,13 +214,16 @@ not empirical samples from those services.
 
 Pure tests audit:
 
-- sixteen rooms and exactly 4,608 unique stable corpus IDs and texts;
+- sixteen rooms, 4,608 preserved original entries, and 4,608 added short entries;
 - matching responsive room admission at 8 × 2 through 2 × 2 widths;
 - absence of profanity in the ordinary corpus;
 - all eight movement regimes and reversal precedence;
 - continuous acceleration with exact movement magnitude;
 - market-grounded admitted text;
-- the 6% voice boundary and direction-compatible audio valence.
+- the 2% voice boundary, 145/76/30 ms aggregation anchors, the 2:1 minimum
+  ordinary-comment ratio, audited profanity presence, direction-compatible
+  style bands, all 78 real script IDs across market situations, and the eight
+  existing dialect colors for both voices.
 
 `pnpm exec tsc --noEmit` passes. `pnpm lint` passes with no error; warnings in
 unrelated existing files remain outside this trial. Browser/runtime verification

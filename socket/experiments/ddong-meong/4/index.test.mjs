@@ -49,6 +49,12 @@ test("ddong-meong 4 archives a named content session", () => {
   sessionHandler({
     action: "start",
     contentSlug: "celebrity-applause",
+    entryContext: {
+      attributes: { wing: "east" },
+      building: "n25",
+      floor: "2",
+      institution: "kaist",
+    },
     nickname: "노라조",
     participantId: "participant-1",
   });
@@ -65,6 +71,72 @@ test("ddong-meong 4 archives a named content session", () => {
   assert.equal(latest.archive[0].interactionCount, 3);
   assert.equal(latest.archive[0].nickname, "노라조");
   assert.equal(latest.archive[0].outcome, "flushed");
+  assert.deepEqual(latest.archive[0].entryContext, {
+    attributes: { wing: "east" },
+    building: "n25",
+    floor: "2",
+    institution: "kaist",
+  });
+});
+
+test("ddong-meong 4 registers each proverb content with its exact title", () => {
+  const proverbContents = [
+    ["dog-poop-remedy", "개똥도 약에 쓰려면 없다"],
+    [
+      "before-after-poop",
+      "똥 누러 갈 적 마음 다르고, 올 적 마음 다르다",
+    ],
+    ["muddy-dog-husk", "똥 묻은 개가 겨 묻은 개 나무란다"],
+  ];
+
+  for (const [contentSlug, contentTitle] of proverbContents) {
+    const { broadcasts, handlers } = createHarness();
+    const sessionHandler = handlers.get(
+      ddongMeongFourExperiment.events.sessionIn,
+    );
+    sessionHandler({
+      action: "start",
+      contentSlug,
+      nickname: "속담 사람",
+      participantId: `participant-${contentSlug}`,
+    });
+
+    assert.equal(
+      broadcasts.at(-1)?.payload.activeSessions[0].contentTitle,
+      contentTitle,
+    );
+    sessionHandler({ action: "complete", outcome: "completed" });
+  }
+});
+
+test("ddong-meong 4 keeps optional location fields without requiring a full address", () => {
+  const { broadcasts, handlers } = createHarness();
+  const sessionHandler = handlers.get(
+    ddongMeongFourExperiment.events.sessionIn,
+  );
+
+  sessionHandler({
+    action: "start",
+    contentSlug: "morning-urgent",
+    entryContext: {
+      attributes: {
+        "Queue Side": "  east  ",
+        ignored: ["not-a-string"],
+      },
+      building: "  n25  ",
+      gender: "women",
+      institution: "kaist",
+    },
+    nickname: "위치 있는 사람",
+    participantId: "participant-location",
+  });
+
+  assert.deepEqual(broadcasts.at(-1)?.payload.activeSessions[0].entryContext, {
+    attributes: { "queue-side": "east" },
+    building: "n25",
+    gender: "women",
+    institution: "kaist",
+  });
 });
 
 test("ddong-meong 4 marks a backgrounded phone as paused before it disconnects", () => {

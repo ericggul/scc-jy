@@ -10,20 +10,16 @@ import type {
   DdongMeongPhase,
   DdongMeongSessionOutcome,
 } from "../../model/types";
+import { readDdongMeongEntryContext } from "../entry-context";
+import { readSavedNickname } from "../identity";
 import { useDdongMeongSocket } from "../../transport/use-ddong-meong-socket";
 
-const nicknameStorageKey = "ddong-meong:4:nickname";
 const participantStorageKey = "ddong-meong:4:participant";
 
 type MeditationSessionContent = {
   slug: string;
   title: string;
 };
-
-function readNickname() {
-  const nickname = window.sessionStorage.getItem(nicknameStorageKey)?.trim();
-  return nickname?.slice(0, 16) || "이름 없는 사람";
-}
 
 function getParticipantId() {
   const storedId = window.sessionStorage.getItem(participantStorageKey);
@@ -59,7 +55,7 @@ export function useMeditationSession(content: MeditationSessionContent) {
 
     const identity =
       identityRef.current ?? {
-        nickname: readNickname(),
+        nickname: readSavedNickname() ?? "이름 없는 사람",
         participantId: getParticipantId(),
       };
     identityRef.current = identity;
@@ -67,6 +63,7 @@ export function useMeditationSession(content: MeditationSessionContent) {
       ...identity,
       contentSlug: content.slug,
       contentTitle: content.title,
+      entryContext: readDdongMeongEntryContext(),
     });
     hasStartedRef.current = true;
     setIsStarted(true);

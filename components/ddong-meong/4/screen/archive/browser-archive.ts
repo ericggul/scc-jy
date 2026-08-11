@@ -5,6 +5,7 @@ import type {
   DdongMeongArchiveEntry,
   DdongMeongSessionOutcome,
 } from "../../model/types";
+import { isDdongMeongEntryContext } from "../../model/entry-context";
 
 const cacheKey = "ddong-meong:4:screen-archive";
 const retentionMs = 7 * 24 * 60 * 60 * 1000;
@@ -38,6 +39,8 @@ function isArchiveEntry(value: unknown): value is DdongMeongArchiveEntry {
     typeof entry.endedAt === "number" &&
     typeof entry.durationMs === "number" &&
     typeof entry.outcome === "string" &&
+    (entry.entryContext === undefined ||
+      isDdongMeongEntryContext(entry.entryContext)) &&
     outcomes.has(entry.outcome as DdongMeongSessionOutcome)
   );
 }
