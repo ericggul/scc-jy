@@ -14,6 +14,11 @@ export const ddongMeongExperiments = [
     label: "ddong-meong/3",
     status: "working",
   },
+  {
+    slug: "4",
+    label: "ddong-meong/4",
+    status: "working",
+  },
 ] as const;
 
 export type DdongMeongExperimentSlug =

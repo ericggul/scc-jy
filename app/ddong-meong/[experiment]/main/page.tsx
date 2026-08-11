@@ -4,6 +4,7 @@ import type { ComponentType } from "react";
 import DdongMeongOneMain from "@/components/ddong-meong/1/main";
 import DdongMeongTwoMain from "@/components/ddong-meong/2/main";
 import DdongMeongThreeMain from "@/components/ddong-meong/3/mobile/main";
+import DdongMeongFourMain from "@/components/ddong-meong/4/mobile/main";
 import {
   ddongMeongExperiments,
   isDdongMeongExperimentSlug,
@@ -14,6 +15,7 @@ const mainByExperiment = {
   "1": DdongMeongOneMain,
   "2": DdongMeongTwoMain,
   "3": DdongMeongThreeMain,
+  "4": DdongMeongFourMain,
 } satisfies Record<DdongMeongExperimentSlug, ComponentType>;
 
 export function generateStaticParams() {
@@ -37,6 +39,13 @@ export async function generateMetadata({
     return {
       title: "똥멍",
       description: "4분 33초 동안 몸의 감각과 호흡에 집중하는 명상.",
+    };
+  }
+
+  if (experiment === "4") {
+    return {
+      title: "똥멍",
+      description: "똥 싸는 시간을 멍때리는 시간으로 바꾸는 4분 33초.",
     };
   }
 

@@ -13,8 +13,10 @@ type AudioRequest = {
 };
 
 export function useCValCommentAudio() {
+  const maximumDecodedBuffers = 24;
   const contextRef = useRef<AudioContext | null>(null);
   const cacheRef = useRef(new Map<string, Promise<AudioBuffer>>());
+  const outputRef = useRef<DynamicsCompressorNode | null>(null);
   const pendingRef = useRef<AudioRequest | null>(null);
   const disposedRef = useRef(false);
 
@@ -32,6 +34,10 @@ export function useCValCommentAudio() {
         throw error;
       });
     cacheRef.current.set(src, request);
+    if (cacheRef.current.size > maximumDecodedBuffers) {
+      const oldest = cacheRef.current.keys().next().value;
+      if (oldest) cacheRef.current.delete(oldest);
+    }
     return request;
   }, []);
 
@@ -39,7 +45,15 @@ export function useCValCommentAudio() {
     const current = contextRef.current;
     if (current && current.state !== "closed") return current;
     const next = new AudioContext();
+    const output = next.createDynamicsCompressor();
+    output.threshold.value = -18;
+    output.knee.value = 12;
+    output.ratio.value = 8;
+    output.attack.value = 0.004;
+    output.release.value = 0.18;
+    output.connect(next.destination);
     contextRef.current = next;
+    outputRef.current = output;
     return next;
   }, []);
 
@@ -56,7 +70,9 @@ export function useCValCommentAudio() {
       const playbackRate = Math.max(0.25, request.playbackRate);
       source.buffer = buffer;
       source.playbackRate.setValueAtTime(playbackRate, sourceTime);
-      source.connect(speechGain).connect(context.destination);
+      const output = outputRef.current;
+      if (!output) return;
+      source.connect(speechGain).connect(output);
       speechGain.gain.setValueAtTime(1, sourceTime);
 
       const profanityStart = request.entry.profanityStart;
@@ -92,7 +108,7 @@ export function useCValCommentAudio() {
           Math.max(muteStart + fade, muteEnd - fade),
         );
         beepGain.gain.linearRampToValueAtTime(0, muteEnd);
-        oscillator.connect(beepGain).connect(context.destination);
+        oscillator.connect(beepGain).connect(output);
         oscillator.start(muteStart);
         oscillator.stop(muteEnd);
       }
@@ -119,6 +135,7 @@ export function useCValCommentAudio() {
 
   useEffect(() => {
     disposedRef.current = false;
+    const decodedBuffers = cacheRef.current;
     const resume = () => {
       const context = contextRef.current;
       if (context?.state === "suspended") {
@@ -137,6 +154,8 @@ export function useCValCommentAudio() {
       pendingRef.current = null;
       const context = contextRef.current;
       contextRef.current = null;
+      outputRef.current = null;
+      decodedBuffers.clear();
       window.removeEventListener("pointerdown", resume);
       window.removeEventListener("keydown", resume);
       if (context && context.state !== "closed") {

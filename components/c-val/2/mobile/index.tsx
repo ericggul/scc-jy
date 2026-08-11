@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   checkpointOrientationToParameters,
@@ -19,8 +20,9 @@ import {
   calibrateRawOrientation,
   finiteOrientationValue,
 } from "@/socket/experiments/c-val/2/orientation.mjs";
+import CValMobileV2View from "./v2/view";
 
-type MotionPermission = "idle" | "listening" | "denied" | "unavailable";
+export type MotionPermission = "idle" | "listening" | "denied" | "unavailable";
 type MotionEventConstructor = typeof DeviceMotionEvent & {
   requestPermission?: () => Promise<"granted" | "denied">;
 };
@@ -50,12 +52,30 @@ const initialControl: CValHumanControlInput = {
   sampledAt: 0,
 };
 
+export type CValMobileAxisSignal = {
+  alpha: number;
+  beta: number;
+  gamma: number;
+};
+
+const initialAxisSignal: CValMobileAxisSignal = {
+  alpha: 0,
+  beta: 0,
+  gamma: 0,
+};
+
 function finiteSensorValue(value: number | null) {
   return Number.isFinite(value) ? Number(value) : null;
 }
 
-export default function CValMobile() {
+export default function CValMobile({
+  interfaceVersion = "v1",
+}: {
+  interfaceVersion?: "v1" | "v2";
+}) {
   const [control, setControl] = useState<CValHumanControlInput>(initialControl);
+  const [axisSignal, setAxisSignal] =
+    useState<CValMobileAxisSignal>(initialAxisSignal);
   const [inputMapping, setInputMapping] =
     useState<CValInputMappingId>("current");
   const [permission, setPermission] = useState<MotionPermission>("idle");
@@ -107,6 +127,11 @@ export default function CValMobile() {
         { ...raw, absolute: event.absolute },
         baselineRef.current,
       );
+      setAxisSignal({
+        alpha: orientation.alpha,
+        beta: orientation.beta,
+        gamma: orientation.gamma,
+      });
       const mapping = inputMappingRef.current;
       const parameters =
         mapping === "c-val-1"
@@ -154,6 +179,11 @@ export default function CValMobile() {
       if (Object.values(rotationRate).every((value) => value === null)) return;
       const sampledAt = performance.now();
       const gesture = rotationRateToCValControl(rotationRate);
+      setAxisSignal({
+        alpha: rotationRate.alpha ?? 0,
+        beta: rotationRate.beta ?? 0,
+        gamma: rotationRate.gamma ?? 0,
+      });
       const nextControl = {
         ...gesture.parameters,
         engaged: gesture.engaged,
@@ -322,6 +352,7 @@ export default function CValMobile() {
     latestRawRef.current = null;
     lastSentAtRef.current = 0;
     setControl(initialControl);
+    setAxisSignal(initialAxisSignal);
     setPermission("idle");
     resetSystem();
   }
@@ -359,6 +390,25 @@ export default function CValMobile() {
         ? "#ff453a"
         : "#ffffff";
 
+  if (interfaceVersion === "v2") {
+    return (
+      <CValMobileV2View
+        price={price}
+        priceMove={priceMove}
+        priceState={priceState}
+        inputMappings={inputMappings}
+        inputMapping={inputMapping}
+        permission={permission}
+        control={control}
+        axisSignal={axisSignal}
+        recordingStatus={recordingStatus}
+        recordingMessage={recordingMessage}
+        onEnableMotion={enableMotion}
+        onSelectInputMapping={selectInputMapping}
+      />
+    );
+  }
+
   return (
     <main className="relative grid h-dvh w-dvw touch-none grid-rows-[auto_auto_1fr_auto] overflow-hidden bg-[#050505] text-white">
       <header className="flex items-center justify-between border-b border-white/[0.12] px-4 py-3 font-mono text-[11px] text-[#a1a1a6]">
@@ -367,6 +417,12 @@ export default function CValMobile() {
         </span>
         <span style={{ color: priceColor }}>{priceState}</span>
         <span>{listenerCount} LISTENER</span>
+        <Link
+          className="text-white underline decoration-white/35 underline-offset-4"
+          href="/c-val/2/mobile/v2"
+        >
+          V2
+        </Link>
       </header>
 
       <nav className="grid grid-cols-3 border-b border-white/[0.12] font-mono text-[10px]">

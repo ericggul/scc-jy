@@ -1,16 +1,27 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import InteractiveBackgroundLab from "@/components/ddong-meong/3/testing/interactive-background-lab";
+import DdongMeongThreeBackgroundLab from "@/components/ddong-meong/3/testing/interactive-background-lab";
 import {
-  backgroundExperiments,
-  findBackgroundExperiment,
+  backgroundExperiments as threeBackgroundExperiments,
+  findBackgroundExperiment as findThreeBackgroundExperiment,
 } from "@/components/ddong-meong/3/testing/interactive-background-lab/registry";
+import DdongMeongFourBackgroundLab from "@/components/ddong-meong/4/testing/interactive-background-lab";
+import {
+  backgroundExperiments as fourBackgroundExperiments,
+  findBackgroundExperiment as findFourBackgroundExperiment,
+} from "@/components/ddong-meong/4/testing/interactive-background-lab/registry";
 
 export function generateStaticParams() {
-  return backgroundExperiments.map((experiment) => ({
-    experiment: "3",
-    visual: experiment.slug,
-  }));
+  return [
+    ...threeBackgroundExperiments.map((experiment) => ({
+      experiment: "3",
+      visual: experiment.slug,
+    })),
+    ...fourBackgroundExperiments.map((experiment) => ({
+      experiment: "4",
+      visual: experiment.slug,
+    })),
+  ];
 }
 
 export async function generateMetadata({
@@ -19,15 +30,20 @@ export async function generateMetadata({
   params: Promise<{ experiment: string; visual: string }>;
 }): Promise<Metadata> {
   const { experiment, visual } = await params;
-  const backgroundExperiment = findBackgroundExperiment(visual);
+  const backgroundExperiment =
+    experiment === "3"
+      ? findThreeBackgroundExperiment(visual)
+      : experiment === "4"
+        ? findFourBackgroundExperiment(visual)
+        : undefined;
 
-  if (experiment !== "3" || !backgroundExperiment) {
+  if (!backgroundExperiment) {
     return {};
   }
 
   return {
-    title: `${backgroundExperiment.label} — ddong-meong 3`,
-    description: "ddong-meong 3 인터랙티브 배경 실험",
+    title: `${backgroundExperiment.label} — ddong-meong ${experiment}`,
+    description: `ddong-meong ${experiment} 인터랙티브 배경 실험`,
   };
 }
 
@@ -37,16 +53,28 @@ export default async function DdongMeongBackgroundTestingPage({
   params: Promise<{ experiment: string; visual: string }>;
 }) {
   const { experiment, visual } = await params;
-  const backgroundExperiment = findBackgroundExperiment(visual);
+  const threeBackgroundExperiment =
+    experiment === "3" ? findThreeBackgroundExperiment(visual) : undefined;
+  const fourBackgroundExperiment =
+    experiment === "4" ? findFourBackgroundExperiment(visual) : undefined;
 
-  if (experiment !== "3" || !backgroundExperiment) {
+  if (!threeBackgroundExperiment && !fourBackgroundExperiment) {
     notFound();
   }
 
+  if (threeBackgroundExperiment) {
+    return (
+      <DdongMeongThreeBackgroundLab
+        experiment={threeBackgroundExperiment}
+        key={threeBackgroundExperiment.slug}
+      />
+    );
+  }
+
   return (
-    <InteractiveBackgroundLab
-      experiment={backgroundExperiment}
-      key={backgroundExperiment.slug}
+    <DdongMeongFourBackgroundLab
+      experiment={fourBackgroundExperiment!}
+      key={fourBackgroundExperiment!.slug}
     />
   );
 }

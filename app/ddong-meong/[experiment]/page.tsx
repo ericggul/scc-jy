@@ -4,6 +4,7 @@ import type { ComponentType } from "react";
 import DdongMeongOneMobile from "@/components/ddong-meong/1/mobile";
 import DdongMeongTwoMobile from "@/components/ddong-meong/2/mobile";
 import DdongMeongThreeMobile from "@/components/ddong-meong/3/mobile";
+import DdongMeongFourMobile from "@/components/ddong-meong/4/mobile";
 import {
   ddongMeongExperiments,
   isDdongMeongExperimentSlug,
@@ -14,6 +15,7 @@ const mobileByExperiment = {
   "1": DdongMeongOneMobile,
   "2": DdongMeongTwoMobile,
   "3": DdongMeongThreeMobile,
+  "4": DdongMeongFourMobile,
 } satisfies Record<DdongMeongExperimentSlug, ComponentType>;
 
 export function generateStaticParams() {
@@ -37,6 +39,13 @@ export async function generateMetadata({
     return {
       title: "똥멍",
       description: "A toilet-seat meditation for letting go.",
+    };
+  }
+
+  if (experiment === "4") {
+    return {
+      title: "똥멍",
+      description: "A deadpan toilet-seat meditation for taking a proper poop break.",
     };
   }
 

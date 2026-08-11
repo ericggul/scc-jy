@@ -4,6 +4,7 @@ import type { ComponentType } from "react";
 import DdongMeongOneScreen from "@/components/ddong-meong/1/screen";
 import DdongMeongTwoScreen from "@/components/ddong-meong/2/screen";
 import DdongMeongThreeScreen from "@/components/ddong-meong/3/screen";
+import DdongMeongFourScreen from "@/components/ddong-meong/4/screen";
 import {
   ddongMeongExperiments,
   isDdongMeongExperimentSlug,
@@ -14,6 +15,7 @@ const screenByExperiment = {
   "1": DdongMeongOneScreen,
   "2": DdongMeongTwoScreen,
   "3": DdongMeongThreeScreen,
+  "4": DdongMeongFourScreen,
 } satisfies Record<DdongMeongExperimentSlug, ComponentType>;
 
 export function generateStaticParams() {
@@ -33,7 +35,7 @@ export async function generateMetadata({
     return {};
   }
 
-  if (experiment === "3") {
+  if (experiment === "3" || experiment === "4") {
     return { title: "똥멍: 대시보드" };
   }
 

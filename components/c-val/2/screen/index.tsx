@@ -6,6 +6,7 @@ import CValMediaScreen from "./media";
 import CValNewsScreen from "./news";
 import CValCasinoScreen from "./casino";
 import CValCommentsScreen from "./comments";
+import CValCommentsLegacyScreen from "./comments-legacy";
 import CValGraphsScreen from "./graphs";
 import CValRawScreen from "./raw";
 import CValRollercoasterScreen from "./rollercoaster";
@@ -43,6 +44,7 @@ const Pane = styled.div<{ $screenId?: CValTwoScreenId }>`
 function ScreenContent({ screenId, snapshot }: { screenId: CValTwoScreenId; snapshot: CValSnapshot }) {
   if (screenId === "casino") return <CValCasinoScreen snapshot={snapshot} />;
   if (screenId === "comments") return <CValCommentsScreen snapshot={snapshot} />;
+  if (screenId === "comments-legacy") return <CValCommentsLegacyScreen snapshot={snapshot} />;
   if (screenId === "graphs") return <CValGraphsScreen snapshot={snapshot} />;
   if (screenId === "raw") return <CValRawScreen snapshot={snapshot} />;
   if (screenId === "news") return <CValNewsScreen snapshot={snapshot} />;

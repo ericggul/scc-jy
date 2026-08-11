@@ -1,0 +1,15 @@
+.qr,
+.placeholder {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+}
+
+.qr {
+  fill: #f4eee8;
+}
+
+.placeholder {
+  opacity: 0;
+}

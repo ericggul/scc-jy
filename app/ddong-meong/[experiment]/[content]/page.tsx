@@ -27,6 +27,8 @@ import {
 } from "@/components/ddong-meong/2/model/content-catalog";
 import DdongMeongThreeContent from "@/components/ddong-meong/3/mobile/content";
 import { mobileMeditationContents as threeMeditationContents } from "@/components/ddong-meong/3/mobile/content/registry";
+import DdongMeongFourContent from "@/components/ddong-meong/4/mobile/content";
+import { mobileMeditationContents as fourMeditationContents } from "@/components/ddong-meong/4/mobile/content/registry";
 
 const oneContentComponents = {
   dummy: DdongMeongOneDummy,
@@ -62,6 +64,11 @@ const contentRoutes = [
     meditation,
     Content: () => <DdongMeongThreeContent slug={meditation.slug} />,
   })),
+  ...fourMeditationContents.map((meditation) => ({
+    experiment: "4" as const,
+    meditation,
+    Content: () => <DdongMeongFourContent slug={meditation.slug} />,
+  })),
 ];
 
 function findContentRoute(experiment: string, content: string) {
@@ -90,7 +97,7 @@ export async function generateMetadata({
     return {};
   }
 
-  if (experiment === "3") {
+  if (experiment === "3" || experiment === "4") {
     return {
       title: "똥멍",
       description: route.meditation.description,

@@ -3,6 +3,7 @@ import {
   selectCValNewsHeadline,
   type CValNewsHeadlineFamily,
 } from "./headlines";
+import { cValSocialAdmissionIntervalMs } from "../cadence";
 
 export type CValNewsEvent = {
   id: string;
@@ -17,12 +18,6 @@ export type CValNewsEvent = {
 
 type MarketDirection = "up" | "down" | "flat";
 
-const NEWS_CADENCE_ANCHORS = [
-  { movePercent: 0, intervalMs: 400 },
-  { movePercent: 30, intervalMs: 30 },
-] as const;
-const NEWS_CADENCE_EASE_OUT_EXPONENT = 2.2;
-
 /**
  * One second is one C-VAL market day. News stays deliberately slower than the
  * matching engine: quiet markets wait 400 ms; a 30% market-day extreme reaches
@@ -31,17 +26,7 @@ const NEWS_CADENCE_EASE_OUT_EXPONENT = 2.2;
  * 30% stay at 30 ms without a visible cadence step.
  */
 export function cValNewsAdmissionIntervalMs(oneSecondMovePercent: number) {
-  const highestAnchor = NEWS_CADENCE_ANCHORS.at(-1)!;
-  const quietAnchor = NEWS_CADENCE_ANCHORS[0];
-  const magnitude = Math.max(
-    0,
-    Math.abs(Number.isFinite(oneSecondMovePercent) ? oneSecondMovePercent : 0),
-  );
-  const normalizedMove = Math.min(magnitude / highestAnchor.movePercent, 1);
-  const easedProgress = 1 - (1 - normalizedMove) ** NEWS_CADENCE_EASE_OUT_EXPONENT;
-  const logInterval = Math.log(quietAnchor.intervalMs)
-    + (Math.log(highestAnchor.intervalMs) - Math.log(quietAnchor.intervalMs)) * easedProgress;
-  return Math.round(Math.exp(logInterval));
+  return cValSocialAdmissionIntervalMs(oneSecondMovePercent);
 }
 
 function directionFor(change: number): MarketDirection {
