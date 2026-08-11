@@ -96,12 +96,19 @@ export default function CValMediaScreen({ snapshot }: { snapshot: CValSnapshot }
     if (!tileContext) return;
     let frame = 0;
     let disposed = false;
+    const usesVideoFrameCallback = typeof video.requestVideoFrameCallback === "function";
 
     const resize = () => {
       const bounds = canvas.getBoundingClientRect();
       const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
       canvas.width = Math.max(1, Math.round(bounds.width * pixelRatio));
       canvas.height = Math.max(1, Math.round(bounds.height * pixelRatio));
+    };
+
+    const scheduleDraw = () => {
+      frame = usesVideoFrameCallback
+        ? video.requestVideoFrameCallback(draw)
+        : window.requestAnimationFrame(draw);
     };
 
     const draw = () => {
@@ -115,14 +122,16 @@ export default function CValMediaScreen({ snapshot }: { snapshot: CValSnapshot }
         const { activeCount, dimension, cellOrder: currentOrder } = drawStateRef.current;
         const cellWidth = canvas.width / dimension;
         const cellHeight = canvas.height / dimension;
-        tile.width = Math.max(1, Math.ceil(cellWidth));
-        tile.height = Math.max(1, Math.ceil(cellHeight));
+        const tileWidth = Math.max(1, Math.ceil(cellWidth));
+        const tileHeight = Math.max(1, Math.ceil(cellHeight));
+        if (tile.width !== tileWidth) tile.width = tileWidth;
+        if (tile.height !== tileHeight) tile.height = tileHeight;
         drawCover(tileContext, video, tile.width, tile.height);
         currentOrder.slice(0, activeCount).forEach(({ column, row }) => {
           context.drawImage(tile, column * cellWidth, row * cellHeight, cellWidth, cellHeight);
         });
       }
-      frame = window.requestAnimationFrame(draw);
+      scheduleDraw();
     };
 
     const observer = new ResizeObserver(resize);
@@ -148,7 +157,7 @@ export default function CValMediaScreen({ snapshot }: { snapshot: CValSnapshot }
     window.addEventListener("pointerdown", resumeWithSound);
     window.addEventListener("keydown", resumeWithSound);
     startPlayback();
-    draw();
+    scheduleDraw();
 
     return () => {
       disposed = true;
@@ -157,7 +166,11 @@ export default function CValMediaScreen({ snapshot }: { snapshot: CValSnapshot }
       video.removeEventListener("canplaythrough", startPlayback);
       window.removeEventListener("pointerdown", resumeWithSound);
       window.removeEventListener("keydown", resumeWithSound);
-      window.cancelAnimationFrame(frame);
+      if (usesVideoFrameCallback) {
+        video.cancelVideoFrameCallback(frame);
+      } else {
+        window.cancelAnimationFrame(frame);
+      }
       video.pause();
     };
   }, [segment]);

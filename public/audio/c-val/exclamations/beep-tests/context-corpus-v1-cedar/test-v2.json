@@ -1,0 +1,11 @@
+{
+  "source": "/audio/c-val/exclamations/runs/context-corpus-v1-cedar/seoul-casual-u005-take-01.wav",
+  "output": "/audio/c-val/exclamations/beep-tests/context-corpus-v1-cedar/seoul-casual-u005-take-01-beep-v2.wav",
+  "text": "아니, 씨발.",
+  "censoredText": "아니, (삐—).",
+  "profanityStartSeconds": 0.782,
+  "profanityEndSeconds": 1.394125,
+  "beepFrequencyHz": 1000,
+  "beepLevelFactor": 0.9,
+  "method": "mute the profanity interval in the original track and overlay the beep"
+}

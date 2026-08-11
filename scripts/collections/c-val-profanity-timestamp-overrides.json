@@ -1,0 +1,84 @@
+{
+  "context-corpus-v1-cedar": {
+    "jeju-u068-take-01.wav": {
+      "status": "missing-in-source-audio",
+      "reason": "Local transcription covers the expected non-profanity phrase through the end of the short clip; no separate profanity performance remains."
+    },
+    "jeonju-jeonbuk-u006-take-01.wav": {
+      "status": "present",
+      "activeStart": 0,
+      "activeEnd": 0.614,
+      "reason": "The initial untranscribed utterance ends at the first -42 dBFS silence boundary; the recognized '지금?' begins after the pause."
+    },
+    "seoul-casual-u052-take-01.wav": {
+      "status": "present",
+      "activeStart": 0,
+      "activeEnd": 0.608708,
+      "reason": "The initial untranscribed utterance ends at the first -42 dBFS silence boundary; the recognized remainder begins after the pause."
+    },
+    "seoul-casual-u064-take-01.wav": {
+      "status": "missing-in-source-audio",
+      "reason": "The 0.379-second source contains only the recognized '뭐지?' performance and no remaining profanity interval."
+    }
+  },
+  "context-corpus-v1-marin": {
+    "busan-gyeongnam-u018-take-01.wav": {
+      "status": "missing-in-source-audio",
+      "reason": "The recognized non-profanity phrase occupies the source through its ending; no separate final profanity performance remains."
+    },
+    "daegu-gyeongbuk-u053-take-01.wav": {
+      "status": "missing-in-source-audio",
+      "reason": "The recognized non-profanity phrase occupies the source through its ending; no separate final profanity performance remains."
+    },
+    "daejeon-chungnam-u053-take-01.wav": {
+      "status": "missing-in-source-audio",
+      "reason": "The recognized non-profanity phrase occupies the source through its ending; no separate final profanity performance remains."
+    },
+    "gangneung-yeongdong-u052-take-01.wav": {
+      "status": "present",
+      "activeStart": 0,
+      "activeEnd": 0.848292,
+      "reason": "The initial untranscribed utterance ends at the first -42 dBFS silence boundary; the recognized remainder begins after the pause."
+    },
+    "gwangju-jeonnam-u004-take-01.wav": {
+      "status": "present",
+      "activeStart": 0,
+      "activeEnd": 0.895417,
+      "reason": "Whisper rendered the initial profanity as '시백'; its end is confirmed by the following -42 dBFS silence boundary."
+    },
+    "gwangju-jeonnam-u009-take-01.wav": {
+      "status": "missing-in-source-audio",
+      "reason": "The short source contains only the recognized '진짜네.' performance and no remaining final profanity interval."
+    },
+    "gwangju-jeonnam-u021-take-01.wav": {
+      "status": "present",
+      "activeStart": 1.27675,
+      "activeEnd": 1.805,
+      "reason": "A distinct final utterance begins after the long -42 dBFS silence and continues to the source end."
+    },
+    "gwangju-jeonnam-u064-take-01.wav": {
+      "status": "missing-in-source-audio",
+      "reason": "The 0.602-second source contains only the recognized '뭐지?' performance and no remaining profanity interval."
+    },
+    "jeju-u019-take-01.wav": {
+      "status": "present",
+      "activeStart": 0,
+      "activeEnd": 0.508,
+      "reason": "The initial untranscribed utterance ends at the first -42 dBFS silence boundary; the recognized '아니야.' begins after the pause."
+    },
+    "seoul-casual-u006-take-01.wav": {
+      "status": "present",
+      "activeStart": 0,
+      "activeEnd": 1.152417,
+      "reason": "Whisper rendered the initial profanity as '시~~바이'; its end is confirmed by the following -42 dBFS silence boundary."
+    },
+    "seoul-casual-u051-take-01.wav": {
+      "status": "missing-in-source-audio",
+      "reason": "The short source contains only the recognized '또 시작이네.' performance and no remaining final profanity interval."
+    },
+    "seoul-casual-u056-take-01.wav": {
+      "status": "missing-in-source-audio",
+      "reason": "The short source contains only the recognized '그래.' performance and no distinct final profanity interval."
+    }
+  }
+}

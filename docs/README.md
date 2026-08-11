@@ -34,7 +34,7 @@ get a dedicated document.
 
 | Code family | Registered variants | Documentation |
 | --- | --- | --- |
-| `components/ddong-meong` | `1`, `2`, `3` | [ddong-meong](./experiments/ddong-meong/README.md) · [3 baseline](./experiments/ddong-meong/3.md) · [3 spatial interaction lab](./experiments/ddong-meong/3-interaction-drop-test.md) |
+| `components/ddong-meong` | `1`, `2`, `3` | [ddong-meong](./experiments/ddong-meong/README.md) · [3 baseline](./experiments/ddong-meong/3.md) · [3 spatial interaction lab](./experiments/ddong-meong/3-interaction-drop-test.md) · [3 flush vortex](./experiments/ddong-meong/3-flush-vortex-2026-08-11.md) |
 | `components/dashboard/palantir` | `1` | [palantir/1](./experiments/dashboard/palantir/1.md) |
 | `components/dashboard/stock` | `default`, `1`, `2`, `3`, `4` | [stock index](./experiments/dashboard/stock/README.md) |
 | `components/realtime/calendar` | `default`, `1` | [calendar](./experiments/realtime/calendar/README.md) |

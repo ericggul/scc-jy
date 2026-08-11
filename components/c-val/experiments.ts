@@ -6,7 +6,7 @@ export const cValOneScreenIds = [
 ] as const;
 
 export const cValTwoScreenIds = ["rollercoaster", "news", "media"] as const;
-export const cValTwoStandaloneScreenIds = ["casino", "graphs", "raw"] as const;
+export const cValTwoStandaloneScreenIds = ["casino", "graphs", "raw", "comments"] as const;
 
 export type CValOneScreenId = (typeof cValOneScreenIds)[number];
 export type CValTwoScreenId =

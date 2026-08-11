@@ -1,0 +1,10 @@
+{
+  "source": "/audio/c-val/exclamations/runs/context-corpus-v1-cedar/busan-gyeongnam-u003-take-01.wav",
+  "output": "/audio/c-val/exclamations/beep-tests/context-corpus-v1-cedar/busan-gyeongnam-u003-take-01-beep.wav",
+  "text": "뭐야 씨발, 진짜?",
+  "censoredText": "뭐야 (삐—), 진짜?",
+  "profanityStartSeconds": 0.76,
+  "profanityEndSeconds": 1.41,
+  "beepFrequencyHz": 1000,
+  "beepLevelFactor": 1.4
+}

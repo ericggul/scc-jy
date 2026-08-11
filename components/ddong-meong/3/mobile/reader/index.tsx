@@ -58,7 +58,6 @@ type FlushState = {
 
 const preludeDurationMs = 2000;
 const flushDrainDurationMs = 2800;
-const flushHoldDurationMs = 5500;
 const showTimeBar = true;
 
 function formatClock(totalSeconds: number) {
@@ -291,7 +290,7 @@ export default function ReadingPage({
 
     const returnTimer = window.setTimeout(() => {
       router.replace("/ddong-meong/3/main");
-    }, flushDrainDurationMs + flushHoldDurationMs);
+    }, flushDrainDurationMs);
 
     return () => window.clearTimeout(returnTimer);
   }, [flushState, router]);

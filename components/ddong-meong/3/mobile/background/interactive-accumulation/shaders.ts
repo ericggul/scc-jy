@@ -242,15 +242,27 @@ export const backgroundFragmentShader = `
     vec2 drainCenter = vec2(0.5 * aspect, -0.08);
     vec2 drainVector = fieldUv - drainCenter;
     float drainRadius = length(drainVector);
-    float drainAngle = -sin(drainProgress * 3.14159265);
-    drainAngle *= 2.1 * (1.0 - smoothstep(0.08, 1.0, drainRadius));
+    float vortexProgress = pow(drainProgress, 0.58);
+    float drainCore = 1.0 - smoothstep(0.08, 1.08, drainRadius);
+    float drainAngle = vortexProgress * (0.86 + drainCore * 3.9);
     mat2 drainRotation = mat2(
       cos(drainAngle),
       -sin(drainAngle),
       sin(drainAngle),
       cos(drainAngle)
     );
-    fieldUv = drainCenter + drainRotation * drainVector;
+    float sourceExpansion = mix(1.0, 2.12, vortexProgress);
+    fieldUv = drainCenter + drainRotation * drainVector * sourceExpansion;
+    vec2 fieldWarp = vec2(
+      fbm(fieldUv * vec2(1.7, 2.1) + slowDrift),
+      fbm(fieldUv * vec2(1.9, 1.6) - slowDrift + 7.4)
+    ) - 0.5;
+    float fieldBroadFlow = fbm(
+      fieldUv * vec2(2.0, 2.7) + fieldWarp * 0.9 + slowDrift
+    );
+    float fieldFineFlow = fbm(
+      fieldUv * vec2(5.2, 6.4) - fieldWarp * 0.55 - slowDrift * 1.7
+    );
     float leftPool = 1.0 - smoothstep(
       0.04,
       0.74,
@@ -261,9 +273,29 @@ export const backgroundFragmentShader = `
       0.68,
       distance(fieldUv, vec2((0.86 + cos(flowTime * 0.014) * 0.05) * aspect, 0.6))
     );
-    vec3 fieldColor = mix(uDeepColor, uMiddleColor, 0.28 + broadFlow * 0.5);
-    fieldColor = mix(fieldColor, uSurfaceColor, leftPool * (0.08 + fineFlow * 0.12));
-    fieldColor = mix(fieldColor, uHighlightColor, rightPool * 0.045);
+    vec3 restingFieldColor = mix(
+      uDeepColor,
+      uMiddleColor,
+      0.28 + broadFlow * 0.5
+    );
+    restingFieldColor = mix(
+      restingFieldColor,
+      uSurfaceColor,
+      leftPool * (0.08 + fineFlow * 0.12)
+    );
+    restingFieldColor = mix(restingFieldColor, uHighlightColor, rightPool * 0.045);
+    vec3 vortexFieldColor = mix(
+      uDeepColor,
+      uMiddleColor,
+      0.22 + fieldBroadFlow * 0.6
+    );
+    vortexFieldColor = mix(
+      vortexFieldColor,
+      uSurfaceColor,
+      0.04 + fieldFineFlow * 0.18
+    );
+    vortexFieldColor = mix(vortexFieldColor, uHighlightColor, leftPool * 0.07);
+    vec3 fieldColor = mix(restingFieldColor, vortexFieldColor, vortexProgress);
     fieldColor = mix(fieldColor, uDeepColor, normalizedDepth * 0.18);
     color = mix(color, fieldColor, fieldMask);
     float boundaryHighlight = 1.0 - smoothstep(
@@ -405,19 +437,22 @@ export const particleVertexShader = `
       float verticalFlow = sin(aSeed.x * 8.0 - flowTime * 0.08 + aSeed.z * 5.0) * uReservoirFlow.z;
       particlePosition = vec2(aSeed.x + horizontalFlow / aspect, baseY + verticalFlow);
 
-      float suctionPulse = sin(drainProgress * 3.14159265);
-      float swirl = sin(baseY * 19.0 + aSeed.z * 8.0 + drainProgress * 13.0);
-      swirl *= suctionPulse * 0.045 / aspect;
-      particlePosition.x = mix(
-        particlePosition.x,
-        0.5 + swirl,
-        pow(drainProgress, 1.25)
+      vec2 drainCenter = vec2(0.5, -0.08);
+      vec2 drainVector =
+        (particlePosition - drainCenter) * vec2(aspect, 1.0);
+      float drainRadius = length(drainVector);
+      float vortexProgress = pow(drainProgress, 0.58);
+      float drainCore = 1.0 - smoothstep(0.08, 1.08, drainRadius);
+      float drainAngle = -vortexProgress * (0.86 + drainCore * 3.9);
+      mat2 drainRotation = mat2(
+        cos(drainAngle),
+        -sin(drainAngle),
+        sin(drainAngle),
+        cos(drainAngle)
       );
-      particlePosition.y = mix(
-        particlePosition.y,
-        -0.12 - aSeed.w * 0.1,
-        drainProgress
-      );
+      float drainContraction = mix(1.0, 0.12, vortexProgress);
+      particlePosition = drainCenter +
+        drainRotation * drainVector * drainContraction / vec2(aspect, 1.0);
 
       float inside = 1.0 - smoothstep(localFront - 0.018, localFront, baseY);
       float edge = exp(-abs(baseY - localFront) * 5.5);

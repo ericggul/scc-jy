@@ -65,15 +65,16 @@ Every version is a complete compatible system:
 | --- | --- | --- |
 | Mobile | `/c-val/[version]/mobile` | Permission, version-specific sensor capture, V/A/L preview, input transmission |
 | Controller | `/c-val/[version]/controller` | Full market observation and authorized reset |
-| Individual screen | `/c-val/[version]/screen/[screen]` | V1 selects `market`, `news`, `media`, or `employment`; V2 actively composes `rollercoaster`, `news`, and `media`, with `casino`, `graphs`, and `raw` available as additional standalone screens |
+| Individual screen | `/c-val/[version]/screen/[screen]` | V1 selects `market`, `news`, `media`, or `employment`; V2 actively composes `rollercoaster`, `news`, and `media`, with `casino`, `graphs`, `raw`, and `comments` available as additional standalone screens |
 | Whole screen set | `/c-val/[version]/screen/whole` | Composes all registered screens |
 
 C-VAL 1 preserves its four-screen initial wrapper. C-VAL 2's active whole set
 remains a carried 28-point price track, financial/economic/social news, and
 audiovisual media. Casino is a price-register instrument, graphs is a
 100-graph market matrix, and raw preserves an intentionally unstyled C-VAL
-text-flow field; all are additional standalone screens and do not change that
-composition.
+text-flow field. Comments turns actual rapid one-second movement into bounded
+context-minimal voice reactions and a typographic comment field. All four are
+additional standalone screens and do not change the active composition.
 
 ## Ownership map
 
@@ -214,6 +215,12 @@ requested, against an already-running HTTPS server.
   motion verification.
 - [Voice iteration](./voice-iteration.md): version-independent emotional speech
   batch generator and prompt ledger.
+- [Profanity timestamp and beep workflow](./beep-censoring.md): original-audio
+  preservation, per-file alignment sidecars, accepted beep parameters, runtime
+  Web Audio scheduling, and the acceptance audit.
+- [C-VAL 2 comments screen](./2-comments.md): rapid-move admission, deterministic
+  dialect and performance selection, bounded text field, and runtime censored
+  speech playback.
 - [Discord external publisher](./external-publisher.md): C-VAL-wide Discord
   transport and the V2 community-stream interpreter.
 - [Slack external publisher](./slack-publisher.md): C-VAL-wide Slack Incoming

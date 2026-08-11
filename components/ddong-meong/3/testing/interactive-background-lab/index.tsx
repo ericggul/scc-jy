@@ -11,7 +11,6 @@ import { backgroundExperiments } from "./registry";
 import styles from "./styles.module.css";
 
 const flushDrainDurationMs = 2800;
-const flushHoldDurationMs = 700;
 const labTimelineDurationMs = 60_000;
 
 type LabFlushState = {
@@ -62,7 +61,7 @@ export default function InteractiveBackgroundLab({
       setSettledDropCount(0);
       setStartedAt(createLabStartedAt());
       setFlushState(null);
-    }, flushDrainDurationMs + flushHoldDurationMs);
+    }, flushDrainDurationMs);
 
     return () => window.clearTimeout(resetTimer);
   }, [flushState]);

@@ -1,7 +1,14 @@
 import type { CValSnapshot } from "@/components/c-val/2/model";
 import { cValPriceChange } from "../social-presenter";
+import {
+  C_VAL_MEDIA_CELLS_PER_PERCENT,
+  C_VAL_MEDIA_MAX_CELLS,
+} from "./config";
 
-export const C_VAL_MEDIA_MAX_CELLS = 100;
+export {
+  C_VAL_MEDIA_CELLS_PER_PERCENT,
+  C_VAL_MEDIA_MAX_CELLS,
+} from "./config";
 
 export type CValMediaLayout = {
   direction: "gain" | "loss" | "quiet";
@@ -13,7 +20,12 @@ export function cValMediaLayoutFromChange(change: number): CValMediaLayout {
   const safeChange = Number.isFinite(change) ? change : 0;
   const activeCount = Math.min(
     C_VAL_MEDIA_MAX_CELLS,
-    safeChange === 0 ? 0 : Math.max(1, Math.ceil(Math.abs(safeChange) * 2)),
+    safeChange === 0
+      ? 0
+      : Math.max(
+          1,
+          Math.ceil(Math.abs(safeChange) * C_VAL_MEDIA_CELLS_PER_PERCENT),
+        ),
   );
   return {
     direction: safeChange > 0 ? "gain" : safeChange < 0 ? "loss" : "quiet",
