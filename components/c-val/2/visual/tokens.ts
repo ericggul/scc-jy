@@ -74,6 +74,18 @@ export const cValBloombergScreenProfiles = {
     job: "compare current conditions, evidence, and outcomes at once",
     wrapper: "shared frame, compact functional panels, and aligned records",
   },
+  executionWorkstation: {
+    job: "read the latest execution against its immediate price-discovery evidence",
+    wrapper: "shared frame, compact quote context, actual tape, order book, and trace",
+  },
+  trajectoryWorkstation: {
+    job: "read a bounded execution-price path, its direction, and its reversals",
+    wrapper: "shared frame, one actual path chart, and complete chronological records",
+  },
+  graphMatrix: {
+    job: "scan the market's actual signals across synchronized bounded time windows",
+    wrapper: "shared frame and one fixed small-multiple grid with semantic data lines",
+  },
   typographicField: {
     job: "make market movement legible as an information field over time",
     wrapper: "own surface; borrow only semantic hierarchy and bounded motion",

@@ -1,4 +1,9 @@
-# C-VAL 2 rollercoaster screen
+# C-VAL 2 rollercoaster screen — retired physical-rail trial
+
+> **Historical record — retired from the active route on 2026-08-11.** The
+> physical rail interpretation below is retained as a useful failed trial. The
+> active `/c-val/2/screen/rollercoaster` is an execution-trajectory
+> workstation; see [the Bloomberg screen rebuild record](./2-bloomberg-screen-rebuild-2026-08-11.md).
 
 > Current redesign date: 2026-08-06
 > Route: `/c-val/2/screen/rollercoaster`  
@@ -89,11 +94,11 @@ C-VAL 1 retains its archived four-screen contract unchanged.
 ## Current result and unresolved question
 
 The direct `market` graph and C-VAL 2 `employment` screen were removed. The
-legacy route remains available at `/c-val/2/screen/rollercoaster-legacy` as a
-preserved two-dimensional Canvas trial and is excluded from the active whole
-composition. The active route uses a responsive perspective camera, saturated
-market-colour field, and deliberately sparse studio architecture: no city,
-crowd, dashboard, labels, logo, particle field, or environmental decoration.
+two-dimensional Canvas trial is retained only in
+`components/c-val/2/screen-legacy/rollercoaster-legacy/`; its former direct
+public route is deregistered and excluded from the active whole composition.
+The later active route described in this historical record was itself retired
+on 2026-08-11; see the Bloomberg rebuild record for the current interface.
 
 The redesign changes only surrounding representation and rendering. It does
 not alter phone input, V/A/L equations, market agents, execution logic, or

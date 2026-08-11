@@ -20,17 +20,22 @@ material event at that screen coordinate.
   content surface and passes only `{ x, y, startedAt, id }` to the background;
 - finger skating follows the repository pattern: pointer capture begins at
   press and the currently moving coordinate is resolved while the pointer
-  remains down. Each pointer contributes at most one current trace segment per
+  remains down. Each pointer contributes one current trace segment per
   animation frame; coalesced samples retain the distance travelled within that
   frame. The segment spans its previously rendered coordinate to its current
-  coordinate, rather than snapping to fixed spatial steps. Pointer up, cancel,
-  and lost capture end only that pointer stream; hover never emits;
-- when a captured pointer remains stationary, it releases a separate `hold`
-  event every profile-scaled 160–280 ms. A hold is anchored at the contact
-  coordinate, contributes one quarter of one press on landing, and uses the
-  automatic fall's full wandering path translated to that coordinate. Any
-  meaningful movement suppresses hold events, so the existing moving trace is
-  retained unchanged;
+  coordinate, rather than snapping to fixed spatial steps. Each segment remains
+  visible for its complete fall duration and contributes its own travelled
+  distance only when it lands. Pointer up, cancel, and lost capture end only
+  that pointer stream; hover never emits;
+- after a 72 ms stationary-contact recognition, a captured pointer starts one
+  persistent `hold` stream at the contact coordinate. That stream uses the
+  automatic fall's phase and wandering path translated to the contact
+  coordinate, with no phrase-gap between successive falls; it is not a
+  sequence of separately spawned drops.
+  Only after its first fall duration has elapsed, its landed volume advances in
+  profile-scaled 160–280 ms ticks at one quarter of one press per tick. Any
+  meaningful movement ends the hold stream immediately, so the existing moving
+  trace is retained unchanged;
 - keyboard activation uses the surface centre; wheel input has no visual action;
 - every press produces an immediate falling event. During skating, the trace
   follows the live coordinate once per display frame; there is no input queue,
@@ -72,15 +77,18 @@ The continuous automatic layer has its own static GPU geometry and no manual
 interaction state. Presses and skating traces use separate reusable GPU batches (the solid form
 uses instanced batches). A trace segment has fourteen percent of a press's visible
 particle budget, while its accumulation amount integrates the actual travelled
-distance. Stationary holds use their own batch, keeping their coordinate-local
-automatic path separate from the moving trace. Releases are swept at render
+distance. A stationary pointer occupies one persistent hold slot rather than
+growing a series of visual events; it has a coordinate-local automatic path
+separate from the moving trace. Every visible press and trace segment keeps its
+complete fall life and its own landed amount. Releases are swept at render
 cadence rather than with one timer per event. The interaction stream mutates
-outside React rendering, so continuous trace events reach WebGL directly and
-only settled height updates re-render the reader. Inactive solid instances are
-clipped in the vertex stage, and the solid renderer reduces then restores its
-pixel ratio only after sustained frame pressure. Batch allocation grows only
-when concurrent input actually requires it. At count zero, the field remains
-absent while the independent `/2` fall layer is already running.
+outside React rendering. Each source exposes a mutation version, so unchanged
+frames do not allocate a new drop array, scan slots, or upload interactive GPU
+attributes. Interactive attributes use dynamic GPU buffers, and inactive
+particle and solid instances are clipped in the vertex stage. The existing
+solid-only pixel-ratio safeguard is retained. Batch allocation grows only when
+concurrent input actually requires it. At count zero, the field remains absent
+while the independent `/2` fall layer is already running.
 
 ## Test route and flush definition
 

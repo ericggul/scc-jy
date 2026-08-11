@@ -90,6 +90,8 @@ export default function InteractiveBackgroundLab({
           flushDurationMs={flushDrainDurationMs}
           flushStartedAt={flushState?.startedAt ?? null}
           frozenElapsedMs={flushState?.frozenElapsedMs ?? null}
+          pausedAt={null}
+          pausedDurationMs={0}
           settledDropCount={settledDropCount}
           profile={experiment.profile}
           startedAt={startedAt}

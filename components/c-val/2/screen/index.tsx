@@ -5,9 +5,9 @@ import styled from "styled-components";
 import CValMediaScreen from "./media";
 import CValNewsScreen from "./news";
 import CValCasinoScreen from "./casino";
-import CValCasinoLegacyScreen from "./casino-legacy";
+import CValGraphsScreen from "./graphs";
+import CValRawScreen from "./raw";
 import CValRollercoasterScreen from "./rollercoaster";
-import CValRollercoasterLegacyScreen from "./rollercoaster-legacy";
 import { createInitialCValSnapshot, type CValSnapshot } from "@/components/c-val/2/model";
 import { useCValSocket } from "@/components/c-val/2/transport";
 import type { CValTwoScreenId } from "@/components/c-val/experiments";
@@ -41,12 +41,10 @@ const Pane = styled.div<{ $screenId?: CValTwoScreenId }>`
 
 function ScreenContent({ screenId, snapshot }: { screenId: CValTwoScreenId; snapshot: CValSnapshot }) {
   if (screenId === "casino") return <CValCasinoScreen snapshot={snapshot} />;
-  if (screenId === "casino-legacy") return <CValCasinoLegacyScreen snapshot={snapshot} />;
+  if (screenId === "graphs") return <CValGraphsScreen snapshot={snapshot} />;
+  if (screenId === "raw") return <CValRawScreen snapshot={snapshot} />;
   if (screenId === "news") return <CValNewsScreen snapshot={snapshot} />;
   if (screenId === "media") return <CValMediaScreen snapshot={snapshot} />;
-  if (screenId === "rollercoaster-legacy") {
-    return <CValRollercoasterLegacyScreen snapshot={snapshot} />;
-  }
   return <CValRollercoasterScreen snapshot={snapshot} />;
 }
 

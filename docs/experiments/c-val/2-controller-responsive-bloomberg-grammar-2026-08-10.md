@@ -16,6 +16,11 @@ The reusable C-VAL wrapper, its code primitives, screen-role profiles, and
 adoption limits are defined in the [Bloomberg workstation visual wrapper](./bloomberg-visual-wrapper.md).
 This record remains the controller-specific responsive-scale trial.
 
+> **2026-08-11 scope note.** The controller scaling contract in this record is
+> retained. Its then-current screen comments about three drums and a physical
+> rail are historical only: the active casino and rollercoaster screen
+> contracts are now defined in [the Bloomberg screen rebuild record](./2-bloomberg-screen-rebuild-2026-08-11.md).
+
 The current six-area composition is retained:
 
 1. market conditions;

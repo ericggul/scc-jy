@@ -65,13 +65,15 @@ Every version is a complete compatible system:
 | --- | --- | --- |
 | Mobile | `/c-val/[version]/mobile` | Permission, version-specific sensor capture, V/A/L preview, input transmission |
 | Controller | `/c-val/[version]/controller` | Full market observation and authorized reset |
-| Individual screen | `/c-val/[version]/screen/[screen]` | V1 selects `market`, `news`, `media`, or `employment`; V2 actively composes `rollercoaster`, `news`, and `media`, with `casino` available as an additional standalone screen |
+| Individual screen | `/c-val/[version]/screen/[screen]` | V1 selects `market`, `news`, `media`, or `employment`; V2 actively composes `rollercoaster`, `news`, and `media`, with `casino`, `graphs`, and `raw` available as additional standalone screens |
 | Whole screen set | `/c-val/[version]/screen/whole` | Composes all registered screens |
 
 C-VAL 1 preserves its four-screen initial wrapper. C-VAL 2's active whole set
-remains the execution-price rollercoaster, financial/economic/social news, and
-audiovisual media. The casino is an additional standalone screen trial and
-does not change that composition.
+remains a carried 28-point price track, financial/economic/social news, and
+audiovisual media. Casino is a price-register instrument, graphs is a
+100-graph market matrix, and raw preserves an intentionally unstyled C-VAL
+text-flow field; all are additional standalone screens and do not change that
+composition.
 
 ## Ownership map
 
@@ -194,8 +196,14 @@ requested, against an already-running HTTPS server.
   and adoption review.
 - [C-VAL 2 Bloomberg news migration](./2-news-bloomberg-migration-2026-08-10.md):
   preserved screen archive and the bounded active news-monitor trial.
-- [C-VAL 2 casino screen](./2-casino.md): execution-return slot-machine
-  presentation contract and retained visual/information boundaries.
+- [C-VAL 2 Bloomberg screen rebuild](./2-bloomberg-screen-rebuild-2026-08-11.md):
+  superseded execution-monitor / trajectory-monitor trial and its recorded
+  visual grammar and performance limits.
+- [C-VAL 2 casino + rollercoaster reconsideration](./2-casino-rollercoaster-reconsideration-2026-08-11.md):
+  accepted settled-register and carried-track replacement, plus the flat raw
+  active-screen surface contract.
+- [C-VAL 2 casino screen](./2-casino.md): historical three-drum trial,
+  preserved as a rejected approach rather than an active contract.
 - [C-VAL 2 post-checkpoint iteration ledger](./2-iteration-ledger-2026-08-05.md):
   checkpoint, attempted algorithms, observed failures, user feedback, current
   WIP equation, retained invariants, and pending real-phone gates.

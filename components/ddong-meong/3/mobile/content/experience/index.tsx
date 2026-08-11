@@ -12,8 +12,13 @@ type MeditationContentExperienceProps = {
 export default function MeditationContentExperience({
   content,
 }: MeditationContentExperienceProps) {
-  const { finishSession, reportDirectInput, reportPhase } =
-    useMeditationSession(content);
+  const {
+    finishSession,
+    pausedAt,
+    pausedDurationMs,
+    reportDirectInput,
+    reportPhase,
+  } = useMeditationSession(content);
 
   return (
     <GradientShell>
@@ -23,6 +28,8 @@ export default function MeditationContentExperience({
         onSessionActivity={reportDirectInput}
         onSessionComplete={finishSession}
         onSessionPhaseChange={reportPhase}
+        pausedAt={pausedAt}
+        pausedDurationMs={pausedDurationMs}
         totalMs={content.durationMs}
       />
     </GradientShell>

@@ -1,0 +1,72 @@
+.stage {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--cval-bloomberg-ground);
+  font-size: clamp(12px, min(1.02cqw, 2.1cqh), 27px);
+  line-height: 1;
+}
+
+.stage *, .stage *::before, .stage *::after { box-sizing: border-box; }
+.positive { color: var(--cval-bloomberg-positive) !important; fill: var(--cval-bloomberg-positive); }
+.negative { color: var(--cval-bloomberg-negative) !important; fill: var(--cval-bloomberg-negative); }
+.neutral { color: var(--cval-bloomberg-text) !important; fill: var(--cval-bloomberg-text); }
+
+.instrument {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  grid-template-columns: minmax(0, 1fr) 14.8em;
+  grid-template-rows: minmax(0, 1fr) 9.8em;
+  gap: .7em 1em;
+  padding: .8em .9em .85em;
+}
+
+.trackField { min-width: 0; min-height: 0; }
+.trackSvg { display: block; width: 100%; height: 100%; overflow: visible; }
+
+/* There is one post for one literal history point—nothing is braced, framed, or decorated. */
+.supportPost { stroke: #777b73; stroke-width: 1; vector-effect: non-scaling-stroke; }
+.rail { fill: none; stroke: var(--cval-bloomberg-text-bright); stroke-width: 1.75; vector-effect: non-scaling-stroke; }
+.tie { stroke: #7a7e75; stroke-width: 1; vector-effect: non-scaling-stroke; }
+
+.carriage { transform-box: view-box; transform-origin: 0 0; transition: transform var(--ride-transition, 260ms) cubic-bezier(.18,.82,.25,1); }
+.coasterChassis { fill: #070806; stroke: var(--cval-bloomberg-amber); stroke-width: 1.55; vector-effect: non-scaling-stroke; }
+.coasterCar path { fill: #050604; stroke: var(--cval-bloomberg-text-bright); stroke-width: 1.4; vector-effect: non-scaling-stroke; }
+.coasterRestraint { stroke: var(--cval-bloomberg-muted); stroke-width: 1.1; vector-effect: non-scaling-stroke; }
+
+.rideReadout { display: grid; min-width: 0; min-height: 0; align-content: start; grid-template-rows: 5.3em auto; }
+.carriedPrice { display: grid; grid-template-columns: 1fr auto; grid-template-rows: auto 1fr auto; align-items: end; gap: .22em; }
+.carriedPrice span { grid-column: 1 / -1; color: var(--cval-bloomberg-muted); font-family: var(--cval-bloomberg-sans); font-size: .66em; font-weight: 820; }
+.carriedPrice strong { align-self: center; color: var(--cval-bloomberg-text-bright); font-size: 2.85em; font-weight: 720; letter-spacing: -.09em; line-height: .82; }
+.carriedPrice b { grid-column: 1 / -1; color: var(--cval-bloomberg-dim); font-size: .64em; font-weight: 700; }
+.factRows { display: grid; min-height: 0; align-content: start; grid-template-rows: repeat(4, 1.65em); }
+.factRows > div { display: grid; min-width: 0; grid-template-columns: minmax(0, 1fr) 4.9em 2.3em; align-items: center; gap: .38em; }
+.factRows span { overflow: hidden; color: var(--cval-bloomberg-record-text); font-family: var(--cval-bloomberg-sans); font-size: .66em; font-weight: 820; text-overflow: ellipsis; white-space: nowrap; }
+.factRows strong { overflow: hidden; color: var(--cval-bloomberg-text); font-size: .86em; font-weight: 650; text-align: right; text-overflow: ellipsis; white-space: nowrap; }
+.factRows b { color: var(--cval-bloomberg-dim); font-size: .6em; font-weight: 650; text-align: right; }
+
+.rideLedger { grid-column: 1 / -1; min-width: 0; min-height: 0; }
+.ledgerGrid { display: grid; width: 100%; height: 100%; min-width: 0; min-height: 0; grid-template-columns: repeat(7, minmax(0, 1fr)); grid-template-rows: repeat(4, minmax(1.35em, 1fr)); column-gap: 1.25em; }
+.ledgerGrid article { display: grid; min-width: 0; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: .55em; }
+.ledgerGrid article strong { overflow: hidden; color: var(--cval-bloomberg-text-bright); font-size: .88em; font-weight: 650; text-align: right; text-overflow: ellipsis; white-space: nowrap; }
+.ledgerGrid article b { overflow: hidden; font-size: .64em; font-weight: 650; text-align: right; text-overflow: ellipsis; white-space: nowrap; }
+
+@container (max-width: 1000px) {
+  .stage { height: auto; min-height: 100%; overflow: auto; }
+  .instrument { grid-template-columns: minmax(42em, 1fr); grid-template-rows: 31em 8em 13em; }
+  .trackField { grid-row: 1; }
+  .rideReadout { grid-column: 1; grid-row: 2; grid-template-columns: 15em minmax(0, 1fr); grid-template-rows: 1fr; column-gap: 1em; }
+  .rideLedger { grid-column: 1; grid-row: 3; }
+}
+
+@container (max-width: 660px) {
+  .instrument { min-width: 42em; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .carriage { transition: none; }
+}

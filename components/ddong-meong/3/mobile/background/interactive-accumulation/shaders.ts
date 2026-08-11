@@ -372,6 +372,17 @@ export const particleVertexShader = `
   varying float vSoftness;
 
   void main() {
+    if (uLayer > 1.5 && aDropActive < 0.5) {
+      vAlpha = 0.0;
+      vTone = 0.0;
+      vLayer = uLayer;
+      vStretch = 1.0;
+      vSoftness = 1.0;
+      gl_PointSize = 0.0;
+      gl_Position = vec4(2.0, 2.0, 0.0, 1.0);
+      return;
+    }
+
     float time = uTime * uMotion;
     float flowTime = time * uFlowSpeed;
     float flushProgress = clamp(uFlushProgress, 0.0, 1.0);
@@ -480,9 +491,16 @@ export const particleVertexShader = `
     } else {
       float fallDuration = mix(uFallDuration.x, uFallDuration.y, aSeed.z);
       float localDropAge = uInteractionTime - aDropStartedAt;
-      float travel = clamp(localDropAge / fallDuration, 0.0, 1.0);
-      float emission = aDropActive * step(0.0, localDropAge);
-      emission *= 1.0 - step(fallDuration, localDropAge);
+      float travel;
+      float emission;
+      if (uLayer > 2.5) {
+        travel = fract(aSeed.y + max(localDropAge, 0.0) / fallDuration);
+        emission = aDropActive * step(0.0, localDropAge);
+      } else {
+        travel = clamp(localDropAge / fallDuration, 0.0, 1.0);
+        emission = aDropActive * step(0.0, localDropAge);
+        emission *= 1.0 - step(fallDuration, localDropAge);
+      }
       float easedTravel = pow(travel, uFallTravelExponent);
       vec2 spawnOrigin = mix(aDropPreviousOrigin, aDropOrigin, aSeed.x);
       float spawnY = spawnOrigin.y;
@@ -654,9 +672,14 @@ export const solidDropVertexShader = `
       centerX = uFallLaneCenter + lane + slowWander;
     } else {
       float localDropAge = uInteractionTime - aDropStartedAt;
-      travel = clamp(localDropAge / fallDuration, 0.0, 1.0);
-      emission = aDropActive * step(0.0, localDropAge);
-      emission *= 1.0 - step(fallDuration, localDropAge);
+      if (uHoldTrace > 0.5) {
+        travel = fract(aSeed.y + max(localDropAge, 0.0) / fallDuration);
+        emission = aDropActive * step(0.0, localDropAge);
+      } else {
+        travel = clamp(localDropAge / fallDuration, 0.0, 1.0);
+        emission = aDropActive * step(0.0, localDropAge);
+        emission *= 1.0 - step(fallDuration, localDropAge);
+      }
       vec2 spawnOrigin = mix(aDropPreviousOrigin, aDropOrigin, aSeed.x);
       target = min(front, spawnOrigin.y - 0.025);
       float easedTravel = pow(travel, uFallTravelExponent);

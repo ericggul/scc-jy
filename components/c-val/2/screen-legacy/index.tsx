@@ -8,12 +8,7 @@ import CValCasinoLegacyScreen from "./casino-legacy";
 import CValRollercoasterLegacyScreen from "./rollercoaster-legacy";
 import { createInitialCValSnapshot, type CValSnapshot } from "@/components/c-val/2/model";
 import { useCValSocket } from "@/components/c-val/2/transport";
-import type { CValTwoScreenId } from "@/components/c-val/experiments";
-
-type CValTwoLegacyScreenId = Exclude<
-  CValTwoScreenId,
-  "casino" | "rollercoaster"
->;
+type CValTwoLegacyScreenId = "casino-legacy" | "rollercoaster-legacy" | "news" | "media";
 
 const Stage = styled.main`
   position: fixed;

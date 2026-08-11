@@ -87,6 +87,8 @@ function broadcastState(io) {
 
 function archiveSession(session, outcome) {
   const endedAt = Date.now();
+  const unfinishedPauseMs =
+    session.pausedAt === null ? 0 : Math.max(0, endedAt - session.pausedAt);
   archive.unshift({
     contentSlug: session.contentSlug,
     contentTitle: session.contentTitle,
@@ -97,7 +99,10 @@ function archiveSession(session, outcome) {
     participantId: session.participantId,
     startedAt: session.startedAt,
     endedAt,
-    durationMs: Math.max(0, endedAt - session.startedAt),
+    durationMs: Math.max(
+      0,
+      endedAt - session.startedAt - session.pausedDurationMs - unfinishedPauseMs,
+    ),
     outcome,
   });
 
@@ -111,10 +116,22 @@ function updateEngagement(socketId, engagement) {
     return false;
   }
 
+  const now = Date.now();
+  const pausedAt =
+    engagement === "paused"
+      ? current.pausedAt ?? now
+      : null;
+  const pausedDurationMs =
+    engagement === "paused" || current.pausedAt === null
+      ? current.pausedDurationMs
+      : current.pausedDurationMs + Math.max(0, now - current.pausedAt);
+
   activeSessions.set(socketId, {
     ...current,
     engagement,
-    updatedAt: Date.now(),
+    pausedAt,
+    pausedDurationMs,
+    updatedAt: now,
   });
   return true;
 }
@@ -140,6 +157,8 @@ function startSession(socket, payload) {
     interactionCount: 0,
     nickname: cleanText(payload.nickname, "이름 없는 사람", 16),
     participantId: cleanText(payload.participantId, socket.id, 80),
+    pausedAt: null,
+    pausedDurationMs: 0,
     startedAt: now,
     updatedAt: now,
     phase: "arriving",
@@ -159,11 +178,16 @@ function updateSession(socket, payload) {
     ? Math.max(0, Math.min(9_999, Math.floor(payload.interactionCount)))
     : current.interactionCount;
 
+  const now = Date.now();
   activeSessions.set(socket.id, {
     ...current,
     phase,
     interactionCount,
-    updatedAt: Date.now(),
+    startedAt:
+      current.phase === "arriving" && phase === "breathing"
+        ? now
+        : current.startedAt,
+    updatedAt: now,
   });
 }
 

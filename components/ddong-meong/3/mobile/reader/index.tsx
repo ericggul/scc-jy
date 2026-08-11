@@ -11,6 +11,7 @@ import {
   type CSSProperties,
 } from "react";
 import {
+  pauseMeditationSoundtrack,
   playMeditationSoundtrack,
   scheduleMeditationSoundtrackStop,
   stopMeditationSoundtrack,
@@ -19,6 +20,7 @@ import type {
   DdongMeongPhase,
   DdongMeongSessionOutcome,
 } from "../../model/types";
+import { getPausableElapsedMs } from "../../model/session-timing";
 import type { ReadingLine } from "../../model/reading-script";
 import InteractiveAccumulationBackground from "../background/interactive-accumulation";
 import { useDropInteraction } from "../background/interaction/use-drop-interaction";
@@ -35,12 +37,16 @@ type ReadingPageProps = {
     phase: Exclude<DdongMeongPhase, "complete">,
     interactionCount: number,
   ) => void;
+  pausedAt: number | null;
+  pausedDurationMs: number;
   totalMs: number;
 };
 
 type TimerHeaderProps = {
   frozenElapsedMs: number | null;
   onExit: () => void;
+  pausedAt: number | null;
+  pausedDurationMs: number;
   startedAt: number | null;
   totalMs: number;
 };
@@ -64,6 +70,8 @@ function formatClock(totalSeconds: number) {
 function TimerHeader({
   frozenElapsedMs,
   onExit,
+  pausedAt,
+  pausedDurationMs,
   startedAt,
   totalMs,
 }: TimerHeaderProps) {
@@ -78,20 +86,24 @@ function TimerHeader({
       return;
     }
     const meditationStartedAt = startedAt;
-
     function updateTimer() {
       setLiveElapsedMs(
         Math.min(
           totalMs,
-          Math.max(0, Date.now() - meditationStartedAt),
+          getPausableElapsedMs({
+            pausedAt,
+            pausedDurationMs,
+            startedAt: meditationStartedAt,
+          }),
         ),
       );
     }
 
     updateTimer();
+    if (pausedAt !== null) return;
     const timer = window.setInterval(updateTimer, 250);
     return () => window.clearInterval(timer);
-  }, [frozenElapsedMs, startedAt, totalMs]);
+  }, [frozenElapsedMs, pausedAt, pausedDurationMs, startedAt, totalMs]);
 
   const elapsedMs = frozenElapsedMs ?? liveElapsedMs;
 
@@ -145,6 +157,8 @@ export default function ReadingPage({
   onSessionActivity,
   onSessionComplete,
   onSessionPhaseChange,
+  pausedAt,
+  pausedDurationMs,
   totalMs,
 }: ReadingPageProps) {
   const router = useRouter();
@@ -155,7 +169,8 @@ export default function ReadingPage({
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [settledDropCount, setSettledDropCount] = useState(0);
   const [flushState, setFlushState] = useState<FlushState | null>(null);
-  const interactionDisabled = startedAt === null || flushState !== null;
+  const interactionDisabled =
+    startedAt === null || flushState !== null || pausedAt !== null;
   const { dropStream, interactionProps, stopDrops } = useDropInteraction({
     disabled: interactionDisabled,
     onDropSettled: (amount) =>
@@ -163,14 +178,14 @@ export default function ReadingPage({
     profile: accumulationProfile,
   });
   useEffect(() => {
-    if (flushState !== null) return;
+    if (flushState !== null || pausedAt !== null) return;
 
     const preludeTimer = window.setTimeout(() => {
       setStartedAt(Date.now());
     }, preludeDurationMs);
 
     return () => window.clearTimeout(preludeTimer);
-  }, [flushState]);
+  }, [flushState, pausedAt]);
 
   const completeSession = useCallback((outcome: DdongMeongSessionOutcome) => {
     if (sessionCompletedRef.current) return;
@@ -188,9 +203,12 @@ export default function ReadingPage({
       stopMeditationSoundtrack();
       return;
     }
+    if (pausedAt !== null) {
+      pauseMeditationSoundtrack();
+      return;
+    }
 
     const resumeSoundtrack = () => playMeditationSoundtrack();
-
     playMeditationSoundtrack();
     window.addEventListener("pointerdown", resumeSoundtrack, { once: true });
     window.addEventListener("keydown", resumeSoundtrack, { once: true });
@@ -200,19 +218,29 @@ export default function ReadingPage({
       window.removeEventListener("keydown", resumeSoundtrack);
       scheduleMeditationSoundtrackStop();
     };
-  }, [flushState]);
+  }, [flushState, pausedAt]);
 
   useEffect(() => {
-    if (startedAt === null || flushState !== null) return;
+    if (startedAt === null || flushState !== null || pausedAt !== null) return;
 
-    const remainingMs = Math.max(0, totalMs - Math.max(0, Date.now() - startedAt));
+    const remainingMs = Math.max(
+      0,
+      totalMs - getPausableElapsedMs({ pausedAt, pausedDurationMs, startedAt }),
+    );
     const stopTimer = window.setTimeout(() => {
       stopMeditationSoundtrack();
       completeSession("completed");
     }, remainingMs);
 
     return () => window.clearTimeout(stopTimer);
-  }, [completeSession, flushState, startedAt, totalMs]);
+  }, [
+    completeSession,
+    flushState,
+    pausedAt,
+    pausedDurationMs,
+    startedAt,
+    totalMs,
+  ]);
 
   useEffect(() => {
     if (startedAt === null) return;
@@ -249,9 +277,14 @@ export default function ReadingPage({
   }, [startedAt, totalMs]);
 
   useEffect(() => {
-    if (flushState === null) return;
-    scrollAnimationRef.current?.pause();
-  }, [flushState]);
+    const animation = scrollAnimationRef.current;
+    if (!animation) return;
+    if (flushState !== null || pausedAt !== null) {
+      animation.pause();
+      return;
+    }
+    animation.play();
+  }, [flushState, pausedAt]);
 
   useEffect(() => {
     if (flushState === null) return;
@@ -270,7 +303,10 @@ export default function ReadingPage({
     const frozenElapsedMs =
       startedAt === null
         ? 0
-        : Math.min(totalMs, Math.max(0, now - startedAt));
+        : Math.min(
+            totalMs,
+            getPausableElapsedMs({ pausedAt, pausedDurationMs, startedAt }, now),
+          );
 
     stopMeditationSoundtrack();
     scrollAnimationRef.current?.pause();
@@ -297,6 +333,8 @@ export default function ReadingPage({
           frozenElapsedMs={flushState?.frozenElapsedMs ?? null}
           dropStream={dropStream}
           settledDropCount={settledDropCount}
+          pausedAt={pausedAt}
+          pausedDurationMs={pausedDurationMs}
           startedAt={startedAt}
           totalMs={totalMs}
         />
@@ -304,6 +342,8 @@ export default function ReadingPage({
       <TimerHeader
         frozenElapsedMs={flushState?.frozenElapsedMs ?? null}
         onExit={() => completeSession("left")}
+        pausedAt={pausedAt}
+        pausedDurationMs={pausedDurationMs}
         startedAt={startedAt}
         totalMs={totalMs}
       />

@@ -3,11 +3,13 @@
 import { useEffect, useState } from "react";
 import { useDdongMeongSocket } from "./transport/use-ddong-meong-socket";
 import { getKoreanDayKey, useBrowserArchive } from "./archive/browser-archive";
+import EntryQr from "./entry-qr";
 import type {
   DdongMeongArchiveEntry,
   DdongMeongSession,
   DdongMeongSessionOutcome,
 } from "../model/types";
+import { getPausableElapsedMs } from "../model/session-timing";
 import { ddongMeongSans } from "../design-system/fonts";
 import InteractionLock from "../design-system/interaction-lock";
 import theme from "../design-system/theme.module.css";
@@ -30,7 +32,7 @@ function formatTime(timestamp: number) {
 }
 
 function phaseLabel(session: DdongMeongSession) {
-  if (session.engagement === "paused") return "똥 멈춤";
+  if (session.engagement === "paused") return "똥 끊김";
   if (session.engagement === "idle") return "똥멍 때리다 멈춤";
   if (session.phase === "arriving") return "자리 잡는 중";
   if (session.phase === "releasing") return "비우는 중";
@@ -40,7 +42,7 @@ function phaseLabel(session: DdongMeongSession) {
 function outcomeLabel(outcome: DdongMeongSessionOutcome) {
   if (outcome === "flushed") return "물 내리고 똥 다쌈";
   if (outcome === "left") return "똥 싸다 나감";
-  if (outcome === "backgrounded") return "똥 멈춤";
+  if (outcome === "backgrounded") return "똥 끊김";
   if (outcome === "idle") return "똥멍 때리다 멈춤";
   return "똥 다쌈";
 }
@@ -68,7 +70,7 @@ function LiveSession({ now, session }: { now: number; session: DdongMeongSession
         <time dateTime={new Date(session.startedAt).toISOString()}>
           {formatTime(session.startedAt)}에 앉음
         </time>
-        <strong>{formatDuration(now - session.startedAt)}</strong>
+        <strong>{formatDuration(getPausableElapsedMs(session, now))}</strong>
       </div>
     </li>
   );
@@ -120,10 +122,15 @@ export default function DdongMeongThreeScreen() {
       </header>
 
       <section className={styles.live} aria-labelledby="live-title">
-        <p className={styles.eyebrow}>NOW SITTING</p>
         <div className={styles.liveHeading}>
-          <h2 id="live-title">지금 앉아 있는 사람</h2>
-          <strong>{activeSessions.length}</strong>
+          <div>
+            <p>지금</p>
+            <h2 id="live-title">똥싸는 사람</h2>
+          </div>
+          <strong>
+            {activeSessions.length}
+            <span>명</span>
+          </strong>
         </div>
 
         {activeSessions.length > 0 ? (
@@ -134,11 +141,22 @@ export default function DdongMeongThreeScreen() {
           </ul>
         ) : (
           <p className={styles.emptyLive}>
-            아직 조용합니다.
+            아직 아무도 없습니다.
             <br />
-            누군가 명상을 시작하면 이곳에 나타납니다.
+            먼저 들어가 앉아보세요.
           </p>
         )}
+
+        <div className={styles.entryPoint}>
+          <div className={styles.qrFrame}>
+            <EntryQr />
+          </div>
+          <p>
+            휴대폰으로 스캔해
+            <br />
+            똥멍에 들어오기
+          </p>
+        </div>
       </section>
 
       <aside className={styles.archive} aria-labelledby="archive-title">
@@ -147,7 +165,7 @@ export default function DdongMeongThreeScreen() {
             <span>오늘의 기록</span>
             <h2 id="archive-title">똥싼 사람들</h2>
           </div>
-          <strong>{todayArchive.length}</strong>
+          <strong>{todayArchive.length}회</strong>
         </div>
 
         {todayArchive.length > 0 ? (

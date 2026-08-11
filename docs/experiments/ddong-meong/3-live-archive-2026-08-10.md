@@ -29,10 +29,16 @@ transitions retain a delivery path when JavaScript is suspended. Socket
 disconnect is the final fallback: a paused session becomes `backgrounded`; an
 otherwise active session becomes `left`.
 
+The pause is a shared clock stop, not merely a label: the mobile reader's
+timer, scrolling text, BGM and background time all freeze at the same moment.
+The socket session stores the pause start and accumulated pause duration, so
+the screen's live clock freezes too and archived duration excludes it. The
+screen calls that state `똥 끊김`.
+
 After at least one direct drop interaction, 60 seconds without another direct
 input is represented as an in-progress `idle` state. It does not end the
 session; another input resumes it. The screen maps the resulting domain states
-to `똥 멈춤`, `똥멍 때리다 멈춤`, `똥 싸다 나감`, and `똥 다쌈`.
+to `똥 끊김`, `똥멍 때리다 멈춤`, `똥 싸다 나감`, and `똥 다쌈`.
 
 ## Retained invariants
 
@@ -41,6 +47,9 @@ to `똥 멈춤`, `똥멍 때리다 멈춤`, `똥 싸다 나감`, and `똥 다쌈
 - The `ddong-meong:3` socket event prefix and its isolated room remain intact.
 - The screen and mobile retain the same local design system: Pretendard, the
   wordmark font, brown field, warm cream surfaces and restrained rounding.
+- The screen QR is generated in-browser from its current origin plus the
+  experiment-owned `ddongMeongThreeEntryPath` constant. Changing the
+  experiment route later changes this one constant rather than a copied URL.
 
 ## Archive boundary
 

@@ -6,14 +6,12 @@ export const cValOneScreenIds = [
 ] as const;
 
 export const cValTwoScreenIds = ["rollercoaster", "news", "media"] as const;
-export const cValTwoStandaloneScreenIds = ["casino"] as const;
-export const cValTwoArchivedScreenIds = ["rollercoaster-legacy", "casino-legacy"] as const;
+export const cValTwoStandaloneScreenIds = ["casino", "graphs", "raw"] as const;
 
 export type CValOneScreenId = (typeof cValOneScreenIds)[number];
 export type CValTwoScreenId =
   | (typeof cValTwoScreenIds)[number]
-  | (typeof cValTwoStandaloneScreenIds)[number]
-  | (typeof cValTwoArchivedScreenIds)[number];
+  | (typeof cValTwoStandaloneScreenIds)[number];
 export type CValScreenId = CValOneScreenId | CValTwoScreenId;
 
 export const cValExperiments = [
@@ -31,7 +29,7 @@ export const cValExperiments = [
     status: "experimental",
     screenIds: cValTwoScreenIds,
     standaloneScreenIds: cValTwoStandaloneScreenIds,
-    archivedScreenIds: cValTwoArchivedScreenIds,
+    archivedScreenIds: [],
   },
 ] as const;
 
@@ -52,8 +50,7 @@ export function isCValOneScreenId(value: string): value is CValOneScreenId {
 export function isCValTwoScreenId(value: string): value is CValTwoScreenId {
   return (
     cValTwoScreenIds.some((screenId) => screenId === value) ||
-    cValTwoStandaloneScreenIds.some((screenId) => screenId === value) ||
-    cValTwoArchivedScreenIds.some((screenId) => screenId === value)
+    cValTwoStandaloneScreenIds.some((screenId) => screenId === value)
   );
 }
 

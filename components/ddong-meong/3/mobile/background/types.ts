@@ -17,4 +17,5 @@ export type ActiveBackgroundDrop = {
 
 export type ActiveDropStream = {
   getDrops: (source: DropSource) => ActiveBackgroundDrop[];
+  getVersion: (source: DropSource) => number;
 };

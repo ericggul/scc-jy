@@ -1,7 +1,8 @@
 # C-VAL 2 casino screen — legacy five-reel version
 
 > Date: 2026-08-06  
-> Route: `/c-val/2/screen/casino-legacy`  
+> Former route: `/c-val/2/screen/casino-legacy` (deregistered 2026-08-11)
+> Historical source: `components/c-val/2/screen-legacy/casino-legacy/`
 > Archived: 2026-08-10, before the three-digit price-only fork  
 > Tested relation: the participant can switch one physical slot mechanism
 > between the latest one-second **executed** market return and the current
@@ -161,14 +162,14 @@ the displayed outcome remains the actual execution-derived percentage.
   energy. The user had not asked to remove colour; the colour chassis remains
   current. The correction targets alignment, material discipline, and reel
   motion without neutralising the casino palette.
-- **Changed variable:** one additional standalone surrounding-price
-  representation at `/c-val/2/screen/casino-legacy`, with a participant-controlled
-  `CHANGE`/`PRICE` reading. The active whole composition is explicitly
-  unchanged.
+- **Changed variable (historical):** one additional standalone
+  surrounding-price representation at the former direct legacy route, with a
+  participant-controlled `CHANGE`/`PRICE` reading. The active whole composition
+  was explicitly unchanged.
 - **Retained invariants:** mobile motion input, V/A/L equations, participant
   agents, order book, FIFO execution, price provenance, socket room/events,
   C-VAL 1, news, and media are untouched.
-- **Static result:** pure presenter tests establish waiting, positive, negative,
+- **Static result (historical):** pure presenter tests establish waiting, positive, negative,
   rounded-neutral, price mode, and the price mode's three fixed integer drums.
   Pure reel tests establish a complete numeric turn, the optional second rapid
   turn, exact target centring, and adjacent-integer travel. Registry tests
@@ -183,8 +184,8 @@ the displayed outcome remains the actual execution-derived percentage.
 
 ## Archived asset record
 
-- Project asset:
-  `components/c-val/2/screen/casino-legacy/assets/casino-chassis-v6.png`
+- Historical source asset:
+  `components/c-val/2/screen-legacy/casino-legacy/assets/casino-chassis-v6.png`
 - The v6 edit removes only the central gold payline and diamond markers. The
   colour chassis, reel geometry, materials, lighting, and lower plates remain
   unchanged.

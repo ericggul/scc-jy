@@ -1,8 +1,13 @@
-# C-VAL 2 casino screen — three-digit price
+# C-VAL 2 casino screen — retired three-digit price trial
+
+> **Historical record — retired from the active route on 2026-08-11.** The
+> three-drum slot-machine treatment below is retained as a record of the
+> rejected approach. The active `/c-val/2/screen/casino` is an execution
+> workstation; see [the Bloomberg screen rebuild record](./2-bloomberg-screen-rebuild-2026-08-11.md).
 
 > Date: 2026-08-10
-> Route: `/c-val/2/screen/casino`
-> Preserved baseline: `/c-val/2/screen/casino-legacy`
+> Former route: `/c-val/2/screen/casino`
+> Preserved source baseline: `components/c-val/2/screen-legacy/casino-legacy/`
 
 ## Experiment contract
 
@@ -44,9 +49,9 @@ removing, cross-fading, or restarting the visible numeral.
 ## Preserved baseline
 
 The complete five-reel `CHANGE`/`PRICE` implementation and all of its assets,
-tests, motion code, and failure record were moved unchanged to
-`components/c-val/2/screen/casino-legacy/` and remain addressable at
-`/c-val/2/screen/casino-legacy`. It does not import from the new experiment.
+tests, motion code, and failure record remain in the historical source archive
+at `components/c-val/2/screen-legacy/casino-legacy/`. Its former direct public
+route was removed; it does not import from the new experiment.
 
 ## New asset record
 

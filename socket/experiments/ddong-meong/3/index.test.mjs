@@ -82,9 +82,32 @@ test("ddong-meong 3 marks a backgrounded phone as paused before it disconnects",
   sessionHandler({ action: "engagement", engagement: "paused" });
 
   assert.equal(broadcasts.at(-1)?.payload.activeSessions[0].engagement, "paused");
+  assert.notEqual(broadcasts.at(-1)?.payload.activeSessions[0].pausedAt, null);
+  assert.equal(broadcasts.at(-1)?.payload.activeSessions[0].pausedDurationMs, 0);
 
   handlers.get("disconnect")();
   assert.equal(broadcasts.at(-1)?.payload.archive[0].outcome, "backgrounded");
+});
+
+test("ddong-meong 3 resumes its shared elapsed clock after a pause", () => {
+  const { broadcasts, handlers } = createHarness();
+  const sessionHandler = handlers.get(
+    ddongMeongThreeExperiment.events.sessionIn,
+  );
+
+  sessionHandler({
+    action: "start",
+    contentSlug: "dummy",
+    nickname: "돌아온 사람",
+    participantId: "participant-resumed",
+  });
+  sessionHandler({ action: "engagement", engagement: "paused" });
+  sessionHandler({ action: "engagement", engagement: "active" });
+
+  const resumed = broadcasts.at(-1)?.payload.activeSessions[0];
+  assert.equal(resumed.engagement, "active");
+  assert.equal(resumed.pausedAt, null);
+  assert.ok(resumed.pausedDurationMs >= 0);
 });
 
 test("ddong-meong 3 records stopped direct input separately from leaving", () => {

@@ -14,11 +14,19 @@ claim about Bloomberg's proprietary design system, or permission to paste
 terminal chrome onto unrelated work.
 
 The C-VAL controller is a valid use because its job is simultaneous comparison
-of conditions, agent intent, FIFO supply, executions, and outcomes. The
-rollercoaster, media, casino, and mobile routes have different jobs and must
-not become mini-workstations. News has a separately documented, observer-facing
-wire trial: it renders the actual market-to-public-signal transmission as one
-continuous record field, rather than treating terminal chrome as atmosphere.
+of conditions, agent intent, FIFO supply, executions, and outcomes. Media and
+mobile routes have different jobs and must not become mini-workstations. News
+has a separately documented, observer-facing wire trial: it renders the actual
+market-to-public-signal transmission as one continuous record field, rather
+than treating terminal chrome as atmosphere.
+
+The first active `casino` / `rollercoaster` migration on 2026-08-11 was
+rejected: it converted both routes into controller-like monitoring screens and
+lost the discrete-settlement and carried-path functions. The recorded failure
+and replacement contract is
+[`2-casino-rollercoaster-reconsideration-2026-08-11.md`](./2-casino-rollercoaster-reconsideration-2026-08-11.md).
+Its price register and two-rail track are not generic workstation panels:
+they are the two routes' distinct, market-derived instruments.
 
 The wrapper is deliberately C-VAL-version scoped today. Its primitives contain
 no model data or controller logic, so a later experiment with the same
@@ -46,6 +54,34 @@ This means that the wrapper is a **reading system**, not a colour scheme. A
 new panel earns its place only when it lets someone observe a distinct part of
 the real mechanism. A new colour earns its place only when a person can infer
 a different state from it.
+
+## Flat active-screen profile — 2026-08-11
+
+The user accepted the accidental raw browser rendering as the surface
+reference for the current C-VAL 2 screen trial: `casino`, `rollercoaster`,
+`graphs`, and `raw`. This does not make every route an unstyled DOM document;
+it establishes what must be absent before those screens add a meaningful
+instrument.
+
+- The screen starts directly on the uninterrupted black working field. It has
+  no top `C-VAL` identity bar, function strip, command imitation, red status
+  bar, panel title band, rounded container, or elevated card surface.
+- Text, figures, and real marks are primary. Spacing and alignment establish
+  reading groups. A rule is allowed only when it is the instrument itself
+  (casino settlement axis, roller rails and sleepers) or a genuinely necessary
+  data mark; it is not used as a generic box edge or every-row separator.
+- A concise local label such as `RESULT LEDGER` or `RIDE LEDGER` may begin an
+  actual record field. It must name that field, never re-brand the page.
+- The raw route deliberately uses the browser's default block/inline flow and
+  no local CSS. Other routes may use layout only when it exposes their specific
+  price register, rail path, two-column wire, or 10 x 10 data matrix.
+- The controller and the already-established news wire are excluded. The
+  controller retains its causal-comparison task and the news wire retains its
+  separately reviewed archive behavior and layout.
+
+This profile rejects "terminal chrome" as a substitute for information.
+Black, amber, mono type, and thin rules are not enough; the visible data must
+be able to stand on the field without a decorative wrapper around it.
 
 ## Evidence and local interpretation
 
@@ -201,10 +237,12 @@ Motion on C-VAL's other screens remains specific to their own representation:
 | Screen | Profile | May share | Must retain / must not receive |
 | --- | --- | --- | --- |
 | controller | `workstation` | full token set and all observation primitives | real causal chain; no invented terminal content |
-| rollercoaster | `physicalInstrument` | gain/loss semantic direction when it aids reading | executed-price rail and sparse physical scene; no panels, tables, or terminal labels |
+| rollercoaster | `carriedTrack` | workstation tokens, semantic direction, ordered records | full 28-point execution path as two data-derived rails, one direct vertical support per point, a short carried row of open coaster seats, and ordered price/step records; no car icon, braces, 3D scene, environmental rendering, or controller metric |
+| graphs | `graphMatrix` | workstation tokens, semantic direction, one repeated small-multiple grammar | 100 actual C-VAL series windows in a fixed 10×10 field; no invented securities, sine waves, or timer-driven graph motion |
 | news | `newsWire` | thin wire-specific header and a continuous two-column archive of actual editorial stories | real market-to-public transmission; raw trades, orders, depth and spreads may be evidence but never news titles; no invented source, time, external feed, alert, red command strip, card grid, fixed-topic cycle, or generic dashboard metric |
 | media | `fullBleedMedia` | state-derived direction only | black full-bleed audiovisual grid; no data overlay merely to look financial |
-| casino | `physicalInstrument` | actual execution price and meaningful state colour | mechanical three-reel representation; no monitor chrome |
+| casino | `settledRegister` | workstation tokens, semantic direction, actual price and ordered results | five market-derived price drums, settlement axis, current cadence, and 24 ordered actual outcomes; no cabinet, odds, wager, payout, prize, or invented market fiction |
+| raw | `rawTextFlow` | terminal palette and actual settled records only | browser-default block/inline text flow with no local layout, chrome, or decorative visual interpretation |
 | mobile | `feedbackInstrument` | semantic gain/loss only where it explains real feedback | one physical input and immediate response; never a condensed controller |
 
 The shared family relationship therefore exists at the level of truthfulness,

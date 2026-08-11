@@ -18,6 +18,7 @@ import type {
 
 const traceVolumeDistancePixels = 260;
 const stationaryMotionDistancePixels = 2.5;
+const heldStreamStartDelayMs = 72;
 const heldDropAccumulationAmount = 0.25;
 const releaseSweepIntervalMs = 34;
 
@@ -54,7 +55,9 @@ type PointerSample = {
 type ActivePointer = {
   element: HTMLDivElement;
   frameId: number | null;
+  holdDropId: number | null;
   holdTimer: number | null;
+  nextHoldSettlementAt: number | null;
   lastEmittedSample: PointerSample;
   lastMotionSample: PointerSample;
   lastMotionAt: number;
@@ -65,6 +68,7 @@ type ActivePointer = {
 
 type DropRequestOptions = {
   accumulationAmount?: number;
+  persistent?: boolean;
   previousOrigin?: DropOrigin;
   source?: DropSource;
   visualStrength?: number;
@@ -93,10 +97,18 @@ export function useDropInteraction({
     press: new Map(),
     trace: new Map(),
   });
+  const dropVersionsRef = useRef<Record<DropSource, number>>({
+    hold: 0,
+    press: 0,
+    trace: 0,
+  });
   const dropStream = useMemo<ActiveDropStream>(
     () => ({
       getDrops(source) {
         return [...activeDropsBySourceRef.current[source].values()];
+      },
+      getVersion(source) {
+        return dropVersionsRef.current[source];
       },
     }),
     [],
@@ -130,6 +142,7 @@ export function useDropInteraction({
     );
     for (const drop of releasedDrops) {
       activeDropsBySourceRef.current[drop.source].delete(drop.id);
+      dropVersionsRef.current[drop.source] += 1;
     }
     onDropSettledRef.current?.(accumulatedAmount);
   }, []);
@@ -175,7 +188,7 @@ export function useDropInteraction({
 
   const requestDrop = useCallback(
     (origin: DropOrigin, options: DropRequestOptions = {}) => {
-      if (disabled) return false;
+      if (disabled) return null;
 
       const source = options.source ?? "press";
       const drop: ActiveBackgroundDrop = {
@@ -189,16 +202,51 @@ export function useDropInteraction({
       };
       nextDropIdRef.current += 1;
       activeDropsBySourceRef.current[source].set(drop.id, drop);
+      dropVersionsRef.current[source] += 1;
 
-      pendingReleasesRef.current.set(drop.id, {
-        drop,
-        settlesAt: drop.startedAt + dropDurationMs,
-      });
-      scheduleReleaseSweep();
+      if (!options.persistent) {
+        pendingReleasesRef.current.set(drop.id, {
+          drop,
+          settlesAt: drop.startedAt + dropDurationMs,
+        });
+        scheduleReleaseSweep();
+      }
 
-      return true;
+      return drop.id;
     },
     [disabled, dropDurationMs, scheduleReleaseSweep],
+  );
+
+  const stopHeldStream = useCallback((pointer: ActivePointer) => {
+    if (pointer.holdDropId === null) return;
+
+    activeDropsBySourceRef.current.hold.delete(pointer.holdDropId);
+    dropVersionsRef.current.hold += 1;
+    pointer.holdDropId = null;
+    pointer.nextHoldSettlementAt = null;
+  }, []);
+
+  const startHeldStream = useCallback(
+    (pointer: ActivePointer) => {
+      if (pointer.holdDropId !== null) return;
+
+      const origin = toDropOrigin(
+        pointer.element,
+        pointer.lastObservedSample.clientX,
+        pointer.lastObservedSample.clientY,
+      );
+      const holdDropId = requestDrop(origin, {
+        accumulationAmount: 0,
+        persistent: true,
+        previousOrigin: origin,
+        source: "hold",
+      });
+      if (holdDropId === null) return;
+
+      pointer.holdDropId = holdDropId;
+      pointer.nextHoldSettlementAt = Date.now() + dropDurationMs;
+    },
+    [dropDurationMs, requestDrop],
   );
 
   const stopDrops = useCallback(() => {
@@ -210,6 +258,9 @@ export function useDropInteraction({
     activeDropsBySourceRef.current.press.clear();
     activeDropsBySourceRef.current.trace.clear();
     activeDropsBySourceRef.current.hold.clear();
+    dropVersionsRef.current.press += 1;
+    dropVersionsRef.current.trace += 1;
+    dropVersionsRef.current.hold += 1;
     for (const pointer of activePointersRef.current.values()) {
       if (pointer.frameId !== null) {
         window.cancelAnimationFrame(pointer.frameId);
@@ -275,7 +326,7 @@ export function useDropInteraction({
 
   const scheduleHeldDrops = useCallback(
     (pointerId: number) => {
-      function scheduleNextHeldDrop() {
+      function scheduleNextHeldCheck(delayMs: number) {
         const pointer = activePointersRef.current.get(pointerId);
         if (!pointer || pointer.holdTimer !== null) return;
 
@@ -285,26 +336,33 @@ export function useDropInteraction({
 
           activePointer.holdTimer = null;
           const now = Date.now();
-          if (now - activePointer.lastMotionAt >= heldDropIntervalMs) {
-            const origin = toDropOrigin(
-              activePointer.element,
-              activePointer.lastObservedSample.clientX,
-              activePointer.lastObservedSample.clientY,
-            );
-            requestDrop(origin, {
-              accumulationAmount: heldDropAccumulationAmount,
-              previousOrigin: origin,
-              source: "hold",
-              visualStrength: 0.72,
-            });
+          if (now - activePointer.lastMotionAt >= heldStreamStartDelayMs) {
+            startHeldStream(activePointer);
+            if (
+              activePointer.nextHoldSettlementAt !== null &&
+              now >= activePointer.nextHoldSettlementAt
+            ) {
+              const completedHoldIntervals =
+                Math.floor(
+                  (now - activePointer.nextHoldSettlementAt) /
+                    heldDropIntervalMs,
+                ) + 1;
+              activePointer.nextHoldSettlementAt +=
+                completedHoldIntervals * heldDropIntervalMs;
+              onDropSettledRef.current?.(
+                completedHoldIntervals * heldDropAccumulationAmount,
+              );
+            }
+          } else {
+            stopHeldStream(activePointer);
           }
-          scheduleNextHeldDrop();
-        }, heldDropIntervalMs);
+          scheduleNextHeldCheck(heldDropIntervalMs);
+        }, delayMs);
       }
 
-      scheduleNextHeldDrop();
+      scheduleNextHeldCheck(heldStreamStartDelayMs);
     },
-    [heldDropIntervalMs, requestDrop],
+    [heldDropIntervalMs, startHeldStream, stopHeldStream],
   );
 
   const appendPointerSamples = useCallback(
@@ -329,12 +387,13 @@ export function useDropInteraction({
         ) {
           pointer.lastMotionSample = nextSample;
           pointer.lastMotionAt = Date.now();
+          stopHeldStream(pointer);
         }
         pointer.lastObservedSample = nextSample;
         pointer.pendingSample = nextSample;
       }
     },
-    [],
+    [stopHeldStream],
   );
 
   const finishPointer = useCallback(
@@ -350,6 +409,7 @@ export function useDropInteraction({
         window.clearTimeout(pointer.holdTimer);
         pointer.holdTimer = null;
       }
+      stopHeldStream(pointer);
       if (includePosition) appendPointerSamples(event);
       emitTraceSamples(pointer);
       activePointersRef.current.delete(event.pointerId);
@@ -357,7 +417,7 @@ export function useDropInteraction({
         event.currentTarget.releasePointerCapture(event.pointerId);
       }
     },
-    [appendPointerSamples, emitTraceSamples],
+    [appendPointerSamples, emitTraceSamples, stopHeldStream],
   );
 
   const onPointerDown = useCallback(
@@ -375,7 +435,9 @@ export function useDropInteraction({
       activePointersRef.current.set(event.pointerId, {
         element: event.currentTarget,
         frameId: null,
+        holdDropId: null,
         holdTimer: null,
+        nextHoldSettlementAt: null,
         lastEmittedSample: { clientX: event.clientX, clientY: event.clientY },
         lastMotionSample: { clientX: event.clientX, clientY: event.clientY },
         lastMotionAt: Date.now(),
@@ -418,9 +480,10 @@ export function useDropInteraction({
       if (pointer?.holdTimer !== null && pointer?.holdTimer !== undefined) {
         window.clearTimeout(pointer.holdTimer);
       }
+      if (pointer) stopHeldStream(pointer);
       activePointersRef.current.delete(event.pointerId);
     },
-    [],
+    [stopHeldStream],
   );
 
   const onKeyDown = useCallback(

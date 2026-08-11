@@ -38,6 +38,8 @@ type InteractiveAccumulationBackgroundProps = {
   flushDurationMs: number;
   flushStartedAt: number | null;
   frozenElapsedMs: number | null;
+  pausedAt: number | null;
+  pausedDurationMs: number;
   profile: AccumulationProfile;
   settledDropCount: number;
   startedAt: number | null;
@@ -99,7 +101,11 @@ function createParticleGeometry(count: number, seed: number) {
   return geometry;
 }
 
-function createSolidDropGeometry(count: number, seed: number) {
+function createSolidDropGeometry(
+  count: number,
+  seed: number,
+  phaseCount = 0,
+) {
   const geometry = new THREE.InstancedBufferGeometry();
   geometry.setAttribute(
     "position",
@@ -119,7 +125,12 @@ function createSolidDropGeometry(count: number, seed: number) {
   for (let index = 0; index < count; index += 1) {
     const offset = index * 4;
     seeds[offset] = random();
-    seeds[offset + 1] = index === 0 ? 0 : random();
+    seeds[offset + 1] =
+      phaseCount > 0
+        ? (index % phaseCount) / phaseCount
+        : index === 0
+          ? 0
+          : random();
     seeds[offset + 2] = random();
     seeds[offset + 3] = random();
   }
@@ -289,7 +300,7 @@ type DropBatchResource = {
 
 type DropBatch = {
   dispose: () => void;
-  sync: (drops: ActiveBackgroundDrop[]) => void;
+  sync: (getDrops: () => ActiveBackgroundDrop[], version: number) => void;
 };
 
 export default function InteractiveAccumulationBackground({
@@ -297,6 +308,8 @@ export default function InteractiveAccumulationBackground({
   flushDurationMs,
   flushStartedAt,
   frozenElapsedMs,
+  pausedAt,
+  pausedDurationMs,
   profile,
   settledDropCount,
   startedAt,
@@ -307,6 +320,8 @@ export default function InteractiveAccumulationBackground({
     flushDurationMs,
     flushStartedAt,
     frozenElapsedMs,
+    pausedAt,
+    pausedDurationMs,
     startedAt,
     settledDropCount,
   });
@@ -316,10 +331,20 @@ export default function InteractiveAccumulationBackground({
       flushDurationMs,
       flushStartedAt,
       frozenElapsedMs,
+      pausedAt,
+      pausedDurationMs,
       startedAt,
       settledDropCount,
     };
-  }, [flushDurationMs, flushStartedAt, frozenElapsedMs, startedAt, settledDropCount]);
+  }, [
+    flushDurationMs,
+    flushStartedAt,
+    frozenElapsedMs,
+    pausedAt,
+    pausedDurationMs,
+    startedAt,
+    settledDropCount,
+  ]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -478,26 +503,36 @@ export default function InteractiveAccumulationBackground({
       points.frustumCulled = false;
       points.renderOrder = 2;
       scene.add(points);
+      const active = geometry.getAttribute("aDropActive") as THREE.BufferAttribute;
+      const origin = geometry.getAttribute("aDropOrigin") as THREE.BufferAttribute;
+      const previousOrigin = geometry.getAttribute(
+        "aDropPreviousOrigin",
+      ) as THREE.BufferAttribute;
+      const startedAt = geometry.getAttribute(
+        "aDropStartedAt",
+      ) as THREE.BufferAttribute;
+      const visualStrength = geometry.getAttribute(
+        "aDropVisualStrength",
+      ) as THREE.BufferAttribute;
+      active.setUsage(THREE.DynamicDrawUsage);
+      origin.setUsage(THREE.DynamicDrawUsage);
+      previousOrigin.setUsage(THREE.DynamicDrawUsage);
+      startedAt.setUsage(THREE.DynamicDrawUsage);
+      visualStrength.setUsage(THREE.DynamicDrawUsage);
 
       return {
-        active: geometry.getAttribute("aDropActive") as THREE.BufferAttribute,
+        active,
         geometry,
         material,
         object: points,
         itemsPerDrop: particlesPerDrop,
-        origin: geometry.getAttribute("aDropOrigin") as THREE.BufferAttribute,
-        previousOrigin: geometry.getAttribute(
-          "aDropPreviousOrigin",
-        ) as THREE.BufferAttribute,
+        origin,
+        previousOrigin,
         setVisibleSlotCount: (slotCount) => {
           geometry.setDrawRange(0, slotCount * particlesPerDrop);
         },
-        startedAt: geometry.getAttribute(
-          "aDropStartedAt",
-        ) as THREE.BufferAttribute,
-        visualStrength: geometry.getAttribute(
-          "aDropVisualStrength",
-        ) as THREE.BufferAttribute,
+        startedAt,
+        visualStrength,
       };
     }
 
@@ -505,30 +540,40 @@ export default function InteractiveAccumulationBackground({
       capacity: number,
       useAutomaticTrace = false,
     ): DropBatchResource {
+      const itemsPerDrop = useAutomaticTrace
+        ? Math.min(3, profile.solid.count)
+        : 1;
+      const itemCount = capacity * itemsPerDrop;
       const geometry = createSolidDropGeometry(
-        capacity,
+        itemCount,
         profile.particles.filamentSeed,
+        useAutomaticTrace ? itemsPerDrop : 0,
       );
       const origin = new THREE.InstancedBufferAttribute(
-        new Float32Array(capacity * 2),
+        new Float32Array(itemCount * 2),
         2,
       );
       const previousOrigin = new THREE.InstancedBufferAttribute(
-        new Float32Array(capacity * 2),
+        new Float32Array(itemCount * 2),
         2,
       );
       const startedAt = new THREE.InstancedBufferAttribute(
-        new Float32Array(capacity),
+        new Float32Array(itemCount),
         1,
       );
       const active = new THREE.InstancedBufferAttribute(
-        new Float32Array(capacity),
+        new Float32Array(itemCount),
         1,
       );
       const visualStrength = new THREE.InstancedBufferAttribute(
-        new Float32Array(capacity),
+        new Float32Array(itemCount),
         1,
       );
+      origin.setUsage(THREE.DynamicDrawUsage);
+      previousOrigin.setUsage(THREE.DynamicDrawUsage);
+      startedAt.setUsage(THREE.DynamicDrawUsage);
+      active.setUsage(THREE.DynamicDrawUsage);
+      visualStrength.setUsage(THREE.DynamicDrawUsage);
       geometry.setAttribute("aDropOrigin", origin);
       geometry.setAttribute("aDropPreviousOrigin", previousOrigin);
       geometry.setAttribute("aDropStartedAt", startedAt);
@@ -557,11 +602,11 @@ export default function InteractiveAccumulationBackground({
         geometry,
         material,
         object: mesh,
-        itemsPerDrop: 1,
+        itemsPerDrop,
         origin,
         previousOrigin,
         setVisibleSlotCount: (slotCount) => {
-          geometry.instanceCount = slotCount;
+          geometry.instanceCount = slotCount * itemsPerDrop;
         },
         startedAt,
         visualStrength,
@@ -570,16 +615,19 @@ export default function InteractiveAccumulationBackground({
 
     function createDropBatch(
       createResource: (capacity: number) => DropBatchResource,
+      initialCapacity = initialDropCapacity,
     ): DropBatch {
-      let capacity = initialDropCapacity;
+      let capacity = initialCapacity;
       let resource = createResource(capacity);
       const slotByDropId = new Map<number, number>();
+      const renderedDropById = new Map<number, ActiveBackgroundDrop>();
       let slotDropIds: Array<number | null> = Array.from(
         { length: capacity },
         () => null,
       );
       let freeSlots: number[] = [];
       let nextSlot = 0;
+      let lastSyncedVersion = -1;
 
       function markAttributesForUpdate() {
         resource.active.needsUpdate = true;
@@ -610,17 +658,13 @@ export default function InteractiveAccumulationBackground({
         capacity = nextCapacity;
         resource = createResource(capacity);
         slotByDropId.clear();
+        renderedDropById.clear();
         slotDropIds = Array.from({ length: capacity }, () => null);
         freeSlots = [];
         nextSlot = 0;
       }
 
-      function activate(drop: ActiveBackgroundDrop) {
-        const slot = freeSlots.pop() ?? nextSlot;
-        nextSlot = Math.max(nextSlot, slot + 1);
-        slotByDropId.set(drop.id, slot);
-        slotDropIds[slot] = drop.id;
-
+      function writeDropToSlot(drop: ActiveBackgroundDrop, slot: number) {
         const itemCount = resource.itemsPerDrop;
         const start = slot * itemCount;
         const end = start + itemCount;
@@ -641,7 +685,22 @@ export default function InteractiveAccumulationBackground({
           activeValues[index] = 1;
           visualStrengthValues[index] = drop.visualStrength;
         }
+        renderedDropById.set(drop.id, drop);
         markAttributesForUpdate();
+      }
+
+      function activate(drop: ActiveBackgroundDrop) {
+        const slot = freeSlots.pop() ?? nextSlot;
+        nextSlot = Math.max(nextSlot, slot + 1);
+        slotByDropId.set(drop.id, slot);
+        slotDropIds[slot] = drop.id;
+        writeDropToSlot(drop, slot);
+      }
+
+      function update(drop: ActiveBackgroundDrop) {
+        const slot = slotByDropId.get(drop.id);
+        if (slot === undefined) return;
+        writeDropToSlot(drop, slot);
       }
 
       function release(dropId: number) {
@@ -654,13 +713,17 @@ export default function InteractiveAccumulationBackground({
         activeValues.fill(0, start, start + itemCount);
         resource.active.needsUpdate = true;
         slotByDropId.delete(dropId);
+        renderedDropById.delete(dropId);
         slotDropIds[slot] = null;
         freeSlots.push(slot);
       }
 
       return {
         dispose: disposeResource,
-        sync(drops) {
+        sync(getDrops, version) {
+          if (version === lastSyncedVersion) return;
+          lastSyncedVersion = version;
+          const drops = getDrops();
           if (drops.length > capacity) grow(drops.length);
 
           const activeDropIds = new Set(drops.map((drop) => drop.id));
@@ -669,6 +732,7 @@ export default function InteractiveAccumulationBackground({
           }
           for (const drop of drops) {
             if (!slotByDropId.has(drop.id)) activate(drop);
+            else if (renderedDropById.get(drop.id) !== drop) update(drop);
           }
           setVisibleSlots();
         },
@@ -694,6 +758,7 @@ export default function InteractiveAccumulationBackground({
               particlesPerInteractiveTrace(profile.particles.filamentCount),
               2,
             ),
+      12,
     );
     const holdDropBatch = createDropBatch(
       profile.materialKind === "solid-form"
@@ -704,6 +769,7 @@ export default function InteractiveAccumulationBackground({
               particlesPerInteractiveTrace(profile.particles.filamentCount),
               3,
             ),
+      12,
     );
 
     let animationFrame = 0;
@@ -711,11 +777,10 @@ export default function InteractiveAccumulationBackground({
     let lastRenderAt = 0;
     const maximumPixelRatio = profile.materialKind === "solid-form" ? 1 : 1.15;
     let pixelRatioCap = maximumPixelRatio;
-    let slowSolidFrames = 0;
-    let stableSolidFrames = 0;
+    let slowFrames = 0;
+    let stableFrames = 0;
     let displayedProgress = 0;
     let lastProgressUpdateAt = Date.now();
-    const automaticStartedAt = Date.now();
 
     function resize() {
       const { width, height } = activeCanvas.getBoundingClientRect();
@@ -729,8 +794,15 @@ export default function InteractiveAccumulationBackground({
     function render() {
       const timeline = timelineRef.current;
       const now = Date.now();
+      const visualNow = timeline.pausedAt ?? now;
       const elapsedMs =
-        timeline.frozenElapsedMs ?? Math.max(0, now - automaticStartedAt);
+        timeline.frozenElapsedMs ??
+        (timeline.startedAt === null
+          ? 0
+          : Math.max(
+              0,
+              visualNow - timeline.startedAt - timeline.pausedDurationMs,
+            ));
       const flushProgress =
         timeline.flushStartedAt === null
           ? 0
@@ -753,11 +825,20 @@ export default function InteractiveAccumulationBackground({
       }
       progressUniform.value = displayedProgress;
       timeUniform.value = elapsedMs / 1000;
-      interactionTimeUniform.value = (now - interactionEpochMs) / 1000;
+      interactionTimeUniform.value = (visualNow - interactionEpochMs) / 1000;
       dropAgeUniform.value = -1;
-      pressDropBatch.sync(dropStream.getDrops("press"));
-      traceDropBatch.sync(dropStream.getDrops("trace"));
-      holdDropBatch.sync(dropStream.getDrops("hold"));
+      pressDropBatch.sync(
+        () => dropStream.getDrops("press"),
+        dropStream.getVersion("press"),
+      );
+      traceDropBatch.sync(
+        () => dropStream.getDrops("trace"),
+        dropStream.getVersion("trace"),
+      );
+      holdDropBatch.sync(
+        () => dropStream.getDrops("hold"),
+        dropStream.getVersion("hold"),
+      );
       flushProgressUniform.value = flushProgress;
       renderer.render(scene, camera);
     }
@@ -767,26 +848,26 @@ export default function InteractiveAccumulationBackground({
       if (frameInterval >= 1000 / 30) {
         if (profile.materialKind === "solid-form" && lastRenderAt > 0) {
           if (frameInterval > 52) {
-            slowSolidFrames += 1;
-            stableSolidFrames = 0;
+            slowFrames += 1;
+            stableFrames = 0;
           } else if (frameInterval < 38) {
-            stableSolidFrames += 1;
-            slowSolidFrames = 0;
+            stableFrames += 1;
+            slowFrames = 0;
           } else {
-            slowSolidFrames = 0;
-            stableSolidFrames = 0;
+            slowFrames = 0;
+            stableFrames = 0;
           }
 
-          if (slowSolidFrames >= 2 && pixelRatioCap > 0.72) {
+          if (slowFrames >= 2 && pixelRatioCap > 0.72) {
             pixelRatioCap = Math.max(0.72, pixelRatioCap - 0.12);
-            slowSolidFrames = 0;
+            slowFrames = 0;
             resize();
           } else if (
-            stableSolidFrames >= 90 &&
+            stableFrames >= 90 &&
             pixelRatioCap < maximumPixelRatio
           ) {
             pixelRatioCap = Math.min(maximumPixelRatio, pixelRatioCap + 0.06);
-            stableSolidFrames = 0;
+            stableFrames = 0;
             resize();
           }
         }

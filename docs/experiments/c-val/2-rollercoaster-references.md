@@ -1,8 +1,13 @@
 # C-VAL 2 rollercoaster — visual reference ledger
 
+> **Historical record — active-route scope retired on 2026-08-11.** These rail
+> references remain the provenance of the retained `screen-legacy` source;
+> the former direct legacy route was deregistered and the active route now
+> follows [the Bloomberg screen rebuild record](./2-bloomberg-screen-rebuild-2026-08-11.md).
+
 > Review date: 2026-08-06  
-> Scope: a new Three.js scene for `/c-val/2/screen/rollercoaster` and
-> `/c-val/2/screen/rollercoaster-legacy`.
+> Original scope: a new Three.js scene for `/c-val/2/screen/rollercoaster` and
+> its direct legacy route; it now applies only to the retained legacy source.
 
 This is a visual research ledger, not a licence to reproduce a ride, brand,
 photograph, logo, passenger, setting, or lighting scheme. Sixty candidate

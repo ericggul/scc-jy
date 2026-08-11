@@ -27,48 +27,11 @@ const NewsTerminal = styled(CValBloombergWorkstationFrame)`
   color: #e8e7df;
   display: grid;
   font-size: clamp(10px, min(0.818cqw, 1.6cqh), 22px);
-  grid-template-rows: 2.167em 1.917em minmax(0, 1fr);
+  grid-template-rows: 1.917em minmax(0, 1fr);
   height: 100%;
   min-height: 0;
   overflow: hidden;
   width: 100%;
-`;
-
-const FunctionStrip = styled.header`
-  align-items: stretch;
-  background: var(--news-header-deep);
-  border-bottom: 1px solid #4d4d4d;
-  display: grid;
-  grid-template-columns: max-content max-content minmax(0, 1fr) max-content;
-  min-width: 0;
-`;
-
-const Function = styled.div<{ $selected?: boolean; $brand?: boolean }>`
-  align-items: center;
-  background: ${({ $selected }) => ($selected ? "var(--news-blue)" : "transparent")};
-  box-shadow: inset -1px 0 #343434;
-  color: ${({ $brand }) => ($brand ? "var(--news-wire)" : "#f1f1ec")};
-  display: flex;
-  font-family: var(--cval-bloomberg-sans);
-  font-size: 1.08em;
-  font-weight: ${({ $brand }) => ($brand ? 800 : 600)};
-  letter-spacing: ${({ $brand }) => ($brand ? "0.01em" : "-0.015em")};
-  min-width: 0;
-  padding: 0 0.75em;
-  white-space: nowrap;
-`;
-
-const FunctionSpacer = styled.div`
-  min-width: 0;
-`;
-
-const FunctionStatus = styled.div`
-  align-items: center;
-  color: #d9d8d1;
-  display: flex;
-  font-size: 0.92em;
-  padding: 0 0.8em;
-  white-space: nowrap;
 `;
 
 const StreamBar = styled.div`
@@ -373,12 +336,6 @@ export default function CValNewsScreen({ snapshot }: { snapshot: CValSnapshot })
 
   return (
     <NewsTerminal aria-label="C-VAL continuously accumulating public-signal news wire">
-      <FunctionStrip>
-        <Function $brand>C-VAL NEWS</Function>
-        <Function $selected>PUBLIC SIGNALS</Function>
-        <FunctionSpacer />
-        <FunctionStatus>CONTINUOUS ARCHIVE</FunctionStatus>
-      </FunctionStrip>
       <StreamBar>
         <StreamLabel>MARKET NEWS WIRE</StreamLabel>
         <StreamScope>NEW, MATERIAL MARKET STATE CHANGES ONLY</StreamScope>
