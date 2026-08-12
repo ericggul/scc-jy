@@ -1,7 +1,10 @@
 type StandaloneApp = {
   developmentPort: string;
-  environmentKey: "C_VAL_APP_URL" | "DDONG_MEONG_APP_URL";
-  legacyPrefix: "/c-val" | "/ddong-meong";
+  environmentKey:
+    | "C_VAL_APP_URL"
+    | "DDONG_MEONG_APP_URL"
+    | "GOLDFISHES_APP_URL";
+  legacyPrefix: "/c-val" | "/ddong-meong" | "/goldfishes";
   productionFallback: string;
 };
 

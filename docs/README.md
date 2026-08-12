@@ -1,7 +1,7 @@
 # SCC documentation index
 
 The documentation tree follows the ownership boundaries of `apps/scc`,
-`apps/c-val`, and `apps/ddong-meong`.
+`apps/c-val`, `apps/ddong-meong`, and `apps/goldfishes`.
 
 Local development uses Node.js `26.5.1` with npm `11.17.0`; package operations
 use pnpm. Vercel builds use Node `24.x`, and Node type definitions target major
@@ -10,8 +10,8 @@ satisfy the repository without a local engine warning.
 
 - `harness/` contains repository-wide engineering conventions.
 - `foundations/` contains shared design and artwork theory.
-- `experiments/` mirrors the runtime/component families: `dashboard`,
-  `realtime`, `standalone`, and the complex top-level experiment families.
+- Root `docs/` contains only cross-app harness and foundation material.
+- Each `apps/<app>/docs/` tree documents that app's experiments and operations.
 
 When a new experiment is registered, add its durable notes beside the matching
 family below. A group-level `README.md` may cover several small variants;
@@ -35,24 +35,24 @@ get a dedicated document.
 
 | Code family | Registered variants | Documentation |
 | --- | --- | --- |
-| `apps/ddong-meong/components` | `1`, `2`, `3`, `4` | [ddong-meong](./experiments/ddong-meong/README.md) · [3 baseline](./experiments/ddong-meong/3.md) · [3 spatial interaction lab](./experiments/ddong-meong/3-interaction-drop-test.md) · [3 flush vortex](./experiments/ddong-meong/3-flush-vortex-2026-08-11.md) · [4 clone baseline](./experiments/ddong-meong/4.md) · [4 콘텐츠 확장 매뉴얼](./experiments/ddong-meong/4-content-manual.md) |
-| `apps/scc/components/dashboard/palantir` | `1` | [palantir/1](./experiments/dashboard/palantir/1.md) |
-| `apps/scc/components/dashboard/stock` | `default`, `1`, `2`, `3`, `4` | [stock index](./experiments/dashboard/stock/README.md) |
-| `apps/scc/components/realtime/calendar` | `default`, `1` | [calendar](./experiments/realtime/calendar/README.md) |
-| `apps/scc/components/standalone/bastille-day` | `1`, `2` | [bastille-day](./experiments/standalone/bastille-day/README.md) |
-| `apps/scc/components/standalone/cv` | `1`, `2`, `3` | [cv](./experiments/standalone/cv/README.md) |
-| `apps/scc/components/standalone/macos` | `1` | [macos](./experiments/standalone/macos/README.md) |
-| `apps/scc/components/standalone/moma` | `1`, `2` | [moma](./experiments/standalone/moma/README.md) |
-| `apps/scc/components/standalone/swarm` | `1`–`3` | [swarm](./experiments/standalone/swarm/README.md) |
-| `apps/scc/components/standalone/table` | `1`, `2` | [table](./experiments/standalone/table/README.md) |
-| `apps/scc/components/standalone/translate` | `1` | [translate](./experiments/standalone/translate/README.md) |
-| `apps/scc/components/standalone/grid` | `1`, `2`, `3`, `4`, `5` | [grid](./experiments/standalone/grid/README.md) |
-| `apps/scc/components/goldfishes` | `default`, `2d/1`, `0804/tube`, `0804/html`, `0804/node-edge`, `0804/pillars`, `0806/side-view`, `0806/compositional-grid`, `0806/duration`, `0806/temporal-decay` | [archive](./experiments/goldfishes/README.md), [agent onboarding](./experiments/goldfishes/agent-onboarding.md) |
-| `apps/scc/components/dj` | `1` | [dj](./experiments/dj/README.md) |
-| `apps/scc/components/finger-skating` | `1`, `2` | [finger-skating](./experiments/finger-skating/README.md) |
-| `apps/c-val/components` | `1`, `2` | [c-val](./experiments/c-val/README.md) |
-| `apps/scc/components/network-system` | `default`, `macro-economy`, `cycle`, `population`, `competitive-firms` | [network-system index](./experiments/network-system/README.md) |
-| `apps/scc/components/sns` | `feed/1`, `navigation/default`, `navigation/1`, `youtube/1`, `youtube/2`, `linkedin/1` | [sns index](./experiments/sns/README.md) |
+| `apps/ddong-meong/components` | `1`, `2`, `3`, `4` | [ddong-meong](../apps/ddong-meong/docs/README.md) · [3 baseline](../apps/ddong-meong/docs/3.md) · [4 콘텐츠 확장 매뉴얼](../apps/ddong-meong/docs/4-content-manual.md) |
+| `apps/scc/components/dashboard/palantir` | `1` | [palantir/1](../apps/scc/docs/experiments/dashboard/palantir/1.md) |
+| `apps/scc/components/dashboard/stock` | `default`, `1`, `2`, `3`, `4` | [stock index](../apps/scc/docs/experiments/dashboard/stock/README.md) |
+| `apps/scc/components/realtime/calendar` | `default`, `1` | [calendar](../apps/scc/docs/experiments/realtime/calendar/README.md) |
+| `apps/scc/components/standalone/bastille-day` | `1`, `2` | [bastille-day](../apps/scc/docs/experiments/standalone/bastille-day/README.md) |
+| `apps/scc/components/standalone/cv` | `1`, `2`, `3` | [cv](../apps/scc/docs/experiments/standalone/cv/README.md) |
+| `apps/scc/components/standalone/macos` | `1` | [macos](../apps/scc/docs/experiments/standalone/macos/README.md) |
+| `apps/scc/components/standalone/moma` | `1`, `2` | [moma](../apps/scc/docs/experiments/standalone/moma/README.md) |
+| `apps/scc/components/standalone/swarm` | `1`–`3` | [swarm](../apps/scc/docs/experiments/standalone/swarm/README.md) |
+| `apps/scc/components/standalone/table` | `1`, `2` | [table](../apps/scc/docs/experiments/standalone/table/README.md) |
+| `apps/scc/components/standalone/translate` | `1` | [translate](../apps/scc/docs/experiments/standalone/translate/README.md) |
+| `apps/scc/components/standalone/grid` | `1`, `2`, `3`, `4`, `5` | [grid](../apps/scc/docs/experiments/standalone/grid/README.md) |
+| `apps/goldfishes/components` | `default`, `2d/1`, `0804/tube`, `0804/html`, `0804/node-edge`, `0804/pillars`, `0806/side-view`, `0806/compositional-grid`, `0806/duration`, `0806/temporal-decay` | [archive](../apps/goldfishes/docs/README.md), [agent onboarding](../apps/goldfishes/docs/agent-onboarding.md) |
+| `apps/scc/components/dj` | `1` | [dj](../apps/scc/docs/experiments/dj/README.md) |
+| `apps/scc/components/finger-skating` | `1`, `2` | [finger-skating](../apps/scc/docs/experiments/finger-skating/README.md) |
+| `apps/c-val/components` | `1`, `2` | [c-val](../apps/c-val/docs/README.md) |
+| `apps/scc/components/network-system` | `default`, `macro-economy`, `cycle`, `population`, `competitive-firms` | [network-system index](../apps/scc/docs/experiments/network-system/README.md) |
+| `apps/scc/components/sns` | `feed/1`, `navigation/default`, `navigation/1`, `youtube/1`, `youtube/2`, `linkedin/1` | [sns index](../apps/scc/docs/experiments/sns/README.md) |
 
 The registries under `apps/*/components/**/experiments.ts` remain the source of truth
 for executable variants. This index describes them; it does not replace those

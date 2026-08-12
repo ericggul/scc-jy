@@ -1,4 +1,4 @@
-import type { GuidedMeditationSlug } from "../../../model/guided-meditations";
+import type { GuidedMeditationSlug } from "@/components/4/model/guided-meditations";
 import MeditationContentExperience from "../../content/experience";
 import { findMobileMeditationContent } from "../../content/registry";
 

@@ -1,5 +1,5 @@
-import { meditationContents } from "../../../model/content-catalog";
-import { readingScript } from "../../../model/reading-script";
+import { meditationContents } from "@/components/3/model/content-catalog";
+import { readingScript } from "@/components/3/model/reading-script";
 import GradientShell from "../../surface/gradient-shell";
 import { baselineAccumulationProfile } from "./organic-liquid-background/profiles";
 import ReadingPage from "./reading-page";

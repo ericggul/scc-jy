@@ -11,8 +11,8 @@ import {
   playMeditationSoundtrack,
   scheduleMeditationSoundtrackStop,
   stopMeditationSoundtrack,
-} from "../../../media";
-import type { ReadingLine } from "../../../model/reading-script";
+} from "@/components/1/media";
+import type { ReadingLine } from "@/components/1/model/reading-script";
 import OrganicLiquidBackground from "../organic-liquid-background";
 import styles from "./styles.module.css";
 

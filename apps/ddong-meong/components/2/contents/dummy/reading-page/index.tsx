@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { playMeditationSoundtrack, scheduleMeditationSoundtrackStop, stopMeditationSoundtrack } from "../../../media";
-import type { ReadingLine } from "../../../model/reading-script";
+import { playMeditationSoundtrack, scheduleMeditationSoundtrackStop, stopMeditationSoundtrack } from "@/components/2/media";
+import type { ReadingLine } from "@/components/2/model/reading-script";
 import OrganicLiquidBackground from "../organic-liquid-background";
 import type { AccumulationProfile } from "../organic-liquid-background/profiles";
 import styles from "./styles.module.css";

@@ -16,12 +16,14 @@ When the user runs it, it starts:
 - SCC over HTTPS on port 2000.
 - C-VAL over HTTPS on port 2001.
 - ddong-meong over HTTPS on port 2002.
+- Goldfishes over HTTPS on port 2003.
 - Socket.IO over HTTPS on port 4000.
 - Root CA download from the Socket.IO HTTPS server at `/cert`.
 
-For a smaller working set, `pnpm dev:scc`, `pnpm dev:c-val`, and
-`pnpm dev:ddong-meong` each start one selected app plus the relay. Port
-environment overrides are `SCC_PORT`, `C_VAL_PORT`, `DDONG_MEONG_PORT`, and
+For a smaller working set, `pnpm dev:scc`, `pnpm dev:c-val`,
+`pnpm dev:ddong-meong`, and `pnpm dev:goldfishes` each start one selected app
+plus the relay. Port environment overrides are `SCC_PORT`, `C_VAL_PORT`,
+`DDONG_MEONG_PORT`, `GOLDFISHES_PORT`, and
 `SOCKET_PORT`/`NEXT_PUBLIC_SOCKET_PORT`.
 
 Before starting either process, the runner checks that both ports are available.
@@ -42,8 +44,12 @@ Generated certificates live under `certificates/` and are ignored by git.
 
 Socket rules:
 
-- SCC socket modules live under `socket/experiments/`; standalone artwork
-  modules live under their app's `socket/experiments/` tree.
+- Every app's socket modules live under its own
+  `apps/<owner>/socket/experiments/` tree. Root `socket/` contains only the
+  cross-app registry and shared server factory.
+- Goldfishes has no socket experiment yet. Its registry scope is intentionally
+  empty; future modules belong under `apps/goldfishes/socket/experiments/` and
+  must not reuse another artwork's events, room, or state.
 - Every experiment must have its own event prefix, room, and state.
 - Events for one experiment must not leak to another experiment.
 - The top-level `socket-server.mjs` loads the complete or scoped registry; it

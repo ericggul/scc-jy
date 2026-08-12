@@ -1,38 +1,7 @@
-import { calendarExperiment } from "./calendar/index.mjs";
-import { ddongMeongOneExperiment } from "../../apps/ddong-meong/socket/experiments/1/index.mjs";
-import { ddongMeongTwoExperiment } from "../../apps/ddong-meong/socket/experiments/2/index.mjs";
-import { ddongMeongThreeExperiment } from "../../apps/ddong-meong/socket/experiments/3/index.mjs";
-import { ddongMeongFourExperiment } from "../../apps/ddong-meong/socket/experiments/4/index.mjs";
-import { djExperiment } from "./dj/index.mjs";
-import { fingerSkatingExperiment } from "./finger-skating/index.mjs";
-import { networkSystemCompetitiveFirmsExperiment } from "./network-system/competitive-firms/index.mjs";
-import { cValOneExperiment } from "../../apps/c-val/socket/experiments/1/index.mjs";
-import { cValTwoExperiment } from "../../apps/c-val/socket/experiments/2/index.mjs";
-import { networkSystemCycleExperiment } from "./network-system/cycle/index.mjs";
-import { networkSystemDefaultExperiment } from "./network-system/default/index.mjs";
-import { networkSystemMacroEconomyExperiment } from "./network-system/macro-economy/index.mjs";
-import { networkSystemPopulationExperiment } from "./network-system/population/index.mjs";
-import { stockExperiment } from "./stock/index.mjs";
-
-const sccExperiments = [
-  fingerSkatingExperiment,
-  djExperiment,
-  calendarExperiment,
-  stockExperiment,
-  networkSystemMacroEconomyExperiment,
-  networkSystemCycleExperiment,
-  networkSystemDefaultExperiment,
-  networkSystemPopulationExperiment,
-  networkSystemCompetitiveFirmsExperiment,
-];
-
-const cValExperiments = [cValOneExperiment, cValTwoExperiment];
-const ddongMeongExperiments = [
-  ddongMeongOneExperiment,
-  ddongMeongTwoExperiment,
-  ddongMeongThreeExperiment,
-  ddongMeongFourExperiment,
-];
+import { cValExperiments } from "#socket/c-val";
+import { ddongMeongExperiments } from "#socket/ddong-meong";
+import { goldfishesExperiments } from "#socket/goldfishes";
+import { sccExperiments } from "#socket/scc";
 
 function validateExperimentRegistry(items) {
   const ids = new Set();
@@ -60,21 +29,16 @@ function validateExperimentRegistry(items) {
 
 export const experiments = validateExperimentRegistry([
   ...ddongMeongExperiments,
-  fingerSkatingExperiment,
-  djExperiment,
-  calendarExperiment,
-  stockExperiment,
-  networkSystemMacroEconomyExperiment,
+  ...sccExperiments.slice(0, 5),
   ...cValExperiments,
-  networkSystemCycleExperiment,
-  networkSystemDefaultExperiment,
-  networkSystemPopulationExperiment,
-  networkSystemCompetitiveFirmsExperiment,
+  ...sccExperiments.slice(5),
+  ...goldfishesExperiments,
 ]);
 
 export const experimentRegistries = Object.freeze({
   all: experiments,
   "c-val": validateExperimentRegistry(cValExperiments),
   "ddong-meong": validateExperimentRegistry(ddongMeongExperiments),
+  goldfishes: validateExperimentRegistry(goldfishesExperiments),
   scc: validateExperimentRegistry(sccExperiments),
 });

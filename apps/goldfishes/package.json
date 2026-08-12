@@ -1,0 +1,33 @@
+{
+  "name": "@scc/goldfishes",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": "24.x || 26.x"
+  },
+  "scripts": {
+    "build": "next build",
+    "dev": "next dev",
+    "start": "next start",
+    "audit:assets": "node scripts/audit-assets.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "leva": "0.10.1",
+    "next": "16.2.10",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "simple-icons": "^16.25.0",
+    "styled-components": "^6.4.3",
+    "three": "^0.185.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^24",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@types/three": "^0.185.1",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}

@@ -1,11 +1,12 @@
 # Experiment and component structure
 
-Each app's `app/` and `components/` trees and `docs/experiments/` use the same
-family assignment. Public URLs do not include route-group names.
+Each app's `app/`, `components/`, and `docs/` trees use the same family
+assignment. Public URLs do not include route-group names.
 
-The SCC archive owns its established families under `apps/scc`. C-VAL and
-ddong-meong own complete route, component, public-asset, and socket trees under
-`apps/c-val` and `apps/ddong-meong`; they are not SCC route groups.
+The SCC archive owns its established families under `apps/scc`. C-VAL,
+ddong-meong, and Goldfishes own complete route, component, public-asset, and
+future socket trees under `apps/c-val`, `apps/ddong-meong`, and
+`apps/goldfishes`; they are not SCC route groups.
 
 ## Runtime families
 
@@ -16,7 +17,7 @@ apps/scc/app/(standalone)/[group]/page.tsx
 apps/scc/app/(standalone)/[group]/[experiment]/page.tsx
 apps/scc/components/standalone/[group]/experiments.ts
 apps/scc/components/standalone/[group]/[experiment]/index.tsx
-docs/experiments/standalone/[group]/README.md
+apps/scc/docs/experiments/standalone/[group]/README.md
 ```
 
 Smaller socket-backed SCC experiments use matching

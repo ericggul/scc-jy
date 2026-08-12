@@ -23,13 +23,7 @@ Shared foundations:
 - `docs/foundations/parametric-detournement.md`
 
 Per-experiment documentation:
-- `docs/experiments/dashboard/`
-- `docs/experiments/realtime/`
-- `docs/experiments/standalone/`
-- `docs/experiments/dj/`
-- `docs/experiments/finger-skating/`
-- `docs/experiments/network-system/`
-- `docs/experiments/c-val/`
-- `docs/experiments/ddong-meong/`
-- `docs/experiments/goldfishes/`
-- `docs/experiments/sns/`
+- `apps/scc/docs/experiments/`
+- `apps/c-val/docs/`
+- `apps/ddong-meong/docs/`
+- `apps/goldfishes/docs/`

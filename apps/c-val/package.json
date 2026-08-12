@@ -9,6 +9,10 @@
     "build": "next build",
     "dev": "next dev",
     "start": "next start",
+    "audio": "node scripts/generate-c-val-exclamations.mjs",
+    "test:shake": "node scripts/verify-c-val-shake.mjs --version 2",
+    "test:shake:v1": "node scripts/verify-c-val-shake.mjs --version 1",
+    "test:shake:v2": "node scripts/verify-c-val-shake.mjs --version 2",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

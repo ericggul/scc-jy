@@ -35,13 +35,12 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 - `AGENTS.md` is the active operational rule file for coding agents.
 - `llm.txt` is an index for LLM/harness documentation, not a dumping ground.
-- Durable explanations live under `docs/`. The documentation map is
-  `docs/README.md`; per-experiment notes mirror the code families under
-  `docs/experiments/`.
+- Repository-wide explanations live under root `docs/`. The documentation map
+  is `docs/README.md`; app-specific notes live under the owning
+  `apps/<app>/docs/` tree.
 - `AGENTS.md` is repository-wide only. Do not add experiment-specific,
   feature-specific, or one-off implementation notes to `AGENTS.md`; put those
-  in the matching `docs/experiments/` family or another scoped file under
-  `docs/`.
+  in the owning app's `docs/` tree or another appropriately scoped file.
 - When the user says to update "memory", "memory.md", or "remember" for this
   repository, update `AGENTS.md` and/or files under `docs/` as appropriate.
   Do not write to Codex-global memory files unless the user explicitly names
@@ -139,7 +138,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 - Before changing routing, config, image handling, styling setup, or server behavior, read the relevant local guide in `node_modules/next/dist/docs/`.
 - This workspace uses App Router, Next 16.2.10, React 19, Tailwind CSS 4, and
-  styled-components 6 across its three apps.
+  styled-components 6 across its four apps.
 - Each app's `app/` route files should stay thin. Put experiment implementation,
   data, and variant registries under that app's matching `components/` family.
 
@@ -162,11 +161,11 @@ This version has breaking changes — APIs, conventions, and file structure may 
   model must inhabit an established interface. Do not recreate an approximate
   version from memory and do not introduce explanatory chrome as a substitute.
 - For a concrete failure analysis and preservation checklist, read
-  `docs/experiments/dashboard/stock/1.md`.
+  `apps/scc/docs/experiments/dashboard/stock/1.md`.
 
-- The SCC archive lives under `apps/scc`. C-VAL and ddong-meong are independent
-  Next.js roots under `apps/c-val` and `apps/ddong-meong`; do not move their
-  canonical routes back under the SCC app.
+- The SCC archive lives under `apps/scc`. C-VAL, ddong-meong, and Goldfishes are
+  independent Next.js roots under `apps/c-val`, `apps/ddong-meong`, and
+  `apps/goldfishes`; do not move their canonical routes back under the SCC app.
 - Standalone experiment groups inside SCC use matching filesystem families without changing
   their public URLs:
   - `apps/scc/app/(standalone)/[group]/page.tsx` as a minimal index.
@@ -201,8 +200,8 @@ This version has breaking changes — APIs, conventions, and file structure may 
     `apps/<owner>/app/[group]/[experiment]/screen/[screen]/page.tsx`.
   - `apps/<owner>/components/[group]/experiments.ts` as the shared variant registry.
   - `apps/<owner>/components/[group]/[experiment]/mobile.tsx` and `screen.tsx` for implementation.
-  - standalone app socket modules under `apps/<owner>/socket/experiments/`;
-    shared SCC relay modules remain under `socket/experiments/`.
+  - all app-owned socket modules under `apps/<owner>/socket/experiments/`;
+  - only the shared registry and server factory remain under root `socket/`.
 - Do not add decorative labels, footers, captions, archive text, mode badges, or explanatory chrome unless the user explicitly asks.
 - If a page is specified as non-scrollable, visible content must actually fit inside the viewport.
 - Fixed-format experiments such as A4 pages, boards, grids, and instrument

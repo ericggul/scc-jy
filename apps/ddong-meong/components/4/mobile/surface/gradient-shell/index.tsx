@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
-import InteractionLock from "../../../design-system/interaction-lock";
-import { ddongMeongSans } from "../../../design-system/fonts";
-import theme from "../../../design-system/theme.module.css";
+import InteractionLock from "@/components/4/design-system/interaction-lock";
+import { ddongMeongSans } from "@/components/4/design-system/fonts";
+import theme from "@/components/4/design-system/theme.module.css";
 import styles from "./styles.module.css";
 
 type GradientShellProps = {

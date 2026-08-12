@@ -2,6 +2,12 @@
   "name": "scc-workspace",
   "version": "0.1.0",
   "private": true,
+  "imports": {
+    "#socket/c-val": "./apps/c-val/socket/experiments/index.mjs",
+    "#socket/ddong-meong": "./apps/ddong-meong/socket/experiments/index.mjs",
+    "#socket/goldfishes": "./apps/goldfishes/socket/experiments/index.mjs",
+    "#socket/scc": "./apps/scc/socket/experiments/index.mjs"
+  },
   "engines": {
     "node": "24.x || 26.x"
   },
@@ -10,17 +16,20 @@
     "dev:scc": "node scripts/dev-https.mjs --app scc",
     "dev:c-val": "node scripts/dev-https.mjs --app c-val",
     "dev:ddong-meong": "node scripts/dev-https.mjs --app ddong-meong",
+    "dev:goldfishes": "node scripts/dev-https.mjs --app goldfishes",
     "dev:next": "node scripts/dev-https.mjs --all",
     "dev:socket": "bash scripts/generate-certs.sh && node socket-server.mjs",
     "dev:socket:scc": "bash scripts/generate-certs.sh && SCC_SOCKET_SCOPE=scc node socket-server.mjs",
     "dev:socket:c-val": "bash scripts/generate-certs.sh && SCC_SOCKET_SCOPE=c-val node socket-server.mjs",
     "dev:socket:ddong-meong": "bash scripts/generate-certs.sh && SCC_SOCKET_SCOPE=ddong-meong node socket-server.mjs",
+    "dev:socket:goldfishes": "bash scripts/generate-certs.sh && SCC_SOCKET_SCOPE=goldfishes node socket-server.mjs",
     "typecheck": "pnpm --recursive --if-present typecheck",
     "lint": "eslint",
-    "audio:c-val": "node scripts/generate-c-val-exclamations.mjs",
-    "test:c-val:shake": "node scripts/verify-c-val-shake.mjs --version 2",
-    "test:c-val:shake:v1": "node scripts/verify-c-val-shake.mjs --version 1",
-    "test:c-val:shake:v2": "node scripts/verify-c-val-shake.mjs --version 2"
+    "audit:goldfishes-assets": "pnpm --filter @scc/goldfishes audit:assets",
+    "audio:c-val": "pnpm --filter @scc/c-val audio",
+    "test:c-val:shake": "pnpm --filter @scc/c-val test:shake",
+    "test:c-val:shake:v1": "pnpm --filter @scc/c-val test:shake:v1",
+    "test:c-val:shake:v2": "pnpm --filter @scc/c-val test:shake:v2"
   },
   "dependencies": {
     "sharp": "0.34.5",

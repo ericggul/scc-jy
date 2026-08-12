@@ -26,7 +26,8 @@ The documentation split is:
 - `apps/scc`: the SCC archive and its existing experiment families.
 - `apps/c-val`: the standalone C-VAL artwork.
 - `apps/ddong-meong`: the standalone ddong-meong artwork.
-- `docs/experiments/*`: notes aligned with those app/component families.
+- `apps/goldfishes`: the standalone Goldfishes archive and artwork family.
+- `apps/*/docs/*`: notes aligned with each owning app/component family.
 
 Keep operational instructions short and enforceable. Put a repeated
 repository-wide failure in `AGENTS.md` or a harness document. Put a

@@ -211,7 +211,7 @@ t_ij = condition(interaction, time, collective state, system data)
 
 좋은 interaction은 두 성격을 결합할 수 있다. 관객은 무엇을 선택하고 있는지 이해하면서도, 그 선택을 연속적으로 연주하고 조정할 수 있어야 한다.
 
-`Finger Skating`은 이에 대한 primitive interaction pattern이다. discrete control로 구성된 UI 위에서 손가락을 떼지 않고 이동하며 연속적으로 선택한다. 선택 대상은 입자적이지만 행위는 파동적이다. 상세한 구현 규칙은 [Finger Skating 문서](../experiments/finger-skating/README.md)를 따른다.
+`Finger Skating`은 이에 대한 primitive interaction pattern이다. discrete control로 구성된 UI 위에서 손가락을 떼지 않고 이동하며 연속적으로 선택한다. 선택 대상은 입자적이지만 행위는 파동적이다. 상세한 구현 규칙은 [Finger Skating 문서](../../apps/scc/docs/experiments/finger-skating/README.md)를 따른다.
 
 ## 7. 이전 작품과 상호작용 사례
 
@@ -512,7 +512,7 @@ Everyday UI를 wrapper와 parameter로 해체하고, 여러 wrapper 사이의 pa
 
 ## 15. 관련 문서
 
-- [Finger Skating](../experiments/finger-skating/README.md): discrete control과 continuous gesture를 결합하는 interaction pattern.
+- [Finger Skating](../../apps/scc/docs/experiments/finger-skating/README.md): discrete control과 continuous gesture를 결합하는 interaction pattern.
 - Google Drive, `2026-MDWA Siggraph Art Paper`: MDWA의 web, multi-device, artwork 방법론 초고.
 - Google Drive, `Banpo-Xism Leonardo Publication Plan`: 반포자이즘의 좌표계, 고차원 manifold, system art 논문화 초고.
 - Google Drive, `Omega - SIGGRAPH`: semantic classification과 phenomenological resistance, 심사 피드백.

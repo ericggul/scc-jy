@@ -749,4 +749,4 @@ export const guidedAccumulationProfiles = {
   "private-room": privateRoomProfile,
   "lighter-moment": lighterMomentProfile,
 } satisfies Record<GuidedMeditationSlug, AccumulationProfile>;
-import type { GuidedMeditationSlug } from "../../../../model/guided-meditations";
+import type { GuidedMeditationSlug } from "@/components/3/model/guided-meditations";

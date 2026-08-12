@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import { ddongMeongSans } from "../../../design-system/fonts";
-import theme from "../../../design-system/theme.module.css";
+import { ddongMeongSans } from "@/components/3/design-system/fonts";
+import theme from "@/components/3/design-system/theme.module.css";
 import styles from "./styles.module.css";
 
 type GradientShellProps = {

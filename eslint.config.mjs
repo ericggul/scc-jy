@@ -8,17 +8,22 @@ const eslintConfig = defineConfig([
   {
     settings: {
       next: {
-        rootDir: ["apps/scc/", "apps/c-val/", "apps/ddong-meong/"],
+        rootDir: [
+          "apps/scc/",
+          "apps/c-val/",
+          "apps/ddong-meong/",
+          "apps/goldfishes/",
+        ],
       },
     },
   },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:
-    ".next/**",
-    "out/**",
-    "build/**",
-    "next-env.d.ts",
+    "**/.next/**",
+    "**/out/**",
+    "**/build/**",
+    "**/next-env.d.ts",
   ]),
 ]);
 

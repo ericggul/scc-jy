@@ -30,6 +30,7 @@ test("scoped socket registries expose only their owning app", () => {
     experimentRegistries.scc.some(({ id }) => id.startsWith("c-val:")),
     false,
   );
+  assert.deepEqual(experimentRegistries.goldfishes, []);
   assert.equal(
     experimentRegistries.scc.some(({ id }) => id.startsWith("ddong-meong-")),
     false,

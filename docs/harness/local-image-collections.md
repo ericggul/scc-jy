@@ -37,11 +37,11 @@ before publication or redistribution.
 Use:
 
 ```sh
-node scripts/collect-wikimedia-image-set.mjs <collection-config.json>
+node apps/scc/scripts/collect-wikimedia-image-set.mjs <collection-config.json>
 ```
 
 The config schema is represented by
-[`scripts/collections/grid-2-politicians.json`](../../scripts/collections/grid-2-politicians.json):
+[`apps/scc/scripts/collections/grid-2-politicians.json`](../../apps/scc/scripts/collections/grid-2-politicians.json):
 
 ```json
 {

@@ -30,6 +30,12 @@ const applications = [
     port: Number.parseInt(process.env.DDONG_MEONG_PORT || "2002", 10),
     root: join(repositoryRoot, "apps", "ddong-meong"),
   },
+  {
+    id: "goldfishes",
+    label: "Goldfishes",
+    port: Number.parseInt(process.env.GOLDFISHES_PORT || "2003", 10),
+    root: join(repositoryRoot, "apps", "goldfishes"),
+  },
 ];
 
 function selectedApplications(argv) {
@@ -154,6 +160,11 @@ function spawnNext(application) {
           process.env.DDONG_MEONG_APP_URL || localAppUrls["ddong-meong"],
         DDONG_MEONG_PORT: String(
           applications.find(({ id }) => id === "ddong-meong").port,
+        ),
+        GOLDFISHES_APP_URL:
+          process.env.GOLDFISHES_APP_URL || localAppUrls.goldfishes,
+        GOLDFISHES_PORT: String(
+          applications.find(({ id }) => id === "goldfishes").port,
         ),
         NEXT_PUBLIC_DEV_HOSTNAME: devHostname,
         NEXT_PUBLIC_SOCKET_PORT: String(socketPort),

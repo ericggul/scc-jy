@@ -1,7 +1,7 @@
 import {
   findGuidedMeditation,
   type GuidedMeditationSlug,
-} from "../../../model/guided-meditations";
+} from "@/components/3/model/guided-meditations";
 import GradientShell from "../../surface/gradient-shell";
 import { guidedAccumulationProfiles } from "../dummy/organic-liquid-background/profiles";
 import ReadingPage from "../dummy/reading-page";
