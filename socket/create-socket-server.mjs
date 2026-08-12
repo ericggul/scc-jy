@@ -1,9 +1,14 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { Server } from "socket.io";
-import { experiments } from "./experiments/index.mjs";
+import { experiments as allExperiments } from "./experiments/index.mjs";
 
-export function handleSocketHealth(req, res, certDir = join(process.cwd(), "certificates")) {
+export function handleSocketHealth(
+  req,
+  res,
+  certDir = join(process.cwd(), "certificates"),
+  experiments = allExperiments,
+) {
   if (req.url === "/cert") {
     res.writeHead(200, { "content-type": "application/x-x509-ca-cert" });
     res.end(readFileSync(join(certDir, "rootCA.pem")));
@@ -26,7 +31,10 @@ export function handleSocketHealth(req, res, certDir = join(process.cwd(), "cert
   return false;
 }
 
-export function createExperimentSocketServer(httpServer) {
+export function createExperimentSocketServer(
+  httpServer,
+  experiments = allExperiments,
+) {
   const io = new Server(httpServer, {
     cors: {
       origin: "*",

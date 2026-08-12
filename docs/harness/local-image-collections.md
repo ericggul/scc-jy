@@ -96,10 +96,10 @@ those files do not have trusted source records.
 
 | Collection | Local source | Ledger |
 | --- | --- | --- |
-| Stock 4 cats | `public/images/stock-4/cats/` | `components/dashboard/stock/4/model/cat-sources.json` |
-| Stock 4 kisses | `public/images/stock-4/kisses/` | `components/dashboard/stock/4/model/kiss-sources.json` |
-| Bastille Day good/dark | `public/images/bastille-day-2-good/`, `public/images/bastille-day-2-dark/` | `components/standalone/bastille-day/2/good-sources.json`, `dark-sources.json` |
-| Grid 2 politicians | `public/images/grid-2/politicians/` | `components/standalone/grid/2/politician-sources.json` |
+| Stock 4 cats | `apps/scc/public/images/stock-4/cats/` | `apps/scc/components/dashboard/stock/4/model/cat-sources.json` |
+| Stock 4 kisses | `apps/scc/public/images/stock-4/kisses/` | `apps/scc/components/dashboard/stock/4/model/kiss-sources.json` |
+| Bastille Day good/dark | `apps/scc/public/images/bastille-day-2-good/`, `apps/scc/public/images/bastille-day-2-dark/` | `apps/scc/components/standalone/bastille-day/2/good-sources.json`, `dark-sources.json` |
+| Grid 2 politicians | `apps/scc/public/images/grid-2/politicians/` | `apps/scc/components/standalone/grid/2/politician-sources.json` |
 
 ## Performance guidance
 

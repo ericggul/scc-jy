@@ -84,10 +84,10 @@ try {
     console.log(usage());
   } else {
     const harness = await import(
-      `../socket/experiments/c-val/${options.version}/shake-harness.mjs`
+      `../apps/c-val/socket/experiments/${options.version}/shake-harness.mjs`
     );
     const traceModule = await import(
-      `../socket/experiments/c-val/${options.version}/shake-trace.mjs`
+      `../apps/c-val/socket/experiments/${options.version}/shake-trace.mjs`
     );
     const trace = await loadTrace(options, traceModule);
     const report =

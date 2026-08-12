@@ -13,9 +13,16 @@ pnpm dev
 
 When the user runs it, it starts:
 
-- Next dev over HTTPS on port 3000.
+- SCC over HTTPS on port 2000.
+- C-VAL over HTTPS on port 2001.
+- ddong-meong over HTTPS on port 2002.
 - Socket.IO over HTTPS on port 4000.
 - Root CA download from the Socket.IO HTTPS server at `/cert`.
+
+For a smaller working set, `pnpm dev:scc`, `pnpm dev:c-val`, and
+`pnpm dev:ddong-meong` each start one selected app plus the relay. Port
+environment overrides are `SCC_PORT`, `C_VAL_PORT`, `DDONG_MEONG_PORT`, and
+`SOCKET_PORT`/`NEXT_PUBLIC_SOCKET_PORT`.
 
 Before starting either process, the runner checks that both ports are available.
 This prevents a failed second launch from briefly starting a relay whose paired
@@ -35,10 +42,12 @@ Generated certificates live under `certificates/` and are ignored by git.
 
 Socket rules:
 
-- Socket modules live under `socket/experiments/`.
+- SCC socket modules live under `socket/experiments/`; standalone artwork
+  modules live under their app's `socket/experiments/` tree.
 - Every experiment must have its own event prefix, room, and state.
 - Events for one experiment must not leak to another experiment.
-- The top-level `socket-server.mjs` loads experiment modules; it should not own artwork-specific state.
+- The top-level `socket-server.mjs` loads the complete or scoped registry; it
+  should not own artwork-specific state.
 - Experiment socket modules may own abstract system/domain state, parameters,
   flows, interventions, histories, and time. They must not own or broadcast
   presentation values such as color, dimensions, stroke width, opacity,

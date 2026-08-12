@@ -3,14 +3,53 @@ import { existsSync, readFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { join } from "node:path";
 
-const root = process.cwd();
-const certDir = join(root, "certificates");
+const repositoryRoot = process.cwd();
+const certDir = join(repositoryRoot, "certificates");
 const hostnameFile = join(certDir, ".hostname");
-const appPort = Number.parseInt(process.env.PORT || "3000", 10);
 const socketPort = Number.parseInt(
   process.env.NEXT_PUBLIC_SOCKET_PORT || process.env.SOCKET_PORT || "4000",
   10,
 );
+
+const applications = [
+  {
+    id: "scc",
+    label: "SCC archive",
+    port: Number.parseInt(process.env.SCC_PORT || process.env.PORT || "2000", 10),
+    root: join(repositoryRoot, "apps", "scc"),
+  },
+  {
+    id: "c-val",
+    label: "C-VAL",
+    port: Number.parseInt(process.env.C_VAL_PORT || "2001", 10),
+    root: join(repositoryRoot, "apps", "c-val"),
+  },
+  {
+    id: "ddong-meong",
+    label: "ddong-meong",
+    port: Number.parseInt(process.env.DDONG_MEONG_PORT || "2002", 10),
+    root: join(repositoryRoot, "apps", "ddong-meong"),
+  },
+];
+
+function selectedApplications(argv) {
+  if (argv.includes("--all")) return applications;
+
+  const appFlagIndex = argv.indexOf("--app");
+  const selectedId = appFlagIndex === -1 ? "scc" : argv[appFlagIndex + 1];
+  const selected = applications.find(({ id }) => id === selectedId);
+  if (!selected) {
+    const choices = applications.map(({ id }) => id).join(", ");
+    throw new Error(`Unknown app "${selectedId}". Choose one of: ${choices}.`);
+  }
+  return [selected];
+}
+
+function assertValidPort(port, serviceName) {
+  if (!Number.isInteger(port) || port < 1 || port > 65_535) {
+    throw new Error(`${serviceName} has invalid port ${port}.`);
+  }
+}
 
 function assertPortAvailable(port, serviceName, host) {
   return new Promise((resolve, reject) => {
@@ -25,42 +64,51 @@ function assertPortAvailable(port, serviceName, host) {
         );
         return;
       }
-
       reject(error);
     });
 
     probe.listen({ host, port, exclusive: true }, () => {
       probe.close((error) => {
-        if (error) {
-          reject(error);
-          return;
-        }
-
-        resolve();
+        if (error) reject(error);
+        else resolve();
       });
     });
   });
 }
 
-if (appPort === socketPort) {
-  console.error(
-    `App and Socket.IO relay cannot both use port ${appPort}. Set SOCKET_PORT or NEXT_PUBLIC_SOCKET_PORT to a different port.`,
-  );
-  process.exit(1);
-}
-
+let selected;
 try {
-  await assertPortAvailable(appPort, "Next.js", "0.0.0.0");
-  await assertPortAvailable(appPort, "Next.js", "::");
-  await assertPortAvailable(socketPort, "Socket.IO relay", "0.0.0.0");
-  await assertPortAvailable(socketPort, "Socket.IO relay", "::");
+  selected = selectedApplications(process.argv.slice(2));
+  assertValidPort(socketPort, "Socket.IO relay");
+  for (const application of selected) {
+    assertValidPort(application.port, application.label);
+  }
+
+  const usedPorts = new Map();
+  for (const service of [
+    ...selected.map(({ label, port }) => ({ label, port })),
+    { label: "Socket.IO relay", port: socketPort },
+  ]) {
+    const existing = usedPorts.get(service.port);
+    if (existing) {
+      throw new Error(
+        `${existing} and ${service.label} cannot both use port ${service.port}. Set a distinct app or socket port.`,
+      );
+    }
+    usedPorts.set(service.port, service.label);
+  }
+
+  for (const [port, label] of usedPorts) {
+    await assertPortAvailable(port, label, "0.0.0.0");
+    await assertPortAvailable(port, label, "::");
+  }
 } catch (error) {
   console.error(`\n> ${error.message}\n`);
   process.exit(1);
 }
 
 const certResult = spawnSync("bash", ["scripts/generate-certs.sh"], {
-  cwd: root,
+  cwd: repositoryRoot,
   stdio: "inherit",
 });
 
@@ -72,7 +120,11 @@ const devHostname = existsSync(hostnameFile)
   ? readFileSync(hostnameFile, "utf8").trim()
   : "localhost";
 
-function spawnNext() {
+const localAppUrls = Object.fromEntries(
+  applications.map(({ id, port }) => [id, `https://${devHostname}:${port}`]),
+);
+
+function spawnNext(application) {
   return spawn(
     "pnpm",
     [
@@ -82,22 +134,31 @@ function spawnNext() {
       "--hostname",
       "0.0.0.0",
       "--port",
-      String(appPort),
+      String(application.port),
       "--experimental-https",
       "--experimental-https-key",
-      "certificates/server.key",
+      join(certDir, "server.key"),
       "--experimental-https-cert",
-      "certificates/server.pem",
+      join(certDir, "server.pem"),
       "--experimental-https-ca",
-      "certificates/rootCA.pem",
+      join(certDir, "rootCA.pem"),
     ],
     {
-      cwd: root,
+      cwd: application.root,
       stdio: "inherit",
       env: {
         ...process.env,
+        C_VAL_APP_URL: process.env.C_VAL_APP_URL || localAppUrls["c-val"],
+        C_VAL_PORT: String(applications.find(({ id }) => id === "c-val").port),
+        DDONG_MEONG_APP_URL:
+          process.env.DDONG_MEONG_APP_URL || localAppUrls["ddong-meong"],
+        DDONG_MEONG_PORT: String(
+          applications.find(({ id }) => id === "ddong-meong").port,
+        ),
         NEXT_PUBLIC_DEV_HOSTNAME: devHostname,
         NEXT_PUBLIC_SOCKET_PORT: String(socketPort),
+        PORT: String(application.port),
+        SCC_PORT: String(applications.find(({ id }) => id === "scc").port),
       },
     },
   );
@@ -105,7 +166,7 @@ function spawnNext() {
 
 function spawnSocket() {
   return spawn("node", ["socket-server.mjs"], {
-    cwd: root,
+    cwd: repositoryRoot,
     stdio: "inherit",
     env: {
       ...process.env,
@@ -116,21 +177,22 @@ function spawnSocket() {
   });
 }
 
-const nextProcess = spawnNext();
-const socketProcess = spawnSocket();
-const children = [nextProcess, socketProcess];
+const children = [...selected.map(spawnNext), spawnSocket()];
+let stopping = false;
 
 console.log("");
-console.log(`> Open app: https://${devHostname}:${appPort}`);
+for (const application of selected) {
+  console.log(`> ${application.label}: ${localAppUrls[application.id]}`);
+}
 console.log(`> Socket relay: https://${devHostname}:${socketPort}`);
 console.log(`> Root CA download for devices: https://${devHostname}:${socketPort}/cert`);
 console.log("");
 
 function stopAll(signal) {
+  if (stopping) return;
+  stopping = true;
   for (const child of children) {
-    if (!child.killed) {
-      child.kill(signal);
-    }
+    if (!child.killed) child.kill(signal);
   }
 }
 
@@ -141,14 +203,10 @@ for (const signal of ["SIGINT", "SIGTERM"]) {
   });
 }
 
-nextProcess.on("exit", (code, signal) => {
-  stopAll(signal || "SIGTERM");
-  process.exit(code ?? 0);
-});
-
-socketProcess.on("exit", (code, signal) => {
-  if (code && code !== 0) {
+for (const child of children) {
+  child.on("exit", (code, signal) => {
+    if (stopping) return;
     stopAll(signal || "SIGTERM");
-    process.exit(code);
-  }
-});
+    process.exit(code ?? 0);
+  });
+}

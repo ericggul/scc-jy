@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { experiments } from "./index.mjs";
+import { experimentRegistries, experiments } from "./index.mjs";
 
 test("socket experiment registry has unique ids and event names", () => {
   const ids = experiments.map((experiment) => experiment.id);
@@ -10,4 +10,29 @@ test("socket experiment registry has unique ids and event names", () => {
 
   assert.equal(new Set(ids).size, ids.length);
   assert.equal(new Set(eventNames).size, eventNames.length);
+});
+
+test("scoped socket registries expose only their owning app", () => {
+  assert.deepEqual(
+    experimentRegistries["c-val"].map(({ id }) => id),
+    ["c-val:1", "c-val:2"],
+  );
+  assert.deepEqual(
+    experimentRegistries["ddong-meong"].map(({ id }) => id),
+    [
+      "ddong-meong-1",
+      "ddong-meong-2",
+      "ddong-meong-3",
+      "ddong-meong-4",
+    ],
+  );
+  assert.equal(
+    experimentRegistries.scc.some(({ id }) => id.startsWith("c-val:")),
+    false,
+  );
+  assert.equal(
+    experimentRegistries.scc.some(({ id }) => id.startsWith("ddong-meong-")),
+    false,
+  );
+  assert.strictEqual(experimentRegistries.all, experiments);
 });

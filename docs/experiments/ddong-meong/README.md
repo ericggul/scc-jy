@@ -88,17 +88,17 @@ QR, 이름, 쿠키를 도입한다는 것은 무제한 수집을 허용한다는
 
 ### 경로와 변형
 
-- `/ddong-meong`은 작업 중인 `/ddong-meong/3`로 리다이렉트한다.
-- `/ddong-meong/1`과 `/ddong-meong/2`는 보존된 `archive`,
-  `/ddong-meong/3`은 `working`으로 등록되어 있다.
-- 각 변형은 진입 `/ddong-meong/<variant>`, 목록
-  `/ddong-meong/<variant>/main`, 여섯 콘텐츠 경로, 전시 화면
-  `/ddong-meong/<variant>/screen`을 가진다.
+- standalone 앱의 `/`은 작업 중인 `/3`으로 리다이렉트한다.
+- `/1`과 `/2`는 보존된 `archive`, `/3`은 `working`으로 등록되어 있다.
+- 각 변형은 진입 `/<variant>`, 목록 `/<variant>/main`, 여섯 콘텐츠 경로,
+  전시 화면 `/<variant>/screen`을 가진다. SCC의 옛
+  `/ddong-meong/<variant>/...` 경로는 동일 화면으로 전달된다.
 - 2026-08-05에 사용자 요청으로 당시 작업 변형 `2`의 컴포넌트와 공개 미디어를
   기존 `1` 대신 새 보존본으로 복사했다. 두 변형은 같은 기준점에서 출발하지만
   라우트, 저장 키, DOM ID, 공개 미디어 경로와 소켓 namespace는 각 번호로
   분리되어 있고 서로의 구현을 import하지 않는다.
-- Pretendard 원본과 라이선스만 중복 저장하지 않고 `app/fonts`의 공용 인프라
+- Pretendard 원본과 라이선스만 중복 저장하지 않고
+  `apps/ddong-meong/app/fonts`의 공용 인프라
   자산으로 둔다. 변형별 디자인 시스템은 같은 파일을 각각 `next/font/local`로
   등록한다.
 
@@ -442,7 +442,7 @@ label 없이도 변기 물 내리기로 읽히게 한다. 접근성 이름은 `�
    reservoir 입자는 중앙으로 휘며 회전한 뒤 viewport 아래로 빠져나가고,
    atmosphere와 남은 입자는 마지막 구간에서 함께 소거된다.
 6. 완전히 `#020202`에 가까운 검정이 된 뒤 5.5초 유지하고
-   `/ddong-meong/2/main`으로 `replace`한다. 클릭부터 복귀까지 총 8.3초다.
+   `/2/main`으로 `replace`한다. 클릭부터 복귀까지 총 8.3초다.
 
 배수는 축적 profile과 무관하게 같은 종료 문법을 사용하지만, 클릭 시점까지
 쌓인 높이·색·입자 밀도에서 시작하므로 각 콘텐츠의 현재 상태를 그대로 대상으로
@@ -459,8 +459,9 @@ hold와 메인 복귀 타이밍은 유지한다.
 ### 2026-08-04 임시 명상 사운드트랙
 
 사용자가 제공한 `/Users/jeongyoonchoi/Downloads/river-flows-in-you.mp3`를 작업
-변형 `2`의 `/public/ddong-meong/2/river-flows-in-you.mp3`로 복사했다. 2026-08-05
-스냅샷에서 동일 파일을 `/public/ddong-meong/1/`에도 복사했으며, 각 변형의 여섯
+변형 `2`의 `apps/ddong-meong/public/2/river-flows-in-you.mp3`로 복사했다.
+2026-08-05 스냅샷에서 동일 파일을 `apps/ddong-meong/public/1/`에도 복사했으며,
+각 변형의 여섯
 명상 콘텐츠가 자기 번호의 파일을 임시 공통 사운드트랙으로 사용한다.
 
 - 콘텐츠 카드 클릭의 사용자 제스처 안에서 곡을 처음부터 재생한다.

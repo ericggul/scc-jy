@@ -6,7 +6,7 @@ const WIDTH = 1920;
 const HEIGHT = 1080;
 const RENDER_WIDTH = 960;
 const RENDER_HEIGHT = 540;
-const OUT_DIR = path.join(process.cwd(), "public", "images-overlay");
+const OUT_DIR = path.join(process.cwd(), "apps/scc/public/images-overlay");
 
 const scenes = [
   ["alpine dawn", 218, 30, 0.33, 0.78],

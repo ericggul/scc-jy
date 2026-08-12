@@ -120,7 +120,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 - Do not run `pnpm build`.
 - Do not run `pnpm dev` or `pnpm dev:http`.
-- `pnpm lint` and `pnpm exec tsc --noEmit` are acceptable verification commands.
+- `pnpm lint` and `pnpm typecheck` are acceptable verification commands.
 - Do not run browser checks, Playwright checks, curl runtime probes, or other
   runtime interaction verification unless the user explicitly asks for it.
 - Do not start dev servers under any circumstance. If a server is needed,
@@ -138,8 +138,10 @@ This version has breaking changes — APIs, conventions, and file structure may 
 ## Next.js
 
 - Before changing routing, config, image handling, styling setup, or server behavior, read the relevant local guide in `node_modules/next/dist/docs/`.
-- This app uses App Router, Next 16.2.10, React 19, Tailwind CSS 4, and styled-components 6.
-- `app/` route files should stay thin. Put experiment implementation, data, and variant registries under the matching `components/` family.
+- This workspace uses App Router, Next 16.2.10, React 19, Tailwind CSS 4, and
+  styled-components 6 across its three apps.
+- Each app's `app/` route files should stay thin. Put experiment implementation,
+  data, and variant registries under that app's matching `components/` family.
 
 ## Experiment Structure
 
@@ -162,17 +164,21 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - For a concrete failure analysis and preservation checklist, read
   `docs/experiments/dashboard/stock/1.md`.
 
-- Standalone experiment groups use matching filesystem families without changing
+- The SCC archive lives under `apps/scc`. C-VAL and ddong-meong are independent
+  Next.js roots under `apps/c-val` and `apps/ddong-meong`; do not move their
+  canonical routes back under the SCC app.
+- Standalone experiment groups inside SCC use matching filesystem families without changing
   their public URLs:
-  - `app/(standalone)/[group]/page.tsx` as a minimal index.
-  - `app/(standalone)/[group]/[experiment]/page.tsx` as dynamic routing.
-  - `components/standalone/[group]/[experiment]/...` for implementation and data.
-- Smaller socket-backed experiments use `app/(realtime)/[group]/...` and
-  `components/realtime/[group]/...`.
-- Dashboard workstations use `app/(dashboard)/[group]/...` and
-  `components/dashboard/[group]/...`.
-- Important or complex experiments (`dj`, `finger-skating`, `network-system`,
-  and `sns`) remain directly under both `app/` and `components/`.
+  - `apps/scc/app/(standalone)/[group]/page.tsx` as a minimal index.
+  - `apps/scc/app/(standalone)/[group]/[experiment]/page.tsx` as dynamic routing.
+  - `apps/scc/components/standalone/[group]/[experiment]/...` for implementation and data.
+- Smaller socket-backed SCC experiments use `apps/scc/app/(realtime)/[group]/...` and
+  `apps/scc/components/realtime/[group]/...`.
+- Dashboard workstations use `apps/scc/app/(dashboard)/[group]/...` and
+  `apps/scc/components/dashboard/[group]/...`.
+- Important or complex SCC experiments (`dj`, `finger-skating`,
+  `network-system`, and `sns`) remain directly under both `apps/scc/app/` and
+  `apps/scc/components/`.
 - Keep component families layered by responsibility rather than accumulating
   flat files in an experiment root. Named capabilities belong in a matching
   feature folder such as `news/`, `media/`, or `controller/`; domain data
@@ -182,19 +188,21 @@ This version has breaking changes — APIs, conventions, and file structure may 
   relevant files into this structure instead of adding another root-level file.
 - Co-locate pure tests with the feature or presenter they exercise. Do not use
   a generic `utils/` folder as an escape hatch for feature-specific logic.
-- Do not create literal numbered route folders such as `app/(standalone)/[group]/1/page.tsx`
+- Do not create literal numbered route folders such as
+  `apps/scc/app/(standalone)/[group]/1/page.tsx`
   for single-device experiment variants. Numbered variants must go through
-  `app/[group]/[experiment]/page.tsx`.
+  `apps/<owner>/app/[group]/[experiment]/page.tsx`.
 - Multi-device experiments use:
-  - `app/[group]/page.tsx` as a minimal role/variant index.
-  - `app/[group]/[experiment]/mobile/page.tsx` as dynamic mobile routing.
-  - `app/[group]/[experiment]/screen/page.tsx` as dynamic screen routing.
+  - `apps/<owner>/app/[group]/page.tsx` as a minimal role/variant index.
+  - `apps/<owner>/app/[group]/[experiment]/mobile/page.tsx` as dynamic mobile routing.
+  - `apps/<owner>/app/[group]/[experiment]/screen/page.tsx` as dynamic screen routing.
   - controller/multi-screen systems use
-    `app/[group]/[experiment]/controller/page.tsx` and
-    `app/[group]/[experiment]/screen/[screen]/page.tsx`.
-  - `components/[group]/experiments.ts` as the shared variant registry.
-  - `components/[group]/[experiment]/mobile.tsx` and `components/[group]/[experiment]/screen.tsx` for implementation.
-  - dedicated socket modules under `socket/experiments/[group]/index.mjs`.
+    `apps/<owner>/app/[group]/[experiment]/controller/page.tsx` and
+    `apps/<owner>/app/[group]/[experiment]/screen/[screen]/page.tsx`.
+  - `apps/<owner>/components/[group]/experiments.ts` as the shared variant registry.
+  - `apps/<owner>/components/[group]/[experiment]/mobile.tsx` and `screen.tsx` for implementation.
+  - standalone app socket modules under `apps/<owner>/socket/experiments/`;
+    shared SCC relay modules remain under `socket/experiments/`.
 - Do not add decorative labels, footers, captions, archive text, mode badges, or explanatory chrome unless the user explicitly asks.
 - If a page is specified as non-scrollable, visible content must actually fit inside the viewport.
 - Fixed-format experiments such as A4 pages, boards, grids, and instrument

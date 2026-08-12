@@ -5,8 +5,11 @@ import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
 const root = process.cwd();
-const outputDirectory = path.join(root, "public/images/stock-4/kisses");
-const ledgerPath = path.join(root, "components/dashboard/stock/4/model/kiss-sources.json");
+const outputDirectory = path.join(root, "apps/scc/public/images/stock-4/kisses");
+const ledgerPath = path.join(
+  root,
+  "apps/scc/components/dashboard/stock/4/model/kiss-sources.json",
+);
 const userAgent = "SCC-Stock-4-Kiss-Sequence/1.0 (local interface study)";
 const targetCount = 32;
 const queries = [

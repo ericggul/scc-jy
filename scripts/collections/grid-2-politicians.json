@@ -5,9 +5,9 @@
   "minimumBytes": 4000,
   "delayMs": 3000,
   "userAgent": "SCC-Grid-2-Politicians/1.0 (local creative experiment)",
-  "outputDirectory": "public/images/grid-2/politicians",
+  "outputDirectory": "apps/scc/public/images/grid-2/politicians",
   "publicPrefix": "/images/grid-2/politicians",
-  "ledgerPath": "components/standalone/grid/2/politician-sources.json",
+  "ledgerPath": "apps/scc/components/standalone/grid/2/politician-sources.json",
   "queries": [
     { "country": "Argentina", "topic": "political portrait", "searchTerm": "Javier Milei portrait" },
     { "country": "Australia", "topic": "political portrait", "searchTerm": "Julia Gillard portrait" },

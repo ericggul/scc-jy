@@ -10,11 +10,14 @@ Complete documentation map:
 
 Repository-wide engineering documentation:
 - `docs/harness/overview.md`
+- `docs/harness/monorepo.md`
 - `docs/harness/nextjs.md`
 - `docs/harness/experiments.md`
 - `docs/harness/https-and-sockets.md`
+- `docs/harness/local-image-collections.md`
 
 Shared foundations:
+- `docs/foundations/tinkering.md`
 - `docs/foundations/design-guidelines.md`
 - `docs/foundations/mdwa.md`
 - `docs/foundations/parametric-detournement.md`
@@ -27,4 +30,6 @@ Per-experiment documentation:
 - `docs/experiments/finger-skating/`
 - `docs/experiments/network-system/`
 - `docs/experiments/c-val/`
+- `docs/experiments/ddong-meong/`
+- `docs/experiments/goldfishes/`
 - `docs/experiments/sns/`

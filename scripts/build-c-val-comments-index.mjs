@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const publicRoot = path.join(repositoryRoot, "public");
+const publicRoot = path.join(repositoryRoot, "apps/c-val/public");
 const outputPath = path.join(
   publicRoot,
   "audio/c-val/exclamations/comments-index.json",

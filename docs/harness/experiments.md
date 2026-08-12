@@ -1,36 +1,41 @@
 # Experiment and component structure
 
-The `app/`, `components/`, and `docs/experiments/` trees use the same family
-assignment. Public URLs do not include route-group names.
+Each app's `app/` and `components/` trees and `docs/experiments/` use the same
+family assignment. Public URLs do not include route-group names.
+
+The SCC archive owns its established families under `apps/scc`. C-VAL and
+ddong-meong own complete route, component, public-asset, and socket trees under
+`apps/c-val` and `apps/ddong-meong`; they are not SCC route groups.
 
 ## Runtime families
 
 Standalone experiment groups use:
 
 ```txt
-app/(standalone)/[group]/page.tsx
-app/(standalone)/[group]/[experiment]/page.tsx
-components/standalone/[group]/experiments.ts
-components/standalone/[group]/[experiment]/index.tsx
+apps/scc/app/(standalone)/[group]/page.tsx
+apps/scc/app/(standalone)/[group]/[experiment]/page.tsx
+apps/scc/components/standalone/[group]/experiments.ts
+apps/scc/components/standalone/[group]/[experiment]/index.tsx
 docs/experiments/standalone/[group]/README.md
 ```
 
-Smaller socket-backed experiments use matching `(realtime)` and
-`components/realtime` families. Dashboard-style workstations use matching
-`(dashboard)` and `components/dashboard` families. Complex systems such as
-`dj`, `finger-skating`, `network-system`, and `sns` remain directly under both
+Smaller socket-backed SCC experiments use matching
+`apps/scc/app/(realtime)` and `apps/scc/components/realtime` families.
+Dashboard-style workstations use matching `apps/scc/app/(dashboard)` and
+`apps/scc/components/dashboard` families. Complex SCC systems such as `dj`,
+`finger-skating`, `network-system`, and `sns` remain directly under both SCC
 trees.
 
 Multi-device experiments use this shape within their assigned family:
 
 ```txt
-app/[group]/page.tsx
-app/[group]/[experiment]/mobile/page.tsx
-app/[group]/[experiment]/screen/page.tsx
-components/[group]/experiments.ts
-components/[group]/[experiment]/mobile.tsx
-components/[group]/[experiment]/screen.tsx
-socket/experiments/[group]/index.mjs
+apps/<owner>/app/[group]/page.tsx
+apps/<owner>/app/[group]/[experiment]/mobile/page.tsx
+apps/<owner>/app/[group]/[experiment]/screen/page.tsx
+apps/<owner>/components/[group]/experiments.ts
+apps/<owner>/components/[group]/[experiment]/mobile.tsx
+apps/<owner>/components/[group]/[experiment]/screen.tsx
+apps/<owner>/socket/experiments/[experiment]/index.mjs
 ```
 
 Controller/multi-screen systems replace the mobile role with
@@ -42,7 +47,7 @@ Experiment code is organized by the responsibility it owns, not by whether it
 is TypeScript, React, data, or styling:
 
 ```txt
-components/[family]/[group]/[experiment]/
+apps/<owner>/components/[family]/[group]/[experiment]/
   model/       abstract domain state, types, deterministic state helpers
   transport/   browser socket or device-input boundary
   controller/  interaction UI and graph/layout helpers
@@ -62,7 +67,7 @@ components/[family]/[group]/[experiment]/
 - Do not rewrite unrelated experiments solely to make the tree uniform. Apply
   this structure when creating or materially editing a family.
 
-`components/network-system/cycle/` is the current layered example, with
+`apps/scc/components/network-system/cycle/` is the current layered example, with
 `controller/`, `media/`, `model/`, `news/`, `screen/`, and `transport/`.
 
 ## Documentation ownership
@@ -75,10 +80,10 @@ components/[family]/[group]/[experiment]/
 
 Rules:
 
-- Implementation and data belong under `components/`.
+- Implementation and data belong under the owning app's `components/`.
 - The `app`, `components`, and documentation family assignments must match.
 - Route groups organize the filesystem only and must not change public URLs.
-- `app/` should mostly route/import.
+- Each owning app's `app/` should mostly route/import.
 - Group index routes link to registered variants and stay minimal.
 - Non-scrollable pages must fit all required visible content inside the viewport.
 - Avoid decorative AI-looking labels, badges, footers, subtitles, or explanatory UI not requested by the user.

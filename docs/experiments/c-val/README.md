@@ -25,9 +25,9 @@ socket room, events, model snapshot version, and recording path.
   identity.
 
 C-VAL 2 currently has a temporary three-button mapping comparison shared by two
-mobile presentations. `/c-val/2/mobile` remains v1,
-`/c-val/2/mobile/v2` is the alpha/beta/gamma gyroscope-interface trial, and
-`/c-val/2/mobile/v3` combines the v2 globe with the exact v1 bottom V/A/L
+mobile presentations. `/2/mobile` remains v1, `/2/mobile/v2` is the
+alpha/beta/gamma gyroscope-interface trial, and `/2/mobile/v3` combines the v2
+globe with the exact v1 bottom V/A/L
 readout. The additional mobile routes do not introduce another screen, market,
 socket room, or C-VAL version. Git `HEAD` remains checkpoint `07a5aaf`; consult the
 [post-checkpoint ledger](./2-iteration-ledger-2026-08-05.md) before touching the
@@ -68,10 +68,10 @@ Every version is a complete compatible system:
 
 | Role | Route | Responsibility |
 | --- | --- | --- |
-| Mobile | `/c-val/[version]/mobile` | Permission, version-specific sensor capture, V/A/L preview, input transmission |
-| Controller | `/c-val/[version]/controller` | Full market observation and authorized reset |
-| Individual screen | `/c-val/[version]/screen/[screen]` | V1 exposes `rollercoaster`, `news`, `media`, `casino`, `comments`, and `comments-legacy`; V2 exposes only `news`, `media`, `comments`, and `comments-legacy` |
-| Whole screen set | `/c-val/[version]/screen/whole` | Composes all registered screens |
+| Mobile | `/[version]/mobile` | Permission, version-specific sensor capture, V/A/L preview, input transmission |
+| Controller | `/[version]/controller` | Full market observation and authorized reset |
+| Individual screen | `/[version]/screen/[screen]` | V1 exposes `rollercoaster`, `news`, `media`, `casino`, `comments`, and `comments-legacy`; V2 exposes only `news`, `media`, `comments`, and `comments-legacy` |
+| Whole screen set | `/[version]/screen/whole` | Composes all registered screens |
 
 C-VAL 1's whole set retains the carried 28-point rollercoaster price track,
 news, and audiovisual media. C-VAL 2's whole set now contains only news and
@@ -83,14 +83,14 @@ actual rapid one-second movement into bounded context-minimal voice reactions
 and a typographic comment field. Both are
 additional standalone screens and do not change the active composition.
 
-Both versions expose `/c-val/[version]/mobile/v2` and `/mobile/v3` as
+Both versions expose `/[version]/mobile/v2` and `/mobile/v3` as
 presentation-only iterations of their own mobile role. Each route imports its
 matching version component; the un-suffixed mobile route remains the default.
 
 ## Ownership map
 
 ```text
-app/c-val/
+apps/c-val/app/
   page.tsx                              route index
   [version]/controller/page.tsx         thin controller dispatcher
   [version]/mobile/page.tsx             thin mobile dispatcher
@@ -98,7 +98,7 @@ app/c-val/
   [version]/mobile/v3/page.tsx          v2 globe plus v1 V/A/L readout trial
   [version]/screen/[screen]/page.tsx    thin screen dispatcher
 
-components/c-val/
+apps/c-val/components/
   experiments.ts                        versions and screen IDs only
   {1,2}/                                complete version-owned browser copy
     model/                              TypeScript snapshot contract + local initial state
@@ -109,7 +109,7 @@ components/c-val/
     screen/                             display views and presentation helpers
     transport/                          versioned Socket.IO client events
 
-socket/experiments/c-val/
+apps/c-val/socket/experiments/
   {1,2}/                                complete version-owned server copy
     index.mjs                           room, event prefix, roles, timer, reset
     model.mjs                           participants, order flow, runtime, snapshots
@@ -123,11 +123,11 @@ socket/experiments/c-val/
 
 Shared files have deliberately narrow jobs:
 
-- `components/c-val/experiments.ts` exposes route versions and screen IDs. It
+- `apps/c-val/components/experiments.ts` exposes route versions and screen IDs. It
   must not own market equations or presentation.
 - `socket/experiments/index.mjs` registers the two socket experiments. It must
   not merge their rooms or runtime state.
-- `socket/experiments/c-val/version-isolation.test.mjs` proves IDs, rooms, and
+- `apps/c-val/socket/experiments/version-isolation.test.mjs` proves IDs, rooms, and
   event names do not collide.
 
 ## Version identity and isolation
@@ -171,7 +171,8 @@ a data, socket, or model change does not authorize a redesign.
    file, and the target version document.
 2. State the one changed relation and the visual, behavioral, route, and socket
    invariants that must remain.
-3. Work only in `components/c-val/2/*`, `socket/experiments/c-val/2/*`, and
+3. Work only in `apps/c-val/components/2/*`,
+   `apps/c-val/socket/experiments/2/*`, and
    [the V2 record](./2.md) unless the request explicitly targets V1 or shared
    routing.
 4. Keep browser and server contracts aligned: snapshot literals, calibration
@@ -193,11 +194,10 @@ Do not start a development server and do not run `pnpm build`, `pnpm dev`, or
 
 ```text
 pnpm lint
-pnpm exec tsc --noEmit
-node --test components/c-val/experiments.test.ts
-node --test socket/experiments/c-val/1/*.test.mjs
-node --test socket/experiments/c-val/2/*.test.mjs
-node --test socket/experiments/c-val/version-isolation.test.mjs
+pnpm --filter @scc/c-val typecheck
+node --test apps/c-val/socket/experiments/1/*.test.mjs
+node --test apps/c-val/socket/experiments/2/*.test.mjs
+node --test apps/c-val/socket/experiments/version-isolation.test.mjs
 ```
 
 Browser or runtime interaction checks are performed only when explicitly

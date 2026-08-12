@@ -1,6 +1,15 @@
-# SCC
+# SCC workspace
 
-SCC is a Next.js creative experiment harness.
+One Git repository contains three independently deployable Next.js artworks:
+
+| App | Workspace root | Production URL | Local HTTPS URL |
+| --- | --- | --- | --- |
+| SCC archive | `apps/scc` | existing SCC project | `https://<local-hostname>:2000` |
+| C-VAL | `apps/c-val` | `https://c-val.vercel.app` | `https://<local-hostname>:2001` |
+| ddong-meong | `apps/ddong-meong` | `https://ddong-meong.vercel.app` | `https://<local-hostname>:2002` |
+
+The apps share dependency installation, certificates, tooling, and the modular
+Socket.IO relay without sharing their Next.js route or asset namespaces.
 
 ## Runtime
 
@@ -18,15 +27,26 @@ Install dependencies with the pinned Node version active:
 pnpm install
 ```
 
-The user-owned HTTPS development workflow is:
+The user-owned HTTPS development workflow for all three apps is:
 
 ```bash
 pnpm dev
 ```
 
-It exposes the app at `https://<local-hostname>:3000`, the socket relay at
+It exposes the three app URLs in the table, the socket relay at
 `https://<local-hostname>:4000`, and the local root certificate at
-`https://<local-hostname>:4000/cert`.
+`https://<local-hostname>:4000/cert`. Focused workflows start one app plus the
+same relay:
+
+```bash
+pnpm dev:scc
+pnpm dev:c-val
+pnpm dev:ddong-meong
+```
+
+C-VAL's canonical routes are `/1/...` and `/2/...`; ddong-meong's are `/1`
+through `/4` and their existing child routes. SCC's former `/c-val/...` and
+`/ddong-meong/...` URLs remain compatibility redirects.
 
 Agents must not start the development server. See [AGENTS.md](./AGENTS.md) and
 the [HTTPS/socket harness notes](./docs/harness/https-and-sockets.md) for the
@@ -36,4 +56,5 @@ operational rules.
 
 - [Documentation index](./docs/README.md)
 - [Harness overview](./docs/harness/overview.md)
+- [Monorepo apps and Vercel setup](./docs/harness/monorepo.md)
 - [Experiment structure](./docs/harness/experiments.md)

@@ -203,7 +203,7 @@ def write_json_atomic(target_path, value):
 
 
 def process_run(run_name, limit, overwrite):
-    run_directory = ROOT / "public/audio/c-val/exclamations/runs" / run_name
+    run_directory = ROOT / "apps/c-val/public/audio/c-val/exclamations/runs" / run_name
     source_manifest_path = run_directory / "manifest.json"
     output_path = run_directory / "profanity-timestamps.json"
     source_manifest = json.loads(source_manifest_path.read_text(encoding="utf-8"))

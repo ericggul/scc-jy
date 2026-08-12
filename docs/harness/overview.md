@@ -1,6 +1,8 @@
 # Harness Overview
 
-SCC is a Next.js creative experiment harness. It supports single-device studies and multi-device web artwork experiments.
+SCC is a pnpm monorepo for a creative experiment archive and independently
+deployable web artworks. It supports single-device studies and multi-device web
+artwork experiments without splitting their Git history.
 
 ## Runtime baseline
 
@@ -21,7 +23,10 @@ The documentation split is:
 - `docs/harness/local-image-collections.md`: reusable process for collecting,
   sourcing, checkpointing, and locally serving image sets.
 - `docs/foundations/*`: shared visual and artwork theory.
-- `docs/experiments/*`: notes aligned with `app/` and `components/` families.
+- `apps/scc`: the SCC archive and its existing experiment families.
+- `apps/c-val`: the standalone C-VAL artwork.
+- `apps/ddong-meong`: the standalone ddong-meong artwork.
+- `docs/experiments/*`: notes aligned with those app/component families.
 
 Keep operational instructions short and enforceable. Put a repeated
 repository-wide failure in `AGENTS.md` or a harness document. Put a
@@ -31,7 +36,7 @@ documentation folder.
 Verification defaults:
 
 - Use `pnpm lint`.
-- Use `pnpm exec tsc --noEmit`.
+- Use `pnpm typecheck` (or an app-filtered workspace typecheck).
 - Never run `pnpm build`.
 - Do not start a development server.
 - Do not run browser or runtime interaction checks unless the user explicitly

@@ -4,10 +4,10 @@ import path from "node:path";
 const root = process.cwd();
 const candidateDirectory = path.join(root, ".tmp/stock-4-kiss-candidates");
 const candidateLedgerPath = path.join(candidateDirectory, "candidates.json");
-const outputDirectory = path.join(root, "public/images/stock-4/kisses");
+const outputDirectory = path.join(root, "apps/scc/public/images/stock-4/kisses");
 const outputLedgerPath = path.join(
   root,
-  "components/dashboard/stock/4/model/kiss-sources.json",
+  "apps/scc/components/dashboard/stock/4/model/kiss-sources.json",
 );
 
 // Hand-selected from the local 299-image contact-sheet review. The set favors

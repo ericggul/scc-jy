@@ -1,17 +1,21 @@
 {
-  "name": "scc",
+  "name": "scc-workspace",
   "version": "0.1.0",
   "private": true,
   "engines": {
     "node": "24.x || 26.x"
   },
   "scripts": {
-    "dev": "node scripts/dev-https.mjs",
-    "dev:next": "bash scripts/generate-certs.sh && next dev --hostname 0.0.0.0 --experimental-https --experimental-https-key certificates/server.key --experimental-https-cert certificates/server.pem --experimental-https-ca certificates/rootCA.pem",
+    "dev": "node scripts/dev-https.mjs --all",
+    "dev:scc": "node scripts/dev-https.mjs --app scc",
+    "dev:c-val": "node scripts/dev-https.mjs --app c-val",
+    "dev:ddong-meong": "node scripts/dev-https.mjs --app ddong-meong",
+    "dev:next": "node scripts/dev-https.mjs --all",
     "dev:socket": "bash scripts/generate-certs.sh && node socket-server.mjs",
-    "dev:http": "next dev",
-    "build": "next build",
-    "start": "next start",
+    "dev:socket:scc": "bash scripts/generate-certs.sh && SCC_SOCKET_SCOPE=scc node socket-server.mjs",
+    "dev:socket:c-val": "bash scripts/generate-certs.sh && SCC_SOCKET_SCOPE=c-val node socket-server.mjs",
+    "dev:socket:ddong-meong": "bash scripts/generate-certs.sh && SCC_SOCKET_SCOPE=ddong-meong node socket-server.mjs",
+    "typecheck": "pnpm --recursive --if-present typecheck",
     "lint": "eslint",
     "audio:c-val": "node scripts/generate-c-val-exclamations.mjs",
     "test:c-val:shake": "node scripts/verify-c-val-shake.mjs --version 2",
@@ -19,27 +23,14 @@
     "test:c-val:shake:v2": "node scripts/verify-c-val-shake.mjs --version 2"
   },
   "dependencies": {
-    "hls.js": "^1.6.16",
-    "leva": "0.10.1",
-    "next": "16.2.10",
-    "react": "19.2.4",
-    "react-dom": "19.2.4",
-    "simple-icons": "^16.25.0",
-    "socket.io": "^4.8.3",
-    "socket.io-client": "^4.8.3",
-    "styled-components": "^6.4.3",
-    "three": "^0.185.1",
-    "tone": "^15.1.22"
+    "sharp": "0.34.5",
+    "socket.io": "^4.8.3"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
     "@types/node": "^24",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "@types/three": "^0.185.1",
     "eslint": "^9",
     "eslint-config-next": "16.2.10",
-    "tailwindcss": "^4",
+    "next": "16.2.10",
     "typescript": "^5"
   }
 }

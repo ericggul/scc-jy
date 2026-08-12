@@ -1,7 +1,7 @@
 # Next.js Harness Notes
 
 Local development uses Node.js 26.5.1 with npm 11.17.0. Vercel builds use Node
-24.x because Node 26 is not yet supported there. The application uses Next.js
+24.x because Node 26 is not yet supported there. The workspace uses Next.js
 16.2.10, React 19, App Router, Tailwind CSS 4, and styled-components 6. Package
 operations use pnpm.
 
@@ -14,10 +14,10 @@ Current setup:
   `package.json#engines.node`
 - Current Vercel Node runtime: `24.x`, selected because Node 26 is unsupported
 - Node type compatibility floor: major 24 through `@types/node`
-- styled-components SSR registry: `lib/styled-components-registry.tsx`
-- compiler flag: `next.config.ts`
-- app shell: `app/layout.tsx`
+- styled-components SSR registries: `apps/*/lib/styled-components-registry.tsx`
+- compiler flags and Turbopack roots: `apps/*/next.config.ts`
+- app shells: `apps/*/app/layout.tsx`
 
 Route files should stay minimal. Numbered variants import from the matching
-`components/[family]/[group]/...` assignment and should not hold substantial
-UI or data code.
+`apps/<owner>/components/...` assignment and should not hold substantial UI or
+data code.

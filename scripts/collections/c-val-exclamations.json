@@ -6,7 +6,7 @@
   "defaultTakes": 3,
   "defaultDialects": ["seoul-casual"],
   "concurrency": 2,
-  "outputRoot": "public/audio/c-val/exclamations/runs",
+  "outputRoot": "apps/c-val/public/audio/c-val/exclamations/runs",
   "baseInstructions": "한국에서 친한 사람에게 실제로 툭 내뱉는 짧은 말이다. 마이크를 의식하지 않고, 문장을 또박또박 읽지 않는다. 입력된 말만 한다.",
   "postprocess": {
     "enabled": true,
