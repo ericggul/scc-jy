@@ -8,7 +8,9 @@ import {
   C_VAL_COMMENT_DIALECT_ORDER,
   C_VAL_COMMENT_ORDINARY_PER_VOICE,
   cValCommentAdmissionIntervalMs,
+  cValCommentCensorBeepFrequencyHz,
   cValCommentDetuneCents,
+  cValCommentEffectivePlaybackRate,
   cValCommentPlaybackRate,
   cValCommentVoiceGapMs,
   cValCommentRegime,
@@ -154,7 +156,13 @@ test("profanity and voice remain unavailable below the extreme threshold", () =>
   const pulse = presentCValCommentPulse(activeSnapshot(C_VAL_COMMENT_VOICE_TRIGGER_PERCENT));
   assert.ok(pulse);
   assert.equal(shouldAdmitCValCommentVoice(pulse, 9_900, 10_000), false);
-  assert.equal(censorCValCommentText("씨발, 뭐야. 씨발."), "**, 뭐야. **.");
+  assert.equal(censorCValCommentText("씨발, 뭐야. 씨발."), "C-VAL, 뭐야. C-VAL.");
+});
+
+test("the censor beep inherits the speech speed and pitch transform", () => {
+  assert.equal(cValCommentEffectivePlaybackRate(1.2, 1_200), 2.4);
+  assert.equal(cValCommentCensorBeepFrequencyHz(1_000, 1.2, 1_200), 2_400);
+  assert.ok(cValCommentCensorBeepFrequencyHz(1_000, 0.96, -120) < 1_000);
 });
 
 test("voice aggregation accelerates sharply with the same continuous market curve", () => {

@@ -6,6 +6,8 @@ Goldfishes uses a date-first archive. `default` is the currently promoted
 baseline, `2d` is a retained format branch, and dated folders contain the
 experiments made on that day.
 
+This is just early-day experiments but later on will be standalone experience. 
+
 Agents must read the [Goldfishes agent onboarding](./agent-onboarding.md) before
 starting a trial. It defines this family's artistic method, visual quality bar,
 standalone-copy rule, archive workflow, and parallel-work protocol.

@@ -24,12 +24,12 @@ socket room, events, model snapshot version, and recording path.
   V2 also adds the dormant pre-participant phase and keeps its own `c-val:2`
   identity.
 
-C-VAL 2 currently has a temporary three-button mapping comparison shared by two
-mobile presentations. `/2/mobile` remains v1, `/2/mobile/v2` is the
-alpha/beta/gamma gyroscope-interface trial, and `/2/mobile/v3` combines the v2
-globe with the exact v1 bottom V/A/L
-readout. The additional mobile routes do not introduce another screen, market,
-socket room, or C-VAL version. Git `HEAD` remains checkpoint `07a5aaf`; consult the
+C-VAL 2 currently has a temporary three-button mapping comparison shared by
+three mobile presentations. `/2/mobile` now defaults to v3: its spherical
+attitude globe with the exact v1 bottom V/A/L readout. `/2/mobile/v1` preserves
+the former default, and `/2/mobile/v2` preserves the alpha/beta/gamma
+gyroscope-interface trial. The additional mobile routes do not introduce
+another screen, market, socket room, or C-VAL version. Git `HEAD` remains checkpoint `07a5aaf`; consult the
 [post-checkpoint ledger](./2-iteration-ledger-2026-08-05.md) before touching the
 working-tree WIP.
 
@@ -83,9 +83,10 @@ actual rapid one-second movement into bounded context-minimal voice reactions
 and a typographic comment field. Both are
 additional standalone screens and do not change the active composition.
 
-Both versions expose `/[version]/mobile/v2` and `/mobile/v3` as
-presentation-only iterations of their own mobile role. Each route imports its
-matching version component; the un-suffixed mobile route remains the default.
+C-VAL 2 preserves its former default at `/2/mobile/v1` and exposes
+`/2/mobile/v2` and `/2/mobile/v3` as presentation-only iterations of the same
+mobile role. The un-suffixed mobile route selects the version's current default
+without changing a market, socket room, or C-VAL version.
 
 ## Ownership map
 
@@ -94,8 +95,9 @@ apps/c-val/app/
   page.tsx                              route index
   [version]/controller/page.tsx         thin controller dispatcher
   [version]/mobile/page.tsx             thin mobile dispatcher
+  [version]/mobile/v1/page.tsx          preserved V2 mobile v1 presentation
   [version]/mobile/v2/page.tsx          C-VAL 2 mobile presentation trial
-  [version]/mobile/v3/page.tsx          v2 globe plus v1 V/A/L readout trial
+  [version]/mobile/v3/page.tsx          v2 globe plus v1 V/A/L default presentation
   [version]/screen/[screen]/page.tsx    thin screen dispatcher
 
 apps/c-val/components/
@@ -210,8 +212,9 @@ requested, against an already-running HTTPS server.
 - [C-VAL 2 mobile v2 gyroscope interface](./2-mobile-v2-gyroscope-interface-2026-08-11.md):
   presentation-only alpha/beta/gamma globe, exact live equations, retained
   behavioral invariants, and pending real-phone acceptance.
-- [C-VAL 2 mobile v3](./2-mobile-v3-globe-v1-readout-2026-08-11.md): copied v2
-  globe with the exact v1 bottom V/A/L readout and unchanged behavior.
+- [C-VAL 2 mobile v3](./2-mobile-v3-globe-v1-readout-2026-08-11.md): current
+  default presentation, with the copied v2 globe, exact v1 bottom V/A/L
+  readout, and unchanged behavior.
 - [C-VAL 2 society-news split](./2-news-society-split-2026-08-11.md): independent
   market/finance and society/politics threads, parametric headline grammar,
   retained visual invariants, and evidence boundaries.

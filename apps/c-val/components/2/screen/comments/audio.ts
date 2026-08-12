@@ -1,9 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef } from "react";
-import type {
-  CValCommentCorpus,
-  CValCommentCorpusEntry,
+import {
+  cValCommentCensorBeepFrequencyHz,
+  cValCommentEffectivePlaybackRate,
+  type CValCommentCorpus,
+  type CValCommentCorpusEntry,
 } from "./presenter";
 
 type AudioRequest = {
@@ -70,7 +72,10 @@ export function useCValCommentAudio() {
       const sourceTime = context.currentTime + 0.02;
       const playbackRate = Math.max(0.25, request.playbackRate);
       const detuneCents = Math.max(-1_200, Math.min(1_200, request.detuneCents));
-      const effectivePlaybackRate = playbackRate * 2 ** (detuneCents / 1_200);
+      const effectivePlaybackRate = cValCommentEffectivePlaybackRate(
+        playbackRate,
+        detuneCents,
+      );
       source.buffer = buffer;
       source.playbackRate.setValueAtTime(playbackRate, sourceTime);
       source.detune.setValueAtTime(detuneCents, sourceTime);
@@ -101,7 +106,14 @@ export function useCValCommentAudio() {
         const oscillator = context.createOscillator();
         const beepGain = context.createGain();
         oscillator.type = "sine";
-        oscillator.frequency.setValueAtTime(request.beep.frequencyHz, muteStart);
+        oscillator.frequency.setValueAtTime(
+          cValCommentCensorBeepFrequencyHz(
+            request.beep.frequencyHz,
+            playbackRate,
+            detuneCents,
+          ),
+          muteStart,
+        );
         beepGain.gain.setValueAtTime(0, muteStart);
         beepGain.gain.linearRampToValueAtTime(
           request.beep.peakGain,

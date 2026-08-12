@@ -95,3 +95,13 @@ The route and pure readout are statically verified. No real-phone or browser
 acceptance claim is made because runtime browser testing was not requested. The
 open question is whether the v1 readout gives the globe enough output context
 without the explanatory density rejected in v2's earlier states.
+
+## Experimental default promotion — 2026-08-12
+
+`/2/mobile` now renders this v3 presentation by default. The former C-VAL 2
+mobile v1 view remains independently addressable at `/2/mobile/v1`, while v2
+and this explicit v3 route remain unchanged. This promotion changes only the
+default presentation selection: sensor permission, capture, rotation-rate
+mapping, V/A/L payloads, socket room, market runtime, and every screen remain
+unchanged. Real-phone acceptance remains open, so restoring v1 is a one-line
+default selection change rather than a reconstruction.

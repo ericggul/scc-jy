@@ -120,6 +120,15 @@ Schedule an `OscillatorNode` through its own gain envelope over the same
 absolute `AudioContext.currentTime` interval. Do not coordinate two HTML audio
 elements with `setTimeout`, because that introduces avoidable scheduling drift.
 
+### C-VAL 2 rapid-move presentation trial — 2026-08-12
+
+The C-VAL 2 comments screen retains this 1000 Hz value as the neutral beep
+base. When its selected speech receives a market-driven playback-rate and
+detune transform, the beep receives the same combined multiplier: its duration
+tracks the adjusted profanity interval and its audible frequency tracks the
+speech pitch. This is a browser presentation effect only; the source WAV files,
+timestamp sidecars, and command-line neutral-beep audition remain unchanged.
+
 The command-line audition helper uses the same relation for a known interval:
 
 ```sh

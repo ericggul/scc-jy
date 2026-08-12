@@ -361,8 +361,28 @@ export function cValCommentDetuneCents(pulse: CValCommentPulse) {
   return minimum + shapedIntensity * (maximum - minimum);
 }
 
+export function cValCommentEffectivePlaybackRate(
+  playbackRate: number,
+  detuneCents: number,
+) {
+  const safePlaybackRate = Math.max(0.25, playbackRate);
+  const safeDetuneCents = Math.max(-1_200, Math.min(1_200, detuneCents));
+  return safePlaybackRate * 2 ** (safeDetuneCents / 1_200);
+}
+
+export function cValCommentCensorBeepFrequencyHz(
+  baseFrequencyHz: number,
+  playbackRate: number,
+  detuneCents: number,
+) {
+  return baseFrequencyHz * cValCommentEffectivePlaybackRate(
+    playbackRate,
+    detuneCents,
+  );
+}
+
 export function censorCValCommentText(text: string) {
-  return text.replaceAll("씨발", "**");
+  return text.replaceAll("씨발", "C-VAL");
 }
 
 export function selectCValCommentPerformance(

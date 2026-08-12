@@ -57,7 +57,7 @@ export default function CValMobileV3View({
     <main className={styles.page}>
       <header className={styles.header}>
         <nav className={styles.versionNav} aria-label="Mobile interface version">
-          <Link className={styles.versionLink} href="/2/mobile">V1</Link>
+          <Link className={styles.versionLink} href="/2/mobile/v1">V1</Link>
           <Link className={styles.versionLink} href="/2/mobile/v2">V2</Link>
           <strong className={styles.currentVersion}>V3</strong>
         </nav>

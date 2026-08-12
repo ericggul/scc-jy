@@ -139,9 +139,9 @@ recorded exclamations whose source audio contains an audited profanity interval:
 
 - upward extremes select positive or mixed high-arousal performances;
 - downward extremes select negative or mixed high-arousal performances;
-- visible `씨발` is always rendered as `**`;
+- visible `씨발` is always rendered as `C-VAL`;
 - only the recorded profanity interval is muted and replaced by the accepted
-  1000 Hz broadcast beep;
+  1000 Hz base broadcast beep;
 - voice spacing uses the same continuous news curve at roughly three times the
   previous density: about 145 ms at 2%, 76 ms at 6%, 45 ms at 10%, and a 30 ms
   floor from 15% onward. A browser monotonic clock, rather than the 50 ms market
@@ -155,12 +155,14 @@ recorded exclamations whose source audio contains an audited profanity interval:
   starts at -120
   cents and falls continuously to -360 cents while its playback rate moves
   from 0.96 to 1.06. The split makes rallies brighter and more airborne while
-  crashes accumulate as a lower, heavier crowd. The 1000 Hz censorship beep
-  remains direction-neutral, and its mute interval is corrected by the combined
-  playback-rate and detune ratio so it still covers the recorded profanity.
+  crashes accumulate as a lower, heavier crowd. The base 1000 Hz censorship
+  beep now inherits the same combined playback-rate and detune multiplier as
+  the selected speech, so its duration and audible pitch stay coupled to the
+  rapid-move effect while its mute interval continues to cover the recorded
+  profanity.
 
 Once voice cadence is active, its clock admits two ordinary comments first and
-then appends the due `**` comment as a third record instead of replacing either
+then appends the due `C-VAL` comment as a third record instead of replacing either
 ordinary comment. Thus the extreme-state wall retains at least a 2:1 ordinary-
 to-voice text ratio while the audio itself can run at the full 145/76/45/30 ms
 curve. Outside voice cadence, ordinary comments retain the shared news clock.

@@ -70,7 +70,7 @@ function finiteSensorValue(value: number | null) {
 }
 
 export default function CValMobile({
-  interfaceVersion = "v1",
+  interfaceVersion = "v3",
 }: {
   interfaceVersion?: "v1" | "v2" | "v3";
 }) {
