@@ -1,0 +1,190 @@
+.page {
+  --field: #dce2dc;
+  --ink: #17201c;
+  --quiet: #5d6b64;
+  --flow: #46696f;
+  --loss: #914f3b;
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: var(--field);
+  color: var(--ink);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.header {
+  position: absolute;
+  top: clamp(1.2rem, 3vw, 2.8rem);
+  right: clamp(1.2rem, 3vw, 2.8rem);
+  left: clamp(1.2rem, 3vw, 2.8rem);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2rem;
+  pointer-events: none;
+}
+
+.header h1 {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.8rem, 4.7vw, 4.8rem);
+  font-weight: 400;
+  line-height: 0.9;
+  letter-spacing: -0.065em;
+}
+
+.header p {
+  margin: 0;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: clamp(0.68rem, 1.2vw, 0.9rem);
+  letter-spacing: -0.03em;
+}
+
+.state {
+  position: absolute;
+  left: clamp(1.2rem, 3vw, 2.8rem);
+  bottom: clamp(5.8rem, 11vw, 7.4rem);
+  display: grid;
+  gap: 0.65rem;
+  max-width: min(28rem, calc(100vw - 2.4rem));
+  pointer-events: none;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.68rem;
+}
+
+.state dl {
+  display: flex;
+  gap: 1.5rem;
+  margin: 0;
+}
+
+.state dl div {
+  display: flex;
+  gap: 0.45rem;
+}
+
+.state dt {
+  color: var(--quiet);
+}
+
+.state dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.state output {
+  color: var(--quiet);
+  text-wrap: balance;
+}
+
+.controls {
+  position: absolute;
+  right: clamp(1.2rem, 3vw, 2.8rem);
+  bottom: clamp(1.2rem, 3vw, 2.5rem);
+  left: clamp(1.2rem, 3vw, 2.8rem);
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+  align-items: end;
+  gap: clamp(0.45rem, 1.5vw, 1.5rem);
+}
+
+.controls button {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: baseline;
+  gap: 0.55rem;
+  min-width: 0;
+  border: 0;
+  padding: 0.5rem 0;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+}
+
+.controls button strong {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: clamp(0.88rem, 1.5vw, 1.1rem);
+  font-weight: 500;
+}
+
+.controls button span,
+.controls .pause {
+  color: var(--quiet);
+  font-size: 0.68rem;
+}
+
+.controls button:hover strong,
+.controls button:focus-visible strong {
+  color: var(--flow);
+}
+
+.controls button:nth-child(2):hover strong,
+.controls button:nth-child(4):hover strong,
+.controls button:nth-child(2):focus-visible strong,
+.controls button:nth-child(4):focus-visible strong {
+  color: var(--loss);
+}
+
+.controls button:focus-visible,
+.canvas:focus-visible {
+  outline: 1px solid var(--ink);
+  outline-offset: 4px;
+}
+
+.controls .pause {
+  display: block;
+  width: max-content;
+  padding-inline: 0.25rem;
+  text-align: right;
+}
+
+@media (max-width: 680px) {
+  .header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.7rem;
+  }
+
+  .state {
+    bottom: 7.8rem;
+  }
+
+  .controls {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.35rem;
+  }
+
+  .controls button {
+    grid-template-columns: 1fr;
+    gap: 0.25rem;
+  }
+
+  .controls button span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .controls .pause {
+    grid-column: 1 / -1;
+    justify-self: end;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .canvas {
+    cursor: default;
+  }
+}

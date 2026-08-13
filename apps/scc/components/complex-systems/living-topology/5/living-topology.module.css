@@ -1,0 +1,143 @@
+.page {
+  --field: #efeade;
+  --ink: #24332b;
+  --quiet: #6a7468;
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: var(--field);
+  color: var(--ink);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: cell;
+  touch-action: none;
+}
+
+.header {
+  position: absolute;
+  top: clamp(1.15rem, 2.8vw, 2.65rem);
+  right: clamp(1.15rem, 2.8vw, 2.65rem);
+  left: clamp(1.15rem, 2.8vw, 2.65rem);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1.5rem;
+  pointer-events: none;
+}
+
+.header h1 {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.8rem, 4.25vw, 4.2rem);
+  font-weight: 400;
+  line-height: 0.88;
+  letter-spacing: -0.07em;
+}
+
+.header p,
+.readout,
+.controls {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: clamp(0.59rem, 0.82vw, 0.68rem);
+}
+
+.header p {
+  max-width: 15rem;
+  margin: 0;
+  color: var(--quiet);
+  text-align: right;
+}
+
+.readout {
+  position: absolute;
+  bottom: clamp(1.15rem, 2.6vw, 2.45rem);
+  left: clamp(1.15rem, 2.8vw, 2.65rem);
+  pointer-events: none;
+}
+
+.readout dl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.34rem 1rem;
+  max-width: 26rem;
+  margin: 0;
+}
+
+.readout dl div {
+  display: flex;
+  gap: 0.38rem;
+}
+
+.readout dt {
+  color: var(--quiet);
+}
+
+.readout dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.controls {
+  position: absolute;
+  right: clamp(1.15rem, 2.8vw, 2.65rem);
+  bottom: clamp(1.15rem, 2.6vw, 2.45rem);
+  display: flex;
+  gap: 1rem;
+}
+
+.controls button {
+  border: 0;
+  border-bottom: 1px solid transparent;
+  padding: 0.25rem 0;
+  background: transparent;
+  color: var(--quiet);
+  cursor: pointer;
+  font: inherit;
+}
+
+.controls button:hover,
+.controls button[aria-pressed="true"] {
+  border-bottom-color: var(--ink);
+  color: var(--ink);
+}
+
+.canvas:focus-visible,
+.controls button:focus-visible {
+  outline: 1px solid var(--ink);
+  outline-offset: 4px;
+}
+
+@media (max-width: 620px) {
+  .header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+
+  .header p {
+    text-align: left;
+  }
+
+  .readout {
+    right: clamp(1.15rem, 2.8vw, 2.65rem);
+    bottom: 4.15rem;
+  }
+
+  .controls {
+    right: auto;
+    left: clamp(1.15rem, 2.8vw, 2.65rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .canvas {
+    cursor: default;
+  }
+}

@@ -37,6 +37,51 @@ export const experimentCatalog = [
     description: "Four-node institutional network and parameter screens.",
   },
   {
+    href: "/living-topology",
+    label: "living-topology",
+    description: "A graph that continually buds, sheds, connects, and severs itself.",
+  },
+  {
+    href: "/adaptive-coevolving-network",
+    label: "adaptive-coevolving-network",
+    description:
+      "State, human-relation, and peer-to-peer networks that adapt their links.",
+  },
+  {
+    href: "/flight-network",
+    label: "flight-network",
+    description:
+      "Synthetic cities generating routes, tickets, flights, and congestion feedback.",
+  },
+  {
+    href: "/hypertext-network",
+    label: "hypertext-network",
+    description:
+      "A self-evolving field of page fragments linked by travelling readers.",
+  },
+  {
+    href: "/cellular-automata",
+    label: "cellular-automata",
+    description: "A directly editable field of cells evolving by local rules.",
+  },
+  {
+    href: "/artificial-language",
+    label: "artificial-language",
+    description: "Invented words spreading, splitting, and converging through local exchange.",
+  },
+  {
+    href: "/markov-chain",
+    label: "markov-chain",
+    description:
+      "A 108-state non-reversible chain sampled against its stationary distribution.",
+  },
+  {
+    href: "/terminal",
+    label: "terminal",
+    description:
+      "A growing terminal colony whose local agents write, signal, and fork themselves.",
+  },
+  {
     href: "/c-val",
     label: "c-val",
     description: "Versioned multi-device V/A/L financial-market simulations.",

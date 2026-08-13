@@ -1,0 +1,203 @@
+.page {
+  --field: #e4e1d3;
+  --ink: #24313a;
+  --quiet: #69716b;
+  --flow: #46696f;
+  --shift: #a66039;
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: var(--field);
+  color: var(--ink);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.header {
+  position: absolute;
+  top: clamp(1.15rem, 3vw, 2.8rem);
+  right: clamp(1.15rem, 3vw, 2.8rem);
+  left: clamp(1.15rem, 3vw, 2.8rem);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.25rem;
+  pointer-events: none;
+}
+
+.header h1 {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(2.3rem, 5.7vw, 5.6rem);
+  font-weight: 400;
+  line-height: 0.82;
+  letter-spacing: -0.075em;
+}
+
+.header p,
+.header output,
+.lexicon,
+.conversation,
+.controls {
+  font-family: var(--font-geist-mono), "SFMono-Regular", Consolas, monospace;
+  font-size: clamp(0.62rem, 0.95vw, 0.76rem);
+  letter-spacing: -0.035em;
+}
+
+.header p {
+  margin: 0.8rem 0 0;
+  color: var(--quiet);
+}
+
+.header output {
+  color: var(--quiet);
+  font-variant-numeric: tabular-nums;
+}
+
+.lexicon {
+  position: absolute;
+  top: clamp(9.2rem, 18vw, 14rem);
+  right: clamp(1.15rem, 3vw, 2.8rem);
+  width: min(10rem, 27vw);
+  color: var(--quiet);
+}
+
+.lexicon > p,
+.lexicon ol,
+.lexicon small {
+  margin: 0;
+}
+
+.lexicon > p {
+  color: var(--ink);
+}
+
+.lexicon ol {
+  display: grid;
+  gap: 0.38rem;
+  padding: 0.68rem 0 0;
+  list-style: none;
+}
+
+.lexicon li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.lexicon li span {
+  color: var(--flow);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(0.95rem, 1.55vw, 1.25rem);
+  letter-spacing: -0.05em;
+}
+
+.lexicon small {
+  display: block;
+  padding-top: 0.7rem;
+  font-size: inherit;
+}
+
+.conversation {
+  position: absolute;
+  bottom: clamp(6.7rem, 10vw, 8rem);
+  left: clamp(1.15rem, 3vw, 2.8rem);
+  max-width: min(21rem, calc(100vw - 2.3rem));
+  color: var(--quiet);
+  pointer-events: none;
+}
+
+.conversation p {
+  margin: 0;
+  text-wrap: balance;
+}
+
+.controls {
+  position: absolute;
+  right: clamp(1.15rem, 3vw, 2.8rem);
+  bottom: clamp(1.15rem, 3vw, 2.8rem);
+  left: clamp(1.15rem, 3vw, 2.8rem);
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.meanings,
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem clamp(0.7rem, 1.5vw, 1.35rem);
+}
+
+.controls button {
+  border: 0;
+  padding: 0.3rem 0;
+  background: transparent;
+  color: var(--quiet);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.controls button:hover,
+.controls button:focus-visible,
+.controls .selected {
+  color: var(--ink);
+}
+
+.controls .selected::before {
+  content: "→ ";
+  color: var(--shift);
+}
+
+.controls button:focus-visible {
+  outline: 1px solid var(--ink);
+  outline-offset: 4px;
+}
+
+@media (max-width: 680px) {
+  .header p {
+    max-width: 12rem;
+  }
+
+  .lexicon {
+    top: auto;
+    right: auto;
+    bottom: 8.8rem;
+    left: clamp(1.15rem, 3vw, 2.8rem);
+    width: min(12rem, calc(100vw - 2.3rem));
+  }
+
+  .conversation {
+    right: clamp(1.15rem, 3vw, 2.8rem);
+    bottom: 11.6rem;
+    left: auto;
+    max-width: 11rem;
+    text-align: right;
+  }
+
+  .controls {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.55rem;
+  }
+
+  .actions {
+    align-self: flex-end;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .canvas {
+    cursor: default;
+  }
+}

@@ -1,0 +1,225 @@
+.page {
+  --field: #dce2dc;
+  --ink: #17201c;
+  --quiet: #5d6b64;
+  --flow: #46696f;
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: var(--field);
+  color: var(--ink);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.header {
+  position: absolute;
+  top: clamp(1.15rem, 2.8vw, 2.6rem);
+  right: clamp(1.15rem, 2.8vw, 2.6rem);
+  left: clamp(1.15rem, 2.8vw, 2.6rem);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+  pointer-events: none;
+}
+
+.header h1 {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(2rem, 5vw, 5rem);
+  font-weight: 400;
+  line-height: 0.86;
+  letter-spacing: -0.075em;
+}
+
+.header p,
+.kernel,
+.readout,
+.controls {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: clamp(0.58rem, 0.8vw, 0.68rem);
+  line-height: 1.35;
+}
+
+.header div > p {
+  margin: 0.6rem 0 0;
+  color: var(--quiet);
+}
+
+.instruction {
+  max-width: 13rem;
+  margin: 0;
+  color: var(--quiet);
+  text-align: right;
+}
+
+.kernel {
+  position: absolute;
+  bottom: clamp(1.1rem, 2.4vw, 2.35rem);
+  left: clamp(1.15rem, 2.8vw, 2.6rem);
+  width: min(20.5rem, calc(100vw - 3rem));
+  pointer-events: none;
+}
+
+.kernelTitle,
+.stateName {
+  margin: 0;
+}
+
+.kernelTitle {
+  color: var(--quiet);
+}
+
+.stateName {
+  margin-top: 0.3rem;
+  color: var(--ink);
+}
+
+.kernel ol {
+  display: grid;
+  gap: 0.15rem;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.kernel li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  color: var(--quiet);
+}
+
+.kernel strong {
+  color: var(--ink);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
+.readout {
+  position: absolute;
+  right: clamp(1.15rem, 2.8vw, 2.6rem);
+  bottom: clamp(5.1rem, 9vw, 5.8rem);
+  max-width: min(23rem, calc(100vw - 3rem));
+  pointer-events: none;
+}
+
+.readout dl {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.25rem 1rem;
+  margin: 0;
+}
+
+.readout dl div {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.readout dt {
+  color: var(--quiet);
+}
+
+.readout dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.controls {
+  position: absolute;
+  right: clamp(1.15rem, 2.8vw, 2.6rem);
+  bottom: clamp(1.1rem, 2.4vw, 2.35rem);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.8rem;
+}
+
+.controls button {
+  border: 0;
+  border-bottom: 1px solid transparent;
+  padding: 0.2rem 0;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  font: inherit;
+}
+
+.controls button:hover,
+.controls button[aria-pressed="true"] {
+  border-bottom-color: var(--ink);
+}
+
+.controls label {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--quiet);
+}
+
+.controls input {
+  width: clamp(3.8rem, 8vw, 6.5rem);
+  accent-color: var(--flow);
+}
+
+.controls output {
+  min-width: 2.15rem;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.canvas:focus-visible,
+.controls button:focus-visible,
+.controls input:focus-visible {
+  outline: 1px solid var(--ink);
+  outline-offset: 3px;
+}
+
+@media (max-width: 720px) {
+  .header {
+    gap: 0.75rem;
+  }
+
+  .instruction {
+    max-width: 8.5rem;
+  }
+
+  .kernel {
+    bottom: 8.1rem;
+  }
+
+  .readout {
+    right: auto;
+    bottom: 5.9rem;
+    left: clamp(1.15rem, 2.8vw, 2.6rem);
+  }
+
+  .readout dl {
+    justify-content: flex-start;
+  }
+
+  .controls {
+    right: clamp(1.15rem, 2.8vw, 2.6rem);
+    left: clamp(1.15rem, 2.8vw, 2.6rem);
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 0.45rem 0.75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .canvas {
+    cursor: default;
+  }
+}
