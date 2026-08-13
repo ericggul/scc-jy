@@ -4,7 +4,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "SCC",
-  description: "A localhost-first multi-device web artwork experiment.",
+  description: "A localhost-first multi-device web artwork experiment!",
 };
 
 export default function RootLayout({
