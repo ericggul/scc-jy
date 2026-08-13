@@ -156,10 +156,11 @@ recorded exclamations whose source audio contains an audited profanity interval:
   cents and falls continuously to -360 cents while its playback rate moves
   from 0.96 to 1.06. The split makes rallies brighter and more airborne while
   crashes accumulate as a lower, heavier crowd. The base 1000 Hz censorship
-  beep now inherits the same combined playback-rate and detune multiplier as
-  the selected speech, so its duration and audible pitch stay coupled to the
-  rapid-move effect while its mute interval continues to cover the recorded
-  profanity.
+  beep keeps the speech playback-rate multiplier, but receives only 0.3× of
+  its detune in cents. Its duration therefore still covers the transformed
+  profanity interval, while its pitch stays nearer the recognizable broadcast
+  censor tone: at the +15% extreme it is about 1.48 kHz rather than 2.40 kHz,
+  and at the -15% extreme it is about 1.00 kHz rather than 0.86 kHz.
 
 Once voice cadence is active, its clock admits two ordinary comments first and
 then appends the due `C-VAL` comment as a third record instead of replacing either

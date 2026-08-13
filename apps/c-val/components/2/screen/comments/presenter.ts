@@ -22,6 +22,7 @@ export const C_VAL_COMMENT_UP_MINIMUM_DETUNE_CENTS = 90;
 export const C_VAL_COMMENT_UP_MAXIMUM_DETUNE_CENTS = 1_200;
 export const C_VAL_COMMENT_DOWN_MINIMUM_DETUNE_CENTS = -120;
 export const C_VAL_COMMENT_DOWN_MAXIMUM_DETUNE_CENTS = -360;
+export const C_VAL_COMMENT_CENSOR_BEEP_DETUNE_RATIO = 0.3;
 export const C_VAL_COMMENT_DIALECT_ORDER = [
   "seoul-casual",
   "busan-gyeongnam",
@@ -375,9 +376,10 @@ export function cValCommentCensorBeepFrequencyHz(
   playbackRate: number,
   detuneCents: number,
 ) {
+  const safeDetuneCents = Math.max(-1_200, Math.min(1_200, detuneCents));
   return baseFrequencyHz * cValCommentEffectivePlaybackRate(
     playbackRate,
-    detuneCents,
+    safeDetuneCents * C_VAL_COMMENT_CENSOR_BEEP_DETUNE_RATIO,
   );
 }
 

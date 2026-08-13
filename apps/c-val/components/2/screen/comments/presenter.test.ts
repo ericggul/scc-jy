@@ -5,6 +5,7 @@ import type { CValSnapshot } from "../../model/index.ts";
 import { C_VAL_CHAT_CORPUS, C_VAL_CHAT_ROOMS } from "./corpus.ts";
 import {
   C_VAL_COMMENT_VOICE_TRIGGER_PERCENT,
+  C_VAL_COMMENT_CENSOR_BEEP_DETUNE_RATIO,
   C_VAL_COMMENT_DIALECT_ORDER,
   C_VAL_COMMENT_ORDINARY_PER_VOICE,
   cValCommentAdmissionIntervalMs,
@@ -159,9 +160,13 @@ test("profanity and voice remain unavailable below the extreme threshold", () =>
   assert.equal(censorCValCommentText("씨발, 뭐야. 씨발."), "C-VAL, 뭐야. C-VAL.");
 });
 
-test("the censor beep inherits the speech speed and pitch transform", () => {
+test("the censor beep keeps speech speed but receives half its pitch transform", () => {
   assert.equal(cValCommentEffectivePlaybackRate(1.2, 1_200), 2.4);
-  assert.equal(cValCommentCensorBeepFrequencyHz(1_000, 1.2, 1_200), 2_400);
+  assert.equal(C_VAL_COMMENT_CENSOR_BEEP_DETUNE_RATIO, 0.3);
+  assert.equal(
+    cValCommentCensorBeepFrequencyHz(1_000, 1.2, 1_200),
+    1_200 * 2 ** 0.3,
+  );
   assert.ok(cValCommentCensorBeepFrequencyHz(1_000, 0.96, -120) < 1_000);
 });
 
