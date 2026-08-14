@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import type { ComponentType } from "react";
-import AdaptiveCoevolvingNetworkOne from "@/components/complex-systems/adaptive-coevolving-network/1";
-import HumanRelations from "@/components/complex-systems/adaptive-coevolving-network/human-relations";
-import PeerToPeerNetwork from "@/components/complex-systems/adaptive-coevolving-network/p2p";
+import CoevolvingExchangeTwo from "@/components/complex-systems/adaptive-coevolving-network/2";
+import GridAdaptiveThree from "@/components/complex-systems/adaptive-coevolving-network/3";
 import PollingEcology from "@/components/complex-systems/adaptive-coevolving-network/polling-ecology";
 import {
   adaptiveCoevolvingNetworkExperiments,
@@ -12,16 +11,14 @@ import {
 } from "@/components/complex-systems/adaptive-coevolving-network/experiments";
 
 const components: Record<AdaptiveCoevolvingNetworkExperimentSlug, ComponentType> = {
-  "1": AdaptiveCoevolvingNetworkOne,
-  "human-relations": HumanRelations,
-  p2p: PeerToPeerNetwork,
+  "2": CoevolvingExchangeTwo,
+  "3": GridAdaptiveThree,
   "polling-ecology": PollingEcology,
 };
 
 const descriptions: Record<AdaptiveCoevolvingNetworkExperimentSlug, string> = {
-  "1": "A bounded-confidence network whose disagreement rewires its relations.",
-  "human-relations": "A network of people and accounts whose trust and relations adapt together.",
-  p2p: "A peer-to-peer network whose devices and communication links adapt together.",
+  "2": "An open adaptive network where state-dependent recruitment and rewiring change ties, while entry and death change the vertex set.",
+  "3": "An open adaptive network constrained to a configurable N by N grid of candidate sites, where only some sites are active.",
   "polling-ecology": "A synthetic polling field where blue and white stance cells reproduce, switch, and decay through rotating issues.",
 };
 

@@ -1,179 +1,161 @@
 # Adaptive coevolving network experiments
 
-Routes: `/adaptive-coevolving-network/1`,
-`/adaptive-coevolving-network/human-relations`, and
-`/adaptive-coevolving-network/p2p`, and
-`/adaptive-coevolving-network/polling-ecology`, registered through the
-adaptive-coevolving-network registry and owned by the filesystem-only
-`complex-systems` group.
+Routes: `/adaptive-coevolving-network/2`,
+`/adaptive-coevolving-network/3`, and
+`/adaptive-coevolving-network/polling-ecology`.
 
-Date: 2026-08-13.
+## Open adaptive network
 
-## Shared interface premise
+Date: 2026-08-14.
 
-1. **Participant situation:** one person encounters a changing field of local
-   participants and relations, and can introduce or remove a participant and
-   form or sever a relation.
-2. **Primary parameter:** the live topology, where a node's state and its
-   relations continually influence one another.
-3. **Perceptual job:** distinguish structural formation and loss from activity
-   travelling through an otherwise retained relation.
-4. **Interaction job:** press empty field space to introduce a participant;
-   press an existing node to act directly on its local state. The lower actions
-   expose the four structural operations without turning the field into a
-   dashboard.
-5. **Wrapper justification:** one continuous field keeps nodes, relations,
-   exchange, and rupture in the same perceptual plane. Counts only verify the
-   visible structure.
-6. **System family:** mineral ground, charcoal structure, blue-grey exchange,
-   muted-rust disconnection, serif title, and monospaced operating controls
-   match the existing complex-systems field family.
-7. **Removal test:** the field, changing nodes and relations, exchange pulses,
-   direct actions, and two counts remain. Cards, charts, separate legends,
-   background grids, simulated metadata, and explanatory chrome are omitted.
+### Scientific basis and boundary
 
-## Bounded confidence
+`/2` implements the event structure of Shkarayev, Schwartz, and Shaw's open
+adaptive recruitment network: nodes occupy non-susceptible `N`, susceptible
+`S`, or recruiter `R` states; a new `N` node enters with two random
+relations; every node can leave and takes its incident relations with it; `N`
+and `S` switch state; an `S` node becomes `R` at a rate proportional to
+its recruiter neighbours; and a recruiter can rewire an `R–N` relation to an
+`R–S` relation. The published model explicitly treats an open population and
+state-dependent rewiring, so it changes both the vertex set `V` and relation
+set `E`.
 
-1. **Participant situation:** one person watches a network reorganize and can
-   introduce a local state by pressing or dragging in the field.
-2. **Primary parameter:** reciprocal coupling between node state and network
-   topology: adjacent nodes may assimilate, while discordant relations may
-   rewire.
-3. **Perceptual job:** notice whether convergence stabilizes existing relations
-   or state difference separates the network into compatible groups.
-4. **Interaction job:** place a state by horizontal position and anticipate the
-   immediate local shift and slower structural response. Confidence, rewiring,
-   and drift expose the model's causal parameters.
-5. **Wrapper justification:** horizontal position and node color encode the same
-   continuous state, keeping node change and relation change in one view.
-6. **System family:** the neutral field and restrained structural marks remain,
-   while blue-to-rust color and horizontal motion carry model data.
-7. **Removal test:** the network, state axis, current measures, causal controls,
-   pause, and reset remain. Separate charts and explanatory panels are omitted.
+The browser version is a finite, seeded, individual-based realization of that
+mechanism, not a calibrated reconstruction of a real social group or a claim
+about recruitment. Each animation frame advances the model with the bounded
+continuous-time event probability `1 − exp(−rΔt)`; the sliders scale browser
+rates rather than claiming the paper's empirical units. A maximum population is
+only a rendering-cost bound. A new node's nearby screen position is an identity
+anchor, not a spatial force or an additional interaction rule.
 
-### Bounded trial
+Reference: Maxim S. Shkarayev, Ira B. Schwartz, and Leah B. Shaw,
+[*Recruitment dynamics in adaptive social networks*](https://doi.org/10.1088/1751-8113/46/24/245003),
+*Journal of Physics A: Mathematical and Theoretical* 46, 245003 (2013);
+[open preprint](https://arxiv.org/abs/1111.0964). The broader definition of an
+adaptive network as reciprocal node-state/topology feedback is reviewed by
+Thilo Gross and Bernd Blasius,
+[*Adaptive Coevolutionary Networks – A Review*](https://doi.org/10.1098/rsif.2007.1229).
 
-- **Baseline:** the SCC full-viewport, client-local complex-system structure;
-  the reference systems informed routing and model/presentation separation only.
-- **Changed variable:** bounded-confidence assimilation and homophilous rewiring
-  make node states and relations coevolve. Independent drift prevents a
-  permanently frozen result.
-- **Retained invariants:** a thin route, pure model functions, stable node and
-  edge IDs, one viewport, direct manipulation, no socket, and no new package.
-- **Observable result:** pure-model verification confirms bounded finite states,
-  a stable 84-node/210-edge population, unique relations, and active rewiring.
-  Browser appearance and interaction were not observed in this implementation pass.
-- **Unresolved question:** does a fixed edge count clarify comparison across
-  parameter changes, or hide an important birth/death process for relations?
+### Model card
 
-This route is a technical demonstration rather than a calibrated social
-forecast. Compatible endpoints assimilate according to susceptibility and
-relation weight; discordant endpoints weaken or rewire toward a compatible
-sampled non-neighbor. The force layout combines relation springs, local
-repulsion, and the horizontal state coordinate.
+1. **Object and boundary:** a finite open graph `G(t) = (V(t), E(t))` with
+   categorical node state. It is a direct event-level realization of an
+   academic recruitment model, with an explicitly documented finite browser
+   bound.
+2. **Micro mechanism:** a node's neighbours determine its recruiter exposure;
+   its state determines whether recruiter-held relations can be rewired; entry
+   makes a new vertex and two initial relations; departure removes a vertex and
+   every relation incident to it. No frame-level planner chooses an aggregate
+   network operation.
+3. **Macro observable and intervention:** the readout reports `N/S/R`,
+   `|V|/|E|`, connected components, and actual entry/exit/recruitment/rewiring
+   event totals. Pressing the field turns nearby `N` nodes into `S` nodes:
+   an explicit external susceptibility intervention that lets a participant
+   test the published feedback loop.
+4. **Screen encoding:** filled grey nodes are `N`; outlined blue nodes are
+   `S`; filled rust nodes with a second ring are `R`. Rust relations are
+   current `R–S` recruitment opportunities. A ring expanding from a node is
+   emitted only when that vertex actually entered `V`; animated dashes mark
+   an actual changed relation endpoint.
+5. **Causal contrast:** pure-model tests prove deterministic replay, valid
+   endpoints after every death, actual vertex turnover, and a different edge
+   endpoint sequence when state-dependent rewiring is enabled rather than
+   locked at zero. These are model invariants, not a claim that the source
+   paper's population-level results have been replicated.
 
-## Human relations
+### Interface contract
 
-1. **Participant situation:** one person observes people and accounts forming
-   conversations and follows, with trust changing through exchange.
-2. **Primary parameter:** the set of social relations and their trust values.
-3. **Perceptual job:** see a conversation pulse, follow relation, fragile trust,
-   joining, departure, connection, and dissolution as distinct but related
-   changes.
-4. **Interaction job:** press a member to prompt a nearby conversation, or use
-   `join`, `leave`, `converse`, and `dissolve` to make one bounded structural
-   change.
-5. **Wrapper justification:** circular people and outlined square accounts make
-   participant kind visible without resorting to profile or feed conventions;
-   solid conversation links and broken follow links preserve relation type.
-6. **System family:** retains the shared field rules; account outline and follow
-   dash describe a real data distinction rather than an arbitrary skin.
-7. **Removal test:** individual labels, profile images, posts, notifications,
-   scores, and a feed are unnecessary to perceive the requested relation.
+1. **Participant situation:** one person watches a topology whose vertex count,
+   membership states, and relations all evolve in one field.
+2. **Primary parameter:** the feedback `node state → relation update → future
+   node exposure`, extended with entry and death so `V` is also dynamic.
+3. **Perceptual job:** distinguish a state transition, a reconfigured
+   relation, a newly entered vertex, and a departed vertex by their direct
+   visual consequences.
+4. **Interaction job:** introduce local `S` availability and adjust
+   recruitment, rewiring, entry, and turnover rates to form a falsifiable
+   expectation about how the open graph will reorganize.
+5. **Wrapper justification:** one direct-manipulation field keeps all three
+   coupled layers—state, edges, and vertex turnover—spatially co-present. The
+   compact measurements are included because entries and departures are
+   otherwise difficult to count reliably in a dense, live graph.
+6. **System family:** node form and relation colour encode model state; there
+   are no domain-status badges, fabricated data feeds, force-layout motion, or
+   decorative background particles.
+7. **Removal test:** the graph, node-state forms, vertex-arrival trace,
+   reconfigured ties, local susceptibility action, four causal controls,
+   pause, reseed, and actual event counts remain. A legend, cards, fake live
+   indicators, and secondary charts are omitted.
 
 ### Bounded trial
 
-- **Baseline:** `/living-topology/2`'s stationary, local-agent graph field.
-- **Changed variable:** generic activity becomes a social relation model with
-  people/accounts, conversation/follow relation types, and exchange-dependent
-  trust.
-- **Retained invariants:** one viewport, stable model-layer IDs, direct field
-  manipulation, local deterministic updates, minimal controls, and no socket
-  dependency.
-- **Observable result:** not yet browser-observed in this implementation pass.
-- **Unresolved question:** should a later route make reputation emerge through
-  indirect ties rather than retain a relation-local trust value?
+- **Baseline:** the earlier closed exchange trial on this route only changed
+  relation strength and endpoints.
+- **Changed variable:** `/2` now uses an open `N/S/R` state process with
+  entry, per-node death, two entry relations, recruiter exposure, and
+  recruiter-to-susceptible rewiring.
+- **Retained invariants:** a client-only full-viewport model, stable IDs in the
+  model layer, deterministic reseeding, direct local intervention, no socket,
+  and no presentation state in the simulation data.
+- **Verified result:** pure-model tests pass for deterministic replay, bounded
+  valid topology, nonzero entry and exit events, new vertex identities, changed
+  edge endpoints under rewiring, and spatially bounded intervention.
+- **Unresolved question:** a later trial could implement a true Gillespie event
+  queue and compare its event-time statistics with this browser-rate tau-leap
+  realization without changing the existing route.
 
-## P2P network
+## Lattice adaptive network
 
-1. **Participant situation:** one person observes devices entering and leaving
-   a peer network while communication links adapt to load and reliability.
-2. **Primary parameter:** the connected set of online devices and viable
-   communication links.
-3. **Perceptual job:** see link formation, traffic, link failure, and device
-   availability without mistaking a temporary traffic pulse for new topology.
-4. **Interaction job:** press a device to toggle its connection; press empty
-   field space to add one; use `join device`, `leave device`, `form link`, and
-   `fail link` for exact structural interventions.
-5. **Wrapper justification:** a rotated square creates a device-specific mark;
-   its cut-through and traffic point remain subordinate to the actual relation
-   lines.
-6. **System family:** mineral field and structural colors remain the same as the
-   human route so the variants read as one experimental family.
-7. **Removal test:** hardware illustrations, IP addresses, throughput charts,
-   protocol labels, connection badges, and terminal language are not needed for
-   the requested topology.
+Date: 2026-08-14.
 
-### Bounded trial
+This is a separate spatial constraint on the same open adaptive-network event
+family. It preserves the N/S/R state process, entry/departure, state-dependent
+rewiring, and independent relation formation/decay of the academic recruitment
+model cited above. It does not claim that the source publication used a lattice.
 
-- **Baseline:** the human-relations route in this group.
-- **Changed variable:** people/accounts and social relations become devices and
-  communication links, with node load and stability affecting link quality.
-- **Retained invariants:** dynamic topology, visible moving exchange, stable
-  model-layer IDs, single full-viewport field, direct manipulation, and the
-  shared visual grammar.
-- **Observable result:** not yet browser-observed in this implementation pass.
-- **Unresolved question:** should a later route let disconnected devices relay
-  through retained neighbourhood memory after a link failure?
+Every possible vertex exists as a stable candidate site at the centre of an
+N-by-N grid cell. N defaults to 32 and is adjustable from 16 through 50; no
+site can drift or be created between grid centres. Only a small seeded subset is
+active at first. Entry activates one previously inactive site, departure returns
+one active site to inactive, and removes every incident relation. An entrant
+gets up to two locally weighted initial relations. Recruiter rewiring and later
+tie births select active candidates by grid distance, so the visual lattice is
+also a model constraint rather than a placement decoration.
+
+1. **Participant situation:** one person watches the latent 2-D population
+   substrate and its changing active graph at once.
+2. **Primary parameter:** the difference between the fixed candidate universe
+   of N² sites and the changing active vertex set V(t).
+3. **Perceptual job:** see a dim unoccupied candidate turn into a coloured
+   N/S/R node, acquire local ties, lose those ties on departure, and leave the
+   candidate grid available for later reactivation.
+4. **Interaction job:** press a candidate site to activate it as susceptible,
+   or turn an active N site susceptible; tune N, recruitment, rewiring,
+   activation, and turnover.
+5. **Screen encoding:** inactive candidates are dim grid dots; active N nodes
+   are grey, S nodes are outlined blue, R nodes are rust with a second ring.
+   Expansion rings encode only actual state activation/change.
+6. **Bounded evidence:** pure-model tests assert exact N² candidate count and
+   immutable grid coordinates, deterministic replay, nonzero activation and
+   departure, valid relation endpoints, rewiring endpoint change, and direct
+   activation of a selected cell.
+7. **Unresolved question:** a later trial could use a distance kernel measured
+   from a real spatial contact network. That would be a separate calibration
+   task, not a reason to present this synthetic grid as empirical data.
 
 ## Polling ecology
 
-1. **Participant situation:** one person encounters a clearly synthetic field
-   of local political stances, split into blue and white cells, while the issue
-   in focus rotates without a prompt.
-2. **Primary parameter:** the spatial population of each faction: a cell may
-   reproduce from nearby support, switch under local opposition, or disappear
-   from isolation, saturation, fatigue, and issue-cycle attrition.
-3. **Perceptual job:** perceive temporary majorities as physical blooms rather
-   than a stable score; a field can fill, divide, thin, and seed a later surge.
-4. **Interaction job:** choose a blue or white seed, press or drag in the
-   field, and observe whether that patch joins a local cluster, changes sides,
-   spreads, or dissipates. Pause and reset preserve a bounded inspection loop.
-5. **Wrapper justification:** the cellular field is both the population and the
-   poll. Blue and white are faction states; four compact cell forms distinguish
-   housing, care, energy, and mobility without turning the work into a chart or
-   claiming a real electorate.
-6. **System family:** the mineral ground, charcoal typography, blue-grey active
-   state, muted-rust disappearance trace, full viewport, and small monospaced
-   controls continue the complex-systems field grammar.
-7. **Removal test:** the cells, automatic issue cycle, faction counts, selected
-   seeding, pause, and reset remain. Candidate portraits, real-party names,
-   charts, feed UI, maps, polling claims, and live-status decoration are
-   intentionally absent.
+Route: `/adaptive-coevolving-network/polling-ecology`.
 
-### Bounded trial
+This is a clearly synthetic cellular stance ecology, not a model of an
+electorate and not evidence about real polling. Each cell carries faction,
+topic, conviction, and age; synchronous neighbourhood rules allow local
+reproduction, switching, and attrition. Seeding a patch is a bounded
+intervention whose persistence, spread, or disappearance can be observed
+directly in the same lattice.
 
-- **Baseline:** `/cellular-automata/1` supplies a simultaneous local lattice;
-  `/adaptive-coevolving-network/1` supplies position-taking and state change.
-- **Changed variable:** binary life becomes a synthetic opinion ecology. Each
-  active cell holds a faction, an issue, conviction, and age; automatic issue
-  seasons produce gathering, surge, and attrition phases.
-- **Retained invariants:** client-local deterministic model state, stable grid
-  positions, synchronous updates, direct field intervention, a single viewport,
-  no socket, and no real-world polling data or political affiliation.
-- **Observable result:** pending browser observation. The pure model is designed
-  to make new faction cells appear from local density, fade after overgrowth or
-  isolation, and occasionally cross to the locally dominant faction.
-- **Unresolved question:** should a later route make issues compete
-  simultaneously, rather than focus the field on one auto-rotating issue at a
-  time?
+The route is retained because its visible cells and its local update state refer
+to the same mechanism. That is a minimum coherence condition, not a claim that
+the ecology is a sophisticated model. Future changes must follow the
+[complex-systems simulation standard](../rejected-examples.md), especially if
+they change the issue cycle or describe the field as a network.

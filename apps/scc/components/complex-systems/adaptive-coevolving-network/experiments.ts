@@ -1,7 +1,6 @@
 export const adaptiveCoevolvingNetworkExperiments = [
-  { slug: "1", label: "bounded confidence" },
-  { slug: "human-relations", label: "human relations" },
-  { slug: "p2p", label: "P2P network" },
+  { slug: "2", label: "open adaptive network" },
+  { slug: "3", label: "lattice adaptive network" },
   { slug: "polling-ecology", label: "polling ecology" },
 ] as const;
 

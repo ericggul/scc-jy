@@ -40,12 +40,11 @@ get a dedicated document.
 | `apps/scc/components/dashboard/stock` | `default`, `1`, `2`, `3`, `4` | [stock index](../apps/scc/docs/experiments/dashboard/stock/README.md) |
 | `apps/scc/components/realtime/calendar` | `default`, `1` | [calendar](../apps/scc/docs/experiments/realtime/calendar/README.md) |
 | `apps/scc/components/complex-systems/living-topology` | `1`–`5` | [living topology](../apps/scc/docs/experiments/complex-systems/living-topology/README.md) |
+| `apps/scc/components/complex-systems/mycorrhizal-wave` | `1`, `2` | [mycorrhizal wave](../apps/scc/docs/experiments/complex-systems/mycorrhizal-wave/README.md) |
 | `apps/scc/components/complex-systems/cellular-automata` | `1` | [cellular automata](../apps/scc/docs/experiments/complex-systems/cellular-automata/README.md) |
-| `apps/scc/components/complex-systems/artificial-language` | `1` | [artificial language](../apps/scc/docs/experiments/complex-systems/artificial-language/README.md) |
-| `apps/scc/components/complex-systems/markov-chain` | `1` | [markov chain](../apps/scc/docs/experiments/complex-systems/markov-chain/README.md) |
-| `apps/scc/components/complex-systems/adaptive-coevolving-network` | `1`, `human-relations`, `p2p` | [adaptive coevolving network](../apps/scc/docs/experiments/complex-systems/adaptive-coevolving-network/README.md) |
-| `apps/scc/components/complex-systems/flight-network` | `1` | [flight network](../apps/scc/docs/experiments/complex-systems/flight-network/README.md) |
-| `apps/scc/components/complex-systems/hypertext-network` | `1` | [hypertext network](../apps/scc/docs/experiments/complex-systems/hypertext-network/README.md) |
+| `apps/scc/components/complex-systems/adaptive-coevolving-network` | `polling-ecology` | [polling ecology](../apps/scc/docs/experiments/complex-systems/adaptive-coevolving-network/README.md) |
+| `apps/scc/components/complex-systems/temporal-network` | `repair-relay` | [temporal network](../apps/scc/docs/experiments/complex-systems/temporal-network/README.md) |
+| Complex-systems acceptance standard | — | [removals and simulation standard](../apps/scc/docs/experiments/complex-systems/rejected-examples.md) |
 | `apps/scc/components/complex-systems/terminal` | `1` | [terminal colony](../apps/scc/docs/experiments/complex-systems/terminal/README.md) |
 | `apps/scc/components/standalone/bastille-day` | `1`, `2` | [bastille-day](../apps/scc/docs/experiments/standalone/bastille-day/README.md) |
 | `apps/scc/components/standalone/cv` | `1`, `2`, `3` | [cv](../apps/scc/docs/experiments/standalone/cv/README.md) |

@@ -1,0 +1,118 @@
+.page {
+  --ink: #080808;
+  --network: #7e8cca;
+  position: fixed;
+  inset: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  overflow: hidden;
+  background: #fff;
+  color: var(--ink);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-content: center;
+  gap: clamp(3px, 0.45vw, 8px);
+  min-height: 0;
+  padding: clamp(4px, 0.65vw, 12px);
+}
+
+.panel {
+  position: relative;
+  aspect-ratio: 930 / 364;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  border: clamp(1px, 0.13vw, 2px) solid var(--ink);
+  background: #fff;
+}
+
+.canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.panel output {
+  position: absolute;
+  top: clamp(0.28rem, 0.65vw, 0.7rem);
+  right: clamp(0.35rem, 0.75vw, 0.8rem);
+  padding-left: 0.3rem;
+  background: #fff;
+  font-size: clamp(0.58rem, 1.02vw, 1.1rem);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.scaleBar {
+  position: absolute;
+  bottom: 4.5%;
+  left: 1.4%;
+  width: 2.78%;
+  border-top: clamp(3px, 0.4vw, 6px) solid var(--ink);
+}
+
+.controls {
+  display: grid;
+  grid-template-columns: auto minmax(10rem, 1fr) auto;
+  align-items: center;
+  gap: clamp(0.75rem, 2vw, 2rem);
+  min-height: 3.7rem;
+  padding: 0.7rem clamp(0.8rem, 1.6vw, 1.8rem);
+}
+
+.controls button {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  font: 0.7rem/1.2 Arial, Helvetica, sans-serif;
+  white-space: nowrap;
+}
+
+.controls input {
+  width: 100%;
+  margin: 0;
+  accent-color: var(--network);
+  cursor: ew-resize;
+}
+
+.controls button:focus-visible,
+.controls input:focus-visible {
+  outline: 1px solid var(--ink);
+  outline-offset: 4px;
+}
+
+@media (max-width: 720px) {
+  .page {
+    position: static;
+    min-height: 100svh;
+    overflow: auto;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .controls {
+    position: sticky;
+    bottom: 0;
+    grid-template-columns: auto minmax(0, 1fr);
+    background: #fff;
+  }
+
+  .controls button:last-child {
+    grid-column: 1 / -1;
+    justify-self: end;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .controls button:first-child {
+    display: none;
+  }
+}

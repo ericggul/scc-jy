@@ -1,0 +1,88 @@
+.field {
+  position: relative;
+  width: 100%;
+  height: 100svh;
+  min-height: 30rem;
+  overflow: hidden;
+  background: #28222b;
+  color: #ded6be;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.canvas {
+  position: absolute;
+  inset: 0 0 3.65rem;
+  display: block;
+  width: 100%;
+  height: auto;
+  cursor: crosshair;
+  touch-action: none;
+  outline: none;
+}
+
+.canvas:focus-visible {
+  box-shadow: inset 0 0 0 1px rgba(222, 214, 190, 0.62);
+}
+
+.rail {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 3.65rem;
+  padding: 0.75rem clamp(1rem, 3.2vw, 3.5rem);
+  gap: 1rem;
+  background: #1f1a21;
+  font-size: 0.68rem;
+  letter-spacing: 0.015em;
+}
+
+.order,
+.actions {
+  display: flex;
+  align-items: center;
+  gap: clamp(0.9rem, 2vw, 1.75rem);
+}
+
+.rail button {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: rgba(222, 214, 190, 0.5);
+  font: inherit;
+  cursor: pointer;
+}
+
+.rail button:hover,
+.rail button[aria-pressed="true"] {
+  color: #ded6be;
+}
+
+.rail button:focus-visible {
+  outline: 1px solid #ded6be;
+  outline-offset: 0.35rem;
+}
+
+@media (max-width: 38rem) {
+  .canvas {
+    bottom: 4.6rem;
+  }
+
+  .rail {
+    min-height: 4.6rem;
+    align-items: flex-start;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.48rem;
+    padding-block: 0.68rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .canvas {
+    cursor: default;
+  }
+}

@@ -42,38 +42,24 @@ export const experimentCatalog = [
     description: "A graph that continually buds, sheds, connects, and severs itself.",
   },
   {
+    href: "/mycorrhizal-wave",
+    label: "mycorrhizal-wave",
+    description: "Observed fungal-network growth and synchronized replicate comparisons.",
+  },
+  {
+    href: "/temporal-network",
+    label: "temporal-network",
+    description: "A repair relay whose support is limited by the order of its contacts.",
+  },
+  {
     href: "/adaptive-coevolving-network",
     label: "adaptive-coevolving-network",
-    description:
-      "State, human-relation, and peer-to-peer networks that adapt their links.",
-  },
-  {
-    href: "/flight-network",
-    label: "flight-network",
-    description:
-      "Synthetic cities generating routes, tickets, flights, and congestion feedback.",
-  },
-  {
-    href: "/hypertext-network",
-    label: "hypertext-network",
-    description:
-      "A self-evolving field of page fragments linked by travelling readers.",
+    description: "A synthetic cellular polling ecology with local stance dynamics.",
   },
   {
     href: "/cellular-automata",
     label: "cellular-automata",
     description: "A directly editable field of cells evolving by local rules.",
-  },
-  {
-    href: "/artificial-language",
-    label: "artificial-language",
-    description: "Invented words spreading, splitting, and converging through local exchange.",
-  },
-  {
-    href: "/markov-chain",
-    label: "markov-chain",
-    description:
-      "A 108-state non-reversible chain sampled against its stationary distribution.",
   },
   {
     href: "/terminal",

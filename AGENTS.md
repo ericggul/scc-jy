@@ -115,6 +115,28 @@ This version has breaking changes — APIs, conventions, and file structure may 
   unless a different wrapper is justified by a genuinely different parameter,
   interaction, observation task, or established everyday-interface grammar.
 
+### Complex-systems visual independence
+
+- Existing `complex-systems` routes are implementation history, not an aesthetic
+  baseline. Never inherit their palette, typography, corner readouts, controls,
+  graph treatment, or full-viewport composition merely to make a new experiment
+  look related to the group.
+- Derive every complex-systems wrapper from the exact phenomenon the participant
+  must perceive. A mathematically related model does not justify a visually
+  related screen.
+- Do not surround a simulation with a large serif title, monospaced counters,
+  graph notation, instructions, pause/reset buttons, or metrics distributed
+  across the viewport by default. This recurring composition reads as generated
+  interface chrome and competes with the system being observed.
+- For perceptual simulations, begin with the simulated field alone. Add visible
+  text or controls only when the participant cannot perform or understand the
+  assigned interaction without them. Prefer keyboard or direct-field actions
+  when they remain discoverable and accessible without permanent chrome.
+- A subject such as a constellation must not be forced into the mineral-paper,
+  serif-title, monospaced-readout style of earlier graph experiments. Its light,
+  depth, darkness, motion, and relation language must be derived specifically
+  from how constellation formation and loss need to be seen.
+
 ## Verification
 
 - Do not run `pnpm build`.

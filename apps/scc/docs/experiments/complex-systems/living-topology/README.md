@@ -1,6 +1,6 @@
 # Living topology experiment
 
-Routes: `/living-topology/1` through `/living-topology/5`, registered through the
+Routes: `/living-topology/1` through `/living-topology/6`, registered through the
 living-topology experiment registry and owned by the filesystem-only
 `complex-systems` group.
 
@@ -201,3 +201,61 @@ The model is a dynamic graph rather than a Markov-chain display: the set of poss
 - **Unresolved question:** whether agents should carry a limited material token
   between outposts, making a new trail temporarily deprive its origin rather
   than drawing all establishment energy from the scout alone.
+
+## Living topology/6 — plate 94 observed network
+
+Source: L. Oyarte Galvez et al., “A travelling-wave strategy for plant–fungal
+trade,” *Nature* 639, 172–180 (2025),
+[doi:10.1038/s41586-025-08614-x](https://doi.org/10.1038/s41586-025-08614-x),
+and the authors' Figshare replication package,
+[doi:10.6084/m9.figshare.27889143](https://doi.org/10.6084/m9.figshare.27889143).
+
+1. **Participant situation:** one person observes the measured plate 94
+   *Rhizophagus irregularis* network over 138 laboratory hours.
+2. **Primary parameter:** observed time. The network geometry and node events
+   are empirical records, not a stochastic graph inferred from a density PDE.
+3. **Perceptual job:** see the root-side network expand into persistent runner
+   hyphae, dense absorbing branches, branching junctions, and accumulated
+   anastomoses, with the 0 h, 36 h, and 72 h states directly selectable.
+4. **Interaction job:** play, pause, scrub, or select a measured checkpoint and
+   expect the corresponding recorded topology.
+5. **Wrapper justification:** the white paper field, thin black skeleton,
+   red/orange/green node semantics, physical scale, and root-side baseline are
+   taken from Fig. 1b because the task is inspection of the extracted network.
+6. **System family:** the route and single-viewport experiment contract remain;
+   the generic mineral or transport-dashboard wrapper does not.
+7. **Removal test:** the empirical skeleton, event nodes, time, physical scale,
+   scrubber, playback, and node legend remain. Invented sources, sinks,
+   pressure, conductance, flux, reinforcement, pruning, reseeding, density
+   plots, titles, cards, and decorative status text are removed.
+
+### Data boundary
+
+- The edge image sequence is derived from the paper's official Supplementary
+  Video 1, cropped to the observed field and thresholded from its time-coloured
+  skeleton to a black skeleton on white. Its geometry is not regenerated.
+- `plate94-nodes.json` is derived from the replication package directory
+  `Analysis_94_20201123_166_Version1/time_hypha_info`. Degree-one records are
+  shown as red tips and degree-three-or-higher records as orange branch nodes.
+- Green nodes are accumulated from the recorded `timestep_anastomosis` events
+  in `global_hypha_info.json`, at their measured event positions.
+- The source data contains 166 hourly records. The interface retains the
+  continuous 0–138 h interval visible in the official whole-network video.
+- BARE remains a continuum explanation of density-wave behaviour and is not
+  used here to invent a microscopic node-edge graph.
+
+### Bounded trial
+
+- **Rejected baseline:** the former `/6` used a fixed 12 by 8 transport grid
+  with invented sources, sinks, pressure, conductance, and edge activation. It
+  did not create spatial nodes or reproduce the fungal network.
+- **Changed variable:** the entire displayed topology now comes from plate 94's
+  observed edge sequence and node-event ledger.
+- **Retained invariants:** client-only playback, one viewport, stable route, no
+  socket, responsive physical coordinates, and a small observation control.
+- **Programmatic verification:** pure tests check hour/video conversion,
+  measured-frame selection, and accumulation of anastomosis events. Typecheck
+  is required separately from visual comparison.
+- **Visual verification requirement:** 0 h, 36 h, and 72 h browser captures must
+  be compared against Fig. 1b before the trial is described as visually
+  complete.

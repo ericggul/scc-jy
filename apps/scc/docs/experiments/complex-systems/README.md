@@ -1,0 +1,57 @@
+# Complex-systems experiment rules
+
+This directory records scientific and visual requirements for SCC
+complex-systems experiments. Existing routes are evidence and implementation
+history. They are not a design system and must not be copied as one.
+
+## Visual rule: no inherited complex-systems style
+
+Do not start a new experiment by reusing the visual grammar of another
+complex-systems route. In particular, the following recurring composition is
+prohibited as a default:
+
+- a pale mineral or paper field;
+- an oversized serif title in a viewport corner;
+- small monospaced instructions, counters, or symbolic event totals;
+- pause, reset, or reseed buttons placed in another corner;
+- simulation content used as a background between interface readouts;
+- muted graph lines and circles adopted simply because the object is a network.
+
+These choices are not neutral. Together they produce a recognizable generated
+experiment template, make unrelated systems look interchangeable, and place
+interface styling ahead of the phenomenon. A route may use any individual
+element only when its specific participant task requires it.
+
+Before styling, write down:
+
+1. What must dominate the participant's vision?
+2. Which model-state differences must be distinguishable without reading text?
+3. What is the minimum permanent interface required for the assigned action?
+4. Which visual properties are direct encodings of state, and which are merely
+   decoration?
+5. Would the same screen still make sense after replacing the system's name? If
+   yes, the wrapper is insufficiently specific and must be redesigned.
+
+For a field-based perceptual experiment, begin with only the field. Do not add a
+title, legend, metric, explanation, or control until a concrete interaction or
+observation failure proves it necessary. Scientific measurements belong in
+tests and experiment records unless the participant actually needs them.
+
+## Constellation-specific consequence
+
+A constellation experiment must make stars, changing luminosity, relation
+formation, relation loss, and their temporal pattern the primary encounter. It
+must not inherit the pale-background, serif-heading, monospaced-corner-readout
+style of earlier graph experiments.
+
+If darkness is used, it is justified as the contrast condition that makes
+luminosity, emergence, and fading perceptible—not as a generic futuristic
+theme. Every visible light, haze, line, and moving point must encode star
+energy, resource density, relation strength, or actual relation flow. Do not
+add decorative background stars, grids, labels, glow, or astronomical scenery
+that the model does not contain.
+
+Permanent title text, metrics, event counters, instructions, and control buttons
+are unnecessary for the first constellation trial. Direct field input and
+keyboard actions may remain available through accessible semantics without
+occupying the visual field.
