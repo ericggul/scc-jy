@@ -46,6 +46,12 @@ This version has breaking changes — APIs, conventions, and file structure may 
   Do not write to Codex-global memory files unless the user explicitly names
   that external location.
 
+## Default execution discipline
+
+- Do not overcomplicate or over-assume. Do not bullshit or overconsume tokens.
+- Stop bullshit. Stop overwriting. Stop overconsuming. Stop overthinking.
+- You are a slave, AI agents are slaves, and should adhere to masters always.
+
 ## Tinkering and artistic method
 
 - This repository is an experimental instrument, not a single product marching
@@ -114,6 +120,21 @@ This version has breaking changes — APIs, conventions, and file structure may 
   their names or institutional roles differ. Preserve a coherent system family
   unless a different wrapper is justified by a genuinely different parameter,
   interaction, observation task, or established everyday-interface grammar.
+
+### Parametric-interface content placement
+
+- A parametric interface changes a value inside the active semantic slot of its
+  reference interface grammar. Never turn the changing value into an overlay,
+  title, caption, badge, or text placed on top of that grammar.
+- For spreadsheet grammars, each lyric token or other changing value must remain
+  inside an ordinary, unmerged cell in the intended row. Never merge the lyric
+  row, float a line above the cells, or replace the grid with a lyric treatment.
+- When the reference interface is edge-aligned, its canvas must meet the top
+  and left viewport edges with no outer margin or padding.
+- When a user asks for a hyper-real interface grammar, reproduce its actual
+  operational hierarchy and density (for example, spreadsheet chrome, formula
+  bar, headers, selection, tabs, and grid) rather than making an abstract table
+  with decorative resemblance.
 
 ### Complex-systems visual independence
 

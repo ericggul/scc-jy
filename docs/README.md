@@ -54,6 +54,7 @@ get a dedicated document.
 | `apps/scc/components/standalone/table` | `1`, `2` | [table](../apps/scc/docs/experiments/standalone/table/README.md) |
 | `apps/scc/components/standalone/translate` | `1` | [translate](../apps/scc/docs/experiments/standalone/translate/README.md) |
 | `apps/scc/components/standalone/grid` | `1`, `2`, `3`, `4`, `5` | [grid](../apps/scc/docs/experiments/standalone/grid/README.md) |
+| `apps/scc/components/parametric-interface` | `1`, `2`, `0815/flight`, `0815/stock`, `0815/apollo`, `0815/led-text` | [parametric-interface](../apps/scc/docs/experiments/parametric-interface/README.md) |
 | `apps/goldfishes/components` | `default`, `2d/1`, `0804/tube`, `0804/html`, `0804/node-edge`, `0804/pillars`, `0806/side-view`, `0806/compositional-grid`, `0806/duration`, `0806/temporal-decay` | [archive](../apps/goldfishes/docs/README.md), [agent onboarding](../apps/goldfishes/docs/agent-onboarding.md) |
 | `apps/scc/components/dj` | `1` | [dj](../apps/scc/docs/experiments/dj/README.md) |
 | `apps/scc/components/finger-skating` | `1`, `2` | [finger-skating](../apps/scc/docs/experiments/finger-skating/README.md) |

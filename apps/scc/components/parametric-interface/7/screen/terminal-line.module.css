@@ -1,0 +1,133 @@
+.stage {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  overflow: hidden;
+  overscroll-behavior: none;
+  background: #1d1d1f;
+}
+
+.terminal {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  grid-template-rows: clamp(1.72rem, 3vw, 2.5rem) minmax(0, 1fr);
+  background: #1d1d1f;
+  color: #f2f2ef;
+  font-family: var(--font-geist-mono), "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
+}
+
+.titleBar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content minmax(0, 1fr);
+  align-items: center;
+  min-width: 0;
+  padding: 0 clamp(0.62rem, 1.2vw, 1.25rem);
+  border-bottom: 1px solid #111112;
+  background: #303033;
+  color: #d9d9d7;
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+}
+
+.windowControls {
+  display: flex;
+  align-items: center;
+  gap: clamp(0.36rem, 0.55vw, 0.52rem);
+}
+
+.windowControls i {
+  display: block;
+  width: clamp(0.58rem, 0.78vw, 0.76rem);
+  height: clamp(0.58rem, 0.78vw, 0.76rem);
+  border-radius: 50%;
+}
+
+.close { background: #ff5f57; }
+.minimize { background: #febc2e; }
+.zoom { background: #28c840; }
+
+.title {
+  overflow: hidden;
+  color: #e7e7e5;
+  font-size: clamp(0.57rem, 0.82vw, 0.78rem);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.titleBalance {
+  min-width: 0;
+}
+
+.transcript {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  grid-template-rows: repeat(24, minmax(0, 1fr));
+  padding: clamp(0.6rem, 1.25vw, 1.45rem) clamp(0.68rem, 1.35vw, 1.6rem);
+  background: #1d1d1f;
+  font-size: clamp(0.53rem, 1.12vw, 1.04rem);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.025em;
+  line-height: 1.25;
+}
+
+.line,
+.emptyLine {
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+.line[data-kind="command"] {
+  color: #f3f3ef;
+}
+
+.line[data-kind="output"] {
+  color: #b7b7b2;
+}
+
+.line[data-active="true"] {
+  color: #ffffff;
+}
+
+.cursor {
+  display: inline-block;
+  width: 0.58em;
+  height: 1.05em;
+  margin-left: 0.16em;
+  vertical-align: -0.18em;
+  background: currentColor;
+  animation: blink 900ms steps(1, end) infinite;
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+@media (max-width: 42rem) {
+  .terminal {
+    grid-template-rows: 1.65rem minmax(0, 1fr);
+  }
+
+  .titleBar {
+    padding-inline: 0.56rem;
+  }
+
+  .transcript {
+    padding: 0.58rem;
+    font-size: clamp(0.48rem, 2.2vw, 0.75rem);
+    letter-spacing: -0.045em;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cursor {
+    animation: none;
+  }
+}

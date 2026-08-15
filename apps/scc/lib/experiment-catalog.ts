@@ -83,6 +83,11 @@ export const experimentCatalog = [
     description: "Parametric A4 CV generator mapped to pointer position.",
   },
   {
+    href: "/parametric-interface",
+    label: "parametric-interface",
+    description: "Parametric interface experiments.",
+  },
+  {
     href: "/moma",
     label: "moma",
     description: "Single-page museum homepage clone experiment.",

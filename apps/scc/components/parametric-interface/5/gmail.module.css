@@ -1,0 +1,161 @@
+.gmail {
+  --ink: #202124;
+  --muted: #5f6368;
+  --line: #dadce0;
+  --selected: #d3e3fd;
+  --search: #eaf1fb;
+  background: #f6f8fc;
+  color: var(--ink);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 14px;
+  height: 100dvh;
+  inset: 0;
+  overflow: hidden;
+  position: fixed;
+  width: 100vw;
+}
+
+.gmail *, .gmail *::before, .gmail *::after { box-sizing: border-box; }
+.gmail button { color: inherit; font: inherit; }
+.gmail button:focus-visible { outline: 2px solid #1a73e8; outline-offset: -2px; }
+.topbar { align-items: center; display: grid; gap: 16px; grid-template-columns: 295px minmax(260px, 640px) 1fr; height: 64px; padding: 8px 16px 8px 12px; }
+.brandCluster, .headerActions, .toolGroup, .pager, .senderRow, .subjectRow { align-items: center; display: flex; }
+.brandCluster { gap: 35px; }
+.gmailMark { display: block; height: 34px; overflow: visible; width: 132px; }
+
+.iconButton { align-items: center; background: transparent; border: 0; border-radius: 50%; color: #444746; cursor: pointer; display: inline-flex; flex: 0 0 40px; height: 40px; justify-content: center; padding: 0; width: 40px; }
+.iconButton:hover, .searchBox button:hover, .sideCollapse:hover { background: rgba(60, 64, 67, .08); }
+.iconButton svg, .searchBox svg, .mailboxList svg, .navigationBottom svg, .compose svg, .replyActions svg, .senderIdentity svg, .sideCollapse svg { height: 20px; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; width: 20px; }
+
+.searchBox { align-items: center; background: var(--search); border-radius: 24px; color: #444746; display: flex; height: 48px; max-width: 720px; min-width: 0; padding: 0 8px 0 18px; }
+.searchBox > svg { flex: 0 0 auto; height: 22px; margin-right: 17px; width: 22px; }
+.searchBox > span { color: #3c4043; flex: 1; font-size: 16px; letter-spacing: .1px; }
+.searchBox button { align-items: center; background: transparent; border: 0; border-radius: 50%; color: #444746; cursor: pointer; display: flex; height: 40px; justify-content: center; padding: 0; width: 40px; }
+.headerActions { gap: 4px; justify-content: flex-end; }
+.presence { align-items: center; background: #f3f6fc; border: 0; border-radius: 24px; color: #5f6368; display: flex; gap: 22px; height: 48px; justify-content: center; margin-right: 2px; padding: 0 15px; width: 104px; }
+.presence i { background: #81c995; border: 3px solid #d8eadb; border-radius: 50%; height: 14px; width: 14px; }
+.presence svg { height: 16px; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; width: 16px; }
+.gemini { align-items: center; background: transparent; border: 0; border-radius: 50%; color: #4285f4; cursor: pointer; display: inline-flex; font-size: 25px; height: 40px; justify-content: center; padding: 0; width: 40px; }
+.gemini:hover { background: rgba(60, 64, 67, .08); }
+.account { align-items: center; background: #fff; border: 1px solid #747775; border-radius: 24px; color: #3c4043; cursor: pointer; display: flex; flex: 0 0 108px; font-family: Arial, Helvetica, sans-serif; font-size: 22px; height: 48px; justify-content: space-between; margin-left: 7px; padding: 2px 4px 2px 15px; text-align: left; width: 108px; }
+.account i { align-items: center; background: #3f7d88; border-radius: 50%; color: #fff; display: inline-flex; font-family: Arial, Helvetica, sans-serif; font-size: 16px; font-style: normal; height: 36px; justify-content: center; text-align: center; width: 36px; }
+
+.application { display: grid; grid-template-columns: 64px 244px minmax(0, 1fr) 56px; height: calc(100dvh - 64px); }
+.appRail { align-items: center; display: flex; flex-direction: column; gap: 12px; padding-top: 8px; }
+.appRail button { align-items: center; background: transparent; border: 0; border-radius: 14px; color: #444746; cursor: pointer; display: flex; flex-direction: column; font-size: 11px; gap: 3px; height: 52px; justify-content: center; padding: 0; position: relative; width: 56px; }
+.appRail button:hover { background: #eaecf0; }
+.appRail svg { height: 21px; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; width: 21px; }
+.appRail .activeApp { color: #174ea6; font-weight: 700; }
+.appRail .activeApp svg { fill: #c2e7ff; }
+.mailBadge { align-items: center; background: #c5221f; border: 2px solid #f6f8fc; border-radius: 8px; color: #fff; display: flex; font-size: 10px; font-weight: 700; height: 16px; justify-content: center; line-height: 1; position: absolute; right: 5px; top: 0; width: 16px; }
+.navigation { display: flex; flex-direction: column; min-height: 0; overflow: hidden; padding: 8px 0 0 8px; }
+.compose { align-items: center; align-self: flex-start; background: #c2e7ff; border: 0; border-radius: 16px; box-shadow: 0 1px 2px 0 rgba(60, 64, 67, .3), 0 1px 3px 1px rgba(60, 64, 67, .15); cursor: pointer; display: flex; gap: 14px; height: 56px; margin: 0 0 16px 8px; padding: 0 24px 0 17px; }
+.compose:hover { box-shadow: 0 1px 3px 0 rgba(60,64,67,.3), 0 4px 8px 3px rgba(60,64,67,.15); }
+.compose svg { height: 21px; width: 21px; }
+.compose span { font-weight: 500; }
+.mailboxList, .labelList { display: flex; flex-direction: column; }
+.mailboxList button, .labelList button, .navigationBottom button { align-items: center; background: transparent; border: 0; border-radius: 0 18px 18px 0; cursor: pointer; display: flex; height: 32px; min-width: 0; padding: 0 16px 0 26px; text-align: left; width: 100%; }
+.mailboxList button:hover, .labelList button:hover, .navigationBottom button:hover { background: #eaecf0; }
+.mailboxList button svg { flex: 0 0 20px; height: 20px; margin-right: 18px; width: 20px; }
+.mailboxList button span, .labelList button span, .navigationBottom button span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mailboxList button b { font-size: 12px; font-weight: 700; margin-left: auto; }
+.mailboxList .activeMailbox { background: var(--selected); font-weight: 700; }
+.mailboxList .activeMailbox:hover { background: var(--selected); }
+.labelHeading { align-items: center; display: flex; height: 48px; justify-content: space-between; padding: 0 6px 0 26px; }
+.labelHeading > span { color: #202124; font-size: 12px; font-weight: 700; }
+.labelHeading .iconButton { flex-basis: 32px; height: 32px; width: 32px; }
+.labelHeading .iconButton svg { height: 18px; width: 18px; }
+.labelList button { gap: 15px; padding-left: 29px; }
+.labelList i { border-radius: 50%; flex: 0 0 10px; height: 10px; width: 10px; }
+.navigationBottom { display: flex; flex-direction: column; margin-top: auto; padding-bottom: 10px; }
+.navigationBottom button { gap: 18px; padding-left: 26px; }
+.meetMark { color: #1a73e8; font-size: 26px; font-weight: 700; line-height: 1; width: 20px; }
+
+.mailPane { background: #fff; border-radius: 16px; display: flex; flex-direction: column; margin-left: 16px; min-width: 0; overflow: hidden; }
+.messageToolbar { align-items: center; display: flex; flex: 0 0 52px; justify-content: space-between; padding: 6px 16px 6px 14px; }
+.toolGroup { gap: 1px; min-width: 0; }
+.toolGroup .iconButton { margin-left: 12px; }
+.pager { color: #5f6368; flex: 0 0 auto; font-size: 12px; gap: 2px; }
+.pager .iconButton { flex-basis: 32px; height: 32px; width: 32px; }
+.pager .iconButton svg { height: 18px; width: 18px; }
+.pager > span { margin-right: 6px; }
+.selectBox, .thread > label { align-items: center; cursor: pointer; display: flex; height: 100%; justify-content: center; margin: 0; position: relative; }
+.selectBox { height: 40px; width: 40px; }
+.selectBox input, .thread > label input { appearance: none; border: 0; height: 100%; inset: 0; margin: 0; opacity: 0; position: absolute; width: 100%; }
+.selectBox i, .thread > label i { border: 2px solid #747775; border-radius: 2px; display: block; height: 16px; position: relative; width: 16px; }
+.selectBox input:checked + i, .thread > label input:checked + i { background: #1a73e8; border-color: #1a73e8; }
+.selectBox input:checked + i::after, .thread > label input:checked + i::after { border: solid #fff; border-width: 0 2px 2px 0; content: ""; height: 8px; left: 4px; position: absolute; top: 1px; transform: rotate(45deg); width: 4px; }
+.categoryTabs { border-bottom: 1px solid #dadce0; display: flex; flex: 0 0 52px; padding-left: 12px; }
+.categoryTabs button { align-items: center; background: transparent; border: 0; border-bottom: 3px solid transparent; color: #5f6368; cursor: pointer; display: flex; gap: 12px; height: 52px; min-width: 190px; padding: 0 16px; text-align: left; }
+.categoryTabs button:hover { background: #f6f8fc; }
+.categoryTabs button[aria-selected="true"] { border-bottom-color: #1a73e8; color: #1a73e8; font-weight: 700; }
+.categoryTabs button svg { height: 20px; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; width: 20px; }
+.categoryTabs button em { color: #188038; font-size: 12px; font-style: normal; margin-left: auto; }
+.threadList { flex: 1; min-height: 0; overflow-x: hidden; overflow-y: auto; }
+.thread { align-items: center; background: #f2f6fc; border-bottom: 1px solid #dadce0; color: #202124; display: grid; grid-template-columns: 42px 34px minmax(145px, 200px) minmax(0, 1fr) 74px; height: 40px; min-width: 640px; padding-right: 18px; }
+.thread:hover { box-shadow: inset 1px 0 #dadce0, inset -1px 0 #dadce0, 0 1px 2px rgba(60,64,67,.2); position: relative; z-index: 1; }
+.unreadThread { background: #fff; }
+.threadStar { align-items: center; background: transparent; border: 0; color: #9aa0a6; cursor: pointer; display: flex; height: 32px; justify-content: center; padding: 0; width: 32px; }
+.threadStar:hover { color: #fbbc04; }
+.threadStar svg { fill: transparent; height: 18px; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6; width: 18px; }
+.threadStar.starred { color: #f4b400; }
+.threadStar.starred svg { fill: currentColor; }
+.importantMarker { display: none; }
+.threadSender, .threadSummary, .thread time { font-size: 13px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.threadSender { font-weight: 400; padding-right: 12px; }
+.threadSummary { display: flex; font-weight: 400; }
+.threadSummary b { font-weight: 400; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.threadSummary > span { color: #5f6368; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.threadSummary em { background: #d3e3fd; border-radius: 3px; color: #174ea6; flex: 0 0 auto; font-size: 11px; font-style: normal; line-height: 17px; margin: -1px 7px 0 8px; padding: 0 5px; }
+.thread time { font-size: 12px; padding-left: 14px; text-align: right; }
+.thread.unreadThread .threadSender, .thread.unreadThread .threadSummary b, .thread.unreadThread time { font-weight: 700; }
+.arrivingThread { animation: inbox-arrival 220ms cubic-bezier(.2, .8, .2, 1) both; }
+
+@keyframes inbox-arrival {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.sidePanel { align-items: center; background: #f6f8fc; display: flex; flex-direction: column; gap: 8px; padding-top: 10px; position: relative; }
+.sidePanel .iconButton { flex-basis: 40px; }
+.sidePanel .iconButton:nth-child(1) { color: #1a73e8; }
+.sidePanel .iconButton:nth-child(2) { color: #fbbc04; }
+.sidePanel .iconButton:nth-child(3) { color: #1a73e8; }
+.sidePanel .iconButton:nth-child(4) { color: #34a853; }
+.sideRule { background: #dadce0; height: 1px; margin: 9px 0 5px; width: 20px; }
+.sideCollapse { align-items: center; background: #f6f8fc; border: 0; border-radius: 16px 0 0 16px; bottom: 18px; color: #5f6368; cursor: pointer; display: flex; height: 34px; justify-content: center; position: absolute; right: 0; width: 28px; }
+
+@media (max-width: 1130px) {
+  .topbar { grid-template-columns: 300px minmax(220px, 1fr) auto; }
+  .presence { display: none; }
+  .categoryTabs button { min-width: 170px; }
+  .thread { grid-template-columns: 42px 34px minmax(130px, 190px) minmax(0, 1fr) 70px; }
+}
+@media (max-width: 880px) {
+  .topbar { gap: 10px; grid-template-columns: 210px minmax(180px, 1fr) auto; }
+  .application { grid-template-columns: 64px 72px minmax(0, 1fr) 48px; }
+  .navigation { padding-right: 8px; }
+  .compose { border-radius: 16px; margin-left: 8px; padding: 0; width: 56px; }
+  .compose span, .mailboxList span, .mailboxList b, .labelHeading, .labelList, .navigationBottom span:not(.meetMark) { display: none; }
+  .mailboxList button, .navigationBottom button { border-radius: 50%; justify-content: center; margin: 3px auto; padding: 0; width: 40px; }
+  .mailboxList button svg, .navigationBottom button svg { margin: 0; }
+  .navigationBottom { align-items: center; }
+  .meetMark { margin: 0; }
+  .appRail { padding-top: 8px; }
+  .categoryTabs button { min-width: 142px; }
+  .thread { grid-template-columns: 42px 34px minmax(115px, 168px) minmax(0, 1fr) 64px; }
+}
+@media (max-width: 680px) {
+  .topbar { grid-template-columns: 142px minmax(0, 1fr) auto; padding-right: 8px; }
+  .gmailMark { width: 112px; }
+  .headerActions .iconButton:nth-child(1), .headerActions .iconButton:nth-child(2) { display: none; }
+  .application { grid-template-columns: 0 0 minmax(0, 1fr) 0; }
+  .appRail, .navigation, .sidePanel { display: none; }
+  .mailPane { border-radius: 0; }
+  .messageToolbar { padding-left: 6px; padding-right: 6px; }
+  .categoryTabs { padding-left: 0; }
+  .categoryTabs button { min-width: 0; padding: 0 13px; }
+  .categoryTabs button:nth-child(n + 3) { display: none; }
+  .thread { grid-template-columns: 38px 32px minmax(98px, 38%) minmax(0, 1fr) 56px; min-width: 540px; padding-right: 8px; }
+}
+@media (prefers-reduced-motion: reduce) { .gmail * { animation-duration: 0s !important; scroll-behavior: auto; } }

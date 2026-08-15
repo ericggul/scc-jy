@@ -1,0 +1,72 @@
+.page {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  overflow: hidden;
+  overscroll-behavior: none;
+  background: #ffffff;
+  color: #25252a;
+}
+
+.grid {
+  display: grid;
+  width: 100vw;
+  height: 100dvh;
+  grid-template-columns: repeat(18, minmax(0, 1fr));
+  grid-template-rows: repeat(26, minmax(0, 1fr));
+}
+
+.choice {
+  display: flex;
+  align-items: center;
+  gap: 0.5vw;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  width: 100%;
+  color: inherit;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 0.9vw;
+  line-height: 1;
+  letter-spacing: -0.045vw;
+  padding: 0.5vw;
+  text-align: left;
+}
+
+.choice span {
+  width: 0;
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.choice[aria-checked="true"] span {
+  font-weight: 700;
+}
+
+.choice i {
+  position: relative;
+  flex: 0 0 auto;
+  width: 1vw;
+  height: 1vw;
+  margin: 0;
+  border: 0.09vw solid #828282;
+  border-radius: 50%;
+}
+
+.choice[aria-checked="true"] i {
+  border-color: #0a84ff;
+}
+
+.choice[aria-checked="true"] i::after {
+  position: absolute;
+  inset: 0.15vw;
+  border-radius: inherit;
+  background: #0a84ff;
+  content: "";
+}
