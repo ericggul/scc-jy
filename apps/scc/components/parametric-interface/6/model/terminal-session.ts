@@ -7,7 +7,7 @@ export type TerminalSessionLine = {
   active?: boolean;
 };
 
-const PROMPT = "scc@local 7 %";
+const PROMPT = "scc@local 6 %";
 
 function shellQuote(value: string) {
   return `'${value.replaceAll("'", "'\\''")}'`;

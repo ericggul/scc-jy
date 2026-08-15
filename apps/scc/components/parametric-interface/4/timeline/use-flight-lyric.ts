@@ -3,11 +3,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { lyricCues, lyricWordTimings } from "../model/lyrics";
 
-function revealedWordCount(wordIndex: number) {
+function cueWordIndex(wordIndex: number) {
   const cueIndex = lyricWordTimings[wordIndex]!.cueIndex;
-  return lyricWordTimings
-    .slice(0, wordIndex + 1)
-    .filter((word) => word.cueIndex === cueIndex).length;
+  return (
+    lyricWordTimings
+      .slice(0, wordIndex + 1)
+      .filter((word) => word.cueIndex === cueIndex).length - 1
+  );
 }
 
 export function useFlightLyric() {
@@ -32,9 +34,11 @@ export function useFlightLyric() {
 
   return useMemo(() => {
     const cueIndex = lyricWordTimings[wordIndex]!.cueIndex;
+    const activeWordIndex = cueWordIndex(wordIndex);
     return {
+      cueIndex,
       lyric: lyricCues[cueIndex],
-      revealedWordCount: revealedWordCount(wordIndex),
+      activeWord: lyricCues[cueIndex][activeWordIndex]!,
     };
   }, [wordIndex]);
 }

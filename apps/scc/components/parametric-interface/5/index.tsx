@@ -73,25 +73,25 @@ type InboxThread = {
 };
 
 const threadsBeforeLyric: readonly InboxThread[] = [
-  { id: "strategy", sender: "Amara Lee", subject: "Re: Q3 launch estimates", preview: "I added the updated channel split and the revised burn assumptions.", time: "3:02 PM", unread: true },
-  { id: "calendar", sender: "Google Calendar", subject: "Invitation: weekly planning", preview: "Monday, August 17 · 10:00 – 10:30 AM (KST)", time: "2:45 PM", unread: true },
-  { id: "figma", sender: "Figma", subject: "You were mentioned in Checkout experience", preview: "Minseo: Could you look at the mobile confirmation state?", time: "2:19 PM", unread: true },
+  { id: "strategy", sender: "Amara Lee", subject: "Re: Q3 launch estimates", preview: "I added the updated channel split and the revised burn assumptions.", time: "3:02 PM" },
+  { id: "calendar", sender: "Google Calendar", subject: "Invitation: weekly planning", preview: "Monday, August 17 · 10:00 – 10:30 AM (KST)", time: "2:45 PM" },
+  { id: "figma", sender: "Figma", subject: "You were mentioned in Checkout experience", preview: "Minseo: Could you look at the mobile confirmation state?", time: "2:19 PM" },
   { id: "docusign", sender: "DocuSign", subject: "Completed: Mutual NDA — Northline Studio", preview: "All parties have completed the document.", time: "1:54 PM" },
   { id: "slack", sender: "Slack", subject: "New mentions in #partnerships", preview: "You have 3 new mentions since your last visit.", time: "1:31 PM" },
-  { id: "accounts", sender: "Accounts Team", subject: "ACTION REQUIRED: payment verification", preview: "Please confirm your account details to avoid service interruption.", time: "12:56 PM", unread: true },
+  { id: "accounts", sender: "Accounts Team", subject: "ACTION REQUIRED: payment verification", preview: "Please confirm your account details to avoid service interruption.", time: "12:56 PM" },
   { id: "mira", sender: "Mira Patel", subject: "Notes from the supplier call", preview: "The minimum order and lead time are both workable for September.", time: "12:22 PM" },
-  { id: "google", sender: "Google", subject: "Security alert", preview: "A new sign-in was detected on your Google Account.", time: "11:46 AM", unread: true },
-  { id: "linear", sender: "Linear", subject: "[SCC-214] Reader layout ready for review", preview: "J. Park moved this issue to In review.", time: "11:10 AM" },
+  { id: "google", sender: "Google", subject: "Security alert", preview: "A new sign-in was detected on your Google Account.", time: "11:46 AM" },
+  { id: "linear", sender: "Linear", subject: "Reader layout ready for review", preview: "A reviewer moved this issue to In review.", time: "11:10 AM" },
 ];
 
 const threadsAfterLyric: readonly InboxThread[] = [
   { id: "shipping", sender: "Amazon Business", subject: "Your order has shipped", preview: "Your order for office supplies is on its way.", time: "10:42 AM" },
   { id: "newsletter", sender: "Medium Daily Digest", subject: "The stories you may have missed", preview: "A collection of recommendations from writers you follow.", time: "10:17 AM", label: "Updates" },
-  { id: "rewards", sender: "Rewards Center", subject: "You have been selected for a $500 gift card", preview: "Claim your reward today. Limited availability.", time: "9:52 AM", unread: true },
-  { id: "notion", sender: "Notion", subject: "Shared with you: August research notes", preview: "Hana Kim invited you to view a page in Workspace.", time: "9:21 AM" },
+  { id: "rewards", sender: "Rewards Center", subject: "You have been selected for a $500 gift card", preview: "Claim your reward today. Limited availability.", time: "9:52 AM" },
+  { id: "notion", sender: "Notion", subject: "Shared with you: August research notes", preview: "A collaborator invited you to view a page in Workspace.", time: "9:21 AM" },
   { id: "lucas", sender: "Lucas Chen", subject: "Invoice schedule for August", preview: "I have attached the dates we agreed in yesterday’s call.", time: "8:48 AM" },
   { id: "stripe", sender: "Stripe", subject: "Payout scheduled for Aug 15", preview: "A payout of ₩1,820,000 is scheduled for your bank account.", time: "8:02 AM" },
-  { id: "team", sender: "Team Updates", subject: "Last chance: update your profile", preview: "Your profile will be removed unless you verify it now.", time: "7:35 AM", unread: true },
+  { id: "team", sender: "Team Updates", subject: "Last chance: update your profile", preview: "Your profile will be removed unless you verify it now.", time: "7:35 AM" },
   { id: "travel", sender: "Korean Air", subject: "Your itinerary is ready", preview: "Seoul (ICN) to Tokyo (HND) · September 4.", time: "7:12 AM", label: "Travel" },
   { id: "wetransfer", sender: "WeTransfer", subject: "Files shared with you", preview: "A new transfer is available for download until August 22.", time: "6:50 AM" },
 ];
@@ -102,8 +102,8 @@ const arrivingMailTemplates: readonly Omit<InboxThread, "id" | "time">[] = [
   { sender: "Hotel L7", subject: "Your reservation is confirmed", preview: "Confirmation number 842719 · Check-in September 4." },
   { sender: "Workspace Admin", subject: "Storage report for August", preview: "Your organization is using 71% of available storage." },
   { sender: "Invoice Desk", subject: "Final notice: open balance remains", preview: "Review your invoice immediately to prevent restrictions." },
-  { sender: "Sora Kim", subject: "Reference images for the catalog", preview: "I have uploaded the final selection to the shared folder." },
-  { sender: "Dropbox", subject: "New files added to Shared work", preview: "Seven files were added by Yiyun Kang." },
+  { sender: "Studio Archive", subject: "Reference images for the catalog", preview: "The final selection is now in the shared folder." },
+  { sender: "Dropbox", subject: "New files added to Shared work", preview: "Seven files were added to the shared folder." },
   { sender: "The Design Desk", subject: "Your weekly brief", preview: "Three field notes, two essays, and an open call." },
 ] as const;
 
@@ -183,10 +183,17 @@ export default function ParametricInterfaceFive() {
 
   useEffect(() => {
     if (reducedMotion) return;
-    const interval = window.setInterval(() => {
-      setArrivalStep((current) => current + 1);
-    }, 1_450);
-    return () => window.clearInterval(interval);
+    let timeout: number;
+    const scheduleNextArrival = () => {
+      const delay = 600 + Math.round(Math.random() * 720);
+      timeout = window.setTimeout(() => {
+        setArrivalStep((current) => current + 1);
+        scheduleNextArrival();
+      }, delay);
+    };
+
+    scheduleNextArrival();
+    return () => window.clearTimeout(timeout);
   }, [reducedMotion]);
 
   useEffect(() => {
@@ -197,9 +204,9 @@ export default function ParametricInterfaceFive() {
     const nextThread: InboxThread = isLyricMessage
       ? {
         id: `lyric-arrival-${arrivalStep}`,
-        sender: "THE BAND",
-        subject: "Signals we keep",
-        preview: lyricSnapshot.current,
+        sender: "SIGNALS WE KEEP",
+        subject: lyricSnapshot.current.toUpperCase(),
+        preview: "",
         time: "now",
         unread: true,
         starred: true,
@@ -208,10 +215,10 @@ export default function ParametricInterfaceFive() {
         ...template,
         id: `arrival-${arrivalStep}`,
         time: "now",
-        unread: true,
+        unread: false,
       };
 
-    setArrivingThreads((current) => [nextThread, ...current].slice(0, 96));
+    setArrivingThreads((current) => [nextThread, ...current].slice(0, 240));
   }, [arrivalStep]);
 
   return (
@@ -262,7 +269,7 @@ export default function ParametricInterfaceFive() {
 function InboxThreadRow({ isArriving = false, thread }: { isArriving?: boolean; thread: InboxThread }) {
   return (
     <article className={`${styles.thread}${thread.unread ? ` ${styles.unreadThread}` : ""}${isArriving ? ` ${styles.arrivingThread}` : ""}`} role="listitem">
-      <label aria-label={`Select ${thread.subject}`}><input type="checkbox" /><i /></label><button aria-label={`Star ${thread.subject}`} className={`${styles.threadStar}${thread.starred ? ` ${styles.starred}` : ""}`} type="button"><AppIcon name="star" /></button><span aria-hidden="true" className={styles.importantMarker} /><strong className={styles.threadSender}>{thread.sender}</strong><div className={styles.threadSummary}><b>{thread.subject}</b>{thread.label ? <em>{thread.label}</em> : null}<span> — {thread.preview}</span></div><time>{thread.time}</time>
+      <label aria-label={`Select ${thread.subject}`}><input type="checkbox" /><i /></label><button aria-label={`Star ${thread.subject}`} className={`${styles.threadStar}${thread.starred ? ` ${styles.starred}` : ""}`} type="button"><AppIcon name="star" /></button><span aria-hidden="true" className={styles.importantMarker} /><strong className={styles.threadSender}>{thread.sender}</strong><div className={styles.threadSummary}><b>{thread.subject}</b>{thread.label ? <em>{thread.label}</em> : null}{thread.preview ? <span> — {thread.preview}</span> : null}</div><time>{thread.time}</time>
     </article>
   );
 }

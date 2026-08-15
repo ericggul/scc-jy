@@ -21,7 +21,7 @@ export default function TerminalLineScreen() {
             <i className={styles.minimize} />
             <i className={styles.zoom} />
           </span>
-          <span className={styles.title}>7 — zsh</span>
+          <span className={styles.title}>6 — zsh</span>
           <span className={styles.titleBalance} />
         </header>
 

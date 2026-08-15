@@ -16,7 +16,7 @@ families use a Goldfishes-style archive route before their individual variants.
   the lyric arrives in ordinary preview slots within that stream.
 - [`4`](./4.md) holds one fixed, high-density physical departure FIDS. Only
   ordinary central destination fields receive the timed lyric values.
-- [`7`](./7.md) holds a single full-viewport zsh terminal, with each lyric
+- [`6`](./6.md) holds a single full-viewport zsh terminal, with each lyric
   developing only inside one live `printf` command argument before it settles
   into shell scrollback.
 
@@ -25,8 +25,8 @@ families use a Goldfishes-style archive route before their individual variants.
 **0815 (removed).** Four unrelated display grammars changed at once, so the
 lyric operation could not be evaluated as one bounded relation.
 
-**6 (rejected).** The trial turned one terminal-line relation into a generic
-field of miniature macOS windows. Its visual arrangement became the subject,
-the terminal text became too small to read, and the lyric no longer developed
-through one recognisable terminal line. The route has been removed; `/7`
-restores the single terminal-line operation.
+**6 grid excursion (rejected).** A temporary multi-window variation turned the
+terminal-line relation into generic miniature macOS windows. Its arrangement
+became the subject, the text became too small to read, and the lyric no longer
+developed through one recognisable terminal line. `/6` remains the single
+terminal-line operation.

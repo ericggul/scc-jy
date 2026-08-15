@@ -1,5 +1,5 @@
 .stage {
-  background: #1800c9;
+  background: #2811e2;
   display: grid;
   height: 100dvh;
   inset: 0;
@@ -12,14 +12,26 @@
 }
 
 .screen {
-  background: #1800c9;
+  background: #1e08ca;
   display: grid;
-  grid-template-rows: minmax(0, 0.7fr) repeat(16, minmax(0, 1fr));
+  gap: 2px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   height: 100%;
   min-height: 0;
   overflow: hidden;
   position: relative;
   width: 100%;
+}
+
+.column {
+  background: #2811e2;
+  container-type: inline-size;
+  display: grid;
+  grid-template-rows: minmax(0, 0.68fr) repeat(24, minmax(0, 1fr));
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  position: relative;
 }
 
 .screen::after {
@@ -32,11 +44,13 @@
 
 .row {
   align-items: center;
+  animation: fids-data-arrival 180ms ease-out both;
+  animation-delay: var(--refresh-delay, 0ms);
   background: #2811e2;
   color: #f5f4ff;
   display: grid;
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-size: clamp(0.42rem, 1.76vw, 1.33rem);
+  font-size: clamp(0.4rem, 2.08cqw, 1rem);
   font-variant-numeric: tabular-nums;
   font-weight: 400;
   grid-template-columns: 15.2% 4% 12.6% 11.4% minmax(0, 27.7%) 7.1% 6.5% minmax(0, 1fr);
@@ -51,11 +65,11 @@
 
 .header {
   align-items: center;
-  background: #1700af;
+  background: #2811e2;
   color: #e8e6ff;
   display: grid;
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-size: clamp(0.29rem, 0.86vw, 0.68rem);
+  font-size: clamp(0.27rem, 1.15cqw, 0.58rem);
   font-weight: 600;
   grid-template-columns: 15.2% 4% 12.6% 11.4% minmax(0, 27.7%) 7.1% 6.5% minmax(0, 1fr);
   letter-spacing: 0.015em;
@@ -77,8 +91,17 @@
 .header span:nth-child(7) { padding-left: 5%; }
 .header span:last-child { padding-left: 3%; }
 
-.row:nth-child(odd) { background: #1e08ca; }
-.row:nth-child(4n + 1) { background: #1800b8; }
+.row[data-active-word="true"] { background: #1e08ca; }
+
+@keyframes fids-data-arrival {
+  0% {
+    opacity: 0.1;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
 
 .row time,
 .row > span,
@@ -96,6 +119,8 @@
   font-weight: 400;
   letter-spacing: -0.035em;
 }
+
+.row[data-active-word="true"] strong { font-weight: 700; }
 
 .row b {
   align-items: center;
@@ -165,7 +190,11 @@
 
 @media (max-width: 48rem) {
   .row {
-    font-size: clamp(0.31rem, 1.68vw, 0.8rem);
+    font-size: clamp(0.32rem, 2.08cqw, 0.65rem);
     grid-template-columns: 15.2% 4% 12.6% 11.4% minmax(0, 27.7%) 7.1% 6.5% minmax(0, 1fr);
   }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .row { animation: none; }
 }

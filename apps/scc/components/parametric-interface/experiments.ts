@@ -45,11 +45,11 @@ export const parametricInterfaceExperiments: readonly ParametricInterfaceExperim
     load: () => import("./5"),
   },
   {
-    key: "7",
+    key: "6",
     section: "default",
     date: null,
     phrase: "zsh terminal line with lyric developed inside a printf argument",
-    load: () => import("./7"),
+    load: () => import("./6"),
   },
 ];
 
@@ -59,7 +59,7 @@ export const parametricInterfaceIndexEntries = [
   { slug: "3", label: "parametric-interface/3" },
   { slug: "4", label: "parametric-interface/4" },
   { slug: "5", label: "parametric-interface/5" },
-  { slug: "7", label: "parametric-interface/7" },
+  { slug: "6", label: "parametric-interface/6" },
 ] as const;
 
 export type ParametricInterfaceExperimentSlug =
