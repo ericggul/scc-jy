@@ -57,6 +57,18 @@
   margin: 0;
   border: 0.09vw solid #828282;
   border-radius: 50%;
+  transition: border-color 200ms ease;
+}
+
+.choice i::after {
+  position: absolute;
+  inset: 0.15vw;
+  border-radius: inherit;
+  background: #0a84ff;
+  content: "";
+  opacity: 0;
+  transform: scale(0);
+  transition: opacity 200ms ease, transform 200ms ease;
 }
 
 .choice[aria-checked="true"] i {
@@ -64,9 +76,13 @@
 }
 
 .choice[aria-checked="true"] i::after {
-  position: absolute;
-  inset: 0.15vw;
-  border-radius: inherit;
-  background: #0a84ff;
-  content: "";
+  opacity: 1;
+  transform: scale(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .choice i,
+  .choice i::after {
+    transition: none;
+  }
 }

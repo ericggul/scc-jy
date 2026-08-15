@@ -1,15 +1,24 @@
 "use client";
 
-import MacosMenuBarOne from "@/components/standalone/macos/1";
+import MacosLyricMenuBar from "./macos-lyric-field";
+import type { ParametricSong } from "../model/song";
+import { SongPlayback } from "../playback";
 import { useLyricCue } from "../timeline/use-lyric-cue";
 
-export default function ParametricInterfaceThree() {
+export default function ParametricInterfaceThree({ song }: { song?: ParametricSong }) {
+  return (
+    <SongPlayback song={song}>
+      <ParametricLyricField />
+    </SongPlayback>
+  );
+}
+
+function ParametricLyricField() {
   const { lyric, currentWord, activeWordPosition } = useLyricCue();
-  const words = lyric.flatMap((line) => line.split(" "));
 
   return (
-    <MacosMenuBarOne
-      centerRowWords={words}
+    <MacosLyricMenuBar
+      centerRowWords={lyric}
       currentWord={currentWord}
       activeWordPosition={activeWordPosition}
       openActiveMenu

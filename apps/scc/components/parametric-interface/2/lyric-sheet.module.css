@@ -103,10 +103,30 @@
   font-weight: 700;
 }
 
+.sheet .selectedColumn {
+  background: #e8f0fe;
+}
+
 .sheet .activeCell {
   z-index: 1;
   background: #e8f0fe;
   box-shadow: inset 0 0 0 2px #1a73e8;
+  font-weight: 700;
+}
+
+.sheet .activeCell[data-typing="true"]::after {
+  display: inline-block;
+  width: 1px;
+  height: 1em;
+  margin-left: 1px;
+  vertical-align: -0.16em;
+  background: #1a73e8;
+  content: "";
+  animation: cell-cursor-blink 700ms steps(1, end) infinite;
+}
+
+@keyframes cell-cursor-blink {
+  50% { opacity: 0; }
 }
 
 .sheet .activeHeader {
@@ -148,4 +168,10 @@
   border-bottom: 2px solid #188038;
   color: #188038;
   font-size: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet .activeCell[data-typing="true"]::after {
+    animation: none;
+  }
 }

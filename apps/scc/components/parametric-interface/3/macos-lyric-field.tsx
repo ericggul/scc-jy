@@ -3,6 +3,8 @@
 import type { KeyboardEvent } from "react";
 import { useEffect, useRef, useState } from "react";
 import {
+  createWordMenuEntries,
+  type MenuDefinition,
   type MenuEntry,
   type MenuCommand,
   type MenuId,
@@ -11,7 +13,7 @@ import {
   macosSloganRows,
   type MacosSloganRow,
 } from "./rows";
-import styles from "./macos-menu-bar.module.css";
+import styles from "./macos-lyric-field.module.css";
 
 type SearchResult = {
   pageId: number;
@@ -310,21 +312,69 @@ function MenuEntries({
   });
 }
 
+const realisticAppNames = [
+  "Finder", "Safari", "Mail", "Messages", "FaceTime", "Calendar",
+  "Photos", "Music", "TV", "Podcasts", "Books", "App Store", "Notes",
+  "Reminders", "Maps", "Contacts", "Freeform", "News", "Stocks", "Home",
+  "Voice Memos", "Photo Booth", "Preview", "QuickTime Player", "TextEdit",
+  "Stickies", "Chess", "Dictionary", "Calculator", "Automator", "Shortcuts",
+  "Script Editor", "Disk Utility", "Activity Monitor", "Terminal", "Console",
+  "Keychain Access", "System Settings", "Xcode", "Pages", "Numbers", "Keynote",
+  "GarageBand", "iMovie", "Image Capture", "Font Book",
+] as const;
+
+const realisticAppMenus = realisticAppNames.map((appName) => [
+  appName,
+  "File",
+  "Edit",
+  "View",
+  "Window",
+  "Help",
+] as const);
+
 function MenuBarRow({
   row,
   virtualMinute,
   runtimeStatus,
   onOpenSearch,
+  centerRowWords,
+  currentWord,
+  appMenuLabels,
+  activeWordPosition,
+  openActiveMenu,
 }: {
   row: MacosSloganRow;
   virtualMinute: number;
   runtimeStatus: MacosSloganRow["status"];
   onOpenSearch: (name: string) => void;
+  centerRowWords?: readonly string[];
+  currentWord?: string;
+  appMenuLabels?: readonly string[];
+  activeWordPosition?: number;
+  openActiveMenu?: boolean;
 }) {
   const [selectedMenu, setSelectedMenu] = useState<MenuId | null>(null);
   const menuButtonRefs = useRef(new Map<MenuId, HTMLButtonElement>());
   const rowRef = useRef<HTMLElement>(null);
   const clock = formatMenuBarTime(new Date(virtualMinute * 60_000));
+  const menus: readonly MenuDefinition[] = centerRowWords
+    ? [
+        row.menus[0]!,
+        ...centerRowWords.map((word, wordIndex) => ({
+          id: `${row.id}-embedded-word-${wordIndex}`,
+          label: word,
+          entries: createWordMenuEntries(
+            row.id,
+            `embedded-word-${wordIndex}`,
+            word,
+          ),
+        })),
+      ]
+    : row.menus;
+  const isStaticHighlightRow = Boolean(currentWord && !openActiveMenu);
+  const activeMenuId = openActiveMenu
+    ? menus[activeWordPosition === undefined ? -1 : activeWordPosition + 1]?.id ?? null
+    : null;
 
   useEffect(() => {
     if (selectedMenu === null) return;
@@ -344,10 +394,10 @@ function MenuBarRow({
   }
 
   function focusTopMenu(currentId: MenuId, direction: 1 | -1) {
-    const currentIndex = row.menus.findIndex((menu) => menu.id === currentId);
+    const currentIndex = menus.findIndex((menu) => menu.id === currentId);
     const nextIndex =
-      (currentIndex + direction + row.menus.length) % row.menus.length;
-    const nextMenu = row.menus[nextIndex];
+      (currentIndex + direction + menus.length) % menus.length;
+    const nextMenu = menus[nextIndex];
 
     setSelectedMenu(nextMenu.id);
     requestAnimationFrame(() => menuButtonRefs.current.get(nextMenu.id)?.focus());
@@ -381,8 +431,9 @@ function MenuBarRow({
   return (
     <nav
       ref={rowRef}
-      aria-label={row.brand}
-      className={`${styles.menuBar} ${selectedMenu !== null ? styles.menuBarOpen : ""}`}
+      aria-label={appMenuLabels?.[0] ?? row.brand}
+      className={`${styles.menuBar} ${selectedMenu !== null || activeMenuId ? styles.menuBarOpen : ""}`}
+      data-embedded-words={centerRowWords ? "true" : undefined}
       onMouseLeave={() => setSelectedMenu(null)}
       onKeyDown={(event) => {
         if (event.key === "Escape") {
@@ -392,21 +443,61 @@ function MenuBarRow({
       }}
     >
       <div className={styles.menuGroup}>
-        {row.menus.map((menu, menuIndex) => {
+        {menus.map((menu, menuIndex) => {
           const isAppleMenu = menuIndex === 0;
-          const isAppMenu = menuIndex === 1;
-          const isOpen = selectedMenu === menu.id;
+          const embeddedWordPosition = menuIndex - 1;
+          const embeddedWord = isAppleMenu
+            ? undefined
+            : centerRowWords?.[embeddedWordPosition];
+          const isEmbeddedWord = centerRowWords !== undefined && !isAppleMenu;
+          const isFirstEmbeddedWord = isEmbeddedWord && embeddedWordPosition === 0;
+          const isAppMenu = !isEmbeddedWord && menuIndex === 1;
+          const isCurrentWordCell =
+            !isAppleMenu &&
+            currentWord !== undefined &&
+            embeddedWordPosition === activeWordPosition;
+          const isActiveWord = isEmbeddedWord
+            ? embeddedWordPosition === activeWordPosition
+            : isCurrentWordCell;
+          const isOpen = activeMenuId
+            ? activeMenuId === menu.id
+            : selectedMenu === menu.id;
+          const label = embeddedWord ?? (
+            currentWord
+              ? isCurrentWordCell
+                ? currentWord
+                : appMenuLabels?.[menuIndex - 1] ?? menu.label
+              : menu.label
+          );
 
           return (
             <div
               key={menu.id}
               className={styles.topMenuRoot}
               data-menu-kind={
-                isAppleMenu ? "apple" : isAppMenu ? "brand" : "word"
+                isEmbeddedWord
+                  ? "embedded-word"
+                  : isAppleMenu
+                    ? "apple"
+                    : isAppMenu
+                      ? "brand"
+                      : "word"
               }
-              data-word-index={isAppleMenu || isAppMenu ? undefined : menuIndex - 2}
+              data-word-index={
+                isEmbeddedWord
+                  ? embeddedWordPosition
+                  : isAppleMenu || isAppMenu
+                    ? undefined
+                    : menuIndex - 2
+              }
+              data-first-embedded-word={isFirstEmbeddedWord ? "true" : undefined}
               onMouseEnter={() => {
-                setSelectedMenu(menu.id);
+                if (
+                  (!centerRowWords && !currentWord) ||
+                  (openActiveMenu && isActiveWord)
+                ) {
+                  setSelectedMenu(menu.id);
+                }
               }}
             >
               <button
@@ -416,18 +507,22 @@ function MenuBarRow({
                 }}
                 type="button"
                 aria-label={isAppleMenu ? "Apple menu" : undefined}
-                aria-haspopup="menu"
-                aria-expanded={isOpen}
-                className={`${isAppleMenu ? styles.appleButton : styles.menuButton} ${isAppMenu ? styles.appName : ""} ${isOpen ? styles.selected : ""}`}
-                onClick={() => toggleMenu(menu.id)}
-                onKeyDown={(event) => handleTopMenuKeyDown(event, menu.id)}
+                aria-haspopup={isStaticHighlightRow ? undefined : "menu"}
+                aria-expanded={isStaticHighlightRow ? undefined : isOpen}
+                className={`${isAppleMenu ? styles.appleButton : styles.menuButton} ${isAppMenu || isFirstEmbeddedWord ? styles.appName : ""} ${isOpen || isActiveWord ? styles.selected : ""}`}
+                onClick={() => {
+                  if (!isStaticHighlightRow) toggleMenu(menu.id);
+                }}
+                onKeyDown={(event) => {
+                  if (!isStaticHighlightRow) handleTopMenuKeyDown(event, menu.id);
+                }}
               >
-                {isAppleMenu ? <AppleIcon /> : menu.label}
+                {isAppleMenu ? <AppleIcon /> : label}
               </button>
               {isOpen ? (
                 <div
                   role="menu"
-                  aria-label={`${menu.label} menu`}
+                  aria-label={`${label} menu`}
                   data-menu-panel={menu.id}
                   className={styles.menuPanel}
                 >
@@ -467,7 +562,17 @@ function MenuBarRow({
   );
 }
 
-export default function MacosMenuBarOne() {
+export default function MacosLyricField({
+  centerRowWords,
+  currentWord,
+  activeWordPosition,
+  openActiveMenu,
+}: {
+  centerRowWords?: readonly string[];
+  currentWord?: string;
+  activeWordPosition?: number;
+  openActiveMenu?: boolean;
+}) {
   const [virtualMinute] = useState(() => Math.floor(Date.now() / 60_000));
   const sharedStatus = macosSloganRows[0].status;
   const [searchName, setSearchName] = useState<string | null>(null);
@@ -563,15 +668,28 @@ export default function MacosMenuBarOne() {
           gridTemplateRows: `repeat(${stackLayout.rowCount}, minmax(0, 1fr))`,
         }}
       >
-        {macosSloganRows.slice(0, stackLayout.rowCount).map((row) => (
-          <MenuBarRow
-            key={row.id}
-            row={row}
-            virtualMinute={virtualMinute}
-            runtimeStatus={sharedStatus}
-            onOpenSearch={openSearch}
-          />
-        ))}
+        {macosSloganRows.slice(0, stackLayout.rowCount).map((row, index) => {
+          const isCentreRow = index === Math.floor(stackLayout.rowCount / 2);
+
+          return (
+            <MenuBarRow
+              key={row.id}
+              row={row}
+              virtualMinute={virtualMinute}
+              runtimeStatus={sharedStatus}
+              onOpenSearch={openSearch}
+              centerRowWords={isCentreRow ? centerRowWords : undefined}
+              currentWord={isCentreRow ? undefined : currentWord}
+              appMenuLabels={
+                isCentreRow
+                  ? undefined
+                  : realisticAppMenus[index % realisticAppMenus.length]
+              }
+              activeWordPosition={activeWordPosition}
+              openActiveMenu={isCentreRow ? openActiveMenu : undefined}
+            />
+          );
+        })}
       </section>
       {searchName ? (
         <aside className={styles.searchWindow} aria-label={`${searchQuery} search results`}>

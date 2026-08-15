@@ -10,6 +10,13 @@ export type ParametricInterfaceExperiment = {
 
 export const parametricInterfaceExperiments: readonly ParametricInterfaceExperiment[] = [
   {
+    key: "whole",
+    section: "default",
+    date: null,
+    phrase: "One continuous lyric moving through randomly selected wrappers",
+    load: () => import("./whole"),
+  },
+  {
     key: "1",
     section: "default",
     date: null,
@@ -54,6 +61,7 @@ export const parametricInterfaceExperiments: readonly ParametricInterfaceExperim
 ];
 
 export const parametricInterfaceIndexEntries = [
+  { slug: "whole", label: "parametric-interface/whole" },
   { slug: "1", label: "parametric-interface/1" },
   { slug: "2", label: "parametric-interface/2" },
   { slug: "3", label: "parametric-interface/3" },

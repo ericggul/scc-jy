@@ -96,6 +96,21 @@
   color: #ffffff;
 }
 
+.activeWord {
+  display: inline-block;
+}
+
+.typedWord {
+  display: inline-block;
+  padding-inline: 0.13em;
+  background: #ffffff;
+  color: #111111;
+}
+
+.untypedWord {
+  color: transparent;
+}
+
 .cursor {
   display: inline-block;
   width: 0.58em;

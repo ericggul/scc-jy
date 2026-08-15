@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { ParametricSong } from "../model/song";
+import { SongPlayback } from "../playback";
 import { useLyricCue } from "../timeline/use-lyric-cue";
 import styles from "./gmail.module.css";
 
@@ -20,13 +22,7 @@ type IconName =
   | "chevronDown"
   | "tag"
   | "plus"
-  | "back"
-  | "archive"
-  | "report"
-  | "delete"
-  | "unread"
   | "task"
-  | "move"
   | "more"
   | "chevronLeft"
   | "chevronRight"
@@ -35,8 +31,6 @@ type IconName =
   | "contacts"
   | "chat"
   | "meet"
-  | "reply"
-  | "forward"
   | "refresh";
 
 type MailboxItem = {
@@ -131,15 +125,9 @@ function AppIcon({ name }: { name: IconName }) {
     case "send": return <svg {...props}><path d="m3.7 4.2 16.1 7.1-16.1 2.7 5.1 1.8-5.1 4.1V4.2Z" /><path d="M8.8 15.8 12 12" /></svg>;
     case "draft": return <svg {...props}><path d="M6 3.8h8.8L19 8v12.2H6z" /><path d="M14.8 3.8V8H19M9 12h7M9 15.5h7" /></svg>;
     case "chevronDown": return <svg {...props}><path d="m7.5 9.5 4.5 4.5 4.5-4.5" /></svg>;
-    case "tag": return <svg {...props}><path d="M3.7 5.2V12l7.1 7.1a1.8 1.8 0 0 0 2.5 0l5.8-5.8a1.8 1.8 0 0 0 0-2.5L12 3.7H5.2a1.5 1.5 0 0 0-1.5 1.5Z" /><circle cx="7.6" cy="7.6" r="1" fill="currentColor" stroke="none" /></svg>;
+    case "tag": return <svg {...props}><path d="M3.7 5.2V12l7.1 7.1a1.8 1.8 0 0 0 2.5 0l5.8-5.8a1.8 1.8 0 0 0 0-2.5L12 3.7H5.2a1.5 1.5 0 0 0-1.5 1.5Z" /><circle cx="7.6" cy="7.6" fill="currentColor" r="1" stroke="none" /></svg>;
     case "plus": return <svg {...props}><path d="M12 5v14M5 12h14" /></svg>;
-    case "back": return <svg {...props}><path d="M20 12H4M10 6l-6 6 6 6" /></svg>;
-    case "archive": return <svg {...props}><path d="M4 7h16v12H4zM3 4h18v3H3z" /><path d="M9 12h6" /></svg>;
-    case "report": return <svg {...props}><path d="m12 3.5 8 4.6v7.8l-8 4.6-8-4.6V8.1l8-4.6Z" /><path d="M12 8v4.7M12 16h.01" /></svg>;
-    case "delete": return <svg {...props}><path d="M5.5 7.2h13l-.8 12.3H6.3L5.5 7.2ZM9 7.2V4.5h6v2.7M4 7.2h16M10 10.2v6.2M14 10.2v6.2" /></svg>;
-    case "unread": return <svg {...props}><rect x="3.5" y="5.5" width="17" height="13" rx="1" /><path d="m4.5 7 7.5 5.6L19.5 7" /></svg>;
     case "task": return <svg {...props}><path d="M5 5.5h10.5V19H5zM8 3.5h10.5V17M7.4 11.4l1.6 1.6 3.2-3.2" /></svg>;
-    case "move": return <svg {...props}><path d="M3.5 6.5h6l1.8 2h9.2v10H3.5z" /></svg>;
     case "more": return <svg {...props}><circle cx="12" cy="5" r="1.35" fill="currentColor" /><circle cx="12" cy="12" r="1.35" fill="currentColor" /><circle cx="12" cy="19" r="1.35" fill="currentColor" /></svg>;
     case "chevronLeft": return <svg {...props}><path d="m14.5 6.5-5 5.5 5 5.5" /></svg>;
     case "chevronRight": return <svg {...props}><path d="m9.5 6.5 5 5.5-5 5.5" /></svg>;
@@ -148,8 +136,6 @@ function AppIcon({ name }: { name: IconName }) {
     case "contacts": return <svg {...props}><circle cx="12" cy="8" r="3" /><path d="M5.5 19c.6-3.1 2.7-5 6.5-5s5.9 1.9 6.5 5" /></svg>;
     case "chat": return <svg {...props}><path d="M5 5.5h14v10H9.2L5 18.8V5.5Z" /><path d="M8.5 10.5h7" /></svg>;
     case "meet": return <svg {...props}><rect x="4" y="6.5" width="11.5" height="11" rx="1.5" /><path d="m15.5 10 4.5-2.5v9l-4.5-2.5" /></svg>;
-    case "reply": return <svg {...props}><path d="M10.5 6 4.5 12l6 6v-4c4.2 0 6.7 1.3 9 4-1-5.3-3.7-8-9-8V6Z" /></svg>;
-    case "forward": return <svg {...props}><path d="m13.5 6 6 6-6 6v-4c-4.2 0-6.7 1.3-9 4 1-5.3 3.7-8 9-8V6Z" /></svg>;
     case "refresh": return <svg {...props}><path d="M19.2 8A7.7 7.7 0 1 0 20 13.2M19.2 4.5V8h-3.5" /></svg>;
   }
 }
@@ -171,55 +157,59 @@ function IconButton({ label, name, className }: { label: string; name: IconName;
   return <button aria-label={label} className={[styles.iconButton, className].filter(Boolean).join(" ")} type="button"><AppIcon name={name} /></button>;
 }
 
-export default function ParametricInterfaceFive() {
-  const { lyric, reducedMotion } = useLyricCue();
-  const [arrivalStep, setArrivalStep] = useState(0);
+export default function ParametricInterfaceFive({ song }: { song?: ParametricSong }) {
+  return (
+    <SongPlayback song={song}>
+      <GmailLyricInbox />
+    </SongPlayback>
+  );
+}
+
+function GmailLyricInbox() {
+  const { hasStarted, lyricCues, reducedMotion, wordIndex, wordTimings } = useLyricCue();
   const [arrivingThreads, setArrivingThreads] = useState<InboxThread[]>([]);
-  const lyricSnapshot = useRef(lyric.join(" "));
+  const arrivalStepRef = useRef(0);
+
+  const lyricThreads = useMemo(() => {
+    if (!hasStarted || reducedMotion) return [];
+
+    return wordTimings
+      .slice(0, wordIndex + 1)
+      .map((timing, index) => ({
+        id: `lyric-arrival-${index}`,
+        sender: "SIGNALS WE KEEP",
+        subject: timing.word.toUpperCase(),
+        preview: lyricCues[timing.cueIndex]!.join(" ").toUpperCase(),
+        time: "now",
+        unread: index === wordIndex,
+        starred: true,
+      }))
+      .reverse();
+  }, [hasStarted, lyricCues, reducedMotion, wordIndex, wordTimings]);
 
   useEffect(() => {
-    lyricSnapshot.current = lyric.join(" ");
-  }, [lyric]);
-
-  useEffect(() => {
-    if (reducedMotion) return;
+    if (!hasStarted || reducedMotion) return;
     let timeout: number;
     const scheduleNextArrival = () => {
       const delay = 600 + Math.round(Math.random() * 720);
       timeout = window.setTimeout(() => {
-        setArrivalStep((current) => current + 1);
+        arrivalStepRef.current += 1;
+        const step = arrivalStepRef.current;
+        const template = arrivingMailTemplates[(step - 1) % arrivingMailTemplates.length]!;
+        const nextThread: InboxThread = {
+          ...template,
+          id: `arrival-${step}`,
+          time: "now",
+          unread: false,
+        };
+        setArrivingThreads((current) => [nextThread, ...current].slice(0, 240));
         scheduleNextArrival();
       }, delay);
     };
 
     scheduleNextArrival();
     return () => window.clearTimeout(timeout);
-  }, [reducedMotion]);
-
-  useEffect(() => {
-    if (arrivalStep === 0) return;
-
-    const isLyricMessage = arrivalStep % 5 === 0;
-    const template = arrivingMailTemplates[(arrivalStep - 1) % arrivingMailTemplates.length]!;
-    const nextThread: InboxThread = isLyricMessage
-      ? {
-        id: `lyric-arrival-${arrivalStep}`,
-        sender: "SIGNALS WE KEEP",
-        subject: lyricSnapshot.current.toUpperCase(),
-        preview: "",
-        time: "now",
-        unread: true,
-        starred: true,
-      }
-      : {
-        ...template,
-        id: `arrival-${arrivalStep}`,
-        time: "now",
-        unread: false,
-      };
-
-    setArrivingThreads((current) => [nextThread, ...current].slice(0, 240));
-  }, [arrivalStep]);
+  }, [hasStarted, reducedMotion]);
 
   return (
     <main className={styles.gmail}>
@@ -253,6 +243,7 @@ export default function ParametricInterfaceFive() {
           </div>
           <div className={styles.categoryTabs} role="tablist"><button aria-selected="true" role="tab" type="button"><AppIcon name="inbox" /><span>Primary</span></button><button role="tab" type="button"><AppIcon name="tag" /><span>Promotions</span></button><button role="tab" type="button"><AppIcon name="contacts" /><span>Social</span></button><button role="tab" type="button"><AppIcon name="help" /><span>Updates</span><em>4 new</em></button></div>
           <div aria-label="Message list" className={styles.threadList} role="list">
+            {lyricThreads.map((thread) => <InboxThreadRow isArriving key={thread.id} thread={thread} />)}
             {arrivingThreads.map((thread) => <InboxThreadRow isArriving key={thread.id} thread={thread} />)}
             {initialInboxThreads.map((thread) => <InboxThreadRow key={thread.id} thread={thread} />)}
           </div>
@@ -269,7 +260,11 @@ export default function ParametricInterfaceFive() {
 function InboxThreadRow({ isArriving = false, thread }: { isArriving?: boolean; thread: InboxThread }) {
   return (
     <article className={`${styles.thread}${thread.unread ? ` ${styles.unreadThread}` : ""}${isArriving ? ` ${styles.arrivingThread}` : ""}`} role="listitem">
-      <label aria-label={`Select ${thread.subject}`}><input type="checkbox" /><i /></label><button aria-label={`Star ${thread.subject}`} className={`${styles.threadStar}${thread.starred ? ` ${styles.starred}` : ""}`} type="button"><AppIcon name="star" /></button><span aria-hidden="true" className={styles.importantMarker} /><strong className={styles.threadSender}>{thread.sender}</strong><div className={styles.threadSummary}><b>{thread.subject}</b>{thread.label ? <em>{thread.label}</em> : null}{thread.preview ? <span> — {thread.preview}</span> : null}</div><time>{thread.time}</time>
+      <label aria-label={`Select ${thread.subject}`}><input type="checkbox" /><i /></label>
+      <button aria-label={`Star ${thread.subject}`} className={`${styles.threadStar}${thread.starred ? ` ${styles.starred}` : ""}`} type="button"><AppIcon name="star" /></button>
+      <strong className={styles.threadSender}>{thread.sender}</strong>
+      <div className={styles.threadSummary}><b>{thread.subject}</b>{thread.label ? <em>{thread.label}</em> : null}{thread.preview ? <span> — {thread.preview}</span> : null}</div>
+      <time>{thread.time}</time>
     </article>
   );
 }

@@ -63,13 +63,36 @@ export const departures = [
   { id: "d-48", time: "12:55", carrier: "gold", flight: "LH 441", codeshare: "UA 8864", destination: "Houston", terminal: "1", gate: "Z56", status: "Last call" },
 ] as const satisfies readonly Departure[];
 
+const worldDestinationCities = [
+  "Amsterdam", "Athens", "Auckland", "Bangkok", "Barcelona", "Beijing",
+  "Berlin", "Bogotá", "Buenos Aires", "Cairo", "Cape Town", "Chicago",
+  "Copenhagen", "Delhi", "Dubai", "Frankfurt", "Helsinki", "Hong Kong",
+  "Istanbul", "Johannesburg", "Lisbon", "London", "Los Angeles", "Madrid",
+  "Mexico City", "Montreal", "Mumbai", "New York", "Osaka", "Paris",
+  "Prague", "Reykjavík", "Rio de Janeiro", "Rome", "San Francisco", "São Paulo",
+  "Seoul", "Singapore", "Sydney", "Tokyo",
+] as const;
+
 export function withLyricDestinations(
   lyric: readonly string[],
+  activeWordPosition = lyric.length - 1,
+  cueIndex = 0,
 ) {
   if (lyric.length === 0) return departures;
 
   return departures.map((departure, index) => ({
     ...departure,
-    destination: lyric[index % lyric.length]!,
+    destination: index % lyric.length <= activeWordPosition
+      ? capitalizeDestination(lyric[index % lyric.length]!)
+      : scheduledDestination(cueIndex, index),
   }));
+}
+
+function capitalizeDestination(destination: string) {
+  return `${destination.charAt(0).toUpperCase()}${destination.slice(1)}`;
+}
+
+function scheduledDestination(cueIndex: number, rowIndex: number) {
+  const hash = Math.imul(cueIndex + 1, 0x45d9f3b) ^ Math.imul(rowIndex + 1, 0x27d4eb2d);
+  return worldDestinationCities[(hash >>> 0) % worldDestinationCities.length]!;
 }

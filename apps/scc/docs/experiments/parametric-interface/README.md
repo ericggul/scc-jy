@@ -8,8 +8,14 @@ families use a Goldfishes-style archive route before their individual variants.
 
 - When an experiment uses timed text, place it inside the host interface's existing slots and retain that interface's visual grammar.
 - Where that host has multiple text slots, distribute a sentence word by word across them; never use an overlay or separate text layer.
-- Keep each word's timing in local Parametric Interface data; never drive lyrics from one fixed interval.
+- Keep each word's absolute timing in song data; never drive lyrics from one fixed interval.
 
+All current routes use the modular audio/lyric model described in
+[`audio.md`](./audio.md). Playback begins only from the shared `PLAY` action;
+the audio element's real `currentTime` determines every lyric state.
+
+- [`whole`](./whole.md) makes one continuously timed lyric relocate through a
+  randomly selected wrapper on every click.
 - [`2`](./2.md) holds original lyric words in individual cells of a
   spreadsheet's centre row.
 - [`5`](./5.md) accumulates starred mail at the top of a desktop Gmail inbox;

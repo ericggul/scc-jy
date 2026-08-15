@@ -1,0 +1,39 @@
+.overlay {
+  position: fixed;
+  z-index: 2147483647;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgb(255 255 255 / 0.04);
+  backdrop-filter: blur(10px) saturate(0.9);
+  pointer-events: none;
+}
+
+.playButton {
+  display: grid;
+  width: 4.5rem;
+  height: 4.5rem;
+  padding: 0;
+  place-items: center;
+  border: 1px solid rgb(0 0 0 / 0.28);
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.9);
+  color: #111;
+  box-shadow: 0 0.25rem 0.8rem rgb(0 0 0 / 0.2);
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.playButton:focus-visible {
+  outline: 2px solid #1a73e8;
+  outline-offset: 0.3rem;
+}
+
+.playIcon {
+  width: 0;
+  height: 0;
+  margin-left: 0.2rem;
+  border-top: 0.68rem solid transparent;
+  border-bottom: 0.68rem solid transparent;
+  border-left: 1rem solid currentColor;
+}

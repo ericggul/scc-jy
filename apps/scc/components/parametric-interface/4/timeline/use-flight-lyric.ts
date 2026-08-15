@@ -1,44 +1,14 @@
-"use client";
-
-import { useEffect, useMemo, useState } from "react";
-import { lyricCues, lyricWordTimings } from "../model/lyrics";
-
-function cueWordIndex(wordIndex: number) {
-  const cueIndex = lyricWordTimings[wordIndex]!.cueIndex;
-  return (
-    lyricWordTimings
-      .slice(0, wordIndex + 1)
-      .filter((word) => word.cueIndex === cueIndex).length - 1
-  );
-}
+import { useLyricCue } from "../../timeline/use-lyric-cue";
 
 export function useFlightLyric() {
-  const [wordIndex, setWordIndex] = useState(0);
-  const [reducedMotion, setReducedMotion] = useState(false);
+  const { activeWordPosition, cueIndex, currentWord, lyric, lyricCues, reducedMotion } = useLyricCue();
 
-  useEffect(() => {
-    const preference = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const updatePreference = () => setReducedMotion(preference.matches);
-    updatePreference();
-    preference.addEventListener("change", updatePreference);
-    return () => preference.removeEventListener("change", updatePreference);
-  }, []);
-
-  useEffect(() => {
-    if (reducedMotion) return;
-    const timeout = window.setTimeout(() => {
-      setWordIndex((current) => (current + 1) % lyricWordTimings.length);
-    }, lyricWordTimings[wordIndex]!.durationMs);
-    return () => window.clearTimeout(timeout);
-  }, [reducedMotion, wordIndex]);
-
-  return useMemo(() => {
-    const cueIndex = lyricWordTimings[wordIndex]!.cueIndex;
-    const activeWordIndex = cueWordIndex(wordIndex);
-    return {
-      cueIndex,
-      lyric: lyricCues[cueIndex],
-      activeWord: lyricCues[cueIndex][activeWordIndex]!,
-    };
-  }, [wordIndex]);
+  return {
+    cueIndex,
+    lyric,
+    lyricCues,
+    activeWord: currentWord,
+    activeWordPosition,
+    reducedMotion,
+  };
 }
