@@ -3,6 +3,8 @@ export const cellularAutomataExperiments = [
   { slug: "2", label: "cellular-automata/2" },
   { slug: "3", label: "cellular-automata/3" },
   { slug: "4", label: "cellular-automata/4" },
+  { slug: "5", label: "cellular-automata/5" },
+  { slug: "6", label: "cellular-automata/6" },
 ] as const;
 
 export type CellularAutomataExperimentSlug =

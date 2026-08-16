@@ -32,6 +32,21 @@ test("field and word layers cycle in reverse RGB directions", () => {
   assert.equal(next.words[4], 2);
 });
 
+test("r/b mode applies B3/S23 independently to field and word layers", () => {
+  const automaton = createDoubleAutomaton(3, 3, 2);
+  automaton.field.fill(0);
+  automaton.words.fill(0);
+  for (const index of [1, 3, 5]) {
+    automaton.field[index] = 1;
+    automaton.words[index] = 1;
+  }
+  const next = stepDoubleAutomaton(automaton);
+  assert.equal(next.field[4], 1);
+  assert.equal(next.words[4], 1);
+  automaton.field[5] = 0;
+  assert.equal(stepDoubleAutomaton(automaton).field[4], 0);
+});
+
 test("rainbow mode expands both reverse cycles to seven states", () => {
   const automaton = createDoubleAutomaton(3, 3, 7);
   automaton.field.fill(0);

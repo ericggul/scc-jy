@@ -1,12 +1,14 @@
 export const RGB_STATES = ["red", "green", "blue"] as const;
+export const RB_STATES = ["red", "blue"] as const;
 export const RAINBOW_STATES = [
   "red", "orange", "yellow", "green", "blue", "indigo", "violet",
 ] as const;
 
 export type RgbState = (typeof RGB_STATES)[number];
+export type RbState = (typeof RB_STATES)[number];
 export type RainbowState = (typeof RAINBOW_STATES)[number];
-export type ColourState = RgbState | RainbowState;
-export type PaletteMode = "rgb" | "rainbow";
+export type ColourState = RgbState | RbState | RainbowState;
+export type PaletteMode = "rgb" | "rb" | "rainbow";
 export type PaintLayer = "field" | "word";
 
 export type DoubleAutomaton = {
@@ -56,9 +58,24 @@ function makeLayer(columns: number, rows: number, seed: number, stateCount: numb
   return { cells, randomState };
 }
 
+function makeLifeLayer(columns: number, rows: number, seed: number) {
+  const cells = new Uint8Array(columns * rows);
+  let randomState = seed;
+  for (let index = 0; index < cells.length; index += 1) {
+    const [noise, next] = nextRandom(randomState);
+    randomState = next;
+    cells[index] = noise > 0.82 ? 1 : 0;
+  }
+  return { cells, randomState };
+}
+
 export function createDoubleAutomaton(columns: number, rows: number, stateCount: number = RGB_STATES.length): DoubleAutomaton {
-  const field = makeLayer(columns, rows, 0x9e3779b9, stateCount);
-  const words = makeLayer(columns, rows, 0x6d2b79f5, stateCount);
+  const field = stateCount === RB_STATES.length
+    ? makeLifeLayer(columns, rows, 0x9e3779b9)
+    : makeLayer(columns, rows, 0x9e3779b9, stateCount);
+  const words = stateCount === RB_STATES.length
+    ? makeLifeLayer(columns, rows, 0x6d2b79f5)
+    : makeLayer(columns, rows, 0x6d2b79f5, stateCount);
   return {
     columns,
     rows,
@@ -97,6 +114,24 @@ function stepCycleLayer(
       }
       const successor = (current + direction + stateCount) % stateCount;
       next[index] = counts[successor]! >= threshold ? successor : current;
+    }
+  }
+  return next;
+}
+
+function stepLifeLayer(cells: Uint8Array, columns: number, rows: number) {
+  const next = new Uint8Array(cells.length);
+  for (let row = 0; row < rows; row += 1) {
+    for (let column = 0; column < columns; column += 1) {
+      let neighbours = 0;
+      for (let rowOffset = -1; rowOffset <= 1; rowOffset += 1) {
+        for (let columnOffset = -1; columnOffset <= 1; columnOffset += 1) {
+          if (rowOffset === 0 && columnOffset === 0) continue;
+          neighbours += cells[indexOf(column + columnOffset, row + rowOffset, columns, rows)]!;
+        }
+      }
+      const index = row * columns + column;
+      next[index] = neighbours === 3 || (cells[index] === 1 && neighbours === 2) ? 1 : 0;
     }
   }
   return next;
@@ -149,6 +184,20 @@ function reactivateIfStalled(
 }
 
 export function stepDoubleAutomaton(automaton: DoubleAutomaton): DoubleAutomaton {
+  if (automaton.stateCount === RB_STATES.length) {
+    const field = stepLifeLayer(automaton.field, automaton.columns, automaton.rows);
+    const words = stepLifeLayer(automaton.words, automaton.columns, automaton.rows);
+    return {
+      ...automaton,
+      field,
+      words,
+      previousField: automaton.field,
+      previousWords: automaton.words,
+      generation: automaton.generation + 1,
+      fieldStalledSteps: 0,
+      wordStalledSteps: 0,
+    };
+  }
   const threshold = automaton.stateCount === RAINBOW_STATES.length
     ? RAINBOW_CYCLE_THRESHOLD
     : RGB_CYCLE_THRESHOLD;

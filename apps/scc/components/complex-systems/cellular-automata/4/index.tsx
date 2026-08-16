@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import styles from "./cellular-automata.module.css";
 import {
   RGB_STATES,
+  RB_STATES,
   RAINBOW_STATES,
   countMismatch,
   createDoubleAutomaton,
@@ -20,10 +21,13 @@ const RAINBOW_STEP_MILLISECONDS = 48;
 const RGB_TRANSITION_MILLISECONDS = 128;
 const RAINBOW_TRANSITION_MILLISECONDS = 56;
 const RGB_FIELD_COLORS = ["#db3030", "#25a75b", "#286ac9"] as const;
+const RB_FIELD_COLORS = ["#db3030", "#286ac9"] as const;
 const RAINBOW_FIELD_COLORS = ["#db3030", "#e6802d", "#e9d037", "#25a75b", "#286ac9", "#585cc8", "#9d45c6"] as const;
 const RGB_TEXT_COLORS = ["#ff5c57", "#55d27a", "#5b9cff"] as const;
+const RB_TEXT_COLORS = ["#ff5c57", "#5b9cff"] as const;
 const RAINBOW_TEXT_COLORS = ["#ff5c57", "#ffad62", "#ffe573", "#55d27a", "#5b9cff", "#999eff", "#dc86ff"] as const;
 const RGB_LABELS = ["R", "G", "B"] as const;
+const RB_LABELS = ["R", "B"] as const;
 const RAINBOW_LABELS = ["R", "O", "Y", "G", "B", "I", "V"] as const;
 const MIN_COLUMNS = 50;
 const TARGET_CELL_WIDTH = 48;
@@ -92,10 +96,10 @@ export default function CellularAutomataFour() {
   const [paintState, setPaintState] = useState<ColourState>("red");
   const [palette, setPalette] = useState<PaletteMode>("rgb");
   const [readout, setReadout] = useState({ generation: 0, mismatch: 0 });
-  const states = palette === "rgb" ? RGB_STATES : RAINBOW_STATES;
-  const fieldColors = palette === "rgb" ? RGB_FIELD_COLORS : RAINBOW_FIELD_COLORS;
-  const textColors = palette === "rgb" ? RGB_TEXT_COLORS : RAINBOW_TEXT_COLORS;
-  const labels = palette === "rgb" ? RGB_LABELS : RAINBOW_LABELS;
+  const states = palette === "rgb" ? RGB_STATES : palette === "rb" ? RB_STATES : RAINBOW_STATES;
+  const fieldColors = palette === "rgb" ? RGB_FIELD_COLORS : palette === "rb" ? RB_FIELD_COLORS : RAINBOW_FIELD_COLORS;
+  const textColors = palette === "rgb" ? RGB_TEXT_COLORS : palette === "rb" ? RB_TEXT_COLORS : RAINBOW_TEXT_COLORS;
+  const labels = palette === "rgb" ? RGB_LABELS : palette === "rb" ? RB_LABELS : RAINBOW_LABELS;
   const stepMilliseconds = palette === "rgb" ? RGB_STEP_MILLISECONDS : RAINBOW_STEP_MILLISECONDS;
   const transitionMilliseconds = palette === "rgb"
     ? RGB_TRANSITION_MILLISECONDS
@@ -134,7 +138,7 @@ export default function CellularAutomataFour() {
       context.setTransform(ratio, 0, 0, ratio, 0, 0);
       cellSizeRef.current = cellSize;
       if (!automatonRef.current || automatonRef.current.columns !== columns || automatonRef.current.rows !== rows) {
-        automatonRef.current = createDoubleAutomaton(columns, rows, palette === "rgb" ? RGB_STATES.length : RAINBOW_STATES.length);
+        automatonRef.current = createDoubleAutomaton(columns, rows, states.length);
         refreshReadout();
       }
     };
@@ -162,7 +166,7 @@ export default function CellularAutomataFour() {
     observer.observe(canvas);
     frameRef.current = requestAnimationFrame(render);
     return () => { observer.disconnect(); if (frameRef.current !== null) cancelAnimationFrame(frameRef.current); };
-  }, [fieldColors, labels, palette, refreshReadout, stepMilliseconds, textColors, transitionMilliseconds]);
+  }, [fieldColors, labels, palette, refreshReadout, states.length, stepMilliseconds, textColors, transitionMilliseconds]);
 
   const paint = (clientX: number, clientY: number) => {
     const canvas = canvasRef.current;
@@ -187,24 +191,25 @@ export default function CellularAutomataFour() {
     automatonRef.current = createDoubleAutomaton(
       automaton.columns,
       automaton.rows,
-      nextPalette === "rgb" ? RGB_STATES.length : RAINBOW_STATES.length,
+      nextPalette === "rgb" ? RGB_STATES.length : nextPalette === "rb" ? RB_STATES.length : RAINBOW_STATES.length,
     );
     refreshReadout();
   };
 
   return (
     <main className={styles.page}>
-      <canvas ref={canvasRef} className={styles.canvas} tabIndex={0} aria-label={`Two independently cycling ${palette} cellular automata: colour fields and colour letters. Select the layer and colour to paint.`}
+      <canvas ref={canvasRef} className={styles.canvas} tabIndex={0} aria-label={`Two independent ${palette === "rb" ? "B3/S23" : "cyclic"} cellular automata: colour fields and colour letters. Select the layer and colour to paint.`}
         onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); paint(event.clientX, event.clientY); }}
         onPointerMove={(event) => { if ((event.buttons & 1) !== 0) paint(event.clientX, event.clientY); }}
         onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); const bounds = event.currentTarget.getBoundingClientRect(); paint(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2); } }}
       />
-      <header className={styles.header}><p>{palette === "rgb" ? "R → G → B / R → B → G" : "R → O → Y → G → B → I → V / reverse"}</p></header>
+      <header className={styles.header}><p>{palette === "rgb" ? "R → G → B / R → B → G" : palette === "rb" ? "B3 / S23" : "R → O → Y → G → B → I → V / reverse"}</p></header>
       <section className={styles.controls} aria-label="Double cellular automaton controls">
         <dl><div><dt>generation</dt><dd>{readout.generation}</dd></div><div><dt>mismatch</dt><dd>{readout.mismatch}</dd></div></dl>
         <div className={styles.actions}>
           <span className={styles.paletteMode} aria-label="Palette">
             <button type="button" aria-pressed={palette === "rgb"} onClick={() => choosePalette("rgb")}>rgb</button>
+            <button type="button" aria-pressed={palette === "rb"} onClick={() => choosePalette("rb")}>r/b</button>
             <button type="button" aria-pressed={palette === "rainbow"} onClick={() => choosePalette("rainbow")}>rainbow</button>
           </span>
           <span className={styles.layer} aria-label="Layer to paint">
