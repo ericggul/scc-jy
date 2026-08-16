@@ -32,6 +32,9 @@ export const siteMetadata: Metadata = {
   authors: [{ name: "Jeanyoon Choi" }],
   creator: "Jeanyoon Choi",
   publisher: "Jeanyoon Choi",
+  verification: {
+    google: "B0jfZSkwl0hWTiIrI55oMZVEJsgE_1n6TR55ErHtL5I",
+  },
   keywords,
   alternates: {
     canonical: "/",
