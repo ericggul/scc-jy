@@ -1,0 +1,17 @@
+.page { --ink: #fff; --quiet: rgba(255,255,255,.74); position: fixed; inset: 0; overflow: hidden; background: #111; color: var(--ink); font-family: Arial, sans-serif; }
+.canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; cursor: cell; touch-action: none; }
+.header { position: absolute; top: clamp(1rem, 2.4vw, 2.25rem); right: clamp(1rem, 2.4vw, 2.25rem); left: clamp(1rem, 2.4vw, 2.25rem); display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; pointer-events: none; mix-blend-mode: difference; }
+.header h1 { margin: 0; font: 400 clamp(1.5rem, 3.5vw, 3.35rem)/.9 Georgia, serif; letter-spacing: -.065em; }
+.header p, .controls { margin: 0; font: .64rem var(--font-geist-mono), monospace; }
+.controls { position: absolute; right: clamp(1rem, 2.4vw, 2.25rem); bottom: clamp(1rem, 2.4vw, 2.25rem); left: clamp(1rem, 2.4vw, 2.25rem); display: flex; justify-content: space-between; align-items: end; gap: 1rem; text-shadow: 0 1px 3px #000, 0 0 8px #000; }
+.controls dl, .actions, .layer, .palette, .paletteMode { display: flex; flex-wrap: wrap; gap: .8rem 1.05rem; margin: 0; }
+.layer, .palette, .paletteMode { gap: .65rem; }
+.controls dl div { display: flex; gap: .35rem; }
+.controls dt { color: var(--quiet); }
+.controls dd { margin: 0; font-variant-numeric: tabular-nums; }
+.actions button { border: 0; border-bottom: 1px solid transparent; padding: .24rem 0; background: transparent; color: var(--quiet); cursor: pointer; font: inherit; }
+.actions button:hover, .actions button[aria-pressed="true"] { border-bottom-color: currentColor; color: var(--ink); }
+.actions button.red[aria-pressed="true"] { color: #ff817c; }.actions button.green[aria-pressed="true"] { color: #7de5a0; }.actions button.blue[aria-pressed="true"] { color: #8bb9ff; }
+.canvas:focus-visible, .actions button:focus-visible { outline: 1px solid #fff; outline-offset: 4px; }
+@media (max-width: 620px) { .header, .controls { align-items: flex-start; flex-direction: column; gap: .45rem; } .controls { right: 1rem; } }
+@media (prefers-reduced-motion: reduce) { .canvas { cursor: default; } }

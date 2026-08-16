@@ -35,7 +35,7 @@ get a dedicated document.
 
 | Code family | Registered variants | Documentation |
 | --- | --- | --- |
-| `apps/ddong-meong/components` | `1`, `2`, `3`, `4` | [ddong-meong](../apps/ddong-meong/docs/README.md) · [3 baseline](../apps/ddong-meong/docs/3.md) · [4 콘텐츠 확장 매뉴얼](../apps/ddong-meong/docs/4-content-manual.md) |
+| `apps/ddong-meong/components` | `default` | [ddong-meong](../apps/ddong-meong/docs/README.md) · [콘텐츠 확장 매뉴얼](../apps/ddong-meong/docs/content-manual.md) |
 | `apps/scc/components/dashboard/palantir` | `1` | [palantir/1](../apps/scc/docs/experiments/dashboard/palantir/1.md) |
 | `apps/scc/components/dashboard/stock` | `default`, `1`, `2`, `3`, `4` | [stock index](../apps/scc/docs/experiments/dashboard/stock/README.md) |
 | `apps/scc/components/realtime/calendar` | `default`, `1` | [calendar](../apps/scc/docs/experiments/realtime/calendar/README.md) |

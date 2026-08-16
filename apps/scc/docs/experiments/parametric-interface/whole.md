@@ -11,9 +11,8 @@ Route: `/parametric-interface/whole`
 - **Perceptual job:** recognise the same current lyric word as it relocates to
   the designated ordinary slot of a radio field, spreadsheet, menu bar, flight
   board, inbox, or terminal.
-- **Interaction job:** `PLAY` starts the song. Afterwards, each click selects
-  one of the other five wrappers at random; the current wrapper cannot be
-  selected again immediately.
+- **Interaction job:** `PLAY` starts the song. Afterwards, each click, Space,
+  Right Arrow, or Enter/Return advances one wrapper in the authored cycle.
 - **Wrapper justification:** the familiar interface remains a host grammar.
   Only the lyric position changes, so the work is the continuity between hosts
   rather than a new control surface over them.

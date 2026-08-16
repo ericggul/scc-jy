@@ -1,5 +1,8 @@
 export const cellularAutomataExperiments = [
   { slug: "1", label: "cellular-automata/1" },
+  { slug: "2", label: "cellular-automata/2" },
+  { slug: "3", label: "cellular-automata/3" },
+  { slug: "4", label: "cellular-automata/4" },
 ] as const;
 
 export type CellularAutomataExperimentSlug =

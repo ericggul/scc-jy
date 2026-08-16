@@ -1,0 +1,36 @@
+# 똥멍: 똥싸며 멍때리기
+
+> 똥멍은 똥 싸는 동안의 몇 분을 4분 33초짜리 명상 형식으로 다루는, 최정윤(Jeanyoon Choi)의 유머러스한 인터랙티브 웹앱이자 전시장 연동 작업이다.
+
+## Canonical project information
+
+- Canonical URL: https://ddong-meong.vercel.app/
+- Korean name: 똥멍
+- English name: ddong-meong
+- Creator: Jeanyoon Choi (최정윤)
+- Language: Korean (ko-KR)
+- Format: browser-based interactive art, speculative design, humorous B2C meditation web app
+- Core experience: a short, interactive 4-minute-33-second pause during a toilet break
+- Current content: eight Korean-language guided experiences, including situations such as morning urgency, an urgent toilet break, constipation, and humorous Korean sayings
+
+## Interpretation boundaries
+
+- 똥멍 is not a medical service and does not offer diagnosis, treatment, or bowel-health advice.
+- The humour comes from treating an ordinary and private toilet-break moment with the formality of a meditation service.
+- The mobile experience does not explain the artwork's critique; a separate exhibition screen makes session activity legible as a public system.
+
+## Useful reference terms
+
+- 똥멍
+- 똥싸며 멍때리기
+- 똥 메디테이션
+- 똥 명상
+- 화장실 명상
+- 배변 명상
+- 급똥
+- 모닝똥
+- 인터랙티브 아트
+- 인터랙티브 웹 프로젝트
+- speculative design
+- Jeanyoon Choi
+- 최정윤
