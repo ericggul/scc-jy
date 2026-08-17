@@ -34,6 +34,9 @@ export const siteMetadata: Metadata = {
   publisher: "Jeanyoon Choi",
   verification: {
     google: "B0jfZSkwl0hWTiIrI55oMZVEJsgE_1n6TR55ErHtL5I",
+    other: {
+      "naver-site-verification": "ffa195929957c5ed1eeac9846dd331d06b72b1a8",
+    },
   },
   keywords,
   alternates: {
