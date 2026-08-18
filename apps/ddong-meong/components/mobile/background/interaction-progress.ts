@@ -31,13 +31,16 @@ export function accumulationProgressFromInteractions(count: number) {
   );
 }
 
-export function accumulationProgressFromAutomaticFalls(
-  settledCount: number,
-  totalFallCount: number,
+export function accumulationProgressFromAutomaticFall(
+  elapsedMs: number,
+  totalMs: number,
+  settleDurationSeconds: number,
 ) {
+  const settleMs = Math.max(0, settleDurationSeconds * 1000);
+  const accumulationDurationMs = Math.max(1, totalMs - settleMs);
   return Math.min(
     1,
-    Math.max(0, settledCount / Math.max(1, totalFallCount)),
+    Math.max(0, (elapsedMs - settleMs) / accumulationDurationMs),
   );
 }
 

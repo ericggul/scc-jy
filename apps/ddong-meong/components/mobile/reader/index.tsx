@@ -24,13 +24,9 @@ import type {
 import { getPausableElapsedMs } from "../../model/session-timing";
 import type { ReadingLine } from "../../model/reading-script";
 import InteractiveAccumulationBackground from "../background/interactive-accumulation";
-import {
-  automaticFallSettlementTimesMs,
-  countSettledAutomaticFalls,
-} from "../background/interaction/automatic-falls";
 import { useDropInteraction } from "../background/interaction/use-drop-interaction";
 import {
-  accumulationProgressFromAutomaticFalls,
+  accumulationProgressFromAutomaticFall,
   accumulationProgressFromInteractions,
   flushDurationMsFromAccumulation,
 } from "../background/interaction-progress";
@@ -181,7 +177,6 @@ export default function ReadingPage({
   const scrollAnimationRef = useRef<Animation | null>(null);
   const sessionCompletedRef = useRef(false);
   const [startedAt, setStartedAt] = useState<number | null>(null);
-  const [settledAutomaticFallCount, setSettledAutomaticFallCount] = useState(0);
   const [settledDropCount, setSettledDropCount] = useState(0);
   const [flushState, setFlushState] = useState<FlushState | null>(null);
   const interactionDisabled =
@@ -201,41 +196,6 @@ export default function ReadingPage({
 
     return () => window.clearTimeout(preludeTimer);
   }, [flushState, pausedAt]);
-
-  const automaticFallSettlementTimes = useMemo(
-    () => automaticFallSettlementTimesMs(accumulationProfile, totalMs),
-    [accumulationProfile, totalMs],
-  );
-
-  useEffect(() => {
-    if (startedAt === null || flushState !== null || pausedAt !== null) return;
-    const activeStartedAt = startedAt;
-
-    function syncSettledAutomaticFalls() {
-      const elapsedMs = getPausableElapsedMs({
-        pausedAt,
-        pausedDurationMs,
-        startedAt: activeStartedAt,
-      });
-      const nextCount = countSettledAutomaticFalls(
-        automaticFallSettlementTimes,
-        elapsedMs,
-      );
-      setSettledAutomaticFallCount((currentCount) =>
-        Math.max(currentCount, nextCount),
-      );
-    }
-
-    syncSettledAutomaticFalls();
-    const timer = window.setInterval(syncSettledAutomaticFalls, 80);
-    return () => window.clearInterval(timer);
-  }, [
-    automaticFallSettlementTimes,
-    flushState,
-    pausedAt,
-    pausedDurationMs,
-    startedAt,
-  ]);
 
   const completeSession = useCallback((outcome: DdongMeongSessionOutcome) => {
     if (sessionCompletedRef.current) return;
@@ -377,12 +337,10 @@ export default function ReadingPage({
     const interactiveProgress = accumulationProgressFromInteractions(
       settledDropCount,
     );
-    const automaticProgress = accumulationProgressFromAutomaticFalls(
-      countSettledAutomaticFalls(
-        automaticFallSettlementTimes,
-        frozenElapsedMs,
-      ),
-      automaticFallSettlementTimes.length,
+    const automaticProgress = accumulationProgressFromAutomaticFall(
+      frozenElapsedMs,
+      totalMs,
+      accumulationProfile.fall.backgroundDuration,
     );
     const accumulatedProgress = Math.min(
       1,
@@ -411,7 +369,6 @@ export default function ReadingPage({
           flushStartedAt={flushState?.startedAt ?? null}
           frozenElapsedMs={flushState?.frozenElapsedMs ?? null}
           dropStream={dropStream}
-          settledAutomaticFallCount={settledAutomaticFallCount}
           settledDropCount={settledDropCount}
           pausedAt={pausedAt}
           pausedDurationMs={pausedDurationMs}

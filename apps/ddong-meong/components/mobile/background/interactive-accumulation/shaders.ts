@@ -367,7 +367,6 @@ export const particleVertexShader = `
   uniform float uProgress;
   uniform float uMotion;
   uniform float uFlushProgress;
-  uniform float uInteractiveAutomaticEmission;
   uniform float uPixelRatio;
   uniform float uLayer;
   uniform float uMaterialMode;
@@ -466,23 +465,13 @@ export const particleVertexShader = `
       vSoftness = mix(uReservoirSoftness.x, uReservoirSoftness.y, aSeed.w);
     } else if (uLayer < 1.5) {
       float fallDuration = mix(uFallDuration.x, uFallDuration.y, aSeed.z);
-      bool followsHeldAutomaticStream = uInteractiveAutomaticEmission > 0.5;
-      float localDropAge = uInteractionTime - aDropStartedAt;
-      float travel = followsHeldAutomaticStream
-        ? fract(aSeed.y + max(localDropAge, 0.0) / fallDuration)
-        : fract(aSeed.y + time / fallDuration);
+      float travel = fract(aSeed.y + time / fallDuration);
       float emissionTime = time - travel * fallDuration;
-      float emission = followsHeldAutomaticStream
-        ? aDropActive * step(0.0, localDropAge)
-        : emissionStrength(emissionTime);
+      float emission = emissionStrength(emissionTime);
       float easedTravel = pow(travel, uFallTravelExponent);
-      vec2 heldOrigin = mix(aDropPreviousOrigin, aDropOrigin, aSeed.x);
-      float target = followsHeldAutomaticStream
-        ? min(front, heldOrigin.y - 0.025)
-        : min(front, 0.99);
-      float spawnY = followsHeldAutomaticStream ? heldOrigin.y : uFallSpawnHeight;
-      float particleY = mix(spawnY, target, easedTravel);
-      float spine = (followsHeldAutomaticStream ? heldOrigin.x : uFallLaneCenter);
+      float target = min(front, 0.99);
+      float particleY = mix(uFallSpawnHeight, target, easedTravel);
+      float spine = uFallLaneCenter;
       spine += sin(flowTime * 0.052) * uFallWander.x;
       spine += sin(particleY * 4.6 + flowTime * 0.2) * uFallWander.y;
       spine += sin(particleY * 11.0 - flowTime * 0.11) * uFallWander.z;
@@ -725,7 +714,6 @@ export const solidDropVertexShader = `
   uniform float uSolidHorizontalSpread;
   uniform float uSolidRotation;
   uniform float uAutomaticEmission;
-  uniform float uInteractiveAutomaticEmission;
   uniform float uHoldTrace;
   uniform float uMaterialMode;
 
@@ -766,10 +754,7 @@ export const solidDropVertexShader = `
       centerX = uFallLaneCenter + lane + slowWander;
     } else {
       float localDropAge = uInteractionTime - aDropStartedAt;
-      if (uInteractiveAutomaticEmission > 0.5) {
-        travel = fract(aSeed.y + max(localDropAge, 0.0) / fallDuration);
-        emission = aDropActive * step(0.0, localDropAge);
-      } else if (uHoldTrace > 0.5) {
+      if (uHoldTrace > 0.5) {
         travel = fract(aSeed.y + max(localDropAge, 0.0) / fallDuration);
         emission = aDropActive * step(0.0, localDropAge);
       } else {
@@ -781,15 +766,9 @@ export const solidDropVertexShader = `
       target = min(front, spawnOrigin.y - 0.025);
       float easedTravel = pow(travel, uFallTravelExponent);
       centerY = mix(spawnOrigin.y, target, easedTravel);
-      if (uInteractiveAutomaticEmission > 0.5) {
-        float lane = (aSeed.x - 0.5) * uSolidHorizontalSpread;
-        float slowWander = sin(time * 0.052 + aSeed.z * 5.7) * uFallWander.x;
-        centerX = spawnOrigin.x + lane + slowWander;
-      } else {
-        float tracePathAmount = mix(travel, 1.0, step(0.5, uHoldTrace));
-        float slowWander = sin(time * 0.052 + aSeed.z * 5.7) * uFallWander.x * tracePathAmount;
-        centerX = spawnOrigin.x + slowWander;
-      }
+      float tracePathAmount = mix(travel, 1.0, step(0.5, uHoldTrace));
+      float slowWander = sin(time * 0.052 + aSeed.z * 5.7) * uFallWander.x * tracePathAmount;
+      centerX = spawnOrigin.x + slowWander;
     }
 
     float size = mix(uSolidSize.x, uSolidSize.y, aSeed.w);

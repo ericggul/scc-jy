@@ -109,11 +109,13 @@ function drawCoverImage(
 
 async function createStoryImage({
   contentTitle,
+  duration,
   elapsedClock,
   imagePath,
   nickname,
 }: {
   contentTitle: string;
+  duration: string;
   elapsedClock: string;
   imagePath: string;
   nickname: string;
@@ -125,17 +127,22 @@ async function createStoryImage({
   const context = canvas.getContext("2d");
   if (!context) throw new Error("이미지를 만들 수 없습니다.");
 
-  const background = context.createLinearGradient(0, 0, 1080, 1920);
-  background.addColorStop(0, "#211814");
-  background.addColorStop(0.4, "#432c22");
-  background.addColorStop(0.72, "#795536");
-  background.addColorStop(1, "#30211b");
-  context.fillStyle = background;
+  const canvasField = context.createLinearGradient(0, 0, 1080, 1920);
+  canvasField.addColorStop(0, "#211814");
+  canvasField.addColorStop(0.38, "#432c22");
+  canvasField.addColorStop(0.7, "#795536");
+  canvasField.addColorStop(1, "#30211b");
+  context.fillStyle = canvasField;
   context.fillRect(0, 0, canvas.width, canvas.height);
-  const warmLight = context.createRadialGradient(110, 120, 0, 110, 120, 920);
-  warmLight.addColorStop(0, "rgba(157, 108, 58, .84)");
-  warmLight.addColorStop(1, "rgba(157, 108, 58, 0)");
-  context.fillStyle = warmLight;
+  const leftLight = context.createRadialGradient(108, 190, 0, 108, 190, 500);
+  leftLight.addColorStop(0, "rgba(157, 108, 58, .76)");
+  leftLight.addColorStop(1, "rgba(157, 108, 58, 0)");
+  context.fillStyle = leftLight;
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  const rightLight = context.createRadialGradient(900, 1040, 0, 900, 1040, 660);
+  rightLight.addColorStop(0, "rgba(119, 73, 42, .54)");
+  rightLight.addColorStop(1, "rgba(119, 73, 42, 0)");
+  context.fillStyle = rightLight;
   context.fillRect(0, 0, canvas.width, canvas.height);
 
   context.fillStyle = "#f1e7e1";
@@ -148,17 +155,24 @@ async function createStoryImage({
   const image = await loadImage(imagePath);
   context.save();
   context.beginPath();
-  context.roundRect(88, 548, 904, 508, 27);
+  context.roundRect(88, 548, 904, 684, 30);
   context.clip();
-  drawCoverImage(context, image, 88, 548, 904, 508);
+  context.fillStyle = "#f5ede7";
+  context.fillRect(88, 548, 904, 684);
+  drawCoverImage(context, image, 88, 548, 904, 516);
   context.restore();
 
-  context.fillStyle = "rgba(241, 231, 225, .72)";
-  context.font = "500 34px Pretendard, Arial, sans-serif";
-  context.fillText(contentTitle, 88, 1135);
-  context.fillStyle = "#f1e7e1";
-  context.font = "620 74px Pretendard, Arial, sans-serif";
-  context.fillText(`${elapsedClock}  /  04:33`, 88, 1264);
+  context.fillStyle = "#30231e";
+  context.font = "630 45px Pretendard, Arial, sans-serif";
+  context.fillText(contentTitle, 128, 1136);
+  context.fillStyle = "rgba(48, 35, 30, .64)";
+  context.font = "450 28px Pretendard, Arial, sans-serif";
+  context.fillText(`${duration} 동안 똥멍했어요.`, 128, 1184);
+  context.textAlign = "right";
+  context.fillStyle = "rgba(48, 35, 30, .62)";
+  context.font = "620 27px Pretendard, Arial, sans-serif";
+  context.fillText(`${elapsedClock} / 04:33`, 952, 1174);
+  context.textAlign = "left";
 
   return new Promise<Blob>((resolve, reject) => {
     canvas.toBlob((blob) => {
@@ -283,6 +297,7 @@ export default function DdongMeongShare() {
     try {
       const image = await createStoryImage({
         contentTitle,
+        duration,
         elapsedClock,
         imagePath,
         nickname,
