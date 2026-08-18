@@ -1,0 +1,374 @@
+.page {
+  --ground: #030403;
+  --surface-raised: #181b18;
+  --rule: #353a34;
+  --ink: #e6e5dd;
+  --muted: #90948b;
+  --alpha: #f0a000;
+  --beta: #20bd68;
+  --gamma: #45acc7;
+  --negative: #e94a58;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  width: 100dvw;
+  height: 100dvh;
+  overflow: hidden;
+  touch-action: none;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 52px;
+  padding: 0 16px;
+}
+
+.market {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.market strong {
+  color: var(--ink);
+  font-size: clamp(20px, 6vw, 28px);
+  font-weight: 600;
+  letter-spacing: -0.04em;
+}
+
+.market span {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.market .rising {
+  color: var(--beta);
+}
+
+.market .falling {
+  color: var(--negative);
+}
+
+.mappingNav {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  min-height: 48px;
+  background: var(--surface-raised);
+}
+
+.mappingNav button {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.mappingNav button:focus-visible,
+.enableButton:focus-visible {
+  outline: 2px solid var(--alpha);
+  outline-offset: -3px;
+}
+
+.mappingNav .mappingActive {
+  background: var(--alpha);
+  color: #111;
+}
+
+.recording {
+  position: fixed;
+  z-index: 5;
+  top: 88px;
+  left: 50%;
+  max-width: calc(100vw - 28px);
+  padding: 7px 10px;
+  transform: translateX(-50%);
+  background: var(--alpha);
+  color: #111;
+  font-size: 12px;
+  text-align: center;
+}
+
+.globeArea {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 0;
+  padding-inline: 14px;
+}
+
+.globeShell {
+  position: relative;
+  width: min(82vw, 46dvh, 360px);
+  max-height: 100%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+}
+
+.sphereViewport {
+  position: absolute;
+  inset: 8%;
+  overflow: hidden;
+  border: 1px solid #74786f;
+  border-radius: 50%;
+  background: #090a09;
+  perspective: 560px;
+}
+
+.sphereFrame {
+  position: absolute;
+  inset: 6%;
+  transform: rotateY(var(--globe-gamma)) rotateX(var(--globe-beta))
+    rotateZ(var(--globe-alpha));
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.latitude,
+.meridian {
+  position: absolute;
+  inset: 0;
+  border: 1px solid #4a4d47;
+  border-radius: 50%;
+  backface-visibility: visible;
+}
+
+.latitude {
+  transform: translateY(var(--latitude-offset)) rotateX(90deg)
+    scale(var(--latitude-scale));
+}
+
+.latitudeNorthFar {
+  --latitude-offset: -68%;
+  --latitude-scale: 0.73;
+}
+
+.latitudeNorthNear {
+  --latitude-offset: -35%;
+  --latitude-scale: 0.94;
+}
+
+.equator {
+  --latitude-offset: 0%;
+  --latitude-scale: 1;
+  border-width: 3px;
+  border-color: var(--beta);
+}
+
+.latitudeSouthNear {
+  --latitude-offset: 35%;
+  --latitude-scale: 0.94;
+}
+
+.latitudeSouthFar {
+  --latitude-offset: 68%;
+  --latitude-scale: 0.73;
+}
+
+.primeMeridian {
+  border-width: 3px;
+  border-color: var(--gamma);
+}
+
+.meridianFortyFive {
+  transform: rotateY(45deg);
+}
+
+.meridianNinety {
+  transform: rotateY(90deg);
+}
+
+.meridianOneThirtyFive {
+  transform: rotateY(135deg);
+}
+
+.alphaScale {
+  position: absolute;
+  inset: 1%;
+  border-radius: 50%;
+  background: repeating-conic-gradient(
+    from -0.5deg,
+    #666a62 0deg 1deg,
+    transparent 1deg 15deg
+  );
+  -webkit-mask: radial-gradient(
+    farthest-side,
+    transparent calc(100% - 7px),
+    #000 calc(100% - 6px)
+  );
+  mask: radial-gradient(
+    farthest-side,
+    transparent calc(100% - 7px),
+    #000 calc(100% - 6px)
+  );
+}
+
+.alphaDatum {
+  position: absolute;
+  inset: 1%;
+  transform: rotate(var(--globe-alpha));
+  will-change: transform;
+}
+
+.alphaDatum::before {
+  position: absolute;
+  top: -1px;
+  left: 50%;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--alpha);
+  content: "";
+}
+
+.alphaPointer {
+  position: absolute;
+  top: 4.5%;
+  left: 50%;
+  width: 2px;
+  height: 12px;
+  transform: translateX(-50%);
+  background: var(--ink);
+}
+
+.fixedReticle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 38%;
+  height: 38%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.fixedReticle::before,
+.fixedReticle::after {
+  position: absolute;
+  background: var(--ink);
+  content: "";
+}
+
+.fixedReticle::before {
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  transform: translateY(-50%);
+}
+
+.fixedReticle::after {
+  top: 0;
+  left: 50%;
+  width: 2px;
+  height: 100%;
+  transform: translateX(-50%);
+}
+
+.fixedReticle i {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: 50%;
+  width: 9px;
+  height: 9px;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--ground);
+}
+
+.axisReadout {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.axisName {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.axisName b {
+  font-size: clamp(20px, 6vw, 28px);
+  line-height: 1;
+}
+
+.axisName span {
+  font-size: clamp(12px, 3.8vw, 16px);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.axisReadout strong {
+  font-size: clamp(16px, 4.8vw, 21px);
+  font-weight: 600;
+}
+
+.alphaReadout {
+  top: 7%;
+  left: 16px;
+  color: var(--alpha);
+}
+
+.betaReadout {
+  bottom: 7%;
+  left: 16px;
+  color: var(--beta);
+}
+
+.gammaReadout {
+  right: 16px;
+  bottom: 7%;
+  color: var(--gamma);
+  text-align: right;
+}
+
+.motionGate {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(3, 4, 3, 0.38);
+  -webkit-backdrop-filter: blur(9px);
+  backdrop-filter: blur(9px);
+}
+
+.enableButton {
+  padding: 14px 18px;
+  border: 1px solid var(--alpha);
+  border-radius: 0;
+  background: var(--alpha);
+  color: #111;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+@media (max-height: 620px) {
+  .header {
+    min-height: 44px;
+  }
+
+  .mappingNav {
+    min-height: 42px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sphereFrame {
+    transition: none;
+  }
+}

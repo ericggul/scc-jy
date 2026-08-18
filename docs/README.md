@@ -25,7 +25,6 @@ get a dedicated document.
 - [Experiment and component structure](./harness/experiments.md)
 - [Next.js notes](./harness/nextjs.md)
 - [HTTPS and sockets](./harness/https-and-sockets.md)
-- [AWS real-time relay deployment](./harness/aws-realtime-deployment.md)
 - [반포자이즘 EC2와 SCC socket 공동 운영 결정](./harness/banpo-ec2-scc-cohosting.md)
 - [Local image collections](./harness/local-image-collections.md)
 - [Tinkering as the SCC working method](./foundations/tinkering.md)

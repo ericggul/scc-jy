@@ -25,16 +25,12 @@ string are carried to the standalone app.
 
 Browser clients continue to use `NEXT_PUBLIC_SOCKET_URL` when explicitly
 configured. Otherwise the existing HTTPS hostname plus
-`NEXT_PUBLIC_SOCKET_PORT` behavior remains. `SCC_SOCKET_SCOPE` can limit a
-separately hosted relay to `scc`, `c-val`, `ddong-meong`, or `goldfishes`; the
-local all-app runner uses the complete registry. Goldfishes currently registers
-no socket experiment: its empty scope only reserves an isolated future boundary.
-Socket deployment remains a stateful service and is not part of an app's Vercel
-Root Directory.
-
-For the production AWS topology, separate C-VAL and ddong-meong relay hosts,
-environment variables, and socket origins are documented in
-[AWS real-time relay deployment](./aws-realtime-deployment.md).
+`NEXT_PUBLIC_SOCKET_PORT` behavior remains. The local runner can scope its
+registry for an individual artwork. Production C-VAL and ddong-meong instead
+share one small relay process on the Banpo-Xism EC2; both Vercel projects point
+at its one socket hostname. Socket deployment remains a stateful service and is
+not part of an app's Vercel Root Directory. See
+[the shared EC2 decision](./banpo-ec2-scc-cohosting.md).
 
 To add a future standalone artwork, create another `apps/<artwork>` workspace,
 give it its own Next.js config and public directory, add it to the HTTPS runner,

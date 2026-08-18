@@ -6,7 +6,6 @@ function usage() {
   return `Usage: pnpm --filter @scc/c-val test:shake -- [options]
 
 Options:
-  --version <1|2>      C-VAL version to verify (default: 2)
   --trace <path>        Replay a recorded trace instead of generating one
   --seed <integer>      Synthetic gesture seed (default: 12648430)
   --market-seed <int>   Reproduce one market path instead of the 5-seed suite
@@ -27,7 +26,6 @@ function parseInteger(value, flag) {
 
 function parseArguments(argv) {
   const options = {
-    version: "2",
     tracePath: null,
     seed: 0xc0ffee,
     marketSeed: null,
@@ -36,13 +34,7 @@ function parseArguments(argv) {
   };
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
-    if (argument === "--version") {
-      const value = argv[++index];
-      if (value !== "1" && value !== "2") {
-        throw new Error("--version requires 1 or 2");
-      }
-      options.version = value;
-    } else if (argument === "--trace") {
+    if (argument === "--trace") {
       const value = argv[++index];
       if (!value) throw new Error("--trace requires a file path");
       options.tracePath = value;
@@ -84,10 +76,10 @@ try {
     console.log(usage());
   } else {
     const harness = await import(
-      `../socket/experiments/${options.version}/shake-harness.mjs`
+      "../socket/experiments/shake-harness.mjs"
     );
     const traceModule = await import(
-      `../socket/experiments/${options.version}/shake-trace.mjs`
+      "../socket/experiments/shake-trace.mjs"
     );
     const trace = await loadTrace(options, traceModule);
     const report =
