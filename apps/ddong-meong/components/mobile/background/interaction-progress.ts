@@ -1,4 +1,6 @@
 const baselineInteractionsToFullAccumulation = 24;
+const minimumFlushDurationMs = 1000;
+const maximumFlushDurationMs = 2800;
 
 // The interactive version now accumulates one quarter of its preceding trial.
 // Keep these quantities together so the next volume trial stays local.
@@ -26,5 +28,23 @@ export function accumulationProgressFromInteractions(count: number) {
   return Math.min(
     1,
     Math.max(0, count / interactionsToFullAccumulation),
+  );
+}
+
+export function accumulationProgressFromAutomaticFalls(
+  settledCount: number,
+  totalFallCount: number,
+) {
+  return Math.min(
+    1,
+    Math.max(0, settledCount / Math.max(1, totalFallCount)),
+  );
+}
+
+export function flushDurationMsFromAccumulation(progress: number) {
+  const clampedProgress = Math.min(1, Math.max(0, progress));
+  return Math.round(
+    minimumFlushDurationMs +
+      (maximumFlushDurationMs - minimumFlushDurationMs) * clampedProgress,
   );
 }

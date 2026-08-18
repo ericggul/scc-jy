@@ -638,10 +638,10 @@ const constipationDialogueProfile = defineAccumulationProfile({
   id: "constipation-dialogue",
   materialKind: "drifting-mist",
   palette: {
-    deep: [0.055, 0.035, 0.024],
-    middle: [0.16, 0.085, 0.048],
-    surface: [0.31, 0.18, 0.092],
-    highlight: [0.44, 0.28, 0.15],
+    deep: [0.065, 0.038, 0.022],
+    middle: [0.2, 0.1, 0.052],
+    surface: [0.42, 0.22, 0.105],
+    highlight: [0.58, 0.34, 0.17],
   },
   particles: {
     reservoirCount: 5400,

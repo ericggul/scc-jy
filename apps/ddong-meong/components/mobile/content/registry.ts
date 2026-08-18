@@ -10,6 +10,7 @@ export type MobileMeditationContent = {
   accumulationProfile: AccumulationProfile;
   description: string;
   durationMs: number;
+  imagePath: string;
   lines: ReadingLine[];
   slug: MeditationContentSlug;
   title: string;
@@ -19,6 +20,7 @@ export const mobileMeditationContents = guidedMeditations.map((meditation) => ({
   accumulationProfile: guidedAccumulationProfiles[meditation.slug],
   description: meditation.description,
   durationMs: meditation.durationSeconds * 1000,
+  imagePath: meditation.imagePath,
   lines: meditation.lines,
   slug: meditation.slug,
   title: meditation.title,

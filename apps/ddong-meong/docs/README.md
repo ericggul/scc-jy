@@ -108,6 +108,9 @@ Google Analytics 측정 ID는 `G-N5RM30V2JJ`다. `localhost`, `.local`, loopback
 캠페인 비교가 필요하면 `utm_source`, `utm_medium`, `utm_campaign`,
 `utm_content`, `utm_term`만 사용한다.
 
+완료 뒤 카카오톡 커스텀 템플릿과 인스타그램 스토리용 카드 공유 설정은
+[공유 화면](./share.md)에 기록한다.
+
 ## 2026-08-17 — `/main` 진입과 카드 이미지
 
 - 바꾼 변수: `/main`은 intro와 같은 짧은 순차 fade-in으로 진입하며, 콘텐츠

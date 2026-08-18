@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type CSSProperties,
@@ -23,13 +24,24 @@ import type {
 import { getPausableElapsedMs } from "../../model/session-timing";
 import type { ReadingLine } from "../../model/reading-script";
 import InteractiveAccumulationBackground from "../background/interactive-accumulation";
+import {
+  automaticFallSettlementTimesMs,
+  countSettledAutomaticFalls,
+} from "../background/interaction/automatic-falls";
 import { useDropInteraction } from "../background/interaction/use-drop-interaction";
+import {
+  accumulationProgressFromAutomaticFalls,
+  accumulationProgressFromInteractions,
+  flushDurationMsFromAccumulation,
+} from "../background/interaction-progress";
 import type { AccumulationProfile } from "../background/profiles";
 import InteractionLock from "../../design-system/interaction-lock";
 import styles from "./styles.module.css";
 
 type ReadingPageProps = {
   accumulationProfile: AccumulationProfile;
+  contentTitle: string;
+  imagePath: string;
   lines: ReadingLine[];
   onSessionActivity?: () => void;
   onSessionComplete?: (outcome: DdongMeongSessionOutcome) => void;
@@ -52,12 +64,13 @@ type TimerHeaderProps = {
 };
 
 type FlushState = {
+  durationMs: number;
   frozenElapsedMs: number;
   startedAt: number;
 };
 
 const preludeDurationMs = 2000;
-const flushDrainDurationMs = 2800;
+const minimumFlushDurationMs = 1000;
 const showTimeBar = true;
 
 function formatClock(totalSeconds: number) {
@@ -152,6 +165,8 @@ function FlushIcon() {
 
 export default function ReadingPage({
   accumulationProfile,
+  contentTitle,
+  imagePath,
   lines,
   onSessionActivity,
   onSessionComplete,
@@ -166,6 +181,7 @@ export default function ReadingPage({
   const scrollAnimationRef = useRef<Animation | null>(null);
   const sessionCompletedRef = useRef(false);
   const [startedAt, setStartedAt] = useState<number | null>(null);
+  const [settledAutomaticFallCount, setSettledAutomaticFallCount] = useState(0);
   const [settledDropCount, setSettledDropCount] = useState(0);
   const [flushState, setFlushState] = useState<FlushState | null>(null);
   const interactionDisabled =
@@ -185,6 +201,41 @@ export default function ReadingPage({
 
     return () => window.clearTimeout(preludeTimer);
   }, [flushState, pausedAt]);
+
+  const automaticFallSettlementTimes = useMemo(
+    () => automaticFallSettlementTimesMs(accumulationProfile, totalMs),
+    [accumulationProfile, totalMs],
+  );
+
+  useEffect(() => {
+    if (startedAt === null || flushState !== null || pausedAt !== null) return;
+    const activeStartedAt = startedAt;
+
+    function syncSettledAutomaticFalls() {
+      const elapsedMs = getPausableElapsedMs({
+        pausedAt,
+        pausedDurationMs,
+        startedAt: activeStartedAt,
+      });
+      const nextCount = countSettledAutomaticFalls(
+        automaticFallSettlementTimes,
+        elapsedMs,
+      );
+      setSettledAutomaticFallCount((currentCount) =>
+        Math.max(currentCount, nextCount),
+      );
+    }
+
+    syncSettledAutomaticFalls();
+    const timer = window.setInterval(syncSettledAutomaticFalls, 80);
+    return () => window.clearInterval(timer);
+  }, [
+    automaticFallSettlementTimes,
+    flushState,
+    pausedAt,
+    pausedDurationMs,
+    startedAt,
+  ]);
 
   const completeSession = useCallback((outcome: DdongMeongSessionOutcome) => {
     if (sessionCompletedRef.current) return;
@@ -229,14 +280,20 @@ export default function ReadingPage({
     const stopTimer = window.setTimeout(() => {
       stopMeditationSoundtrack();
       completeSession("completed");
+      router.replace(
+        `/share?seconds=${Math.max(1, Math.round(totalMs / 1000))}&content=${encodeURIComponent(contentTitle)}&image=${encodeURIComponent(imagePath)}`,
+      );
     }, remainingMs);
 
     return () => window.clearTimeout(stopTimer);
   }, [
     completeSession,
+    contentTitle,
+    imagePath,
     flushState,
     pausedAt,
     pausedDurationMs,
+    router,
     startedAt,
     totalMs,
   ]);
@@ -289,11 +346,16 @@ export default function ReadingPage({
     if (flushState === null) return;
 
     const returnTimer = window.setTimeout(() => {
-      router.replace("/main");
-    }, flushDrainDurationMs);
+      router.replace(
+        `/share?seconds=${Math.max(
+          1,
+          Math.round(flushState.frozenElapsedMs / 1000),
+        )}&content=${encodeURIComponent(contentTitle)}&image=${encodeURIComponent(imagePath)}`,
+      );
+    }, flushState.durationMs);
 
     return () => window.clearTimeout(returnTimer);
-  }, [flushState, router]);
+  }, [contentTitle, flushState, imagePath, router]);
 
   function flushMeditation() {
     if (flushState !== null) return;
@@ -312,7 +374,25 @@ export default function ReadingPage({
     stopDrops();
     onSessionPhaseChange?.("releasing", settledDropCount);
     completeSession("flushed");
-    setFlushState({ frozenElapsedMs, startedAt: now });
+    const interactiveProgress = accumulationProgressFromInteractions(
+      settledDropCount,
+    );
+    const automaticProgress = accumulationProgressFromAutomaticFalls(
+      countSettledAutomaticFalls(
+        automaticFallSettlementTimes,
+        frozenElapsedMs,
+      ),
+      automaticFallSettlementTimes.length,
+    );
+    const accumulatedProgress = Math.min(
+      1,
+      automaticProgress + interactiveProgress,
+    );
+    setFlushState({
+      durationMs: flushDurationMsFromAccumulation(accumulatedProgress),
+      frozenElapsedMs,
+      startedAt: now,
+    });
   }
 
   const phaseClassName = startedAt === null ? "" : styles.isActive;
@@ -327,10 +407,11 @@ export default function ReadingPage({
       <div className={styles.meditationBackground} aria-hidden="true">
         <InteractiveAccumulationBackground
           profile={accumulationProfile}
-          flushDurationMs={flushDrainDurationMs}
+          flushDurationMs={flushState?.durationMs ?? minimumFlushDurationMs}
           flushStartedAt={flushState?.startedAt ?? null}
           frozenElapsedMs={flushState?.frozenElapsedMs ?? null}
           dropStream={dropStream}
+          settledAutomaticFallCount={settledAutomaticFallCount}
           settledDropCount={settledDropCount}
           pausedAt={pausedAt}
           pausedDurationMs={pausedDurationMs}

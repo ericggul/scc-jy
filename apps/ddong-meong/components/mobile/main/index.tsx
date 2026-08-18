@@ -1,12 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { type CSSProperties, useSyncExternalStore } from "react";
+import {
+  type CSSProperties,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { meditationContents } from "../../model/content-catalog";
 import { readDdongMeongGreeting } from "../identity";
 import { playMeditationSoundtrack } from "../media";
 import GradientShell from "../surface/gradient-shell";
 import ContentArtwork from "./content-artwork";
+import {
+  markLocalMeditationViewed,
+  readLocalMeditationHistory,
+  readLocalMeditationResumePoint,
+} from "./local-history";
 import styles from "./styles.module.css";
 
 function formatDuration(totalSeconds: number) {
@@ -42,16 +53,74 @@ function readGreetingMessage() {
     .replace("{count}", String(savedGreeting.visitCount));
 }
 
+function formatLocalCompletion(timestamp: number) {
+  return new Intl.DateTimeFormat("ko-KR", {
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    month: "long",
+    second: "2-digit",
+  }).format(timestamp);
+}
+
+function formatLocalHistoryNote(entry: {
+  completedAt: number;
+  didFinish: boolean;
+}) {
+  return `${formatLocalCompletion(entry.completedAt)}${
+    entry.didFinish ? "에 똥멍했어요." : "에 똥멍하다가 멈췄어요."
+  }`;
+}
+
 export default function DdongMeongMain() {
   const greeting = useSyncExternalStore(
     subscribeToBrowserGreeting,
     readGreetingMessage,
     () => "똥멍",
   );
+  const pageRef = useRef<HTMLDivElement | null>(null);
+  const cardRefs = useRef(new Map<string, HTMLAnchorElement>());
+  const [localHistory, setLocalHistory] = useState<
+    ReturnType<typeof readLocalMeditationHistory>
+  >([]);
+  const [resumeSlug, setResumeSlug] = useState<string>();
+
+  useEffect(() => {
+    setLocalHistory(readLocalMeditationHistory());
+    setResumeSlug(readLocalMeditationResumePoint()?.slug);
+  }, []);
+
+  useEffect(() => {
+    if (!resumeSlug) return;
+
+    const frame = window.requestAnimationFrame(() => {
+      const page = pageRef.current;
+      const card = cardRefs.current.get(resumeSlug);
+      if (!page || !card) return;
+
+      const pageBounds = page.getBoundingClientRect();
+      const cardBounds = card.getBoundingClientRect();
+      const top =
+        page.scrollTop +
+        cardBounds.top -
+        pageBounds.top -
+        (page.clientHeight - card.clientHeight) / 2;
+      page.scrollTo({ behavior: "auto", top: Math.max(0, top) });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [resumeSlug]);
+
+  const historyBySlug = new Map(
+    localHistory.map((entry) => [entry.slug, entry]),
+  );
 
   return (
     <GradientShell>
-      <div className={styles.page}>
+      <div
+        ref={pageRef}
+        className={`${styles.page} ${resumeSlug ? styles.isResuming : ""}`}
+      >
         <header className={styles.header}>
           <span className={styles.wordmark}>ddong-meong</span>
         </header>
@@ -76,6 +145,10 @@ export default function DdongMeongMain() {
               {meditationContents.map((content, index) => (
                 <Link
                   key={content.slug}
+                  ref={(node) => {
+                    if (node) cardRefs.current.set(content.slug, node);
+                    else cardRefs.current.delete(content.slug);
+                  }}
                   className={styles.contentCard}
                   href={`/${content.slug}`}
                   prefetch={false}
@@ -83,9 +156,20 @@ export default function DdongMeongMain() {
                     { "--content-card-index": index } as CSSProperties
                   }
                   aria-label={`${content.title}, ${formatDuration(content.durationSeconds)} 재생`}
-                  onClick={() => playMeditationSoundtrack({ restart: true })}
+                  onClick={() => {
+                    markLocalMeditationViewed(content.slug);
+                    playMeditationSoundtrack({ restart: true });
+                  }}
                 >
-                  <ContentArtwork src={content.imagePath} eager={index === 0} />
+                  <ContentArtwork
+                    src={content.imagePath}
+                    eager={index === 0}
+                    historyNote={
+                      historyBySlug.has(content.slug)
+                        ? formatLocalHistoryNote(historyBySlug.get(content.slug)!)
+                        : undefined
+                    }
+                  />
                   <span className={styles.cardBody}>
                     <span className={styles.cardCopy}>
                       <strong>{content.title}</strong>

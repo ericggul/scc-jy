@@ -97,11 +97,22 @@
   color: var(--dm-color-surface-ink);
   text-decoration: none;
   transform: translateZ(0);
-  animation: cardEnter 5120ms cubic-bezier(0.22, 1, 0.36, 1)
-    calc(2080ms + (var(--content-card-index) * 656ms)) both;
+  animation: cardEnter 2500ms cubic-bezier(0.22, 1, 0.36, 1)
+    calc(2080ms + (var(--content-card-index) * 120ms)) both;
   transition:
     transform 880ms ease,
     box-shadow 880ms ease;
+}
+
+.isResuming,
+.isResuming .header,
+.isResuming .introduction,
+.isResuming .playlist {
+  animation: none;
+}
+
+.isResuming .contentCard {
+  animation: cardEnter 480ms cubic-bezier(0.22, 1, 0.36, 1) 80ms both;
 }
 
 .artwork {
@@ -182,6 +193,26 @@
   line-height: 1.45;
   letter-spacing: -0.025em;
   word-break: keep-all;
+}
+
+.historyOverlay {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgb(37 24 18 / 24%);
+  color: rgb(255 248 243 / 82%);
+  font-size: 13px;
+  font-weight: 560;
+  letter-spacing: -0.02em;
+  line-height: 1.5;
+  text-align: center;
+  text-shadow: 0 1px 10px rgb(19 11 7 / 34%);
+  pointer-events: none;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
 }
 
 .cardAction {

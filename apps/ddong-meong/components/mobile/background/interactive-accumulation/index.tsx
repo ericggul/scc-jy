@@ -17,10 +17,12 @@ import type {
   RgbColor,
 } from "../profiles";
 import {
+  accumulationProgressFromAutomaticFalls,
   accumulationProgressFromInteractions,
   particlesPerInteractiveDrop,
   particlesPerInteractiveTrace,
 } from "../interaction-progress";
+import { automaticFallSettlementTimesMs } from "../interaction/automatic-falls";
 import type { ActiveBackgroundDrop, ActiveDropStream } from "../types";
 import styles from "./styles.module.css";
 
@@ -68,6 +70,7 @@ type InteractiveAccumulationBackgroundProps = {
   pausedAt: number | null;
   pausedDurationMs: number;
   profile: AccumulationProfile;
+  settledAutomaticFallCount: number;
   settledDropCount: number;
   startedAt: number | null;
   totalMs: number;
@@ -339,6 +342,7 @@ export default function InteractiveAccumulationBackground({
   pausedAt,
   pausedDurationMs,
   profile,
+  settledAutomaticFallCount,
   settledDropCount,
   startedAt,
   totalMs,
@@ -351,6 +355,7 @@ export default function InteractiveAccumulationBackground({
     pausedAt,
     pausedDurationMs,
     startedAt,
+    settledAutomaticFallCount,
     settledDropCount,
   });
 
@@ -362,6 +367,7 @@ export default function InteractiveAccumulationBackground({
       pausedAt,
       pausedDurationMs,
       startedAt,
+      settledAutomaticFallCount,
       settledDropCount,
     };
   }, [
@@ -371,6 +377,7 @@ export default function InteractiveAccumulationBackground({
     pausedAt,
     pausedDurationMs,
     startedAt,
+    settledAutomaticFallCount,
     settledDropCount,
   ]);
 
@@ -517,6 +524,7 @@ export default function InteractiveAccumulationBackground({
       capacity: number,
       particlesPerDrop: number,
       layer: number,
+      interactiveAutomaticEmission = false,
     ): DropBatchResource {
       const geometry = createParticleGeometry(
         capacity * particlesPerDrop,
@@ -528,6 +536,9 @@ export default function InteractiveAccumulationBackground({
         fragmentShader: particleFragmentShader,
         uniforms: {
           ...sharedUniforms,
+          uInteractiveAutomaticEmission: {
+            value: interactiveAutomaticEmission ? 1 : 0,
+          },
           uLayer: { value: layer },
         },
         transparent: true,
@@ -575,11 +586,11 @@ export default function InteractiveAccumulationBackground({
     function createSolidDropResource(
       capacity: number,
       useAutomaticTrace = false,
+      interactiveAutomaticEmission = false,
     ): DropBatchResource {
-      const itemsPerDrop = solidItemsPerInteractiveDrop(
-        profile,
-        useAutomaticTrace,
-      );
+      const itemsPerDrop = interactiveAutomaticEmission
+        ? profile.solid.count
+        : solidItemsPerInteractiveDrop(profile, useAutomaticTrace);
       const itemCount = capacity * itemsPerDrop;
       const geometry = createSolidDropGeometry(
         itemCount,
@@ -624,6 +635,9 @@ export default function InteractiveAccumulationBackground({
         uniforms: {
           ...sharedUniforms,
           uAutomaticEmission: { value: 0 },
+          uInteractiveAutomaticEmission: {
+            value: interactiveAutomaticEmission ? 1 : 0,
+          },
           uHoldTrace: { value: useAutomaticTrace ? 1 : 0 },
         },
         transparent: true,
@@ -780,35 +794,38 @@ export default function InteractiveAccumulationBackground({
 
     const pressDropBatch = createDropBatch(
       usesSolidDrops(profile)
-        ? createSolidDropResource
+        ? (capacity) => createSolidDropResource(capacity, false, true)
         : (capacity) =>
             createParticleDropResource(
               capacity,
               particlesPerInteractiveDrop(profile.particles.filamentCount),
-              2,
+              1,
+              true,
             ),
     );
     const traceDropBatch = createDropBatch(
       usesSolidDrops(profile)
-        ? createSolidDropResource
+        ? (capacity) => createSolidDropResource(capacity, false, true)
         : (capacity) =>
             createParticleDropResource(
               capacity,
               particlesPerInteractiveTrace(profile.particles.filamentCount),
-              2,
+              1,
+              true,
             ),
       12,
     );
     const holdDropBatch = createDropBatch(
       usesSolidDrops(profile)
-        ? (capacity) => createSolidDropResource(capacity, true)
+        ? (capacity) => createSolidDropResource(capacity, false, true)
         : (capacity) =>
             createParticleDropResource(
               capacity,
-              particlesPerInteractiveTrace(profile.particles.filamentCount),
-              3,
+              profile.particles.filamentCount,
+              1,
+              true,
             ),
-      12,
+      1,
     );
 
     let animationFrame = 0;
@@ -820,6 +837,10 @@ export default function InteractiveAccumulationBackground({
     let stableFrames = 0;
     let displayedProgress = 0;
     let lastProgressUpdateAt = Date.now();
+    const automaticFallCount = automaticFallSettlementTimesMs(
+      profile,
+      totalMs,
+    ).length;
 
     function resize() {
       const { width, height } = activeCanvas.getBoundingClientRect();
@@ -851,8 +872,16 @@ export default function InteractiveAccumulationBackground({
                 (now - timeline.flushStartedAt) /
                   timeline.flushDurationMs,
               );
-      const targetProgress = accumulationProgressFromInteractions(
+      const interactiveProgress = accumulationProgressFromInteractions(
         timeline.settledDropCount,
+      );
+      const automaticProgress = accumulationProgressFromAutomaticFalls(
+        timeline.settledAutomaticFallCount,
+        automaticFallCount,
+      );
+      const targetProgress = Math.min(
+        1,
+        automaticProgress + interactiveProgress,
       );
       const progressDeltaMs = Math.max(0, now - lastProgressUpdateAt);
       lastProgressUpdateAt = now;
