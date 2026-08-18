@@ -13,6 +13,29 @@ const totalSeconds = 273;
 const returnDelayMs = 50_000;
 const kakaoTemplateId = 136302;
 const kakaoJavaScriptKey = process.env.NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY;
+const kakaoShareTitle = "똥싸며 멍때리기, 같이 해볼래요?";
+
+function objectParticle(title: string) {
+  const finalSyllable = Array.from(title.trim()).at(-1);
+  if (!finalSyllable) return "를";
+  const codePoint = finalSyllable.codePointAt(0);
+  if (codePoint === undefined || codePoint < 0xac00 || codePoint > 0xd7a3) {
+    return "를";
+  }
+  return (codePoint - 0xac00) % 28 === 0 ? "를" : "을";
+}
+
+function kakaoShareBody({
+  contentTitle,
+  duration,
+  nickname,
+}: {
+  contentTitle: string;
+  duration: string;
+  nickname: string;
+}) {
+  return `${nickname}님은 ${contentTitle}${objectParticle(contentTitle)} ${duration} 동안 똥멍했어요. 똥싸고 멍때리기, 같이 해봐요.`;
+}
 
 type KakaoSdk = {
   Share?: {
@@ -184,7 +207,7 @@ export default function DdongMeongShare() {
   const duration = formatDuration(elapsedSeconds);
   const contentTitle = searchParams.get("content") || "오늘의 똥멍";
   const imagePath = searchParams.get("image") || "/meditations/thick-poop-imagination.png";
-  const shareMessage = `${nickname}님, ${contentTitle}과 함께 ${duration} 동안 똥멍했어요. 여러분도 똥멍해보세요.`;
+  const shareMessage = kakaoShareBody({ contentTitle, duration, nickname });
 
   useEffect(() => {
     setNickname(readSavedNickname() ?? "당신");
@@ -243,8 +266,8 @@ export default function DdongMeongShare() {
       window.Kakao.Share.sendCustom({
         templateId: kakaoTemplateId,
         templateArgs: {
-          BODY: shareMessage,
-          TITLE: "똥멍 같이 해볼래요?",
+        BODY: shareMessage,
+        TITLE: kakaoShareTitle,
         },
       });
     } catch (error) {
