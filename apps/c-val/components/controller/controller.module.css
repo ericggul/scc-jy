@@ -66,6 +66,11 @@
   overflow: hidden;
 }
 
+.terminal,
+.terminal * {
+  cursor: none !important;
+}
+
 .terminal *, .terminal *::before, .terminal *::after { box-sizing: border-box; }
 .terminal button { font: inherit; }
 .positive { color: var(--green) !important; }

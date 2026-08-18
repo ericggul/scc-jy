@@ -1,11 +1,11 @@
 import type { MetadataRoute } from "next";
-import { pageDescription, pageTitle } from "./seo";
+import { pageDescription } from "./seo";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: pageTitle,
+    name: "똥멍",
     short_name: "똥멍",
-    description: pageDescription,
+    description: "똥싸며 명상하기 · 4분 33초 똥멍 콘텐츠",
     start_url: "/",
     display: "standalone",
     background_color: "#352116",

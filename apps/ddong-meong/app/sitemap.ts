@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { mobileMeditationContents } from "@/components/mobile/content/registry";
 import { previewImage, siteUrl } from "./seo";
 
-const lastModified = new Date("2026-08-16T00:00:00.000Z");
+const lastModified = new Date("2026-08-18T00:00:00.000Z");
 
 export default function sitemap(): MetadataRoute.Sitemap {
   return [

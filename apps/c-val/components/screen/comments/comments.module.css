@@ -212,7 +212,7 @@
   inset: 50% auto auto 50%;
   position: absolute;
   transform: translate(-50%, -50%);
-  width: clamp(36px, 38cqw, 136px);
+  width: clamp(18px, 19cqw, 68px);
   z-index: 2;
 }
 

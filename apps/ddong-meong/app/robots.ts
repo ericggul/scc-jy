@@ -8,6 +8,7 @@ export default function robots(): MetadataRoute.Robots {
       allow: "/",
       disallow: ["/screen", "/testing", "/testing/"],
     },
+    host: siteUrl,
     sitemap: `${siteUrl}/sitemap.xml`,
   };
 }

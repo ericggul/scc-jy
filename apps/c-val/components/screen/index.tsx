@@ -15,6 +15,10 @@ const Stage = styled.main`
   inset: 0;
   overflow: hidden;
   background: #11110f;
+
+  &, * {
+    cursor: none !important;
+  }
 `;
 
 const WholeGrid = styled.div`

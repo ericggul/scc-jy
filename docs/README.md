@@ -26,6 +26,7 @@ get a dedicated document.
 - [Next.js notes](./harness/nextjs.md)
 - [HTTPS and sockets](./harness/https-and-sockets.md)
 - [반포자이즘 EC2와 SCC socket 공동 운영 결정](./harness/banpo-ec2-scc-cohosting.md)
+- [SCC relay deployment](./harness/scc-relay-deployment.md)
 - [Local image collections](./harness/local-image-collections.md)
 - [Tinkering as the SCC working method](./foundations/tinkering.md)
 - [Common visual design guidelines](./foundations/design-guidelines.md)
