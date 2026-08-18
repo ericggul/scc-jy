@@ -4,6 +4,7 @@ export type DdongMeongPhase =
   | "arriving"
   | "breathing"
   | "releasing"
+  | "overflowing"
   | "complete";
 
 export type DdongMeongEngagementState = "active" | "paused" | "idle";
@@ -34,7 +35,8 @@ export type DdongMeongSessionOutcome =
   | "flushed"
   | "left"
   | "backgrounded"
-  | "idle";
+  | "idle"
+  | "overflowed";
 
 export type DdongMeongArchiveEntry = {
   contentSlug: string;

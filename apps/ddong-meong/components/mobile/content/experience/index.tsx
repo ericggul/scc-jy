@@ -22,11 +22,11 @@ export default function MeditationContentExperience({
   } = useMeditationSession(content);
 
   function handleSessionComplete(
-    outcome: "completed" | "flushed" | "left" | "backgrounded" | "idle",
+    outcome: "completed" | "flushed" | "left" | "backgrounded" | "idle" | "overflowed",
   ) {
     recordLocalMeditationHistory(
       content.slug,
-      outcome === "completed" || outcome === "flushed",
+      outcome === "completed" || outcome === "flushed" || outcome === "overflowed",
     );
     finishSession(outcome);
   }

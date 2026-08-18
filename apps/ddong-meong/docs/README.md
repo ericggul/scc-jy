@@ -80,6 +80,9 @@ QR 캠페인에는 루트 주소에 선택적 위치 맥락을 붙일 수 있다
 제목은 같은 slug로 연결된다. 새 콘텐츠를 만들 때는
 [콘텐츠 확장 매뉴얼](./content-manual.md)을 따른다.
 
+배경 낙하의 보존된 실패와 다음의 제한된 시험은
+[인터랙션 낙하 기록](./interaction-background-trials.md)에 남긴다.
+
 ## 구현 경계
 
 - `components/mobile/`은 QR 진입, 콘텐츠 목록, reader, 세션을 담당한다.

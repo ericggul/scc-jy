@@ -216,7 +216,8 @@ function updateSession(socket, payload) {
   const phase =
     payload.phase === "arriving" ||
     payload.phase === "breathing" ||
-    payload.phase === "releasing"
+    payload.phase === "releasing" ||
+    payload.phase === "overflowing"
       ? payload.phase
       : current.phase;
   const interactionCount = Number.isFinite(payload.interactionCount)
@@ -245,7 +246,8 @@ function completeSession(socket, outcome = "completed") {
     outcome === "flushed" ||
       outcome === "left" ||
       outcome === "backgrounded" ||
-      outcome === "idle"
+      outcome === "idle" ||
+      outcome === "overflowed"
       ? outcome
       : "completed",
   );

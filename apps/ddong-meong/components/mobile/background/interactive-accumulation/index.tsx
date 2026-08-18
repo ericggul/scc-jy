@@ -799,12 +799,12 @@ export default function InteractiveAccumulationBackground({
     );
     const holdDropBatch = createDropBatch(
       usesSolidDrops(profile)
-        ? (capacity) => createSolidDropResource(capacity, true)
+        ? createSolidDropResource
         : (capacity) =>
             createParticleDropResource(
               capacity,
               particlesPerInteractiveTrace(profile.particles.filamentCount),
-              3,
+              2,
             ),
       12,
     );

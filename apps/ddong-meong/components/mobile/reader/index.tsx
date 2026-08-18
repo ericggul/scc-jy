@@ -65,8 +65,15 @@ type FlushState = {
   startedAt: number;
 };
 
+type OverflowState = {
+  frozenElapsedMs: number;
+  startedAt: number;
+};
+
 const preludeDurationMs = 2000;
 const minimumFlushDurationMs = 1000;
+const overflowWarningProgress = 0.85;
+const overflowDurationMs = 3000;
 const showTimeBar = true;
 
 function formatClock(totalSeconds: number) {
@@ -159,6 +166,22 @@ function FlushIcon() {
   );
 }
 
+function SoundToggleIcon({ muted }: { muted: boolean }) {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <path d="M4.5 10v4h3.75L13 18V6L8.25 10H4.5Z" />
+      {muted ? (
+        <path d="m16 10 4 4m0-4-4 4" />
+      ) : (
+        <>
+          <path d="M16 9.25a4 4 0 0 1 0 5.5" />
+          <path d="M18.75 6.5a7.9 7.9 0 0 1 0 11" />
+        </>
+      )}
+    </svg>
+  );
+}
+
 export default function ReadingPage({
   accumulationProfile,
   contentTitle,
@@ -179,8 +202,13 @@ export default function ReadingPage({
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [settledDropCount, setSettledDropCount] = useState(0);
   const [flushState, setFlushState] = useState<FlushState | null>(null);
+  const [overflowState, setOverflowState] = useState<OverflowState | null>(null);
+  const [now, setNow] = useState(0);
+  const [isSoundEnabled, setIsSoundEnabled] = useState(true);
+  const [hasSoundPreference, setHasSoundPreference] = useState(false);
+  const [isSoundControlFading, setIsSoundControlFading] = useState(false);
   const interactionDisabled =
-    startedAt === null || flushState !== null || pausedAt !== null;
+    startedAt === null || flushState !== null || overflowState !== null || pausedAt !== null;
   const { dropStream, interactionProps, stopDrops } = useDropInteraction({
     disabled: interactionDisabled,
     onDropSettled: (amount) =>
@@ -197,6 +225,35 @@ export default function ReadingPage({
     return () => window.clearTimeout(preludeTimer);
   }, [flushState, pausedAt]);
 
+  useEffect(() => {
+    if (startedAt === null || flushState !== null || overflowState !== null) return;
+    const tick = () => setNow(Date.now());
+    tick();
+    const timer = window.setInterval(tick, 100);
+    return () => window.clearInterval(timer);
+  }, [flushState, overflowState, startedAt]);
+
+  const elapsedMs =
+    startedAt === null
+      ? 0
+      : Math.min(totalMs, getPausableElapsedMs({ pausedAt, pausedDurationMs, startedAt }, now || Date.now()));
+  const accumulationProgress = Math.min(
+    1,
+    accumulationProgressFromAutomaticFall(elapsedMs, totalMs, accumulationProfile.fall.backgroundDuration) +
+      accumulationProgressFromInteractions(settledDropCount),
+  );
+  const showOverflowWarning = accumulationProgress >= overflowWarningProgress && accumulationProgress < 1 && overflowState === null;
+
+  useEffect(() => {
+    if (hasSoundPreference || flushState !== null) return;
+
+    const fadeTimer = window.setTimeout(() => {
+      setIsSoundControlFading(true);
+    }, 10_000);
+
+    return () => window.clearTimeout(fadeTimer);
+  }, [flushState, hasSoundPreference]);
+
   const completeSession = useCallback((outcome: DdongMeongSessionOutcome) => {
     if (sessionCompletedRef.current) return;
     sessionCompletedRef.current = true;
@@ -204,16 +261,16 @@ export default function ReadingPage({
   }, [onSessionComplete]);
 
   useEffect(() => {
-    if (startedAt === null || flushState !== null) return;
+    if (startedAt === null || flushState !== null || overflowState !== null) return;
     onSessionPhaseChange?.("breathing", settledDropCount);
-  }, [flushState, onSessionPhaseChange, settledDropCount, startedAt]);
+  }, [flushState, onSessionPhaseChange, overflowState, settledDropCount, startedAt]);
 
   useEffect(() => {
     if (flushState !== null) {
       stopMeditationSoundtrack();
       return;
     }
-    if (pausedAt !== null) {
+    if (pausedAt !== null || !isSoundEnabled) {
       pauseMeditationSoundtrack();
       return;
     }
@@ -228,10 +285,10 @@ export default function ReadingPage({
       window.removeEventListener("keydown", resumeSoundtrack);
       scheduleMeditationSoundtrackStop();
     };
-  }, [flushState, pausedAt]);
+  }, [flushState, isSoundEnabled, pausedAt]);
 
   useEffect(() => {
-    if (startedAt === null || flushState !== null || pausedAt !== null) return;
+    if (startedAt === null || flushState !== null || overflowState !== null || pausedAt !== null) return;
 
     const remainingMs = Math.max(
       0,
@@ -250,13 +307,31 @@ export default function ReadingPage({
     completeSession,
     contentTitle,
     imagePath,
-    flushState,
+    flushState, overflowState,
     pausedAt,
     pausedDurationMs,
     router,
     startedAt,
     totalMs,
   ]);
+
+  useEffect(() => {
+    if (startedAt === null || overflowState !== null || flushState !== null || accumulationProgress < 1) return;
+    stopMeditationSoundtrack();
+    scrollAnimationRef.current?.pause();
+    stopDrops();
+    onSessionPhaseChange?.("overflowing", settledDropCount);
+    setOverflowState({ frozenElapsedMs: elapsedMs, startedAt: Date.now() });
+  }, [accumulationProgress, elapsedMs, flushState, onSessionPhaseChange, overflowState, settledDropCount, startedAt, stopDrops]);
+
+  useEffect(() => {
+    if (overflowState === null) return;
+    const timer = window.setTimeout(() => {
+      completeSession("overflowed");
+      router.replace(`/share?outcome=overflowed&seconds=${Math.max(1, Math.round(overflowState.frozenElapsedMs / 1000))}&content=${encodeURIComponent(contentTitle)}&image=${encodeURIComponent(imagePath)}`);
+    }, overflowDurationMs);
+    return () => window.clearTimeout(timer);
+  }, [completeSession, contentTitle, imagePath, overflowState, router]);
 
   useEffect(() => {
     if (startedAt === null) return;
@@ -295,12 +370,12 @@ export default function ReadingPage({
   useEffect(() => {
     const animation = scrollAnimationRef.current;
     if (!animation) return;
-    if (flushState !== null || pausedAt !== null) {
+    if (flushState !== null || overflowState !== null || pausedAt !== null) {
       animation.pause();
       return;
     }
     animation.play();
-  }, [flushState, pausedAt]);
+  }, [flushState, overflowState, pausedAt]);
 
   useEffect(() => {
     if (flushState === null) return;
@@ -318,7 +393,7 @@ export default function ReadingPage({
   }, [contentTitle, flushState, imagePath, router]);
 
   function flushMeditation() {
-    if (flushState !== null) return;
+    if (flushState !== null || overflowState !== null) return;
 
     const now = Date.now();
     const frozenElapsedMs =
@@ -353,13 +428,28 @@ export default function ReadingPage({
     });
   }
 
+  function toggleSound() {
+    if (flushState !== null) return;
+
+    onSessionActivity?.();
+    setHasSoundPreference(true);
+    setIsSoundEnabled((enabled) => {
+      if (enabled) {
+        pauseMeditationSoundtrack();
+      } else {
+        playMeditationSoundtrack();
+      }
+      return !enabled;
+    });
+  }
+
   const phaseClassName = startedAt === null ? "" : styles.isActive;
   const flushClassName =
     flushState === null ? "" : styles.isFlushing;
 
   return (
     <section
-      className={`${styles.page} ${phaseClassName} ${flushClassName}`}
+      className={`${styles.page} ${phaseClassName} ${flushClassName} ${overflowState ? styles.isOverflowing : ""}`}
     >
       <InteractionLock />
       <div className={styles.meditationBackground} aria-hidden="true">
@@ -367,7 +457,7 @@ export default function ReadingPage({
           profile={accumulationProfile}
           flushDurationMs={flushState?.durationMs ?? minimumFlushDurationMs}
           flushStartedAt={flushState?.startedAt ?? null}
-          frozenElapsedMs={flushState?.frozenElapsedMs ?? null}
+          frozenElapsedMs={flushState?.frozenElapsedMs ?? overflowState?.frozenElapsedMs ?? null}
           dropStream={dropStream}
           settledDropCount={settledDropCount}
           pausedAt={pausedAt}
@@ -377,13 +467,17 @@ export default function ReadingPage({
         />
       </div>
       <TimerHeader
-        frozenElapsedMs={flushState?.frozenElapsedMs ?? null}
+        frozenElapsedMs={flushState?.frozenElapsedMs ?? overflowState?.frozenElapsedMs ?? null}
         onExit={() => completeSession("left")}
         pausedAt={pausedAt}
         pausedDurationMs={pausedDurationMs}
         startedAt={startedAt}
         totalMs={totalMs}
       />
+
+      {showOverflowWarning ? (
+        <p className={styles.overflowWarning} role="status">주의: 변기가 거의 가득 찼어요. 이제 흘러넘치기 직전이에요.</p>
+      ) : null}
 
       <div
         ref={scrollerRef}
@@ -415,8 +509,21 @@ export default function ReadingPage({
       </div>
 
       <button
+        aria-label={isSoundEnabled ? "명상 소리 끄기" : "명상 소리 켜기"}
+        aria-pressed={isSoundEnabled}
+        className={`${styles.cornerControl} ${styles.soundButton} ${
+          isSoundControlFading ? styles.isSoundControlFading : ""
+        }`}
+        disabled={flushState !== null}
+        onClick={toggleSound}
+        type="button"
+      >
+        <SoundToggleIcon muted={!isSoundEnabled} />
+      </button>
+
+      <button
         aria-label="똥멍을 멈추고 물 내리기"
-        className={styles.flushButton}
+        className={`${styles.cornerControl} ${styles.flushButton}`}
         disabled={flushState !== null}
         onClick={flushMeditation}
         type="button"

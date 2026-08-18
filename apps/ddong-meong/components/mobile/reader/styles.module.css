@@ -187,10 +187,9 @@
   text-wrap: balance;
 }
 
-.flushButton {
+.cornerControl {
   position: absolute;
   z-index: 4;
-  right: max(20px, calc(env(safe-area-inset-right) + 18px));
   bottom: max(22px, calc(env(safe-area-inset-bottom) + 18px));
   display: grid;
   width: 54px;
@@ -205,11 +204,37 @@
     inset 0 1px 0 rgb(255 255 255 / 42%);
   color: var(--dm-color-surface-ink);
   cursor: pointer;
+  appearance: none;
   -webkit-tap-highlight-color: transparent;
+  -webkit-appearance: none;
   transition:
     background 180ms ease,
     box-shadow 180ms ease,
+    opacity 3s cubic-bezier(0.22, 1, 0.36, 1),
     transform 180ms ease;
+}
+
+.flushButton {
+  right: max(20px, calc(env(safe-area-inset-right) + 18px));
+}
+
+.soundButton {
+  left: max(20px, calc(env(safe-area-inset-left) + 18px));
+}
+
+.isSoundControlFading {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.cornerControl svg {
+  width: 29px;
+  height: 29px;
+  fill: none;
+  stroke: currentcolor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.7;
 }
 
 .flushIcon {
@@ -218,27 +243,59 @@
   height: 29px;
   object-fit: contain;
   pointer-events: none;
+  filter: none;
 }
 
-.flushButton:focus-visible {
+.cornerControl:focus-visible {
   outline: 2px solid var(--dm-color-ink);
   outline-offset: 4px;
 }
 
-.flushButton:active:not(:disabled) {
+.cornerControl:active:not(:disabled) {
   box-shadow:
     0 6px 18px rgb(8 4 3 / 26%),
     inset 0 1px 0 rgb(255 255 255 / 32%);
   transform: scale(0.93);
 }
 
-.flushButton:disabled {
+.cornerControl:disabled {
   cursor: default;
 }
 
-.isFlushing .flushButton {
+.isFlushing .cornerControl {
   animation: flushControlExit 900ms cubic-bezier(0.22, 1, 0.36, 1)
     forwards;
+}
+
+.isFlushing .isSoundControlFading {
+  opacity: 0;
+  animation: none;
+}
+
+.overflowWarning {
+  position: absolute;
+  z-index: 5;
+  right: var(--dm-page-gutter);
+  bottom: max(98px, calc(env(safe-area-inset-bottom) + 84px));
+  left: var(--dm-page-gutter);
+  margin: 0;
+  color: rgb(var(--dm-color-surface-ink-rgb) / 92%);
+  font-size: 13px;
+  line-height: 1.45;
+  text-align: center;
+  animation: overflowWarning 2s ease-in-out both;
+}
+
+.isOverflowing .header,
+.isOverflowing .scroller,
+.isOverflowing .cornerControl {
+  opacity: 0;
+  pointer-events: none;
+}
+
+@keyframes overflowWarning {
+  0%, 100% { opacity: 0; transform: translateY(4px); }
+  22%, 78% { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes pageEnter {
@@ -293,7 +350,7 @@
 }
 
 @media (hover: hover) {
-  .flushButton:hover:not(:disabled) {
+  .cornerControl:hover:not(:disabled) {
     background: var(--dm-color-surface);
     box-shadow:
       0 16px 36px rgb(8 4 3 / 34%),
@@ -327,11 +384,12 @@
   }
 
   .header,
-  .isFlushing .scroller {
+  .isFlushing .scroller,
+  .cornerControl {
     transition: none;
   }
 
-  .isFlushing .flushButton {
+  .isFlushing .cornerControl {
     opacity: 0;
     animation: none;
   }

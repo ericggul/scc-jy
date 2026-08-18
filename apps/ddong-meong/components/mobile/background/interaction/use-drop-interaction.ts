@@ -17,6 +17,7 @@ import type {
 } from "../types";
 
 const releaseSweepIntervalMs = 34;
+const interactiveEmissionWindowMs = 220;
 
 function clamp(value: number, minimum = 0, maximum = 1) {
   return Math.min(maximum, Math.max(minimum, value));
@@ -117,7 +118,8 @@ export function useDropInteraction({
   );
   const releaseFrameRef = useRef<number | null>(null);
   const onDropSettledRef = useRef(onDropSettled);
-  const dropDurationMs = Math.ceil(profile.fall.duration[1] * 1000);
+  const dropDurationMs =
+    Math.ceil(profile.fall.duration[1] * 1000) + interactiveEmissionWindowMs;
   const heldDropIntervalMs = Math.round(profile.interaction.holdIntervalMs);
 
   useEffect(() => {
@@ -220,30 +222,6 @@ export function useDropInteraction({
     pointer.nextHoldSettlementAt = null;
   }, []);
 
-  const startHeldStream = useCallback(
-    (pointer: ActivePointer) => {
-      if (pointer.holdDropId !== null) return;
-
-      const origin = toDropOrigin(
-        pointer.element,
-        pointer.lastObservedSample.clientX,
-        pointer.lastObservedSample.clientY,
-      );
-      const holdDropId = requestDrop(origin, {
-        accumulationAmount: 0,
-        persistent: true,
-        previousOrigin: origin,
-        source: "hold",
-        visualStrength: profile.interaction.pressVisualStrength,
-      });
-      if (holdDropId === null) return;
-
-      pointer.holdDropId = holdDropId;
-      pointer.nextHoldSettlementAt = Date.now() + dropDurationMs;
-    },
-    [dropDurationMs, profile.interaction.pressVisualStrength, requestDrop],
-  );
-
   const stopDrops = useCallback(() => {
     if (releaseSweepTimerRef.current !== null) {
       window.clearTimeout(releaseSweepTimerRef.current);
@@ -340,37 +318,24 @@ export function useDropInteraction({
           if (!activePointer) return;
 
           activePointer.holdTimer = null;
-          const now = Date.now();
-          if (
-            now - activePointer.lastMotionAt >=
-            profile.interaction.holdStartDelayMs
-          ) {
-            startHeldStream(activePointer);
-            if (
-              activePointer.nextHoldSettlementAt !== null &&
-              now >= activePointer.nextHoldSettlementAt
-            ) {
-              const completedHoldIntervals =
-                Math.floor(
-                  (now - activePointer.nextHoldSettlementAt) /
-                    heldDropIntervalMs,
-                ) + 1;
-              activePointer.nextHoldSettlementAt +=
-                completedHoldIntervals * heldDropIntervalMs;
-              onDropSettledRef.current?.(
-                completedHoldIntervals * profile.interaction.holdAccumulationAmount,
-              );
-            }
-          } else {
-            stopHeldStream(activePointer);
-          }
+          const origin = toDropOrigin(
+            activePointer.element,
+            activePointer.lastObservedSample.clientX,
+            activePointer.lastObservedSample.clientY,
+          );
+          requestDrop(origin, {
+            accumulationAmount: profile.interaction.holdAccumulationAmount,
+            previousOrigin: origin,
+            source: "hold",
+            visualStrength: profile.interaction.pressVisualStrength,
+          });
           scheduleNextHeldCheck(heldDropIntervalMs);
         }, delayMs);
       }
 
       scheduleNextHeldCheck(profile.interaction.holdStartDelayMs);
     },
-    [heldDropIntervalMs, profile.interaction, startHeldStream, stopHeldStream],
+    [heldDropIntervalMs, profile.interaction, requestDrop],
   );
 
   const appendPointerSamples = useCallback(
@@ -395,13 +360,12 @@ export function useDropInteraction({
         ) {
           pointer.lastMotionSample = nextSample;
           pointer.lastMotionAt = Date.now();
-          stopHeldStream(pointer);
         }
         pointer.lastObservedSample = nextSample;
         pointer.pendingSample = nextSample;
       }
     },
-    [profile.interaction.traceMinimumDistancePx, stopHeldStream],
+    [profile.interaction.traceMinimumDistancePx],
   );
 
   const finishPointer = useCallback(
@@ -417,9 +381,9 @@ export function useDropInteraction({
         window.clearTimeout(pointer.holdTimer);
         pointer.holdTimer = null;
       }
-      stopHeldStream(pointer);
       if (includePosition) appendPointerSamples(event);
       emitTraceSamples(pointer);
+      stopHeldStream(pointer);
       activePointersRef.current.delete(event.pointerId);
       if (event.currentTarget.hasPointerCapture(event.pointerId)) {
         event.currentTarget.releasePointerCapture(event.pointerId);

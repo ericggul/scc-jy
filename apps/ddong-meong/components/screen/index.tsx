@@ -37,6 +37,7 @@ function phaseLabel(session: DdongMeongSession) {
   if (session.engagement === "idle") return "똥멍 때리다 멈춤";
   if (session.phase === "arriving") return "자리 잡는 중";
   if (session.phase === "releasing") return "똥 나오는 중";
+  if (session.phase === "overflowing") return "변기 넘치는 중";
   return "똥싸는 중";
 }
 
@@ -45,6 +46,7 @@ function outcomeLabel(outcome: DdongMeongSessionOutcome) {
   if (outcome === "left") return "똥 싸다 나감";
   if (outcome === "backgrounded") return "똥 끊김";
   if (outcome === "idle") return "똥멍 때리다 멈춤";
+  if (outcome === "overflowed") return "변기 넘침";
   return "똥 다쌈";
 }
 

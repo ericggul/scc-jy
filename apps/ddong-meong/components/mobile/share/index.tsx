@@ -34,7 +34,7 @@ function kakaoShareBody({
   duration: string;
   nickname: string;
 }) {
-  return `${nickname}님은 ${contentTitle}${objectParticle(contentTitle)} ${duration} 동안 똥멍했어요. 똥싸고 멍때리기, 같이 해봐요.`;
+  return `${nickname}님은 ${contentTitle}${objectParticle(contentTitle)} ${duration} 동안 했어요. 똥싸고 멍때리기, 같이 해봐요.`;
 }
 
 type KakaoSdk = {
@@ -112,13 +112,11 @@ async function createStoryImage({
   duration,
   elapsedClock,
   imagePath,
-  nickname,
 }: {
   contentTitle: string;
   duration: string;
   elapsedClock: string;
   imagePath: string;
-  nickname: string;
 }) {
   await document.fonts.ready;
   const canvas = document.createElement("canvas");
@@ -147,31 +145,32 @@ async function createStoryImage({
 
   context.fillStyle = "#f1e7e1";
   context.font = '400 72px "Snell Roundhand", "Brush Script MT", cursive';
-  context.fillText("ddong-meong", 92, 160);
-  context.font = "560 88px Pretendard, Arial, sans-serif";
-  context.fillText(`${nickname}님,`, 88, 332);
-  context.fillText("잘 비웠어요.", 88, 436);
+  context.fillText("ddong-meong", 160, 610);
 
   const image = await loadImage(imagePath);
   context.save();
   context.beginPath();
-  context.roundRect(88, 548, 904, 684, 30);
+  context.roundRect(160, 673, 760, 574, 30);
   context.clip();
   context.fillStyle = "#f5ede7";
-  context.fillRect(88, 548, 904, 684);
-  drawCoverImage(context, image, 88, 548, 904, 516);
+  context.fillRect(160, 673, 760, 574);
+  drawCoverImage(context, image, 160, 673, 760, 434);
   context.restore();
 
   context.fillStyle = "#30231e";
-  context.font = "630 45px Pretendard, Arial, sans-serif";
-  context.fillText(contentTitle, 128, 1136);
+  context.font = "630 38px Pretendard, Arial, sans-serif";
+  context.fillText(contentTitle, 202, 1160);
   context.fillStyle = "rgba(48, 35, 30, .64)";
-  context.font = "450 28px Pretendard, Arial, sans-serif";
-  context.fillText(`${duration} 동안 똥멍했어요.`, 128, 1184);
+  context.font = "450 26px Pretendard, Arial, sans-serif";
+  context.fillText(`${duration} 동안 똥멍했어요.`, 202, 1205);
   context.textAlign = "right";
   context.fillStyle = "rgba(48, 35, 30, .62)";
-  context.font = "620 27px Pretendard, Arial, sans-serif";
-  context.fillText(`${elapsedClock} / 04:33`, 952, 1174);
+  context.font = "620 25px Pretendard, Arial, sans-serif";
+  context.fillText(`${elapsedClock} / 04:33`, 876, 1196);
+  context.textAlign = "center";
+  context.fillStyle = "rgba(241, 231, 225, .82)";
+  context.font = "500 31px Pretendard, Arial, sans-serif";
+  context.fillText("똥싸고 멍때리기, 같이 해보실래요?", 540, 1320);
   context.textAlign = "left";
 
   return new Promise<Blob>((resolve, reject) => {
@@ -221,6 +220,7 @@ export default function DdongMeongShare() {
   const duration = formatDuration(elapsedSeconds);
   const contentTitle = searchParams.get("content") || "오늘의 똥멍";
   const imagePath = searchParams.get("image") || "/meditations/thick-poop-imagination.png";
+  const overflowed = searchParams.get("outcome") === "overflowed";
   const shareMessage = kakaoShareBody({ contentTitle, duration, nickname });
 
   useEffect(() => {
@@ -264,7 +264,7 @@ export default function DdongMeongShare() {
   }
 
   function returnToMain() {
-    router.replace("/main");
+    window.location.assign("/main");
   }
 
   function shareToKakao() {
@@ -300,7 +300,6 @@ export default function DdongMeongShare() {
         duration,
         elapsedClock,
         imagePath,
-        nickname,
       });
       const file = new File([image], "ddong-meong-story.png", { type: "image/png" });
       const shareData = { files: [file], title: "똥멍" };
@@ -344,7 +343,7 @@ export default function DdongMeongShare() {
 
         <main className={styles.main}>
           <section className={`${mainStyles.introduction} ${styles.introduction}`}>
-            <h1><span>{nickname}님,</span>잘 비웠어요.</h1>
+            <h1><span>{nickname}님,</span>{overflowed ? "똥멍에 집중한 나머지 변기가 넘쳤어요!" : "잘 비웠어요."}</h1>
           </section>
           <article className={`${mainStyles.contentCard} ${styles.completedCard}`}>
             <ContentArtwork eager src={imagePath} />
@@ -359,6 +358,7 @@ export default function DdongMeongShare() {
         </main>
 
         <div className={styles.actions}>
+          <p className={styles.sharePrompt}>같이 똥멍할 친구에게</p>
           <button aria-label="카카오톡으로 공유" className={`${styles.shareButton} ${styles.kakaoButton}`} onClick={shareToKakao} type="button">
             <KakaoTalkIcon />
             <span>카카오톡으로 공유</span>
@@ -372,7 +372,7 @@ export default function DdongMeongShare() {
 
         <div className={styles.returnArea}>
           <button className={styles.returnButton} onClick={returnToMain} type="button">
-            다른 똥멍 고르기
+            다른 똥멍하러 가기
           </button>
           <p>{remainingSeconds}초 후에 메인으로 돌아갑니다.</p>
         </div>

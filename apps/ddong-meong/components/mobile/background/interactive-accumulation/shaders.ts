@@ -550,16 +550,11 @@ export const particleVertexShader = `
     } else {
       float fallDuration = mix(uFallDuration.x, uFallDuration.y, aSeed.z);
       float localDropAge = uInteractionTime - aDropStartedAt;
-      float travel;
-      float emission;
-      if (uLayer > 2.5) {
-        travel = fract(aSeed.y + max(localDropAge, 0.0) / fallDuration);
-        emission = aDropActive * step(0.0, localDropAge);
-      } else {
-        travel = clamp(localDropAge / fallDuration, 0.0, 1.0);
-        emission = aDropActive * step(0.0, localDropAge);
-        emission *= 1.0 - step(fallDuration, localDropAge);
-      }
+      float emissionDelay = aSeed.y * 0.22;
+      float particleAge = localDropAge - emissionDelay;
+      float travel = clamp(particleAge / fallDuration, 0.0, 1.0);
+      float emission = aDropActive * step(0.0, particleAge);
+      emission *= 1.0 - step(fallDuration, particleAge);
       float easedTravel = pow(travel, uFallTravelExponent);
       vec2 spawnOrigin = mix(aDropPreviousOrigin, aDropOrigin, aSeed.x);
       float spawnY = spawnOrigin.y;
@@ -782,7 +777,9 @@ export const solidDropVertexShader = `
     vec2 local = rotation * position.xy;
     local *= vec2(size * solidAspect / aspect, size);
 
-    float arrivalFade = smoothstep(0.0, 0.075, centerY - target);
+    float arrivalFadeWidth =
+      uMaterialMode > 5.5 && uMaterialMode < 6.5 ? 0.018 : 0.075;
+    float arrivalFade = smoothstep(0.0, arrivalFadeWidth, centerY - target);
     float travelFade = pow(max(sin(travel * 3.14159265), 0.0), 0.22);
     float visualStrength = mix(aDropVisualStrength, 1.0, step(0.5, uAutomaticEmission));
     vSolidAlpha = emission * arrivalFade * travelFade * visualStrength;
