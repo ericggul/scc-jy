@@ -3,7 +3,7 @@ import Link from "next/link";
 import { territorialDynamicsExperiments } from "@/components/complex-systems/territorial-dynamics/experiments";
 
 export const metadata: Metadata = {
-  title: "territorial dynamics",
+  title: "complex-systems",
 };
 
 export default function TerritorialDynamicsIndexPage() {

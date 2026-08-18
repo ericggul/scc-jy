@@ -3,7 +3,7 @@ import Link from "next/link";
 import { terminalExperiments } from "@/components/complex-systems/terminal/experiments";
 
 export const metadata: Metadata = {
-  title: "terminal",
+  title: "complex-systems",
 };
 
 export default function TerminalIndexPage() {

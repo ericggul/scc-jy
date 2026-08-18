@@ -1,5 +1,8 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { temporalNetworkExperiments } from "@/components/complex-systems/temporal-network/experiments";
+
+export const metadata: Metadata = { title: "complex-systems" };
 
 export default function TemporalNetworkIndexPage() {
   return (

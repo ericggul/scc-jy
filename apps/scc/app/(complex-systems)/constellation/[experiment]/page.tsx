@@ -25,7 +25,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { experiment } = await params;
   return {
-    title: `constellation ${experiment}`,
+    title: "complex-systems",
     description: "A resource-limited adaptive network of stars and relations.",
   };
 }

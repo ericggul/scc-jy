@@ -25,7 +25,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { experiment } = await params;
   return {
-    title: `mycorrhizal wave ${experiment}`,
+    title: "complex-systems",
     description: "Observed arbuscular-mycorrhizal network growth over laboratory time.",
   };
 }

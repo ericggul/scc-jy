@@ -3,7 +3,7 @@ import Link from "next/link";
 import { constellationExperiments } from "@/components/complex-systems/constellation/experiments";
 
 export const metadata: Metadata = {
-  title: "constellation",
+  title: "complex-systems",
 };
 
 export default function ConstellationIndexPage() {

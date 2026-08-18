@@ -35,7 +35,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { experiment } = await params;
   return {
-    title: `adaptive coevolving network: ${experiment}`,
+    title: "complex-systems",
     description: isAdaptiveCoevolvingNetworkExperimentSlug(experiment)
       ? descriptions[experiment]
       : "Adaptive coevolving network simulation.",

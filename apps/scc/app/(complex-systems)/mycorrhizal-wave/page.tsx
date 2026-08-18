@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { mycorrhizalWaveExperiments } from "@/components/complex-systems/mycorrhizal-wave/experiments";
 
-export const metadata: Metadata = { title: "mycorrhizal wave" };
+export const metadata: Metadata = { title: "complex-systems" };
 
 export default function MycorrhizalWaveIndexPage() {
   return (

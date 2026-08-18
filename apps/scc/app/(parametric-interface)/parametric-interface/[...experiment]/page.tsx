@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import ParametricInterfaceArchive from "@/components/parametric-interface/archive";
 import {
@@ -8,6 +9,7 @@ import {
 } from "@/components/parametric-interface/experiments";
 
 export const dynamicParams = false;
+export const metadata: Metadata = { title: "parametric-interface" };
 
 export function generateStaticParams() {
   return [

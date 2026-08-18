@@ -19,7 +19,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { experiment } = await params;
   return {
-    title: `terminal ${experiment}`,
+    title: "complex-systems",
     description:
       "A colony of local terminal agents that writes, signals, and forks without a central controller.",
   };

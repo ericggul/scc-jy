@@ -37,7 +37,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { experiment } = await params;
   return {
-    title: `living topology ${experiment}`,
+    title: "complex-systems",
     description: "A graph whose activity continually reorganizes its topology.",
   };
 }

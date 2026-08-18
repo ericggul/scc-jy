@@ -19,7 +19,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { experiment } = await params;
   return {
-    title: `territorial dynamics ${experiment}`,
+    title: "complex-systems",
     description:
       "Fictional nations expand, fight, form alliances, and betray one another across a procedural map.",
   };

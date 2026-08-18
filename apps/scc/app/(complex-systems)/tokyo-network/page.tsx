@@ -3,7 +3,7 @@ import Link from "next/link";
 import { tokyoNetworkExperiments } from "@/components/complex-systems/tokyo-network/experiments";
 
 export const metadata: Metadata = {
-  title: "tokyo network",
+  title: "complex-systems",
 };
 
 export default function TokyoNetworkIndexPage() {

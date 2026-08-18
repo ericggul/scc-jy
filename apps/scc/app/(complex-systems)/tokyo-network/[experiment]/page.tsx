@@ -19,7 +19,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { experiment } = await params;
   return {
-    title: `tokyo network ${experiment}`,
+    title: "complex-systems",
     description:
       "An adaptive network appearing and disappearing across a Tokyo road map.",
   };

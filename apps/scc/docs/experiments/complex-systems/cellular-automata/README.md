@@ -64,7 +64,7 @@ Route: `/cellular-automata/5`. Date: 2026-08-16.
 - **Changed variable:** nine independent binary Life layers render a nested cell: square, circle, 45° square, circle, 90° square, circle, 45° square, circle, and 90° square. Every nested shape receives its own red/blue state; a participant may optionally reveal the cell grid with black borders.
 - **Retained invariants:** each layer is an exact Life system; no cyclic, probabilistic, or portrait logic is introduced.
 - **Observable result:** one cell can contain nine different red/blue states because the nested forms do not share a cellular state.
-- **Palette comparison:** `r/b` retains exact `B3/S23` Life layers; `r/g/b` gives each nested layer its own forward three-state cycle; `rainbow` gives each layer a seven-state cyclic field. Changing palette or depth (`1 / 5 / 9`) reseeds the active nested layers.
+- **Palette comparison:** `r/b` retains exact `B3/S23` Life layers; `r/g/b` gives each nested layer its own forward three-state cycle; `rainbow` gives each layer a seven-state cyclic field; `taegeuk` gives each layer a four-state cycle in white, black, red, and blue. Changing palette or depth (`1 / 5 / 9`) reseeds the active nested layers.
 - **Rainbow calibration:** the seven-state cycle uses two successor neighbours rather than the RGB field's three-neighbour threshold, and has a shorter update/transition cadence. This keeps seven-colour fronts active without globally synchronizing at the denser 40-column scale.
 - **Reactivation:** if either independent layer remains below 5% changing cells for 80 generations, a deterministic 3×3 spark is placed in that layer alone. This is a bounded intervention against absorption, not continuous noise.
 
@@ -75,6 +75,6 @@ Route: `/cellular-automata/6`. Date: 2026-08-16.
 - **Baseline:** route 5's independently evolving nested layers, palette choices, direct painting, optional cell boundaries, and unobtrusive blurred lower control field.
 - **Changed variable:** the underlying lattice is flat-top hexagons. The nested sequence is hexagon, circle, hexagon, circle, through nine forms; every form is inscribed in the preceding one and has its own automaton state.
 - **R/B rule:** the r/b option uses synchronous `B3/S23` Life independently for every nested layer, calculated across the six immediate hexagonal neighbours. This preserves the Life rule while making the neighbourhood native to the new cell geometry.
-- **Palette comparison:** r/g/b and rainbow retain independent successor-cycle fields across the same six-neighbour lattice. The active depth and palette reseed only this route's local model.
+- **Palette comparison:** r/g/b, rainbow, and the four-colour white / black / red / blue `taegeuk` palette retain independent successor-cycle fields across the same six-neighbour lattice. The active depth and palette reseed only this route's local model.
 - **Depth calibration:** `1 / 5 / 9 / 13` layers are offered. Seventeen layers are deliberately withheld: this route redraws every nested canvas path during each transition, and the near-doubling from 9 to 17 cannot stay reliably responsive on small viewports.
 - **Observable result:** the lattice itself, rather than only the interior motif, participates in the contrast between discrete angular enclosure and circular enclosure.

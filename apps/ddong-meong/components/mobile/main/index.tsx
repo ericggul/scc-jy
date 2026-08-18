@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useSyncExternalStore } from "react";
+import { type CSSProperties, useSyncExternalStore } from "react";
 import { meditationContents } from "../../model/content-catalog";
 import { readDdongMeongGreeting } from "../identity";
 import { playMeditationSoundtrack } from "../media";
 import GradientShell from "../surface/gradient-shell";
+import ContentArtwork from "./content-artwork";
 import styles from "./styles.module.css";
 
 function formatDuration(totalSeconds: number) {
@@ -57,20 +58,19 @@ export default function DdongMeongMain() {
           <section className={styles.playlist} aria-labelledby="playlist-title">
             <h2 id="playlist-title">오늘의 똥멍 콘텐츠</h2>
             <div className={styles.contentList}>
-              {meditationContents.map((content) => (
+              {meditationContents.map((content, index) => (
                 <Link
                   key={content.slug}
                   className={styles.contentCard}
                   href={`/${content.slug}`}
                   prefetch={false}
+                  style={
+                    { "--content-card-index": index } as CSSProperties
+                  }
                   aria-label={`${content.title}, ${formatDuration(content.durationSeconds)} 재생`}
                   onClick={() => playMeditationSoundtrack({ restart: true })}
                 >
-                  <span
-                    className={styles.artwork}
-                    style={{ backgroundImage: `url(${content.imagePath})` }}
-                    aria-hidden="true"
-                  />
+                  <ContentArtwork src={content.imagePath} eager={index === 0} />
                   <span className={styles.cardBody}>
                     <span className={styles.cardCopy}>
                       <strong>{content.title}</strong>

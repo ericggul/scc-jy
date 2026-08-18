@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export const metadata: Metadata = {
-  title: "complex systems",
+  title: "complex-systems",
   description: "A live index of runnable SCC complex-systems experiments.",
 };
 

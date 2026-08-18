@@ -19,6 +19,7 @@ const TARGET_CELL_WIDTH = 48;
 const RB_COLORS = ["#db3030", "#286ac9"] as const;
 const RGB_COLORS = ["#db3030", "#25a75b", "#286ac9"] as const;
 const RAINBOW_COLORS = ["#db3030", "#e6802d", "#e9d037", "#25a75b", "#286ac9", "#585cc8", "#9d45c6"] as const;
+const TAEGEUK_COLORS = ["#ffffff", "#000000", "#cd2e3a", "#0f64cd"] as const;
 
 function gridFor(width: number) {
   const columns = Math.max(MIN_COLUMNS, Math.round(width / TARGET_CELL_WIDTH));
@@ -98,8 +99,8 @@ export default function CellularAutomataFive() {
   const [depth, setDepth] = useState(9);
   const [borders, setBorders] = useState(false);
   const [readout, setReadout] = useState({ generation: 0, divergent: 0 });
-  const colors = mode === "rb" ? RB_COLORS : mode === "rgb" ? RGB_COLORS : RAINBOW_COLORS;
-  const states: readonly PaintState[] = mode === "rb" ? ["red", "blue"] : mode === "rgb" ? ["red", "green", "blue"] : ["red", "orange", "yellow", "green", "blue", "indigo", "violet"];
+  const colors = mode === "rb" ? RB_COLORS : mode === "rgb" ? RGB_COLORS : mode === "taegeuk" ? TAEGEUK_COLORS : RAINBOW_COLORS;
+  const states: readonly PaintState[] = mode === "rb" ? ["red", "blue"] : mode === "rgb" ? ["red", "green", "blue"] : mode === "taegeuk" ? ["white", "black", "red", "blue"] : ["red", "orange", "yellow", "green", "blue", "indigo", "violet"];
 
   const refreshReadout = useCallback(() => {
     const automaton = automatonRef.current;
@@ -186,11 +187,11 @@ export default function CellularAutomataFive() {
         onPointerMove={(event) => { if ((event.buttons & 1) !== 0) paint(event.clientX, event.clientY); }}
         onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); const bounds = event.currentTarget.getBoundingClientRect(); paint(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2); } }}
       />
-      <header className={styles.header}><p>{mode === "rb" ? `${depth} × B3 / S23` : mode === "rgb" ? `${depth} × R → G → B` : `${depth} × rainbow cycle`}</p></header>
+      <header className={styles.header}><p>{mode === "rb" ? `${depth} × B3 / S23` : mode === "rgb" ? `${depth} × R → G → B` : mode === "taegeuk" ? `${depth} × taegeuk cycle` : `${depth} × rainbow cycle`}</p></header>
       <section className={styles.controls} aria-label="Nested cellular automaton controls">
         <dl><div><dt>generation</dt><dd>{readout.generation}</dd></div><div><dt>divergence</dt><dd>{readout.divergent}</dd></div></dl>
         <div className={styles.actions}>
-          <span className={styles.paletteMode} aria-label="Palette"><button type="button" aria-pressed={mode === "rb"} onClick={() => chooseMode("rb")}>r/b</button><button type="button" aria-pressed={mode === "rgb"} onClick={() => chooseMode("rgb")}>r/g/b</button><button type="button" aria-pressed={mode === "rainbow"} onClick={() => chooseMode("rainbow")}>rainbow</button></span>
+          <span className={styles.paletteMode} aria-label="Palette"><button type="button" aria-pressed={mode === "rb"} onClick={() => chooseMode("rb")}>r/b</button><button type="button" aria-pressed={mode === "rgb"} onClick={() => chooseMode("rgb")}>r/g/b</button><button type="button" aria-pressed={mode === "rainbow"} onClick={() => chooseMode("rainbow")}>rainbow</button><button type="button" aria-pressed={mode === "taegeuk"} onClick={() => chooseMode("taegeuk")}>taegeuk</button></span>
           <span className={styles.layer} aria-label="Nested depth">{[1, 5, 9].map((count) => <button key={count} type="button" aria-pressed={depth === count} onClick={() => chooseDepth(count)}>{count}</button>)}</span>
           <span className={styles.palette} aria-label="State to paint">{states.map((state) => <button key={state} type="button" className={styles[state]} aria-pressed={paintState === state} onClick={() => setPaintState(state)}>{state}</button>)}</span>
           <button type="button" aria-pressed={borders} onClick={() => setBorders((value) => !value)}>border {borders ? "on" : "off"}</button>

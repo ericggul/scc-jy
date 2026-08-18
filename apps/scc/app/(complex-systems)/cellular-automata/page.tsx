@@ -3,7 +3,7 @@ import Link from "next/link";
 import { cellularAutomataExperiments } from "@/components/complex-systems/cellular-automata/experiments";
 
 export const metadata: Metadata = {
-  title: "cellular automata",
+  title: "complex-systems",
 };
 
 export default function CellularAutomataIndexPage() {

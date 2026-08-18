@@ -3,7 +3,7 @@ import Link from "next/link";
 import { adaptiveCoevolvingNetworkExperiments } from "@/components/complex-systems/adaptive-coevolving-network/experiments";
 
 export const metadata: Metadata = {
-  title: "adaptive coevolving network",
+  title: "complex-systems",
 };
 
 export default function AdaptiveCoevolvingNetworkIndexPage() {

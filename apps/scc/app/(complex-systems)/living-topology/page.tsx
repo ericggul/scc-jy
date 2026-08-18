@@ -3,7 +3,7 @@ import Link from "next/link";
 import { livingTopologyExperiments } from "@/components/complex-systems/living-topology/experiments";
 
 export const metadata: Metadata = {
-  title: "living topology",
+  title: "complex-systems",
 };
 
 export default function LivingTopologyIndexPage() {

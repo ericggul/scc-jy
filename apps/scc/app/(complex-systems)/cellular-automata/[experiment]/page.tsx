@@ -24,7 +24,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { experiment } = await params;
   return {
-    title: `cellular automata ${experiment}`,
+    title: "complex-systems",
     description: experiment === "6"
       ? "Independent cellular automata rendered as nested hexagons and circles."
       : experiment === "5"

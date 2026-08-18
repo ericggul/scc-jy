@@ -1,6 +1,6 @@
 export const LAYER_COUNT = 9;
-export type PaletteMode = "rb" | "rgb" | "rainbow";
-export type PaintState = "red" | "orange" | "yellow" | "green" | "blue" | "indigo" | "violet";
+export type PaletteMode = "rb" | "rgb" | "rainbow" | "taegeuk";
+export type PaintState = "white" | "black" | "red" | "orange" | "yellow" | "green" | "blue" | "indigo" | "violet";
 
 export type NestedAutomaton = {
   columns: number;
@@ -37,7 +37,7 @@ function seedLayer(length: number, seed: number, stateCount: number) {
 }
 
 export function createNestedAutomaton(columns: number, rows: number, mode: PaletteMode = "rb", layerCount = LAYER_COUNT): NestedAutomaton {
-  const stateCount = mode === "rb" ? 2 : mode === "rgb" ? 3 : 7;
+  const stateCount = mode === "rb" ? 2 : mode === "rgb" ? 3 : mode === "taegeuk" ? 4 : 7;
   const layers = Array.from({ length: layerCount }, (_, index) =>
     seedLayer(columns * rows, 0x9e3779b9 + index * 0x1f123bb5, stateCount),
   );
@@ -84,7 +84,7 @@ function stepCycle(cells: Uint8Array, columns: number, rows: number, stateCount:
 export function stepNestedAutomaton(automaton: NestedAutomaton): NestedAutomaton {
   return {
     ...automaton,
-    layers: automaton.layers.map((layer) => automaton.mode === "rb" ? stepLife(layer, automaton.columns, automaton.rows) : stepCycle(layer, automaton.columns, automaton.rows, automaton.mode === "rgb" ? 3 : 7)),
+    layers: automaton.layers.map((layer) => automaton.mode === "rb" ? stepLife(layer, automaton.columns, automaton.rows) : stepCycle(layer, automaton.columns, automaton.rows, automaton.mode === "rgb" ? 3 : automaton.mode === "taegeuk" ? 4 : 7)),
     previousLayers: automaton.layers,
     generation: automaton.generation + 1,
   };
@@ -96,8 +96,14 @@ export function paintNestedAutomaton(
   row: number,
   state: PaintState,
 ): NestedAutomaton {
-  const value = ["red", "orange", "yellow", "green", "blue", "indigo", "violet"].indexOf(state);
-  const normalized = automaton.mode === "rb" ? (value === 4 ? 1 : 0) : automaton.mode === "rgb" ? [0, 3, 4].indexOf(value) : value;
+  const paletteIndex = ["white", "black", "red", "orange", "yellow", "green", "blue", "indigo", "violet"].indexOf(state);
+  const normalized = automaton.mode === "rb"
+    ? (state === "blue" ? 1 : 0)
+    : automaton.mode === "rgb"
+    ? [2, 5, 6].indexOf(paletteIndex)
+    : automaton.mode === "taegeuk"
+    ? [0, 1, 2, 6].indexOf(paletteIndex)
+    : paletteIndex - 2;
   const layers = automaton.layers.map((layer) => {
     const target = new Uint8Array(layer);
     for (const [columnOffset, rowOffset] of [[0, 0], [1, 0], [0, 1], [-1, 0], [0, -1]]) {
