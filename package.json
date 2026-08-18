@@ -23,6 +23,7 @@
     "dev:socket:c-val": "bash scripts/generate-certs.sh && SCC_SOCKET_SCOPE=c-val node socket-server.mjs",
     "dev:socket:ddong-meong": "bash scripts/generate-certs.sh && SCC_SOCKET_SCOPE=ddong-meong node socket-server.mjs",
     "dev:socket:goldfishes": "bash scripts/generate-certs.sh && SCC_SOCKET_SCOPE=goldfishes node socket-server.mjs",
+    "socket:production": "node socket-server-production.mjs",
     "typecheck": "pnpm --recursive --if-present typecheck",
     "lint": "eslint",
     "audit:goldfishes-assets": "pnpm --filter @scc/goldfishes audit:assets",

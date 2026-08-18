@@ -55,7 +55,12 @@
   font-weight: 650;
 }
 
-.form input {
+.nicknameField {
+  display: grid;
+  gap: 7px;
+}
+
+.nicknameField input {
   width: 100%;
   min-height: 58px;
   padding: 0 17px;
@@ -71,13 +76,20 @@
   -webkit-user-select: none;
 }
 
-.form input::placeholder {
+.nicknameField input::placeholder {
   color: rgb(241 231 225 / 42%);
 }
 
-.form input:focus-visible {
+.nicknameField input:focus-visible {
   border-color: rgb(var(--dm-color-ink-rgb) / 82%);
   box-shadow: 0 0 0 3px rgb(var(--dm-color-ink-rgb) / 12%);
+}
+
+.nicknameField p {
+  margin: 0;
+  color: rgb(var(--dm-color-ink-rgb) / 52%);
+  font-size: 11px;
+  line-height: 1.4;
 }
 
 .form button {

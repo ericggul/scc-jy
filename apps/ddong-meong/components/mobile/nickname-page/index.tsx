@@ -8,6 +8,10 @@ type NicknamePageProps = {
   onContinue: () => void;
 };
 
+function isHangulNickname(value: string) {
+  return /^[ㄱ-ㅎㅏ-ㅣ가-힣\s]+$/u.test(value.trim());
+}
+
 export default function NicknamePage({
   nickname,
   exiting,
@@ -29,18 +33,21 @@ export default function NicknamePage({
 
         <form className={styles.form} onSubmit={submit}>
           <label htmlFor="ddong-meong-nickname">닉네임</label>
-          <input
-            id="ddong-meong-nickname"
-            name="nickname"
-            type="text"
-            value={nickname}
-            onChange={(event) => onNicknameChange(event.target.value)}
-            disabled={exiting}
-            maxLength={16}
-            autoComplete="nickname"
-            autoFocus
-            placeholder="노라조"
-          />
+          <div className={styles.nicknameField}>
+            <input
+              id="ddong-meong-nickname"
+              name="nickname"
+              type="text"
+              value={nickname}
+              onChange={(event) => onNicknameChange(event.target.value)}
+              disabled={exiting}
+              maxLength={16}
+              autoComplete="nickname"
+              autoFocus
+              placeholder="ddong-master"
+            />
+            {isHangulNickname(nickname) ? <p>실명 입력은 삼가주세요.</p> : null}
+          </div>
           <button type="submit" disabled={exiting || !nickname.trim()}>
             계속
           </button>

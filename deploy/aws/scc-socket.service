@@ -1,0 +1,22 @@
+[Unit]
+Description=SCC Socket.IO relay (%i)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=sccsocket
+Group=sccsocket
+WorkingDirectory=/opt/scc
+EnvironmentFile=/etc/scc-socket/%i.env
+ExecStart=/usr/bin/node /opt/scc/socket-server-production.mjs
+Restart=always
+RestartSec=2
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/opt/scc
+
+[Install]
+WantedBy=multi-user.target

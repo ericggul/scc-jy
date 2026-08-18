@@ -19,12 +19,7 @@ test("scoped socket registries expose only their owning app", () => {
   );
   assert.deepEqual(
     experimentRegistries["ddong-meong"].map(({ id }) => id),
-    [
-      "ddong-meong-1",
-      "ddong-meong-2",
-      "ddong-meong-3",
-      "ddong-meong-4",
-    ],
+    ["ddong-meong"],
   );
   assert.equal(
     experimentRegistries.scc.some(({ id }) => id.startsWith("c-val:")),

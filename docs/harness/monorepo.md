@@ -32,6 +32,10 @@ no socket experiment: its empty scope only reserves an isolated future boundary.
 Socket deployment remains a stateful service and is not part of an app's Vercel
 Root Directory.
 
+For the production AWS topology, separate C-VAL and ddong-meong relay hosts,
+environment variables, and socket origins are documented in
+[AWS real-time relay deployment](./aws-realtime-deployment.md).
+
 To add a future standalone artwork, create another `apps/<artwork>` workspace,
 give it its own Next.js config and public directory, add it to the HTTPS runner,
 and connect another Vercel project to that directory. Do not move its routes

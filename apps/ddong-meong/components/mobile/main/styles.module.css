@@ -7,7 +7,7 @@
   color: var(--dm-color-ink);
   overscroll-behavior-y: contain;
   scrollbar-width: none;
-  animation: pageEnter 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: pageEnter 4960ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .page::-webkit-scrollbar {
@@ -19,7 +19,7 @@
     max(26px, env(safe-area-inset-top))
     var(--dm-page-gutter)
     0;
-  animation: sectionEnter 520ms cubic-bezier(0.22, 1, 0.36, 1) 40ms both;
+  animation: sectionEnter 4160ms cubic-bezier(0.22, 1, 0.36, 1) 320ms both;
 }
 
 .wordmark {
@@ -39,7 +39,7 @@
 
 .introduction {
   max-width: 390px;
-  animation: sectionEnter 600ms cubic-bezier(0.22, 1, 0.36, 1) 120ms both;
+  animation: sectionEnter 4800ms cubic-bezier(0.22, 1, 0.36, 1) 960ms both;
 }
 
 .kicker {
@@ -72,7 +72,7 @@
 
 .playlist {
   margin-top: clamp(82px, 15svh, 132px);
-  animation: sectionEnter 620ms cubic-bezier(0.22, 1, 0.36, 1) 230ms both;
+  animation: sectionEnter 2480ms cubic-bezier(0.22, 1, 0.36, 1) 1840ms both;
 }
 
 .playlist h2 {
@@ -97,11 +97,11 @@
   color: var(--dm-color-surface-ink);
   text-decoration: none;
   transform: translateZ(0);
-  animation: cardEnter 1280ms cubic-bezier(0.22, 1, 0.36, 1)
-    calc(680ms + (var(--content-card-index) * 164ms)) both;
+  animation: cardEnter 5120ms cubic-bezier(0.22, 1, 0.36, 1)
+    calc(2080ms + (var(--content-card-index) * 656ms)) both;
   transition:
-    transform 220ms ease,
-    box-shadow 220ms ease;
+    transform 880ms ease,
+    box-shadow 880ms ease;
 }
 
 .artwork {
@@ -123,8 +123,8 @@
     radial-gradient(circle at 24% 26%, rgb(255 237 210 / 18%), transparent 38%),
     linear-gradient(112deg, #543729 15%, #886044 51%, #5b3e2f 85%);
   background-size: 100% 100%, 180% 100%;
-  animation: artworkWaiting 1.5s ease-in-out infinite;
-  transition: opacity 480ms ease;
+  animation: artworkWaiting 6s ease-in-out infinite;
+  transition: opacity 1920ms ease;
 }
 
 .artworkImage {
@@ -136,8 +136,8 @@
   opacity: 0;
   transform: scale(1.018);
   transition:
-    opacity 560ms cubic-bezier(0.22, 1, 0.36, 1),
-    transform 760ms cubic-bezier(0.22, 1, 0.36, 1);
+    opacity 2240ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 3040ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .artworkLoaded::before {

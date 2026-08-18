@@ -19,12 +19,27 @@ function subscribeToBrowserGreeting() {
   return () => undefined;
 }
 
+const returningGreetingVariations = [
+  "{nickname}님, {count}번째 똥멍을 즐기세요.",
+  "{nickname}님, 벌써 {count}번째 똥멍이네요.",
+  "{nickname}님, 오늘도 {count}번째로 멍때려요.",
+  "{nickname}님, {count}번째 똥멍 시간입니다.",
+  "{nickname}님, {count}번째 똥멍도 편안하게 즐기세요.",
+] as const;
+
 function readGreetingMessage() {
   const savedGreeting = readDdongMeongGreeting();
   if (!savedGreeting) return "똥멍";
-  return savedGreeting.kind === "first-visit"
-    ? `${savedGreeting.nickname}님, 환영합니다!`
-    : `${savedGreeting.nickname}님, 또 싸러 오셨군요!`;
+  if (savedGreeting.kind === "first-visit") {
+    return `${savedGreeting.nickname}님, 환영합니다!`;
+  }
+  if (savedGreeting.visitCount === 2) {
+    return `${savedGreeting.nickname}님, 또 싸러 오셨군요!`;
+  }
+
+  return returningGreetingVariations[savedGreeting.greetingVariant]
+    .replace("{nickname}", savedGreeting.nickname)
+    .replace("{count}", String(savedGreeting.visitCount));
 }
 
 export default function DdongMeongMain() {

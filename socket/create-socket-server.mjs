@@ -1,13 +1,12 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { Server } from "socket.io";
-import { experiments as allExperiments } from "./experiments/index.mjs";
 
 export function handleSocketHealth(
   req,
   res,
   certDir = join(process.cwd(), "certificates"),
-  experiments = allExperiments,
+  experiments = [],
 ) {
   if (req.url === "/cert") {
     res.writeHead(200, { "content-type": "application/x-x509-ca-cert" });
@@ -33,13 +32,24 @@ export function handleSocketHealth(
 
 export function createExperimentSocketServer(
   httpServer,
-  experiments = allExperiments,
+  experiments = [],
+  { allowedOrigins = "*" } = {},
 ) {
+  const originIsAllowed = (origin) => {
+    if (allowedOrigins === "*") return true;
+    const origins = Array.isArray(allowedOrigins)
+      ? allowedOrigins
+      : [allowedOrigins];
+    return typeof origin === "string" && origins.includes(origin);
+  };
+
   const io = new Server(httpServer, {
     cors: {
-      origin: "*",
+      origin: allowedOrigins,
       methods: ["GET", "POST"],
     },
+    allowRequest: (request, callback) =>
+      callback(null, originIsAllowed(request.headers.origin)),
     transports: ["websocket", "polling"],
   });
 
