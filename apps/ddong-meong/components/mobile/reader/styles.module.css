@@ -275,15 +275,36 @@
 .overflowWarning {
   position: absolute;
   z-index: 5;
+  top: max(92px, calc(env(safe-area-inset-top) + 72px));
   right: var(--dm-page-gutter);
-  bottom: max(98px, calc(env(safe-area-inset-bottom) + 84px));
   left: var(--dm-page-gutter);
   margin: 0;
-  color: rgb(var(--dm-color-surface-ink-rgb) / 92%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: rgb(60 43 23 / 94%);
+  box-shadow: 0 10px 28px rgb(33 18 12 / 22%);
+  color: rgb(255 239 187 / 96%);
   font-size: 13px;
   line-height: 1.45;
   text-align: center;
-  animation: overflowWarning 2s ease-in-out both;
+  animation: overflowWarning 5s ease-in-out both;
+}
+
+.overflowWarning span {
+  display: grid;
+  width: 19px;
+  height: 19px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: #f2bf39;
+  color: #493310;
+  font-size: 13px;
+  font-weight: 800;
 }
 
 .isOverflowing .header,
@@ -293,10 +314,12 @@
   pointer-events: none;
 }
 
+
 @keyframes overflowWarning {
-  0%, 100% { opacity: 0; transform: translateY(4px); }
-  22%, 78% { opacity: 1; transform: translateY(0); }
+  0%, 100% { opacity: 0; transform: translateY(-5px); }
+  10%, 88% { opacity: 1; transform: translateY(0); }
 }
+
 
 @keyframes pageEnter {
   from {

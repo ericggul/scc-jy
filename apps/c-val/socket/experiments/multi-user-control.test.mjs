@@ -29,23 +29,36 @@ test("no current phone contribution stays disengaged at neutral V/A/L", () => {
   });
 });
 
-test("multiple phones use one equal-weight arithmetic mean for V/A/L", () => {
+test("multiple phones accumulate their displacement from neutral V/A/L", () => {
   const result = aggregateCValHumanControls(
     new Map([
-      ["left", control({ volatility: 0.2, activity: 0.4, liquidity: 0.2 })],
-      ["right", control({ volatility: 0.8, activity: 0.6, liquidity: 0.8 })],
+      ["left", control({ volatility: 0.7, activity: 0.6, liquidity: 0.7 })],
+      ["right", control({ volatility: 0.6, activity: 0.8, liquidity: 0.6 })],
     ]),
     1_100,
   );
 
   assert.deepEqual(result, {
-    volatility: 0.5,
-    activity: 0.5,
-    liquidity: 0.5,
+    volatility: 0.8,
+    activity: 0.9,
+    liquidity: 0.8,
     engaged: true,
     contributors: 2,
     receivedAt: 1_000,
   });
+});
+
+test("accumulated group control remains bounded", () => {
+  const result = aggregateCValHumanControls(
+    new Map([
+      ["one", control({ volatility: 1, activity: 1, liquidity: 1 })],
+      ["two", control({ volatility: 1, activity: 1, liquidity: 1 })],
+    ]),
+    1_100,
+  );
+  assert.equal(result.volatility, 1);
+  assert.equal(result.activity, 1);
+  assert.equal(result.liquidity, 1);
 });
 
 test("stale, resting, and malformed phone signals stay inactive", () => {

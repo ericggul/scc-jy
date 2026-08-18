@@ -1,0 +1,14 @@
+.qr,
+.placeholder {
+  aspect-ratio: 1;
+  display: block;
+  height: auto;
+  width: 100%;
+}
+
+.qr {
+  filter: invert(1);
+  mix-blend-mode: screen;
+}
+
+.placeholder { opacity: 0; }

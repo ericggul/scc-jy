@@ -8,7 +8,7 @@ import type {
 import { isDdongMeongEntryContext } from "../../model/entry-context";
 
 const cacheKey = "ddong-meong:screen-archive";
-const retentionMs = 7 * 24 * 60 * 60 * 1000;
+const retentionMs = 30 * 24 * 60 * 60 * 1000;
 const maximumEntries = 500;
 const emptyArchive: DdongMeongArchiveEntry[] = [];
 const listeners = new Set<() => void>();
@@ -21,6 +21,7 @@ const outcomes: ReadonlySet<DdongMeongSessionOutcome> = new Set([
   "left",
   "backgrounded",
   "idle",
+  "overflowed",
 ]);
 
 function isArchiveEntry(value: unknown): value is DdongMeongArchiveEntry {
@@ -90,8 +91,7 @@ function writeArchive(entries: DdongMeongArchiveEntry[]) {
   try {
     window.localStorage.setItem(cacheKey, JSON.stringify(entries));
   } catch {
-    // The live socket view remains available when local browser storage is full
-    // or disabled.
+    // Live screen data still renders if storage is unavailable.
   }
 }
 
@@ -141,9 +141,7 @@ export function getKoreanDayKey(timestamp = Date.now()) {
   return `${part("year")}-${part("month")}-${part("day")}`;
 }
 
-export function useBrowserArchive(
-  socketArchive: DdongMeongArchiveEntry[],
-) {
+export function useBrowserArchive(socketArchive: DdongMeongArchiveEntry[]) {
   const archive = useSyncExternalStore(
     subscribe,
     getBrowserArchive,

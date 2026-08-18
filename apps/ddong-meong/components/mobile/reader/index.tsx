@@ -74,6 +74,28 @@ const preludeDurationMs = 2000;
 const minimumFlushDurationMs = 1000;
 const overflowWarningProgress = 0.85;
 const overflowDurationMs = 3000;
+
+function visibleAccumulationHeight(
+  progress: number,
+  profile: AccumulationProfile,
+) {
+  const accumulation = profile.accumulation;
+  const normalized = Math.min(
+    1,
+    Math.max(0, progress / accumulation.completionProgress),
+  );
+  const eased = normalized ** accumulation.riseExponent;
+  const breath = Math.sin(progress * Math.PI);
+  const longSurge =
+    Math.sin(progress * accumulation.longSurgeFrequency + accumulation.longSurgePhase) *
+    accumulation.longSurgeAmplitude *
+    breath;
+  const shortSurge =
+    Math.sin(progress * accumulation.shortSurgeFrequency + accumulation.shortSurgePhase) *
+    accumulation.shortSurgeAmplitude *
+    breath;
+  return eased * accumulation.finalHeight + longSurge + shortSurge;
+}
 const showTimeBar = true;
 
 function formatClock(totalSeconds: number) {
@@ -199,10 +221,12 @@ export default function ReadingPage({
   const scriptRef = useRef<HTMLDivElement | null>(null);
   const scrollAnimationRef = useRef<Animation | null>(null);
   const sessionCompletedRef = useRef(false);
+  const overflowWarningShownRef = useRef(false);
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [settledDropCount, setSettledDropCount] = useState(0);
   const [flushState, setFlushState] = useState<FlushState | null>(null);
   const [overflowState, setOverflowState] = useState<OverflowState | null>(null);
+  const [overflowWarningStartedAt, setOverflowWarningStartedAt] = useState<number | null>(null);
   const [now, setNow] = useState(0);
   const [isSoundEnabled, setIsSoundEnabled] = useState(true);
   const [hasSoundPreference, setHasSoundPreference] = useState(false);
@@ -242,7 +266,23 @@ export default function ReadingPage({
     accumulationProgressFromAutomaticFall(elapsedMs, totalMs, accumulationProfile.fall.backgroundDuration) +
       accumulationProgressFromInteractions(settledDropCount),
   );
-  const showOverflowWarning = accumulationProgress >= overflowWarningProgress && accumulationProgress < 1 && overflowState === null;
+  const visibleFillHeight = visibleAccumulationHeight(
+    accumulationProgress,
+    accumulationProfile,
+  );
+  const showOverflowWarning = overflowWarningStartedAt !== null;
+
+  useEffect(() => {
+    if (overflowState !== null || overflowWarningStartedAt !== null || overflowWarningShownRef.current || visibleFillHeight < overflowWarningProgress) return;
+    overflowWarningShownRef.current = true;
+    setOverflowWarningStartedAt(Date.now());
+  }, [overflowState, overflowWarningStartedAt, visibleFillHeight]);
+
+  useEffect(() => {
+    if (overflowWarningStartedAt === null) return;
+    const timer = window.setTimeout(() => setOverflowWarningStartedAt(null), 5000);
+    return () => window.clearTimeout(timer);
+  }, [overflowWarningStartedAt]);
 
   useEffect(() => {
     if (hasSoundPreference || flushState !== null) return;
@@ -316,13 +356,13 @@ export default function ReadingPage({
   ]);
 
   useEffect(() => {
-    if (startedAt === null || overflowState !== null || flushState !== null || accumulationProgress < 1) return;
+    if (startedAt === null || overflowState !== null || flushState !== null || overflowWarningStartedAt !== null || visibleFillHeight < 1) return;
     stopMeditationSoundtrack();
     scrollAnimationRef.current?.pause();
     stopDrops();
     onSessionPhaseChange?.("overflowing", settledDropCount);
     setOverflowState({ frozenElapsedMs: elapsedMs, startedAt: Date.now() });
-  }, [accumulationProgress, elapsedMs, flushState, onSessionPhaseChange, overflowState, settledDropCount, startedAt, stopDrops]);
+  }, [elapsedMs, flushState, onSessionPhaseChange, overflowState, overflowWarningStartedAt, settledDropCount, startedAt, stopDrops, visibleFillHeight]);
 
   useEffect(() => {
     if (overflowState === null) return;
@@ -458,6 +498,7 @@ export default function ReadingPage({
           flushDurationMs={flushState?.durationMs ?? minimumFlushDurationMs}
           flushStartedAt={flushState?.startedAt ?? null}
           frozenElapsedMs={flushState?.frozenElapsedMs ?? overflowState?.frozenElapsedMs ?? null}
+          overflowStartedAt={overflowState?.startedAt ?? null}
           dropStream={dropStream}
           settledDropCount={settledDropCount}
           pausedAt={pausedAt}
@@ -476,8 +517,9 @@ export default function ReadingPage({
       />
 
       {showOverflowWarning ? (
-        <p className={styles.overflowWarning} role="status">주의: 변기가 거의 가득 찼어요. 이제 흘러넘치기 직전이에요.</p>
+        <p className={styles.overflowWarning} role="status"><span aria-hidden="true">!</span>주의: 변기가 거의 가득 찼어요. 흘러넘치기 직전입니다.</p>
       ) : null}
+
 
       <div
         ref={scrollerRef}

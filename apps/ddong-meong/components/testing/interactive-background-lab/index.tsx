@@ -89,6 +89,7 @@ export default function InteractiveBackgroundLab({
           flushDurationMs={flushDrainDurationMs}
           flushStartedAt={flushState?.startedAt ?? null}
           frozenElapsedMs={flushState?.frozenElapsedMs ?? null}
+          overflowStartedAt={null}
           pausedAt={null}
           pausedDurationMs={0}
           settledDropCount={settledDropCount}

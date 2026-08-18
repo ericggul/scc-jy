@@ -34,14 +34,14 @@ export function ConstipationDialogueMeditation() {
   return <GuidedReading slug="constipation-dialogue" />;
 }
 
-export function DogPoopRemedyMeditation() {
-  return <GuidedReading slug="dog-poop-remedy" />;
+export function FiveMinuteMeetingMeditation() {
+  return <GuidedReading slug="five-minute-meeting" />;
 }
 
-export function BeforeAfterPoopMeditation() {
-  return <GuidedReading slug="before-after-poop" />;
+export function PoopPoliticsMeditation() {
+  return <GuidedReading slug="poop-politics" />;
 }
 
-export function MuddyDogHuskMeditation() {
-  return <GuidedReading slug="muddy-dog-husk" />;
+export function BathroomWithoutUrgeMeditation() {
+  return <GuidedReading slug="bathroom-without-urge" />;
 }

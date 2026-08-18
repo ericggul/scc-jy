@@ -5,6 +5,7 @@ import styled from "styled-components";
 import type { CValSnapshot } from "@/components/model";
 import { CValBloombergWorkstationFrame } from "@/components/visual";
 import { cValSocietyAdmissionIntervalMs } from "../cadence";
+import CValEntryQr from "../entry-qr";
 import {
   cValNewsAdmissionIntervalMs,
   presentCValNewsEvents,
@@ -77,8 +78,18 @@ const WirePane = styled.section`
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
+  position: relative;
 
   &:first-child { border-right: 1px solid #555; }
+`;
+
+const EntryPoint = styled.div`
+  left: 50%;
+  position: absolute;
+  top: 54%;
+  transform: translate(-50%, -50%);
+  width: clamp(42px, 8.5cqw, 96px);
+  z-index: 2;
 `;
 
 const PaneHeader = styled.header`
@@ -325,9 +336,11 @@ const NewsItem = memo(function NewsItem({ event }: { event: CValNewsEvent }) {
 const NewsArchive = memo(function NewsArchive({
   marketRecords,
   societyRecords,
+  showEntryQr,
 }: {
   marketRecords: CValNewsEvent[];
   societyRecords: CValNewsEvent[];
+  showEntryQr: boolean;
 }) {
   return (
     <NewsColumns>
@@ -338,6 +351,7 @@ const NewsArchive = memo(function NewsArchive({
           <span>1D MOVE</span>
         </PaneHeader>
         {marketRecords.map((event) => <NewsItem key={event.id} event={event} />)}
+        {showEntryQr ? <EntryPoint><CValEntryQr /></EntryPoint> : null}
       </WirePane>
       <WirePane aria-label="C-VAL society and politics news records">
         <PaneHeader>
@@ -346,6 +360,7 @@ const NewsArchive = memo(function NewsArchive({
           <span>1D MOVE</span>
         </PaneHeader>
         {societyRecords.map((event) => <NewsItem key={event.id} event={event} />)}
+        {showEntryQr ? <EntryPoint><CValEntryQr /></EntryPoint> : null}
       </WirePane>
     </NewsColumns>
   );
@@ -361,7 +376,11 @@ export default function CValNewsScreen({ snapshot }: { snapshot: CValSnapshot })
         <StreamLabel>NEWS ROOM</StreamLabel>
         <StreamReadout>LAST {snapshot.market.index.toFixed(2)}</StreamReadout>
       </StreamBar>
-      <NewsArchive marketRecords={marketRecords} societyRecords={societyRecords} />
+      <NewsArchive
+        marketRecords={marketRecords}
+        societyRecords={societyRecords}
+        showEntryQr={snapshot.phase === "waiting"}
+      />
     </NewsTerminal>
   );
 }

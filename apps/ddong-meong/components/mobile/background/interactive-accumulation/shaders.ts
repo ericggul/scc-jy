@@ -21,6 +21,7 @@ const sharedAccumulationShader = `
   uniform float uCompletionProgress;
   uniform float uRiseExponent;
   uniform float uFinalHeight;
+  uniform float uOverflowProgress;
   uniform vec3 uLongSurge;
   uniform vec3 uShortSurge;
 
@@ -190,10 +191,12 @@ export const backgroundFragmentShader = `
     float time = uTime * uMotion;
     float flushProgress = clamp(uFlushProgress, 0.0, 1.0);
     float drainProgress = smoothstep(0.06, 0.9, flushProgress);
+    float overflowDrainProgress = smoothstep(0.04, 0.92, uOverflowProgress);
+    float evacuationProgress = max(drainProgress, overflowDrainProgress);
     float frozenFront = risingHeight(uProgress);
     float atmosphereReveal = smoothstep(0.0, 0.052, uProgress);
     atmosphereReveal *= 1.0 - smoothstep(0.2, 0.96, flushProgress);
-    float front = frozenFront * (1.0 - drainProgress);
+    float front = frozenFront * (1.0 - evacuationProgress);
 
     float flowTime = time * uFlowSpeed;
 
@@ -209,7 +212,7 @@ export const backgroundFragmentShader = `
     float surfaceWave = (broadFlow - 0.5) * uBoundaryWaves.x * waveStrength;
     surfaceWave += sin(uv.x * 6.5 + flowTime * 0.16) * uBoundaryWaves.y * waveStrength;
     surfaceWave += sin(uv.x * 15.0 - flowTime * 0.09) * uBoundaryWaves.z * waveStrength;
-    surfaceWave *= 1.0 - drainProgress;
+    surfaceWave *= 1.0 - evacuationProgress;
     float funnel = exp(
       -pow(abs((uv.x - 0.5) * aspect) / 0.2, 2.0)
     );
@@ -242,7 +245,7 @@ export const backgroundFragmentShader = `
     vec2 drainCenter = vec2(0.5 * aspect, -0.08);
     vec2 drainVector = fieldUv - drainCenter;
     float drainRadius = length(drainVector);
-    float vortexProgress = pow(drainProgress, 0.58);
+    float vortexProgress = pow(evacuationProgress, 0.58);
     float drainCore = 1.0 - smoothstep(0.08, 1.08, drainRadius);
     float drainAngle = vortexProgress * (0.86 + drainCore * 3.9);
     mat2 drainRotation = mat2(
@@ -403,8 +406,10 @@ export const particleVertexShader = `
   varying float vLayer;
   varying float vStretch;
   varying float vSoftness;
+  varying float vFaction;
 
   void main() {
+    vFaction = 0.0;
     if (uLayer > 1.5 && aDropActive < 0.5) {
       vAlpha = 0.0;
       vTone = 0.0;
@@ -420,6 +425,8 @@ export const particleVertexShader = `
     float flowTime = time * uFlowSpeed;
     float flushProgress = clamp(uFlushProgress, 0.0, 1.0);
     float drainProgress = smoothstep(0.04, 0.92, flushProgress);
+    float overflowDrainProgress = smoothstep(0.04, 0.92, uOverflowProgress);
+    drainProgress = max(drainProgress, overflowDrainProgress);
     float aspect = uResolution.x / max(uResolution.y, 1.0);
     float front = risingHeight(uProgress);
     vec2 particlePosition;
@@ -527,13 +534,37 @@ export const particleVertexShader = `
           particleY + lobe * 0.076 + sin(angle) * radius * 1.05 + turn
         );
       }
+      if (uMaterialMode > 8.5 && uMaterialMode < 9.5) {
+        float branch = floor(aSeed.x * 5.0) - 2.0;
+        float branchSeed = fract(aSeed.x * 5.0);
+        float branchAngle = branch * 0.085 * (1.0 - easedTravel);
+        float branchScatter = (branchSeed - 0.5) * filamentWidth * 1.7;
+        float branchWobble = sin(travel * 10.0 + branch * 2.1 + aSeed.z * 6.0) * 0.011;
+        particlePosition = vec2(
+          spine + (branchAngle + branchScatter + branchWobble) / aspect,
+          particleY + abs(branch) * 0.018 * (1.0 - easedTravel)
+        );
+        vFaction = 0.25 + 0.5 * mod(branch + 2.0, 2.0);
+      }
+      if (uMaterialMode > 9.5) {
+        float spark = floor(aSeed.x * 9.0) - 4.0;
+        float sparkSeed = fract(aSeed.x * 9.0);
+        float explosion = pow(easedTravel, 0.68);
+        float sparkSpread = spark * 0.075 * explosion;
+        float sparkScatter = (sparkSeed - 0.5) * filamentWidth * 2.4 * explosion;
+        float sparkWobble = sin(travel * 19.0 + spark * 1.7 + aSeed.z * 12.0) * 0.024;
+        particlePosition = vec2(
+          spine + (sparkSpread + sparkScatter + sparkWobble * explosion) / aspect,
+          particleY + ((aSeed.w - 0.5) * 0.06 + abs(spark) * 0.012) * explosion
+        );
+      }
 
       float endFade = pow(sin(travel * 3.14159265), 0.34);
       float veilParticle = smoothstep(uVeilThreshold, 1.0, aSeed.w);
       float coreAlpha = mix(uCoreAlpha.x, uCoreAlpha.y, aSeed.w);
       float veilAlpha = mix(uVeilAlpha.x, uVeilAlpha.y, aSeed.z);
       vAlpha = endFade * emission * mix(coreAlpha, veilAlpha, veilParticle);
-      vAlpha *= 1.0 - smoothstep(0.0, 0.12, flushProgress);
+      vAlpha *= 1.0 - smoothstep(0.0, 0.12, drainProgress);
       if (uMaterialMode > 1.5 && uMaterialMode < 2.5) vAlpha = 0.0;
       if (uMaterialMode > 5.5 && uMaterialMode < 6.5) vAlpha = 0.0;
       pointSize = mix(
@@ -620,6 +651,30 @@ export const particleVertexShader = `
           particleY + lobe * 0.076 + sin(angle) * radius * 1.05 + turn
         );
       }
+      if (uMaterialMode > 8.5 && uMaterialMode < 9.5) {
+        float branch = floor(aSeed.x * 5.0) - 2.0;
+        float branchSeed = fract(aSeed.x * 5.0);
+        float branchAngle = branch * 0.085 * (1.0 - easedTravel);
+        float branchScatter = (branchSeed - 0.5) * filamentWidth * 1.7;
+        float branchWobble = sin(travel * 10.0 + branch * 2.1 + aSeed.z * 6.0) * 0.011;
+        particlePosition = vec2(
+          spine + (branchAngle + branchScatter + branchWobble) / aspect,
+          particleY + abs(branch) * 0.018 * (1.0 - easedTravel)
+        );
+        vFaction = 0.25 + 0.5 * mod(branch + 2.0, 2.0);
+      }
+      if (uMaterialMode > 9.5) {
+        float spark = floor(aSeed.x * 9.0) - 4.0;
+        float sparkSeed = fract(aSeed.x * 9.0);
+        float explosion = pow(easedTravel, 0.68);
+        float sparkSpread = spark * 0.075 * explosion;
+        float sparkScatter = (sparkSeed - 0.5) * filamentWidth * 2.4 * explosion;
+        float sparkWobble = sin(travel * 19.0 + spark * 1.7 + aSeed.z * 12.0) * 0.024;
+        particlePosition = vec2(
+          spine + (sparkSpread + sparkScatter + sparkWobble * explosion) / aspect,
+          particleY + ((aSeed.w - 0.5) * 0.06 + abs(spark) * 0.012) * explosion
+        );
+      }
 
       float endFade = pow(sin(travel * 3.14159265), 0.34);
       float veilParticle = smoothstep(uVeilThreshold, 1.0, aSeed.w);
@@ -627,7 +682,7 @@ export const particleVertexShader = `
       float veilAlpha = mix(uVeilAlpha.x, uVeilAlpha.y, aSeed.z);
       vAlpha = endFade * emission * mix(coreAlpha, veilAlpha, veilParticle);
       vAlpha *= aDropVisualStrength;
-      vAlpha *= 1.0 - smoothstep(0.0, 0.12, flushProgress);
+      vAlpha *= 1.0 - smoothstep(0.0, 0.12, drainProgress);
       if (uMaterialMode > 1.5 && uMaterialMode < 2.5) vAlpha = 0.0;
       if (uMaterialMode > 5.5 && uMaterialMode < 6.5) vAlpha = 0.0;
       pointSize = mix(
@@ -667,6 +722,7 @@ export const particleFragmentShader = `
   varying float vLayer;
   varying float vStretch;
   varying float vSoftness;
+  varying float vFaction;
 
   void main() {
     vec2 centered = gl_PointCoord - 0.5;
@@ -679,6 +735,12 @@ export const particleFragmentShader = `
     vec3 filamentColor = mix(uMiddleColor, uSurfaceColor, 0.28 + vTone * 0.42);
     vec3 color = mix(reservoirColor, filamentColor, step(0.5, vLayer));
     color = mix(uDeepColor, color, 0.84);
+    if (vFaction > 0.0 && vLayer > 0.5) {
+      vec3 leftTint = vec3(0.52, 0.16, 0.12);
+      vec3 rightTint = vec3(0.12, 0.26, 0.46);
+      vec3 factionTint = mix(leftTint, rightTint, step(0.5, vFaction));
+      color = mix(color, factionTint, 0.46);
+    }
 
     gl_FragColor = vec4(color, softDisc * vAlpha);
   }
@@ -783,7 +845,8 @@ export const solidDropVertexShader = `
     float travelFade = pow(max(sin(travel * 3.14159265), 0.0), 0.22);
     float visualStrength = mix(aDropVisualStrength, 1.0, step(0.5, uAutomaticEmission));
     vSolidAlpha = emission * arrivalFade * travelFade * visualStrength;
-    vSolidAlpha *= 1.0 - smoothstep(0.0, 0.12, uFlushProgress);
+    float evacuationProgress = max(uFlushProgress, uOverflowProgress);
+    vSolidAlpha *= 1.0 - smoothstep(0.0, 0.12, evacuationProgress);
     vSolidUv = uv;
     vSolidSeed = aSeed.xz;
     gl_Position = vec4(

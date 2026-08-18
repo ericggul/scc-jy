@@ -3,8 +3,8 @@ import { randomUUID } from "node:crypto";
 const id = "ddong-meong";
 const room = "experiment:ddong-meong";
 const archiveLimit = 5_000;
+const archiveSnapshotRetentionMs = 30 * 24 * 60 * 60 * 1000;
 const activeSessions = new Map();
-const archive = [];
 
 const contents = {
   "morning-urgent": "모닝똥이 급한데",
@@ -12,10 +12,18 @@ const contents = {
   "celebrity-applause": "유명해지면 똥을 싸도 박수쳐준다",
   "thick-poop-imagination": "굵은 똥이 나오는 상상",
   "constipation-dialogue": "변비와의 긴 대화",
-  "dog-poop-remedy": "개똥도 약에 쓰려면 없다",
-  "before-after-poop": "똥 누러 갈 적 마음 다르고, 올 적 마음 다르다",
-  "muddy-dog-husk": "똥 묻은 개가 겨 묻은 개 나무란다",
+  "five-minute-meeting": "중요한 미팅 5분 전 급똥",
+  "poop-politics": "똥의 정치학",
+  "bathroom-without-urge": "똥이 마렵지는 않지만 화장실은 가고 싶을 때",
+  "who-pooped-on-my-head": "누가 내 머리에 똥 쌌어?",
+  "inspiration-from-ddong-meong": "좋은 영감은 똥멍에서 출발한다",
+  "boot-camp-poop": "훈련소에서 싸는 똥",
+  "omakase-poop": "오마카세 먹은 후에 싸는 똥",
+  "do-androids-ddong-meong": "안드로이드는 똥멍을 싸는가?",
+  "ten-reasons-to-poop-meditate": "명상하면서 똥을 싸야 하는 10가지 이유",
 };
+
+const archive = [];
 
 const events = {
   join: "ddong-meong:join",
@@ -104,7 +112,10 @@ function getPresence(io) {
 
 function getSnapshot(io) {
   const dayKey = koreanDay();
-  const todayArchive = archive.filter((entry) => entry.dayKey === dayKey);
+  const recentArchive = archive.filter(
+    (entry) => entry.endedAt >= Date.now() - archiveSnapshotRetentionMs,
+  );
+  const todayArchive = recentArchive.filter((entry) => entry.dayKey === dayKey);
   const todayParticipants = new Set(
     todayArchive.map((entry) => entry.participantId),
   );
@@ -114,7 +125,7 @@ function getSnapshot(io) {
 
   return {
     activeSessions: [...activeSessions.values()],
-    archive: todayArchive,
+    archive: recentArchive,
     presence: getPresence(io),
     today: {
       completedSessions: todayArchive.length,

@@ -5,6 +5,7 @@ import type { CValSnapshot } from "@/components/model";
 import { useCValCommentAudio } from "./audio";
 import { C_VAL_CHAT_ROOMS, type CValChatRoomId } from "./corpus";
 import styles from "./comments.module.css";
+import CValEntryQr from "../entry-qr";
 import {
   C_VAL_COMMENT_ARCHIVE_PER_ROOM,
   C_VAL_COMMENT_ORDINARY_PER_VOICE,
@@ -321,6 +322,11 @@ export default function CValCommentsScreen({ snapshot }: { snapshot: CValSnapsho
                 </output>
               </header>
               <ChatThread messages={messages} />
+              {snapshot.phase === "waiting" && (
+                <div className={styles.entryQr}>
+                  <CValEntryQr />
+                </div>
+              )}
               {messages.length === 0 && (
                 <div className={styles.empty} aria-hidden="true">
                   <span>메시지 기록 대기</span>

@@ -35,6 +35,8 @@ const materialModeValues = {
   "pellet-cluster": 6,
   "segmented-rope": 7,
   "counter-plop": 8,
+  "fan-spray": 9,
+  "anxious-spray": 10,
 } satisfies Record<AccumulationMaterialKind, number>;
 
 function usesSolidDrops(profile: AccumulationProfile) {
@@ -66,6 +68,7 @@ type InteractiveAccumulationBackgroundProps = {
   flushDurationMs: number;
   flushStartedAt: number | null;
   frozenElapsedMs: number | null;
+  overflowStartedAt: number | null;
   pausedAt: number | null;
   pausedDurationMs: number;
   profile: AccumulationProfile;
@@ -337,6 +340,7 @@ export default function InteractiveAccumulationBackground({
   flushDurationMs,
   flushStartedAt,
   frozenElapsedMs,
+  overflowStartedAt,
   pausedAt,
   pausedDurationMs,
   profile,
@@ -349,6 +353,7 @@ export default function InteractiveAccumulationBackground({
     flushDurationMs,
     flushStartedAt,
     frozenElapsedMs,
+    overflowStartedAt,
     pausedAt,
     pausedDurationMs,
     startedAt,
@@ -360,6 +365,7 @@ export default function InteractiveAccumulationBackground({
       flushDurationMs,
       flushStartedAt,
       frozenElapsedMs,
+      overflowStartedAt,
       pausedAt,
       pausedDurationMs,
       startedAt,
@@ -369,6 +375,7 @@ export default function InteractiveAccumulationBackground({
     flushDurationMs,
     flushStartedAt,
     frozenElapsedMs,
+    overflowStartedAt,
     pausedAt,
     pausedDurationMs,
     startedAt,
@@ -406,6 +413,7 @@ export default function InteractiveAccumulationBackground({
     const dropAgeUniform = { value: -1 };
     const dropOriginUniform = { value: new THREE.Vector2(0.5, 1) };
     const flushProgressUniform = { value: 0 };
+    const overflowProgressUniform = { value: 0 };
     const pixelRatioUniform = { value: 1 };
     const sharedUniforms = {
       uResolution: resolutionUniform,
@@ -416,6 +424,7 @@ export default function InteractiveAccumulationBackground({
       uDropAge: dropAgeUniform,
       uDropOrigin: dropOriginUniform,
       uFlushProgress: flushProgressUniform,
+      uOverflowProgress: overflowProgressUniform,
       uPixelRatio: pixelRatioUniform,
       ...createProfileUniforms(profile),
     };
@@ -849,6 +858,10 @@ export default function InteractiveAccumulationBackground({
                 (now - timeline.flushStartedAt) /
                   timeline.flushDurationMs,
               );
+      const overflowProgress =
+        timeline.overflowStartedAt === null
+          ? 0
+          : clamp((now - timeline.overflowStartedAt) / 3000);
       const interactiveProgress = accumulationProgressFromInteractions(
         timeline.settledDropCount,
       );
@@ -869,6 +882,7 @@ export default function InteractiveAccumulationBackground({
         const blend = 1 - Math.exp(-progressDeltaMs / 430);
         displayedProgress += (targetProgress - displayedProgress) * blend;
       }
+      overflowProgressUniform.value = overflowProgress;
       progressUniform.value = displayedProgress;
       timeUniform.value = elapsedMs / 1000;
       interactionTimeUniform.value = (visualNow - interactionEpochMs) / 1000;

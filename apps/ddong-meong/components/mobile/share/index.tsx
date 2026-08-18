@@ -358,7 +358,7 @@ export default function DdongMeongShare() {
         </main>
 
         <div className={styles.actions}>
-          <p className={styles.sharePrompt}>같이 똥멍할 친구에게</p>
+          <p className={styles.sharePrompt}>똥멍 메이트 구하기 💩</p>
           <button aria-label="카카오톡으로 공유" className={`${styles.shareButton} ${styles.kakaoButton}`} onClick={shareToKakao} type="button">
             <KakaoTalkIcon />
             <span>카카오톡으로 공유</span>

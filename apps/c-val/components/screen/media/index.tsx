@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef } from "react";
 import styled from "styled-components";
 import type { CValSnapshot } from "@/components/model";
 import { cValMediaCellOrder, presentCValMedia } from "./presenter";
+import CValEntryQr from "../entry-qr";
 
 const media = {
   gain: { src: "/video/left.mp4", start: 5, end: 15 },
@@ -30,6 +31,14 @@ const SourceVideo = styled.video`
   height: 1px;
   opacity: 0;
   pointer-events: none;
+`;
+
+const EntryPoint = styled.div`
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: clamp(120px, 20vmin, 280px);
+  transform: translate(-50%, -50%);
 `;
 
 function drawCover(
@@ -179,6 +188,7 @@ export default function CValMediaScreen({ snapshot }: { snapshot: CValSnapshot }
     <Stage aria-label={layout.direction === "gain" ? `${layout.activeCount} beef dinner scenes` : layout.direction === "loss" ? `${layout.activeCount} falling scenes` : "No market movement yet"}>
       <Canvas ref={canvasRef} role="img" />
       {segment ? <SourceVideo key={segment.src} ref={videoRef} src={segment.src} preload="auto" playsInline loop autoPlay /> : null}
+      {snapshot.phase === "waiting" ? <EntryPoint><CValEntryQr /></EntryPoint> : null}
     </Stage>
   );
 }

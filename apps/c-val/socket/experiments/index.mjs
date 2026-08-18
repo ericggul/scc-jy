@@ -2,7 +2,9 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import {
   cValModelTiming,
+  activateCValRuntime,
   createCValRuntime,
+  beginCValRuntimeSettlement,
   resetCValRuntime,
   setCValHumanControl,
   snapshotCValRuntime,
@@ -34,6 +36,8 @@ let externalPublisher = null;
 let externalSlackPublisher = null;
 let externalTelegramPublisher = null;
 let ioRef = null;
+let disengagedAt = null;
+const C_VAL_IDLE_SETTLEMENT_DELAY_MS = 10_000;
 
 const events = {
   join: "c-val-2:join",
@@ -208,21 +212,42 @@ function broadcastState(io) {
 
 setInterval(() => {
   const now = Date.now();
-  setCValHumanControl(
-    runtime,
-    aggregateCValHumanControls(humanControls, now),
-    now,
-  );
+  const control = aggregateCValHumanControls(humanControls, now);
+  setCValHumanControl(runtime, control, now);
+  if (control.engaged) {
+    disengagedAt = null;
+  } else if (runtime.phase === "active") {
+    disengagedAt ??= now;
+    if (now - disengagedAt >= C_VAL_IDLE_SETTLEMENT_DELAY_MS) {
+      if (beginCValRuntimeSettlement(runtime, now)) {
+        clearCValDiagnostics(diagnostics, now);
+        console.info("[c-val:v2] idle hold complete; starting 3s return to 100");
+      }
+    }
+  }
+  const phaseBeforeStep = runtime.phase;
   stepCValRuntime(runtime, now, cValModelTiming.broadcastIntervalMs / 1000);
+  const returnedToWaiting =
+    phaseBeforeStep === "settling" && runtime.phase === "waiting";
+  if (returnedToWaiting) {
+    console.info("[c-val:v2] return complete; waiting at 50/50/50 · 100");
+  }
   const activeClientCount =
     ioRef?.sockets.adapter.rooms.get(cValRoom)?.size ?? 0;
-  if (activeClientCount > 0) {
+  if (returnedToWaiting && activeClientCount > 0) {
+    // The final packet is required so every screen receives the exact dormant
+    // 100-point state before the room becomes completely silent.
+    broadcastState(ioRef);
+    clearCValDiagnostics(diagnostics, now);
+  } else if (activeClientCount > 0 && runtime.phase !== "waiting") {
     const state = broadcastState(ioRef);
     observeCValDiagnostics(diagnostics, state);
     flushCValDiagnostics(diagnostics, now);
-    externalPublisher?.observe(state);
-    externalSlackPublisher?.observe(state);
-    externalTelegramPublisher?.observe(state);
+    if (control.engaged) {
+      externalPublisher?.observe(state);
+      externalSlackPublisher?.observe(state);
+      externalTelegramPublisher?.observe(state);
+    }
   } else {
     clearCValDiagnostics(diagnostics, now);
   }
@@ -243,6 +268,13 @@ function register({ io, socket }) {
     socket.data[id] = { role: normalizedRole, version };
     clients.set(socket.id, { connectedAt: Date.now() });
     socket.join(cValRoom);
+    if (normalizedRole === "mobile") {
+      // A new phone is the explicit boundary that wakes a silent installation.
+      // It also interrupts an in-progress return immediately; the quiet timer
+      // begins again only if this participant remains neutral for ten seconds.
+      activateCValRuntime(runtime, Date.now());
+      disengagedAt = null;
+    }
     socket.emit(events.hello, {
       state: snapshotCValRuntime(runtime),
       presence: getPresence(io),
@@ -261,6 +293,7 @@ function register({ io, socket }) {
     const control = normalizeCValHumanControl(payload, now);
     if (!control) return;
     humanControls.set(socket.id, control);
+    if (control.engaged) disengagedAt = null;
     setCValHumanControl(
       runtime,
       aggregateCValHumanControls(humanControls, now),
@@ -351,6 +384,7 @@ function register({ io, socket }) {
     }
     const now = Date.now();
     humanControls.clear();
+    disengagedAt = null;
     resetCValRuntime(runtime, now);
     clearCValDiagnostics(diagnostics, now);
     io.to(cValRoom).emit(events.humanControlResetOut);

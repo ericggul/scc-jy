@@ -29,8 +29,11 @@ export function normalizeCValHumanControl(payload = {}, receivedAt = Date.now())
 }
 
 /**
- * Every active phone contributes the same direct V/A/L target. Multiple phones
- * use one transparent rule: the arithmetic mean for all three conditions.
+ * Each phone contributes its signed displacement from C-VAL's neutral 0.5
+ * condition. Those displacements add, then the resulting shared target is
+ * bounded to the control range. This lets a second active phone intensify or
+ * counter a first phone without allowing a single last packet to replace the
+ * group state.
  */
 export function aggregateCValHumanControls(
   controls,
@@ -54,16 +57,19 @@ export function aggregateCValHumanControls(
     };
   }
 
+  const accumulated = (parameter) =>
+    Number(
+      clamp(
+        0.5 + current.reduce((sum, control) => sum + control[parameter] - 0.5, 0),
+        0,
+        1,
+      ).toFixed(6),
+    );
+
   return {
-    volatility:
-      current.reduce((sum, { volatility }) => sum + volatility, 0) /
-      current.length,
-    activity:
-      current.reduce((sum, { activity }) => sum + activity, 0) /
-      current.length,
-    liquidity:
-      current.reduce((sum, { liquidity }) => sum + liquidity, 0) /
-      current.length,
+    volatility: accumulated("volatility"),
+    activity: accumulated("activity"),
+    liquidity: accumulated("liquidity"),
     engaged: true,
     contributors: current.length,
     receivedAt: Math.max(...current.map(({ receivedAt }) => receivedAt)),

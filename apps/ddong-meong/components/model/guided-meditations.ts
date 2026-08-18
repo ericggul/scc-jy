@@ -1,11 +1,17 @@
-import { beforeAfterPoopScript } from "./scripts/before-after-poop";
+import { bathroomWithoutUrgeScript } from "./scripts/bathroom-without-urge";
+import { bootCampPoopScript } from "./scripts/boot-camp-poop";
 import { celebrityApplauseScript } from "./scripts/celebrity-applause";
+import { doAndroidsDdongMeongScript } from "./scripts/do-androids-ddong-meong";
 import { emergencyChillScript } from "./scripts/emergency-chill";
+import { fiveMinuteMeetingScript } from "./scripts/five-minute-meeting";
+import { inspirationFromDdongMeongScript } from "./scripts/inspiration-from-ddong-meong";
 import { morningUrgentScript } from "./scripts/morning-urgent";
+import { omakasePoopScript } from "./scripts/omakase-poop";
 import { constipationDialogueScript } from "./scripts/constipation-dialogue";
-import { dogPoopRemedyScript } from "./scripts/dog-poop-remedy";
-import { muddyDogHuskScript } from "./scripts/muddy-dog-husk";
+import { poopPoliticsScript } from "./scripts/poop-politics";
+import { tenReasonsToPoopMeditateScript } from "./scripts/ten-reasons-to-poop-meditate";
 import { thickPoopImaginationScript } from "./scripts/thick-poop-imagination";
+import { whoPoopedOnMyHeadScript } from "./scripts/who-pooped-on-my-head";
 
 export const guidedMeditations = [
   {
@@ -49,28 +55,76 @@ export const guidedMeditations = [
     lines: constipationDialogueScript,
   },
   {
-    slug: "dog-poop-remedy",
-    title: "개똥도 약에 쓰려면 없다",
-    description: "산책줄과 빈 갈색 병 앞에서, 꼭 필요한 것을 기다리는 시간.",
+    slug: "five-minute-meeting",
+    title: "중요한 미팅 5분 전 급똥",
+    description: "발표와 미팅 직전, 몸의 가장 급한 안건을 차분히 처리하는 4분 33초.",
     durationSeconds: 4 * 60 + 33,
-    imagePath: "/meditations/dog-poop-remedy.png",
-    lines: dogPoopRemedyScript,
+    imagePath: "/meditations/five-minute-meeting.png",
+    lines: fiveMinuteMeetingScript,
   },
   {
-    slug: "before-after-poop",
-    title: "똥 누러 갈 적 마음 다르고, 올 적 마음 다르다",
-    description: "떨어진 가방과 가지런한 슬리퍼 사이, 급함이 평온으로 식는 순간.",
+    slug: "poop-politics",
+    title: "똥의 정치학",
+    description: "잠긴 칸 하나에서 사적인 몸과 공적인 공간의 규칙을 천천히 생각하는 시간.",
     durationSeconds: 4 * 60 + 33,
-    imagePath: "/meditations/before-after-poop.png",
-    lines: beforeAfterPoopScript,
+    imagePath: "/meditations/poop-politics.png",
+    lines: poopPoliticsScript,
   },
   {
-    slug: "muddy-dog-husk",
-    title: "똥 묻은 개가 겨 묻은 개 나무란다",
-    description: "두 켤레의 슬리퍼와 거울 앞에서 남의 얼룩을 먼저 발견하는 시간.",
+    slug: "bathroom-without-urge",
+    title: "똥이 마렵지는 않지만 화장실은 가고 싶을 때",
+    description: "아무 결과 없이도 잠깐 사라지고 싶을 때, 칸 하나에서 쉬어 가는 시간.",
     durationSeconds: 4 * 60 + 33,
-    imagePath: "/meditations/muddy-dog-husk.png",
-    lines: muddyDogHuskScript,
+    imagePath: "/meditations/bathroom-without-urge.png",
+    lines: bathroomWithoutUrgeScript,
+  },
+  {
+    slug: "who-pooped-on-my-head",
+    title: "누가 내 머리에 똥 쌌어?",
+    description: "욕실의 작은 흔적 하나를 두고, 혼자서 탐정과 목격자가 되는 시간.",
+    durationSeconds: 4 * 60 + 33,
+    imagePath: "/meditations/who-pooped-on-my-head.png",
+    lines: whoPoopedOnMyHeadScript,
+  },
+  {
+    slug: "inspiration-from-ddong-meong",
+    title: "좋은 영감은 똥멍에서 출발한다",
+    description: "아무것도 적지 않는 동안, 생각 하나가 조용히 도착하는 시간.",
+    durationSeconds: 4 * 60 + 33,
+    imagePath: "/meditations/inspiration-from-ddong-meong.png",
+    lines: inspirationFromDdongMeongScript,
+  },
+  {
+    slug: "boot-camp-poop",
+    title: "훈련소에서 싸는 똥",
+    description: "핸드폰도 사적인 시간도 부족한 훈련소 화장실에서 잠깐 멍하는 시간.",
+    durationSeconds: 4 * 60 + 33,
+    imagePath: "/meditations/boot-camp-poop.png",
+    lines: bootCampPoopScript,
+  },
+  {
+    slug: "omakase-poop",
+    title: "오마카세 먹은 후에 싸는 똥",
+    description: "비싼 저녁의 마지막 코스를, 녹차 같은 휴지와 함께 천천히 마무리하는 시간.",
+    durationSeconds: 4 * 60 + 33,
+    imagePath: "/meditations/omakase-poop.png",
+    lines: omakasePoopScript,
+  },
+  {
+    slug: "do-androids-ddong-meong",
+    title: "안드로이드는 똥멍을 싸는가?",
+    description: "계산하지 않고 멈추는 몸의 비효율과 인간적인 여백을 생각하는 시간.",
+    durationSeconds: 4 * 60 + 33,
+    imagePath: "/meditations/do-androids-ddong-meong.png",
+    lines: doAndroidsDdongMeongScript,
+  },
+  {
+    slug: "ten-reasons-to-poop-meditate",
+    title: "명상하면서 똥을 싸야 하는 10가지 이유",
+    description: "자기계발서의 말투로, 잠깐 멍할 권리를 진지하게 권하는 시간.",
+    durationSeconds: 4 * 60 + 33,
+    imagePath: "/meditations/ten-reasons-to-poop-meditate.png",
+    lines: tenReasonsToPoopMeditateScript,
   },
 ] as const;
 

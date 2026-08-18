@@ -103,6 +103,25 @@ export default function CValMobile() {
       onHumanControlReset: () => remoteControlResetRef.current(),
     });
 
+  const reportDisengaged = useCallback(() => {
+    const nextControl = { ...initialControl, sampledAt: performance.now() };
+    setControl(nextControl);
+    sendHumanControl(nextControl);
+  }, [sendHumanControl]);
+
+  useEffect(() => {
+    const reportWhenHidden = () => {
+      if (document.visibilityState === "hidden") reportDisengaged();
+    };
+    document.addEventListener("visibilitychange", reportWhenHidden);
+    window.addEventListener("pagehide", reportDisengaged);
+    return () => {
+      document.removeEventListener("visibilitychange", reportWhenHidden);
+      window.removeEventListener("pagehide", reportDisengaged);
+      reportDisengaged();
+    };
+  }, [reportDisengaged]);
+
   useEffect(() => {
     remoteControlResetRef.current = () => {
       baselineRef.current = latestRawRef.current;
@@ -371,7 +390,8 @@ export default function CValMobile() {
     window.removeEventListener("deviceorientation", handleVisualOrientation);
     listeningRef.current = null;
     visualOrientationListeningRef.current = false;
-  }, [handleMotion, handleOrientation, handleVisualOrientation]);
+    reportDisengaged();
+  }, [handleMotion, handleOrientation, handleVisualOrientation, reportDisengaged]);
 
   function selectInputMapping(nextMapping: CValInputMappingId) {
     stopListening();

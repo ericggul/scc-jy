@@ -42,19 +42,19 @@ export const backgroundExperiments = [
     slug: "liquid-burst",
   },
   {
-    label: "dog poop remedy",
-    profile: guidedAccumulationProfiles["dog-poop-remedy"],
-    slug: "dog-poop-remedy",
+    label: "five minute meeting",
+    profile: guidedAccumulationProfiles["five-minute-meeting"],
+    slug: "five-minute-meeting",
   },
   {
-    label: "before and after poop",
-    profile: guidedAccumulationProfiles["before-after-poop"],
-    slug: "before-after-poop",
+    label: "poop politics",
+    profile: guidedAccumulationProfiles["poop-politics"],
+    slug: "poop-politics",
   },
   {
-    label: "muddy dog and husk",
-    profile: guidedAccumulationProfiles["muddy-dog-husk"],
-    slug: "muddy-dog-husk",
+    label: "androids ddong-meong",
+    profile: guidedAccumulationProfiles["do-androids-ddong-meong"],
+    slug: "do-androids-ddong-meong",
   },
 ] satisfies BackgroundExperiment[];
 

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   activateCValRuntime,
+  beginCValRuntimeSettlement,
   cValConditionDirection,
   cValModelTiming,
   createCValRuntime,
@@ -157,6 +158,53 @@ test("an untouched runtime remains a participant-free market at exactly 100", ()
   assert.deepEqual(snapshot.recentTrades, []);
   assert.ok(snapshot.participants.every(({ count }) => count === 0));
   assert.ok(snapshot.history.index.every((price) => price === 100));
+});
+
+test("an unattended active market settles continuously before returning to the exact dormant baseline", () => {
+  const runtime = createCValRuntime(0, "settlement", 19);
+  advanceWithControl(runtime, { volatility: 1, activity: 1, liquidity: 0 }, 100);
+  const startAt = 6_000;
+  const startingIndex = runtime.market.index;
+  assert.notEqual(startingIndex, 100);
+  assert.equal(beginCValRuntimeSettlement(runtime, startAt), true);
+  assert.equal(runtime.phase, "settling");
+  assert.equal(runtime.settlement.durationMs, 3_000);
+  assert.ok(runtime.visibleBook.bids.length > 0);
+
+  const midpoint = startAt + Math.floor(runtime.settlement.durationMs / 2);
+  stepCValRuntime(runtime, midpoint, 0.05);
+  assert.ok(Math.abs(runtime.market.index - 100) < Math.abs(startingIndex - 100));
+  assert.notEqual(runtime.market.index, 100);
+  assert.ok(runtime.market.submittedOrders >= 0);
+  assert.ok(runtime.market.executions >= 0);
+  assert.ok(runtime.market.depth >= 0);
+
+  stepCValRuntime(runtime, startAt + runtime.settlement.durationMs, 0.05);
+  const snapshot = snapshotCValRuntime(runtime);
+  assert.equal(snapshot.phase, "waiting");
+  assert.deepEqual(snapshot.parameters, { volatility: 0.5, activity: 0.5, liquidity: 0.5 });
+  assert.equal(snapshot.market.index, 100);
+});
+
+test("a fresh phone signal cancels settlement instead of being confused with the idle state", () => {
+  const runtime = createCValRuntime(0, "settlement-resume", 31);
+  advanceWithControl(runtime, { volatility: 1, activity: 1, liquidity: 0 }, 20);
+  beginCValRuntimeSettlement(runtime, 2_000);
+  setCValHumanControl(runtime, { volatility: 0.9, activity: 0.8, liquidity: 0.2, engaged: true }, 2_050);
+  assert.equal(runtime.phase, "active");
+  assert.equal(runtime.settlement, null);
+});
+
+test("a newly joined mobile can wake the waiting runtime and interrupt a return immediately", () => {
+  const runtime = createCValRuntime(0, "mobile-join", 37);
+  assert.equal(activateCValRuntime(runtime, 100), true);
+  assert.equal(runtime.phase, "active");
+
+  beginCValRuntimeSettlement(runtime, 200);
+  assert.equal(runtime.phase, "settling");
+  assert.equal(activateCValRuntime(runtime, 250), true);
+  assert.equal(runtime.phase, "active");
+  assert.equal(runtime.settlement, null);
 });
 
 test("a baseline packet stays dormant and intentional input activates once", () => {

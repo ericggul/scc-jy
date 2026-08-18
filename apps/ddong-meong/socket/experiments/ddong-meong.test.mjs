@@ -79,17 +79,20 @@ test("ddong-meong archives a named content session", () => {
   });
 });
 
-test("ddong-meong registers each proverb content with its exact title", () => {
-  const proverbContents = [
-    ["dog-poop-remedy", "개똥도 약에 쓰려면 없다"],
-    [
-      "before-after-poop",
-      "똥 누러 갈 적 마음 다르고, 올 적 마음 다르다",
-    ],
-    ["muddy-dog-husk", "똥 묻은 개가 겨 묻은 개 나무란다"],
+test("ddong-meong registers each new content with its exact title", () => {
+  const newContents = [
+    ["five-minute-meeting", "중요한 미팅 5분 전 급똥"],
+    ["poop-politics", "똥의 정치학"],
+    ["bathroom-without-urge", "똥이 마렵지는 않지만 화장실은 가고 싶을 때"],
+    ["who-pooped-on-my-head", "누가 내 머리에 똥 쌌어?"],
+    ["inspiration-from-ddong-meong", "좋은 영감은 똥멍에서 출발한다"],
+    ["boot-camp-poop", "훈련소에서 싸는 똥"],
+    ["omakase-poop", "오마카세 먹은 후에 싸는 똥"],
+    ["do-androids-ddong-meong", "안드로이드는 똥멍을 싸는가?"],
+    ["ten-reasons-to-poop-meditate", "명상하면서 똥을 싸야 하는 10가지 이유"],
   ];
 
-  for (const [contentSlug, contentTitle] of proverbContents) {
+  for (const [contentSlug, contentTitle] of newContents) {
     const { broadcasts, handlers } = createHarness();
     const sessionHandler = handlers.get(
       ddongMeongExperiment.events.sessionIn,
