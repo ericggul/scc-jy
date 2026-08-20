@@ -1,0 +1,121 @@
+.field {
+  position: relative;
+  width: 100%;
+  height: 100svh;
+  min-height: 26rem;
+  overflow: hidden;
+  background: #f6f6f6;
+}
+
+.canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.controls {
+  position: absolute;
+  right: clamp(1.1rem, 2.6vw, 2.4rem);
+  bottom: clamp(1.1rem, 2.6vw, 2.4rem);
+  left: clamp(1.1rem, 2.6vw, 2.4rem);
+  z-index: 1;
+  display: grid;
+  gap: 0.7rem;
+  margin: 0;
+  color: #080808;
+  font: 0.64rem var(--font-geist-mono), monospace;
+  text-shadow: 0 1px 3px #ffffff, 0 0 8px #ffffff;
+}
+
+.controls[data-mode="face"],
+.controls[data-mode="politician"] {
+  color: #f6f6f6;
+  text-shadow: 0 1px 3px #000000, 0 0 8px #000000;
+}
+
+.toolbar {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+
+.readout {
+  margin: 0;
+  color: color-mix(in srgb, currentColor 72%, transparent);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.15rem;
+}
+
+.actions button {
+  border: 0;
+  border-bottom: 1px solid transparent;
+  padding: 0.35rem 0;
+  background: transparent;
+  color: color-mix(in srgb, currentColor 70%, transparent);
+  cursor: pointer;
+  font: inherit;
+  text-shadow: inherit;
+}
+
+.actions button:hover,
+.actions button[aria-pressed="true"] {
+  border-bottom-color: currentColor;
+  color: currentColor;
+}
+
+.actions button:focus-visible,
+.control input:focus-visible {
+  outline: 1px solid currentColor;
+  outline-offset: 4px;
+}
+
+.parameters {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1.15rem;
+}
+
+.control {
+  display: grid;
+  gap: 0.36rem;
+  min-width: 0;
+}
+
+.controlHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.45rem;
+}
+
+.control output {
+  font-variant-numeric: tabular-nums;
+}
+
+.control input {
+  width: 100%;
+  margin: 0;
+  accent-color: currentColor;
+}
+
+@media (max-width: 700px) {
+  .toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+
+  .parameters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.7rem 1.15rem;
+  }
+}

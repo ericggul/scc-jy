@@ -42,6 +42,18 @@ export const experimentCatalog = [
     description: "A graph that continually buds, sheds, connects, and severs itself.",
   },
   {
+    href: "/face-voronoi",
+    label: "face-voronoi",
+    description:
+      "A continuously relaxing Voronoi field whose adjacency network keeps reforming.",
+  },
+  {
+    href: "/page-rank",
+    label: "page-rank",
+    description:
+      "A directed graph where rank mass moves through links by diffusion or surfer visits.",
+  },
+  {
     href: "/mycorrhizal-wave",
     label: "mycorrhizal-wave",
     description: "Observed fungal-network growth and synchronized replicate comparisons.",

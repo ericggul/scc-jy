@@ -1,0 +1,71 @@
+.field {
+  position: relative;
+  width: 100%;
+  height: 100svh;
+  overflow: hidden;
+  background: #09080c;
+}
+
+.canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: #09080c;
+}
+
+.controls {
+  position: absolute;
+  right: clamp(1.1rem, 2.6vw, 2.4rem);
+  bottom: clamp(1.1rem, 2.6vw, 2.4rem);
+  left: clamp(1.1rem, 2.6vw, 2.4rem);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin: 0;
+  color: #f6f6f6;
+  font: 0.64rem var(--font-geist-mono), monospace;
+  text-shadow: 0 1px 3px #000, 0 0 8px #000;
+}
+
+.readout {
+  margin: 0;
+  color: rgb(246 246 246 / 72%);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.15rem;
+}
+
+.actions button {
+  border: 0;
+  border-bottom: 1px solid transparent;
+  padding: 0.35rem 0;
+  background: transparent;
+  color: rgb(246 246 246 / 70%);
+  cursor: pointer;
+  font: inherit;
+}
+
+.actions button:hover,
+.actions button[aria-pressed="true"] {
+  border-bottom-color: currentColor;
+  color: #fff;
+}
+
+.actions button:focus-visible {
+  outline: 1px solid #fff;
+  outline-offset: 4px;
+}
+
+@media (max-width: 35rem) {
+  .controls {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+}
