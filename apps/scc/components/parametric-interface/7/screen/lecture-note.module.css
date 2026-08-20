@@ -1,0 +1,81 @@
+.grid {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  width: 100vw;
+  height: 100dvh;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  gap: 3px;
+  overflow: hidden;
+  background: #d8d8d8;
+}
+
+.page {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  grid-template-rows: 8% minmax(0, 1fr);
+  overflow: hidden;
+  background: #fff;
+  color: #000;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+  padding: 0 2.2%;
+  background: #0e3866;
+  color: #fff;
+  font-size: clamp(0.34rem, 0.59vw, 0.68rem);
+  font-weight: 700;
+  letter-spacing: -0.028em;
+  white-space: nowrap;
+}
+
+.header strong {
+  overflow: hidden;
+  padding-bottom: 0.1em;
+  font-weight: 700;
+  text-overflow: ellipsis;
+}
+
+.body {
+  min-width: 0;
+  padding: 0.8% 2.2%;
+}
+
+.body h2 {
+  display: flex;
+  align-items: baseline;
+  gap: 0.38em;
+  margin: 0;
+  font-size: clamp(0.54rem, 1.04vw, 1.16rem);
+  font-weight: 700;
+  letter-spacing: -0.043em;
+  line-height: 1.14;
+}
+
+.body h2 span {
+  flex: 0 0 auto;
+  font-size: 0.48em;
+  letter-spacing: 0;
+}
+
+.parameter {
+  margin: 1.15em 0 0;
+  font-size: clamp(0.52rem, 0.93vw, 1.02rem);
+  font-weight: 400;
+  letter-spacing: -0.036em;
+  line-height: 1.2;
+}
+
+@media (max-width: 42rem) {
+  .grid { gap: 1px; }
+  .header { font-size: clamp(0.25rem, 1.7vw, 0.4rem); }
+  .body h2 { font-size: clamp(0.37rem, 2.6vw, 0.63rem); }
+  .parameter { font-size: clamp(0.34rem, 2.25vw, 0.52rem); }
+}
