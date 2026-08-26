@@ -207,6 +207,8 @@ requested, against an already-running HTTPS server.
 
 ## Detailed records
 
+- [Next changes](./2026-08-26-next-change-readiness.md): change list,
+  checkpoint, and concurrent-work note.
 - [C-VAL 1](./1.md): promoted and frozen behavioral, visual, and market contract.
 - [C-VAL 2](./2.md): active branch contract and future iteration record.
 - [C-VAL 2 mobile v2 gyroscope interface](./2-mobile-v2-gyroscope-interface-2026-08-11.md):

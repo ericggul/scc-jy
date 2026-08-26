@@ -7,8 +7,8 @@ import { cValMediaCellOrder, presentCValMedia } from "./presenter";
 import CValEntryQr from "../entry-qr";
 
 const media = {
-  gain: { src: "/video/left.mp4", start: 5, end: 15 },
-  loss: { src: "/video/right.mp4", start: 65, end: 74 },
+  gain: { src: "/video/left.mp4", start: 5, end: 15, scale: 1 },
+  loss: { src: "/video/right.mp4", start: 65, end: 74, scale: 1.2 },
 } as const;
 
 const Stage = styled.main`
@@ -46,6 +46,7 @@ function drawCover(
   video: HTMLVideoElement,
   width: number,
   height: number,
+  scale: number,
 ) {
   const sourceWidth = video.videoWidth;
   const sourceHeight = video.videoHeight;
@@ -63,6 +64,11 @@ function drawCover(
     cropHeight = sourceWidth / targetRatio;
     sourceY = (sourceHeight - cropHeight) / 2;
   }
+  const zoom = Math.max(1, scale);
+  sourceX += (cropWidth - cropWidth / zoom) / 2;
+  sourceY += (cropHeight - cropHeight / zoom) / 2;
+  cropWidth /= zoom;
+  cropHeight /= zoom;
   context.drawImage(video, sourceX, sourceY, cropWidth, cropHeight, 0, 0, width, height);
 }
 
@@ -135,7 +141,7 @@ export default function CValMediaScreen({ snapshot }: { snapshot: CValSnapshot }
         const tileHeight = Math.max(1, Math.ceil(cellHeight));
         if (tile.width !== tileWidth) tile.width = tileWidth;
         if (tile.height !== tileHeight) tile.height = tileHeight;
-        drawCover(tileContext, video, tile.width, tile.height);
+        drawCover(tileContext, video, tile.width, tile.height, segment.scale);
         currentOrder.slice(0, activeCount).forEach(({ column, row }) => {
           context.drawImage(tile, column * cellWidth, row * cellHeight, cellWidth, cellHeight);
         });

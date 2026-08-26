@@ -2,7 +2,6 @@ import type { CSSProperties } from "react";
 import {
   cValParameterLabels,
   type CValHumanControlInput,
-  type CValInputMappingId,
 } from "@/components/model";
 import type {
   CValMobileAxisSignal,
@@ -17,28 +16,24 @@ export default function CValMobileView({
   price,
   priceMove,
   priceState,
-  inputMappings,
-  inputMapping,
+  priceHistory,
   permission,
   control,
   phoneOrientation,
   recordingStatus,
   recordingMessage,
   onEnableMotion,
-  onSelectInputMapping,
 }: {
   price: number;
   priceMove: number;
   priceState: PriceState;
-  inputMappings: Array<{ id: CValInputMappingId; label: string }>;
-  inputMapping: CValInputMappingId;
+  priceHistory: readonly number[];
   permission: MotionPermission;
   control: CValHumanControlInput;
   phoneOrientation: CValMobileAxisSignal;
   recordingStatus: RecordingStatus;
   recordingMessage: string;
   onEnableMotion: () => void | Promise<void>;
-  onSelectInputMapping: (mapping: CValInputMappingId) => void;
 }) {
   const globeStyle = {
     "--globe-alpha": `${-phoneOrientation.alpha}deg`,
@@ -66,18 +61,11 @@ export default function CValMobileView({
         </output>
       </header>
 
-      <nav className={styles.mappingNav} aria-label="Input mapping comparison">
-        {inputMappings.map(({ id, label }) => (
-          <button
-            key={id}
-            type="button"
-            className={inputMapping === id ? styles.mappingActive : undefined}
-            onClick={() => onSelectInputMapping(id)}
-          >
-            {label}
-          </button>
-        ))}
-      </nav>
+      <MarketTrace
+        history={priceHistory}
+        price={price}
+        priceState={priceState}
+      />
 
       {recordingStatus !== "idle" && recordingMessage ? (
         <output className={styles.recording} data-status={recordingStatus}>
@@ -183,4 +171,49 @@ function signed(value: number) {
 
 function formatAngle(value: number) {
   return `${signed(value)}°`;
+}
+
+function MarketTrace({
+  history,
+  price,
+  priceState,
+}: {
+  history: readonly number[];
+  price: number;
+  priceState: PriceState;
+}) {
+  const series = [...history, price].filter(Number.isFinite).slice(-121);
+  const values = series.length > 0 ? series : [100];
+  const minimum = Math.min(100, ...values);
+  const maximum = Math.max(100, ...values);
+  const range = maximum - minimum || 1;
+  const point = (value: number, index: number) => {
+    const x = (index / Math.max(values.length - 1, 1)) * 360;
+    const y = 4 + (1 - (value - minimum) / range) * 44;
+    return `${x.toFixed(2)},${y.toFixed(2)}`;
+  };
+  const baselineY = 4 + (1 - (100 - minimum) / range) * 44;
+  const trendClass =
+    priceState === "RISING"
+      ? styles.rising
+      : priceState === "FALLING"
+        ? styles.falling
+        : undefined;
+
+  return (
+    <section className={styles.marketTrace} aria-label="Live market performance">
+      <svg
+        viewBox="0 0 360 52"
+        preserveAspectRatio="none"
+        role="img"
+        aria-label={`Live stock performance. Current price ${price.toFixed(2)}.`}
+      >
+        <line className={styles.marketBaseline} x1="0" x2="360" y1={baselineY} y2={baselineY} />
+        <polyline
+          className={`${styles.marketLine} ${trendClass ?? ""}`}
+          points={values.map(point).join(" ")}
+        />
+      </svg>
+    </section>
+  );
 }

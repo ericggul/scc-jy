@@ -38,11 +38,6 @@ type RecordingStatus =
 
 const DEFAULT_RECORDING_DURATION_MS = 12_000;
 const ORIENTATION_ENGAGEMENT_DEGREES = 2;
-const inputMappings: Array<{ id: CValInputMappingId; label: string }> = [
-  { id: "c-val-1", label: "C-VAL 1" },
-  { id: "07a5aaf", label: "07A5AAF" },
-  { id: "current", label: "CURRENT" },
-];
 const initialControl: CValHumanControlInput = {
   volatility: 0.5,
   activity: 0.5,
@@ -71,9 +66,9 @@ export default function CValMobile() {
   const [control, setControl] = useState<CValHumanControlInput>(initialControl);
   const [phoneOrientation, setPhoneOrientation] =
     useState<CValMobileAxisSignal>(initialAxisSignal);
-  const [inputMapping, setInputMapping] =
-    useState<CValInputMappingId>("current");
   const [permission, setPermission] = useState<MotionPermission>("idle");
+  // The archived orientation mappings stay available in the model, while this
+  // mobile instrument deliberately performs the current rotation-rate mapping.
   const inputMappingRef = useRef<CValInputMappingId>("current");
   const baselineRef = useRef<RawOrientation | null>(null);
   const visualBaselineRef = useRef<RawOrientation | null>(null);
@@ -95,7 +90,7 @@ export default function CValMobile() {
   const [recordingStatus, setRecordingStatus] =
     useState<RecordingStatus>("idle");
   const [recordingMessage, setRecordingMessage] = useState("");
-  const { state, sendHumanControl, sendSensorTrace, sendRecordingStatus, resetSystem } =
+  const { state, sendHumanControl, sendSensorTrace, sendRecordingStatus } =
     useCValSocket({
       role: "mobile",
       onRecordingCommand: (command) =>
@@ -393,20 +388,6 @@ export default function CValMobile() {
     reportDisengaged();
   }, [handleMotion, handleOrientation, handleVisualOrientation, reportDisengaged]);
 
-  function selectInputMapping(nextMapping: CValInputMappingId) {
-    stopListening();
-    inputMappingRef.current = nextMapping;
-    setInputMapping(nextMapping);
-    baselineRef.current = null;
-    visualBaselineRef.current = null;
-    latestRawRef.current = null;
-    lastSentAtRef.current = 0;
-    setControl(initialControl);
-    setPhoneOrientation(initialAxisSignal);
-    setPermission("idle");
-    resetSystem();
-  }
-
   useEffect(() => {
     return () => {
       stopListening();
@@ -433,15 +414,13 @@ export default function CValMobile() {
       price={price}
       priceMove={priceMove}
       priceState={priceState}
-      inputMappings={inputMappings}
-      inputMapping={inputMapping}
+      priceHistory={state?.history.index ?? [price]}
       permission={permission}
       control={control}
       phoneOrientation={phoneOrientation}
       recordingStatus={recordingStatus}
       recordingMessage={recordingMessage}
       onEnableMotion={enableMotion}
-      onSelectInputMapping={selectInputMapping}
     />
   );
 }
