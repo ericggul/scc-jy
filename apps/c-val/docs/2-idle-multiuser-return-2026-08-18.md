@@ -6,7 +6,7 @@
 - **Variable:** active controls now add their signed displacement from neutral
   V/A/L. A mobile joining alone leaves the runtime dormant; its first
   `engaged` control packet opens the market. Once no contribution remains, the
-  current timing trial holds the neutral active market for 30 seconds, then
+  current timing trial holds the neutral active market for 20 seconds, then
   enters `closing-auction`: it stops order generation and preserves the last
   execution-derived price, order book, and history. It neither interpolates a
   price to `100` nor resets the runtime. A later `engaged` control packet
@@ -19,5 +19,5 @@
 - **Entry condition:** waiting comments rooms and the waiting media field show
   a centrally placed QR entry point for the current host's `/mobile` route.
 - **Unresolved question:** in a live installation, assess whether the temporary
-  30-second quiet hold and frozen `closing-auction` match the pacing of the
+  20-second quiet hold and frozen `closing-auction` match the pacing of the
   room, and whether a later real closing-auction mechanism is needed.

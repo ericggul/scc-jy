@@ -239,6 +239,8 @@ requested, against an already-running HTTPS server.
 - [C-VAL 2 rejected interaction](./2-interaction-failure-review.md): low- and
   high-level analysis of the learned-axis, cadence, dwell, pressure, and mobile
   UI failure that must not be repeated.
+- [Controller-density reverted attempt](./2-controller-density-revert-2026-08-26.md):
+  the exact failed 2560-density change and its boundary for a future retry.
 - [Mobile-shake harness](./shake-harness.md): repeatable synthetic and recorded
   motion verification.
 - [Voice iteration](./voice-iteration.md): version-independent emotional speech

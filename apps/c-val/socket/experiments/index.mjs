@@ -36,7 +36,7 @@ let externalSlackPublisher = null;
 let externalTelegramPublisher = null;
 let ioRef = null;
 let disengagedAt = null;
-const C_VAL_IDLE_CLOSING_DELAY_MS = 30_000;
+const C_VAL_IDLE_CLOSING_DELAY_MS = 20_000;
 
 const events = {
   join: "c-val-2:join",
@@ -222,7 +222,7 @@ setInterval(() => {
       if (beginCValRuntimeClosingAuction(runtime, now)) {
         enteredClosingAuction = true;
         clearCValDiagnostics(diagnostics, now);
-        console.info("[c-val:v2] inactive for 30s; market stopped in closing auction");
+        console.info("[c-val:v2] inactive for 20s; market stopped in closing auction");
       }
     }
   }

@@ -2,6 +2,7 @@ import type {
   CSSProperties,
   PointerEvent as ReactPointerEvent,
 } from "react";
+import { useEffect, useState } from "react";
 import {
   cValParameterLabels,
   type CValHumanControlInput,
@@ -14,6 +15,24 @@ import styles from "./mobile.module.css";
 
 type RecordingStatus = "idle" | "recording" | "saving" | "saved" | "error";
 type PriceState = "WAITING" | "RISING" | "FALLING" | "STILL";
+type IntroLanguage = "ko" | "en";
+
+const introCopy = {
+  ko: {
+    action: "모션 허용",
+    denied: "모션 접근이 필요합니다",
+    unavailable: "이 기기에서는 지원되지 않습니다",
+    prompt: "휴대폰을 돌려 보세요.",
+    explanation: "각도가 변하면 변동성·활동성·유동성과 전시장 주가가 바뀝니다.",
+  },
+  en: {
+    action: "ENABLE MOTION",
+    denied: "MOTION ACCESS REQUIRED",
+    unavailable: "MOTION UNAVAILABLE",
+    prompt: "Rotate your phone.",
+    explanation: "Its angle changes volatility, activity, liquidity, and the market price on screen.",
+  },
+} as const;
 
 export default function CValMobileView({
   price,
@@ -46,6 +65,14 @@ export default function CValMobileView({
   onSpherePointerMove: (event: ReactPointerEvent<HTMLDivElement>) => void;
   onSpherePointerEnd: (event: ReactPointerEvent<HTMLDivElement>) => void;
 }) {
+  const [introLanguage, setIntroLanguage] = useState<IntroLanguage>("en");
+
+  useEffect(() => {
+    if (navigator.language.toLowerCase().startsWith("ko")) {
+      setIntroLanguage("ko");
+    }
+  }, []);
+
   const globeStyle = {
     "--globe-alpha": `${-phoneOrientation.alpha}deg`,
     "--globe-beta": `${-phoneOrientation.beta}deg`,
@@ -57,6 +84,13 @@ export default function CValMobileView({
       : priceState === "FALLING"
         ? styles.falling
         : "";
+  const intro = introCopy[introLanguage];
+  const actionLabel =
+    permission === "denied"
+      ? intro.denied
+      : permission === "unavailable"
+        ? intro.unavailable
+        : intro.action;
 
   return (
     <main className={styles.page}>
@@ -160,15 +194,27 @@ export default function CValMobileView({
         </div>
 
         {permission !== "listening" ? (
-          <div className={styles.motionGate}>
-            <button type="button" className={styles.enableButton} onClick={onEnableMotion}>
-              {permission === "denied"
-                ? "MOTION DENIED"
-                : permission === "unavailable"
-                  ? "MOTION UNAVAILABLE"
-                  : "ENABLE MOTION"}
-            </button>
-          </div>
+          <button
+            type="button"
+            className={styles.motionGate}
+            data-status={permission}
+            aria-label={actionLabel}
+            onClick={onEnableMotion}
+          >
+            <span className={styles.onboarding}>
+              <span className={styles.onboardingTitle}>
+                <strong>C-VAL</strong>
+                <small>Conducting Volatility, Activity, Liquidity</small>
+              </span>
+
+              <span className={styles.enableButton}>{actionLabel}</span>
+
+              <span className={styles.onboardingCopy}>
+                <strong>{intro.prompt}</strong>
+                <small>{intro.explanation}</small>
+              </span>
+            </span>
+          </button>
         ) : null}
       </section>
 

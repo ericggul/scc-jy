@@ -170,10 +170,13 @@
 .conditionRow[data-tone="liquidity"] polyline { stroke: var(--cyan); }
 
 .pricePanel { grid-column: 2; grid-row: 1 / 43; grid-template-rows: 2.083em minmax(0, 1fr) 5.417em; }
-.priceChart { min-height: 0; padding: .35em .55em .2em; }
+.priceChart { min-height: 0; padding: .35em .55em .2em; position: relative; }
 .priceChart svg { display: block; height: 100%; width: 100%; }
 .priceChart text { fill: var(--chart-muted); font-family: var(--mono); font-size: .833em; font-weight: 650; }
 .priceChart .lastLabel { fill: var(--amber); }
+.chartLabelOverlay { display: none; font-family: var(--mono); font-size: .833em; font-weight: 650; line-height: 1; pointer-events: none; position: absolute; top: var(--label-y); transform: translateY(-100%); white-space: nowrap; }
+.chartOpeningLabel { color: var(--chart-muted); left: .85em; }
+.chartLastLabel { color: var(--amber); right: .85em; }
 .chartGrid { stroke: var(--data-rule); stroke-width: 1; vector-effect: non-scaling-stroke; }
 .openingLine { stroke: var(--chart-reference); stroke-dasharray: 3 4; stroke-width: 1; vector-effect: non-scaling-stroke; }
 .priceLine { fill: none; stroke: var(--chart-primary); stroke-linejoin: round; stroke-width: 1.6; vector-effect: non-scaling-stroke; }
@@ -211,6 +214,7 @@
 .orderColumns { align-items: center; background: var(--table-header); color: var(--dim); font-size: .833em; font-weight: 750; }
 .orderColumns span:nth-last-child(-n+2) { text-align: right; }
 .orderRows { display: grid; grid-auto-rows: minmax(1.417em, 1fr); list-style: none; margin: 0; min-height: 0; overflow: hidden; padding: 0; }
+.orderRows[data-tall="true"] { grid-template-rows: repeat(var(--cval-row-count), minmax(1.417em, 1fr)); }
 .orderRows li { align-items: center; box-shadow: inset 0 -1px var(--row-rule); min-height: 0; }
 .orderRows li[data-kind="market"] { background: var(--market-row); }
 .orderRows li b, .orderRows li span, .orderRows li strong, .orderRows li em { font-size: .917em; line-height: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -232,6 +236,7 @@
 .bookColumns, .bookRow { display: grid; grid-template-columns: 1fr 1.1fr 1fr; padding: 0 .8em; text-align: right; }
 .bookColumns { align-items: center; background: var(--table-header); color: var(--dim); font-size: .833em; font-weight: 750; }
 .bookRows { display: grid; grid-template-rows: repeat(9, minmax(0, 1fr)) 2.5em repeat(9, minmax(0, 1fr)); min-height: 0; }
+.bookRows[data-tall="true"] { grid-template-rows: repeat(var(--cval-book-level-count), minmax(0, 1fr)) 2.5em repeat(var(--cval-book-level-count), minmax(0, 1fr)); }
 .bookRow { align-items: center; box-shadow: inset 0 -1px var(--row-rule); min-height: 0; overflow: hidden; position: relative; }
 .bookRow > i { bottom: 1px; position: absolute; top: 0; width: var(--depth); }
 .bookRow[data-side="sell"] > i { background: var(--negative-depth); right: 0; }
@@ -249,10 +254,12 @@
 .insideMarket strong { background: var(--amber); color: var(--on-amber); font-size: .833em; margin: 0 1em; padding: .32em .55em; }
 
 .executionsPanel { grid-column: 3; grid-row: 34 / 101; grid-template-rows: 2.083em 1.667em minmax(18em, 1fr) 7.833em 1.5em; }
+.executionsPanel[data-tall="true"] { grid-template-rows: 2.083em 1.667em minmax(18em, 1fr) 7.333em 1.333em; }
 .tradeColumns, .tradeRows li { display: grid; gap: .6em; grid-template-columns: 4em 5.5em 4em minmax(8em, 1fr); padding: 0 .65em; }
 .tradeColumns { align-items: center; background: var(--table-header); color: var(--dim); font-size: .833em; font-weight: 750; }
 .tradeColumns span:nth-child(2), .tradeColumns span:nth-child(3) { text-align: right; }
 .tradeRows { display: grid; grid-auto-rows: minmax(1.5em, 1fr); list-style: none; margin: 0; min-height: 0; overflow: hidden; padding: 0; }
+.tradeRows[data-tall="true"] { grid-template-rows: repeat(var(--cval-row-count), minmax(1.5em, 1fr)); }
 .tradeRows li { align-items: center; box-shadow: inset 0 -1px var(--row-rule); min-height: 0; }
 .tradeRows li b, .tradeRows li strong, .tradeRows li em, .tradeRows li span { font-size: .917em; line-height: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tradeRows li b { color: var(--green); }
@@ -274,7 +281,7 @@
   .chrome { grid-template-columns: auto minmax(180px, 1fr) minmax(270px, .9fr) auto auto; }
   .identity span, .session span { display: none; }
   .command output { max-width: 120px; }
-  .terminal { height: auto; min-height: 100dvh; overflow: auto; }
+  .terminal { height: 100dvh; min-height: 0; overflow: hidden; }
   .workspace {
     grid-template-areas:
       "conditions price"
@@ -282,8 +289,8 @@
       "orders book"
       "executions executions";
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: 245px 245px 440px 390px;
-    overflow: visible;
+    grid-template-rows: repeat(4, minmax(0, 1fr));
+    overflow: hidden;
   }
   .conditionsPanel { grid-area: conditions; grid-template-rows: 25px 110px minmax(0, 1fr); }
   .pricePanel { grid-area: price; }
@@ -296,6 +303,11 @@
   .pricePanel { grid-template-rows: 25px minmax(0, 1fr) 84px; }
   .trackGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .miniTrack:nth-child(n+4) { display: none; }
+}
+
+@media (max-aspect-ratio: 17 / 10) {
+  .priceChart .svgChartLabel { display: none; }
+  .chartLabelOverlay { display: block; }
 }
 
 @media (max-width: 760px) {
@@ -313,7 +325,8 @@
     display: grid;
     grid-template-areas: "conditions" "price" "outcomes" "orders" "book" "executions";
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: 300px 310px 300px 470px 480px 390px;
+    grid-template-rows: repeat(6, minmax(0, 1fr));
+    overflow: hidden;
   }
   .panelTitle span { max-width: 54%; }
   .conditionsPanel { grid-template-rows: 25px 180px minmax(0, 1fr); }
@@ -322,11 +335,11 @@
   .lastPrice > small { white-space: normal; }
   .conditionRow > small { display: none; }
   .orderColumns, .orderRows li { grid-template-columns: 3.2em minmax(8em, 1.4fr) 3.7em 5.2em 4.6em 4.8em; min-width: 430px; }
-  .ordersPanel { overflow-x: auto; }
+  .ordersPanel { overflow: hidden; }
   .participantFlow { min-width: 430px; }
   .bookPanel { min-width: 0; }
   .tradeColumns, .tradeRows li { grid-template-columns: 3.5em 5em 3.8em minmax(9em, 1fr); min-width: 360px; }
-  .executionsPanel { overflow-x: auto; }
+  .executionsPanel { overflow: hidden; }
 }
 
 @media (max-width: 430px) {

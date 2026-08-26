@@ -58,8 +58,8 @@ export const cValCalibration = Object.freeze({
   }),
   safety: Object.freeze({
     historyLength: 120,
-    recentOrderLimit: 16,
-    recentTradeLimit: 12,
+    recentOrderLimit: 32,
+    recentTradeLimit: 24,
     maximumBookOrders: 420,
     maximumSnapshotBytes: 32_000,
     maximumPlacementTicks: 140,

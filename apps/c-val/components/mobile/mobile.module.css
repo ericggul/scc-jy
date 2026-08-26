@@ -16,7 +16,7 @@
   touch-action: none;
   background: var(--ground);
   color: var(--ink);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-geist-mono), "SFMono-Regular", Consolas, monospace;
 }
 
 .header {
@@ -88,11 +88,6 @@
 
 .marketLine.falling {
   stroke: var(--negative);
-}
-
-.enableButton:focus-visible {
-  outline: 2px solid var(--alpha);
-  outline-offset: -3px;
 }
 
 .recording {
@@ -358,18 +353,91 @@
 }
 
 .motionGate {
-  position: absolute;
-  z-index: 2;
+  position: fixed;
+  z-index: 10;
   inset: 0;
+  width: 100%;
+  height: 100dvh;
+  padding: 0;
+  border: 0;
+  background: rgb(3 4 3 / 0.28);
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  -webkit-appearance: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+
+.onboarding {
   display: grid;
-  place-items: center;
-  background: rgba(3, 4, 3, 0.38);
-  -webkit-backdrop-filter: blur(9px);
-  backdrop-filter: blur(9px);
+  grid-template-rows: 1fr auto 1fr;
+  width: 100%;
+  height: 100dvh;
+  padding: clamp(24px, 7vw, 36px);
+}
+
+.onboardingTitle {
+  align-self: start;
+  max-width: 340px;
+}
+
+.onboardingTitle strong,
+.onboardingCopy strong {
+  display: block;
+  font-family: var(--font-geist-sans), "Helvetica Neue", Arial, sans-serif;
+  font-size: clamp(22px, 6vw, 26px);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1.1;
+}
+
+.onboardingTitle strong {
+  color: var(--alpha);
+}
+
+.onboardingTitle small {
+  display: block;
+  margin: 0.42em 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  line-height: 1.35;
+}
+
+.onboardingCopy {
+  align-self: end;
+  display: grid;
+  gap: 5px;
+  max-width: 330px;
+  margin: 0;
+}
+
+.onboardingCopy strong {
+  color: var(--ink);
+}
+
+.onboardingCopy small {
+  color: var(--muted);
+  display: block;
+  font-family: var(--font-geist-sans), "Helvetica Neue", Arial, sans-serif;
+  font-size: clamp(15px, 4vw, 17px);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.35;
 }
 
 .enableButton {
-  padding: 14px 18px;
+  align-self: center;
+  justify-self: center;
+  display: grid;
+  place-items: center;
+  min-width: 220px;
+  min-height: 48px;
+  padding: 13px 20px;
   border: 1px solid var(--alpha);
   border-radius: 0;
   background: var(--alpha);
@@ -377,6 +445,16 @@
   font: inherit;
   font-size: 14px;
   font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.motionGate:active .enableButton {
+  background: #c98200;
+}
+
+.motionGate:focus-visible {
+  outline: 2px solid var(--alpha);
+  outline-offset: -4px;
 }
 
 @media (max-height: 620px) {

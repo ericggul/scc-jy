@@ -109,6 +109,31 @@ When a distinct interface concept has not yet been earned, use a minimal wrapper
 
 Minimal is the baseline for inquiry, not a claim that every final work must remain visually neutral. Expressive design may be added later, but every addition must be justified by perception, interaction, domain convention, or conceptual operation.
 
+## Typography is a contract
+
+Typography is not an opportunity to invent visual difference after the fact.
+It states which text belongs to the same role, which text is subordinate, and
+which distinction carries meaning.
+
+- When two texts are specified, or clearly function, as the same typographic
+  role, they must share the exact type contract: family, size, weight, letter
+  spacing, line height, casing, and responsive behavior. If colour is the only
+  intended distinction, colour must be the only difference.
+- Implement a shared class, token, or grouped selector for that contract. Do
+  not write near-duplicate declarations and call them aligned; separate
+  `clamp()`, weight, tracking, or line-height values silently create hierarchy.
+- Do not fabricate hierarchy from position, convenience, or a guess that one
+  phrase should feel more “balanced.” A hierarchy needs a different semantic,
+  interactive, or perceptual job.
+- Before approval, compare every repeated or paired label across the relevant
+  screen family. State which pairs are intentionally identical and which
+  property gives any intentional difference its meaning.
+
+If a proposed type variation cannot name its job, remove the variation rather
+than adding another almost-the-same text style. This check is mandatory for
+mobile overlays, onboarding states, controls, captions, and multi-screen
+families alike.
+
 ## Reference use
 
 Do not imitate a reference’s outward style. Extract the rule that makes it work.

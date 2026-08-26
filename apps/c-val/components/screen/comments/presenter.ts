@@ -23,6 +23,12 @@ export const C_VAL_COMMENT_UP_MAXIMUM_DETUNE_CENTS = 1_200;
 export const C_VAL_COMMENT_DOWN_MINIMUM_DETUNE_CENTS = -120;
 export const C_VAL_COMMENT_DOWN_MAXIMUM_DETUNE_CENTS = -360;
 export const C_VAL_COMMENT_CENSOR_BEEP_DETUNE_RATIO = 0.3;
+// Reversible corpus audition switch: false preserves the source utterance in
+// audio only; screen text keeps its established replacement treatment.
+export const C_VAL_COMMENT_CENSOR_ENABLED = true;
+// Source-time offset for the censor window. Audio converts this to playback
+// time, so the apparent delay remains proportional to the voice speed.
+export const C_VAL_COMMENT_CENSOR_DELAY_SOURCE_SECONDS = 0.3;
 export const C_VAL_COMMENT_DIALECT_ORDER = [
   "seoul-casual",
   "busan-gyeongnam",
@@ -89,7 +95,7 @@ export function cValVisibleChatRoomCount(containerWidth: number) {
   if (containerWidth < 1_260) return 10;
   if (containerWidth < 1_470) return 12;
   if (containerWidth < 1_680) return 14;
-  return 16;
+  return 14;
 }
 
 const voiceStyleBands: Record<
@@ -191,9 +197,8 @@ export function cValCommentDirectionForRegime(regime: CValChatRegime) {
 }
 
 /**
- * The news wire and chat field share one continuous C-VAL clock. A small,
- * deterministic conversational jitter prevents a mechanical metronome while
- * preserving the news curve's 400 ms quiet anchor and 30 ms extreme floor.
+ * The news wire and chat field share one explicit, reversible cadence curve.
+ * A small deterministic conversational jitter prevents a mechanical metronome.
  */
 export function cValCommentAdmissionIntervalMs(movePercent: number, sequence = 0) {
   const base = cValSocialAdmissionIntervalMs(movePercent);
@@ -349,6 +354,41 @@ export function cValCommentPlaybackRate(pulse: CValCommentPulse) {
   return minimum + pulse.intensity * (maximum - minimum);
 }
 
+const C_VAL_COMMENT_AUDIO_GAIN_ANCHORS = [
+  { movePercent: 0, gain: 0 },
+  { movePercent: 4, gain: 0.35 },
+  { movePercent: 8, gain: 0.58 },
+  { movePercent: 15, gain: 0.8 },
+  { movePercent: 30, gain: 1 },
+] as const;
+
+/**
+ * The audio field follows the same market magnitude language as the social
+ * cadence: no movement is silent; 4/8/15/30% progressively occupy more of
+ * the audible field. The budget is read again at source start so a delayed
+ * voice cannot arrive louder or denser than the market now warrants.
+ */
+export function cValCommentAudioMix(pulse: CValCommentPulse) {
+  const magnitude = Math.max(0, Math.abs(pulse.movePercent));
+  const finalAnchor = C_VAL_COMMENT_AUDIO_GAIN_ANCHORS.at(-1)!;
+  const gain = magnitude >= finalAnchor.movePercent
+    ? finalAnchor.gain
+    : (() => {
+        const upperIndex = C_VAL_COMMENT_AUDIO_GAIN_ANCHORS.findIndex(
+          ({ movePercent }) => magnitude <= movePercent,
+        );
+        const upper = C_VAL_COMMENT_AUDIO_GAIN_ANCHORS[upperIndex];
+        const lower = C_VAL_COMMENT_AUDIO_GAIN_ANCHORS[upperIndex - 1] ?? upper;
+        const span = upper.movePercent - lower.movePercent;
+        const progress = span > 0 ? (magnitude - lower.movePercent) / span : 0;
+        return lower.gain + (upper.gain - lower.gain) * progress;
+      })();
+  return {
+    gain,
+    maximumConcurrentSources: gain < 0.4 ? 1 : gain < 0.75 ? 2 : 3,
+  };
+}
+
 export function cValCommentDetuneCents(pulse: CValCommentPulse) {
   const minimum = pulse.direction === "up"
     ? C_VAL_COMMENT_UP_MINIMUM_DETUNE_CENTS
@@ -381,6 +421,14 @@ export function cValCommentCensorBeepFrequencyHz(
     playbackRate,
     safeDetuneCents * C_VAL_COMMENT_CENSOR_BEEP_DETUNE_RATIO,
   );
+}
+
+export function cValCommentCensorDelayPlaybackSeconds(effectivePlaybackRate: number) {
+  const safePlaybackRate = Math.max(
+    0.01,
+    Number.isFinite(effectivePlaybackRate) ? effectivePlaybackRate : 1,
+  );
+  return C_VAL_COMMENT_CENSOR_DELAY_SOURCE_SECONDS / safePlaybackRate;
 }
 
 export function censorCValCommentText(text: string) {

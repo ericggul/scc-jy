@@ -5,6 +5,11 @@ import styled from "styled-components";
 import type { CValSnapshot } from "@/components/model";
 import { cValMediaCellOrder, presentCValMedia } from "./presenter";
 import CValEntryQr from "../entry-qr";
+import CValMediaCommentReaction from "./comment-reaction";
+
+// One-switch presentation trial. Set false or remove the render below to
+// restore the prior media screen without changing its video implementation.
+const ENABLE_MEDIA_COMMENT_REACTION = true;
 
 const media = {
   gain: { src: "/video/left.mp4", start: 5, end: 15, scale: 1 },
@@ -77,6 +82,7 @@ export default function CValMediaScreen({ snapshot }: { snapshot: CValSnapshot }
   const videoRef = useRef<HTMLVideoElement>(null);
   const layout = presentCValMedia(snapshot);
   const segment = layout.direction === "quiet" ? null : media[layout.direction];
+  const marketIsActive = snapshot.phase === "active";
   const cellOrder = useMemo(() => cValMediaCellOrder(layout.dimension), [layout.dimension]);
   const drawStateRef = useRef({
     activeCount: layout.activeCount,
@@ -153,6 +159,10 @@ export default function CValMediaScreen({ snapshot }: { snapshot: CValSnapshot }
     observer.observe(canvas);
     resize();
     const startPlayback = () => {
+      if (!marketIsActive) {
+        video.pause();
+        return;
+      }
       video.defaultMuted = false;
       video.muted = false;
       video.volume = 1;
@@ -162,6 +172,7 @@ export default function CValMediaScreen({ snapshot }: { snapshot: CValSnapshot }
       void video.play().catch(() => undefined);
     };
     const resumeWithSound = () => {
+      if (!marketIsActive) return;
       video.defaultMuted = false;
       video.muted = false;
       video.volume = 1;
@@ -188,12 +199,13 @@ export default function CValMediaScreen({ snapshot }: { snapshot: CValSnapshot }
       }
       video.pause();
     };
-  }, [segment]);
+  }, [marketIsActive, segment]);
 
   return (
     <Stage aria-label={layout.direction === "gain" ? `${layout.activeCount} beef dinner scenes` : layout.direction === "loss" ? `${layout.activeCount} falling scenes` : "No market movement yet"}>
       <Canvas ref={canvasRef} role="img" />
-      {segment ? <SourceVideo key={segment.src} ref={videoRef} src={segment.src} preload="auto" playsInline loop autoPlay /> : null}
+      {segment ? <SourceVideo key={segment.src} ref={videoRef} src={segment.src} preload="auto" playsInline loop autoPlay={marketIsActive} /> : null}
+      {ENABLE_MEDIA_COMMENT_REACTION ? <CValMediaCommentReaction snapshot={snapshot} /> : null}
       {snapshot.phase === "waiting" ? <EntryPoint><CValEntryQr /></EntryPoint> : null}
     </Stage>
   );

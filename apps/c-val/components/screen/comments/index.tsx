@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import type { CValSnapshot } from "@/components/model";
 import { useCValCommentAudio } from "./audio";
 import { C_VAL_CHAT_ROOMS, type CValChatRoomId } from "./corpus";
@@ -10,6 +10,7 @@ import {
   C_VAL_COMMENT_ARCHIVE_PER_ROOM,
   C_VAL_COMMENT_ORDINARY_PER_VOICE,
   C_VAL_COMMENT_VOICE_TRIGGER_PERCENT,
+  cValCommentAudioMix,
   cValCommentAdmissionIntervalMs,
   cValCommentDetuneCents,
   cValCommentPlaybackRate,
@@ -25,6 +26,7 @@ import {
 } from "./presenter";
 
 const AUDIO_CORPUS_URL = "/audio/c-val/exclamations/comments-index.json";
+const C_VAL_COMMENT_REVEAL_DELAY_MS = 140;
 const TIME_FORMATTER = new Intl.DateTimeFormat("ko-KR", {
   hour: "2-digit",
   minute: "2-digit",
@@ -33,6 +35,7 @@ const TIME_FORMATTER = new Intl.DateTimeFormat("ko-KR", {
 });
 
 type RoomArchive = Record<CValChatRoomId, CValChatMessage[]>;
+type PendingRoomCounts = Partial<Record<CValChatRoomId, number>>;
 
 function emptyArchive(): RoomArchive {
   return C_VAL_CHAT_ROOMS.reduce((archive, room) => {
@@ -53,6 +56,14 @@ function messageTime(timestamp: number) {
 
 function avatarLabel(author: string) {
   return author.replace(/[^가-힣A-Za-z0-9]/g, "").slice(0, 2) || "ㅇㅇ";
+}
+
+function presentCommentText(text: string, messageId: string) {
+  return text.split(/(C-VAL)/g).map((part, index) => (
+    part === "C-VAL"
+      ? <strong className={styles.cValMention} key={`${messageId}-mention-${index}`}>{part}</strong>
+      : <span key={`${messageId}-text-${index}`}>{part}</span>
+  ));
 }
 
 function useVisibleRoomCount() {
@@ -78,10 +89,14 @@ function useVisibleRoomCount() {
 
 function useCValParallelChat(snapshot: CValSnapshot, visibleRoomCount: number) {
   const [archive, setArchive] = useState<RoomArchive>(() => emptyArchive());
+  const [pendingRoomCounts, setPendingRoomCounts] = useState<PendingRoomCounts>({});
   const [audioCorpus, setAudioCorpus] = useState<CValCommentCorpus | null>(null);
   const snapshotRef = useRef(snapshot);
   const lastAdmittedMoveRef = useRef<number | null>(null);
   const archiveRef = useRef(archive);
+  const pendingRoomCountsRef = useRef<PendingRoomCounts>({});
+  const revealTimersRef = useRef(new Set<number>());
+  const revealGenerationRef = useRef(0);
   const sequenceRef = useRef(0);
   const voiceSequenceRef = useRef(0);
   const runRef = useRef(snapshot.runId);
@@ -91,6 +106,46 @@ function useCValParallelChat(snapshot: CValSnapshot, visibleRoomCount: number) {
   const audioRetryAtRef = useRef(0);
   const visibleRoomCountRef = useRef(visibleRoomCount);
   const { prime, speak } = useCValCommentAudio();
+
+  const updatePendingRoomCount = useCallback((roomId: CValChatRoomId, difference: number) => {
+    const nextCount = Math.max(0, (pendingRoomCountsRef.current[roomId] ?? 0) + difference);
+    const next = { ...pendingRoomCountsRef.current };
+    if (nextCount === 0) delete next[roomId];
+    else next[roomId] = nextCount;
+    pendingRoomCountsRef.current = next;
+    setPendingRoomCounts(next);
+  }, []);
+
+  const clearPendingMessages = useCallback(() => {
+    revealGenerationRef.current += 1;
+    revealTimersRef.current.forEach((timer) => window.clearTimeout(timer));
+    revealTimersRef.current.clear();
+    pendingRoomCountsRef.current = {};
+    setPendingRoomCounts({});
+  }, []);
+
+  const queueVisibleMessage = useCallback((message: CValChatMessage) => {
+    const generation = revealGenerationRef.current;
+    updatePendingRoomCount(message.roomId, 1);
+    let timer = 0;
+    timer = window.setTimeout(() => {
+      revealTimersRef.current.delete(timer);
+      if (generation !== revealGenerationRef.current) return;
+      setArchive((current) => ({
+        ...current,
+        [message.roomId]: [...current[message.roomId], message]
+          .slice(-C_VAL_COMMENT_ARCHIVE_PER_ROOM),
+      }));
+      updatePendingRoomCount(message.roomId, -1);
+    }, C_VAL_COMMENT_REVEAL_DELAY_MS);
+    revealTimersRef.current.add(timer);
+  }, [updatePendingRoomCount]);
+
+  useEffect(() => () => {
+    revealGenerationRef.current += 1;
+    revealTimersRef.current.forEach((timer) => window.clearTimeout(timer));
+    revealTimersRef.current.clear();
+  }, []);
 
   useEffect(() => {
     visibleRoomCountRef.current = visibleRoomCount;
@@ -125,6 +180,7 @@ function useCValParallelChat(snapshot: CValSnapshot, visibleRoomCount: number) {
       voiceSequenceRef.current = 0;
       lastAdmittedMoveRef.current = null;
       lastVoiceAtRef.current = Number.NEGATIVE_INFINITY;
+      clearPendingMessages();
       archiveRef.current = emptyArchive();
       setArchive(archiveRef.current);
     }
@@ -152,7 +208,7 @@ function useCValParallelChat(snapshot: CValSnapshot, visibleRoomCount: number) {
           loadingAudioRef.current = false;
         });
     }
-  }, [audioCorpus, snapshot]);
+  }, [audioCorpus, clearPendingMessages, snapshot]);
 
   useEffect(() => {
     let timer: number | null = null;
@@ -170,12 +226,14 @@ function useCValParallelChat(snapshot: CValSnapshot, visibleRoomCount: number) {
       const pulse = presentCValCommentPulse(current);
       const voiceCadenceActive = audioCorpus !== null && pulse !== null;
       let nextArchive = archiveRef.current;
+      const messagesToReveal: CValChatMessage[] = [];
       const appendMessage = (message: CValChatMessage) => {
         nextArchive = {
           ...nextArchive,
           [message.roomId]: [...nextArchive[message.roomId], message]
             .slice(-C_VAL_COMMENT_ARCHIVE_PER_ROOM),
         };
+        messagesToReveal.push(message);
       };
 
       for (
@@ -241,13 +299,18 @@ function useCValParallelChat(snapshot: CValSnapshot, visibleRoomCount: number) {
             beep: audioCorpus.beep,
             playbackRate: cValCommentPlaybackRate(pulse),
             detuneCents: cValCommentDetuneCents(pulse),
+            playbackPolicy: () => {
+              const currentPulse = presentCValCommentPulse(snapshotRef.current);
+              if (!currentPulse || currentPulse.direction !== pulse.direction) return null;
+              return cValCommentAudioMix(currentPulse);
+            },
           });
         }
       }
 
       if (nextArchive !== archiveRef.current) {
         archiveRef.current = nextArchive;
-        setArchive(nextArchive);
+        messagesToReveal.forEach(queueVisibleMessage);
       }
 
       timer = window.setTimeout(
@@ -263,12 +326,18 @@ function useCValParallelChat(snapshot: CValSnapshot, visibleRoomCount: number) {
       disposed = true;
       if (timer != null) window.clearTimeout(timer);
     };
-  }, [audioCorpus, speak]);
+  }, [audioCorpus, queueVisibleMessage, speak]);
 
-  return archive;
+  return { archive, pendingRoomCounts };
 }
 
-const ChatThread = memo(function ChatThread({ messages }: { messages: CValChatMessage[] }) {
+const ChatThread = memo(function ChatThread({
+  messages,
+  isLoading,
+}: {
+  messages: CValChatMessage[];
+  isLoading: boolean;
+}) {
   return (
     <ol className={styles.thread}>
       {messages.map((message, index) => (
@@ -292,18 +361,30 @@ const ChatThread = memo(function ChatThread({ messages }: { messages: CValChatMe
               {message.replyToAuthor && (
                 <span className={styles.reply}>↳ {message.replyToAuthor}</span>
               )}
-              <p>{message.text}</p>
+              <p>{presentCommentText(message.text, message.id)}</p>
             </div>
           </div>
         </li>
       ))}
+      {isLoading && (
+        <li className={`${styles.message} ${styles.messageLoading}`} aria-label="새 메시지 입력 중">
+          <span className={`${styles.avatar} ${styles.loadingAvatar}`} aria-hidden="true">…</span>
+          <div className={styles.messageBody}>
+            <div className={styles.loadingBubble} aria-hidden="true">
+              <i />
+              <i />
+              <i />
+            </div>
+          </div>
+        </li>
+      )}
     </ol>
   );
 });
 
 export default function CValCommentsScreen({ snapshot }: { snapshot: CValSnapshot }) {
   const { stageRef, roomCount } = useVisibleRoomCount();
-  const archive = useCValParallelChat(snapshot, roomCount);
+  const { archive, pendingRoomCounts } = useCValParallelChat(snapshot, roomCount);
   const move = snapshot.phase === "active" ? snapshot.market.oneSecondMovePercent : 0;
   const direction = move > 0.005 ? "up" : move < -0.005 ? "down" : "neutral";
 
@@ -312,6 +393,7 @@ export default function CValCommentsScreen({ snapshot }: { snapshot: CValSnapsho
       <section className={styles.roomGrid} data-phase={snapshot.phase}>
         {C_VAL_CHAT_ROOMS.map((room) => {
           const messages = archive[room.id];
+          const isLoading = (pendingRoomCounts[room.id] ?? 0) > 0;
           return (
             <article className={styles.room} key={room.id} data-room={room.id}>
               <header className={styles.roomHeader}>
@@ -321,13 +403,13 @@ export default function CValCommentsScreen({ snapshot }: { snapshot: CValSnapsho
                   {snapshot.phase === "active" ? signed(move) : "대기"}
                 </output>
               </header>
-              <ChatThread messages={messages} />
+              <ChatThread messages={messages} isLoading={isLoading} />
               {snapshot.phase === "waiting" && (
                 <div className={styles.entryQr}>
                   <CValEntryQr />
                 </div>
               )}
-              {messages.length === 0 && (
+              {messages.length === 0 && !isLoading && (
                 <div className={styles.empty} aria-hidden="true">
                   <span>메시지 기록 대기</span>
                   <i />

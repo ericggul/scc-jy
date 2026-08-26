@@ -6,9 +6,12 @@ import { C_VAL_CHAT_CORPUS, C_VAL_CHAT_ROOMS } from "./corpus.ts";
 import {
   C_VAL_COMMENT_VOICE_TRIGGER_PERCENT,
   C_VAL_COMMENT_CENSOR_BEEP_DETUNE_RATIO,
+  C_VAL_COMMENT_CENSOR_DELAY_SOURCE_SECONDS,
+  C_VAL_COMMENT_CENSOR_ENABLED,
   C_VAL_COMMENT_DIALECT_ORDER,
   C_VAL_COMMENT_ORDINARY_PER_VOICE,
   cValCommentAdmissionIntervalMs,
+  cValCommentCensorDelayPlaybackSeconds,
   cValCommentCensorBeepFrequencyHz,
   cValCommentDetuneCents,
   cValCommentEffectivePlaybackRate,
@@ -157,12 +160,16 @@ test("profanity and voice remain unavailable below the extreme threshold", () =>
   const pulse = presentCValCommentPulse(activeSnapshot(C_VAL_COMMENT_VOICE_TRIGGER_PERCENT));
   assert.ok(pulse);
   assert.equal(shouldAdmitCValCommentVoice(pulse, 9_900, 10_000), false);
+  assert.equal(C_VAL_COMMENT_CENSOR_ENABLED, true);
   assert.equal(censorCValCommentText("씨발, 뭐야. 씨발."), "C-VAL, 뭐야. C-VAL.");
 });
 
 test("the censor beep keeps speech speed but receives half its pitch transform", () => {
   assert.equal(cValCommentEffectivePlaybackRate(1.2, 1_200), 2.4);
   assert.equal(C_VAL_COMMENT_CENSOR_BEEP_DETUNE_RATIO, 0.3);
+  assert.equal(C_VAL_COMMENT_CENSOR_DELAY_SOURCE_SECONDS, 0.3);
+  assert.ok(Math.abs(cValCommentCensorDelayPlaybackSeconds(1.2) - 0.25) < 0.000_001);
+  assert.ok(Math.abs(cValCommentCensorDelayPlaybackSeconds(0.96) - 0.3125) < 0.000_001);
   assert.equal(
     cValCommentCensorBeepFrequencyHz(1_000, 1.2, 1_200),
     1_200 * 2 ** 0.3,

@@ -30,11 +30,8 @@ export type CValNewsEvent = {
 type MarketDirection = "up" | "down" | "flat";
 
 /**
- * One second is one C-VAL market day. News stays deliberately slower than the
- * matching engine: quiet markets wait 400 ms; a 30% market-day extreme reaches
- * the 30 ms floor. The interval itself is interpolated exponentially in log
- * space. Its eased input reaches that floor with zero slope, so moves beyond
- * 30% stay at 30 ms without a visible cadence step.
+ * One second is one C-VAL market day. News follows the shared reversible
+ * cadence anchors, from 400 ms at rest to the 30 ms extreme floor.
  */
 export function cValNewsAdmissionIntervalMs(oneSecondMovePercent: number) {
   return cValSocialAdmissionIntervalMs(oneSecondMovePercent);

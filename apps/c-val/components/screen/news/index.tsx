@@ -7,14 +7,50 @@ import { CValBloombergWorkstationFrame } from "@/components/visual";
 import { cValSocietyAdmissionIntervalMs } from "../cadence";
 import CValEntryQr from "../entry-qr";
 import {
+  type CValNewsAudioAdmission,
+  useCValNewsAdmissionAudio,
+} from "./audio";
+import {
   cValNewsAdmissionIntervalMs,
   presentCValNewsEvents,
   type CValNewsEvent,
 } from "./presenter";
 import { presentCValSocietyEvents } from "./society-presenter";
 
-const COLUMN_RECORDS = 27;
+const DEFAULT_COLUMN_RECORDS = 27;
+const MAX_COLUMN_RECORDS = 35;
 const PENDING_NEWS_CAPACITY = 16;
+
+function newsTypeScaleForViewport(width: number, height: number) {
+  return Math.max(10, Math.min(width * 0.00818, height * 0.016, 22));
+}
+
+function newsRecordLimitForViewport(width: number, height: number) {
+  if (!width || !height) return DEFAULT_COLUMN_RECORDS;
+  const referenceTypeScale = newsTypeScaleForViewport(1470, 744);
+  const densityExpansion = (height / 744) / (
+    newsTypeScaleForViewport(width, height) / referenceTypeScale
+  );
+  return Math.min(
+    MAX_COLUMN_RECORDS,
+    Math.max(DEFAULT_COLUMN_RECORDS, Math.ceil(DEFAULT_COLUMN_RECORDS * densityExpansion)),
+  );
+}
+
+function useCValNewsRecordLimit() {
+  const [recordLimit, setRecordLimit] = useState(DEFAULT_COLUMN_RECORDS);
+
+  useEffect(() => {
+    const update = () => {
+      setRecordLimit(newsRecordLimitForViewport(window.innerWidth, window.innerHeight));
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+
+  return recordLimit;
+}
 
 const NewsTerminal = styled(CValBloombergWorkstationFrame)`
   --news-ink: #000;
@@ -68,13 +104,13 @@ const NewsColumns = styled.main`
   overflow: hidden;
 `;
 
-const WirePane = styled.section`
+const WirePane = styled.section<{ $recordLimit: number }>`
   --news-index-column: 3.4ch;
 
   contain: layout paint;
   counter-reset: news-index;
   display: grid;
-  grid-template-rows: 2.05em repeat(${COLUMN_RECORDS}, minmax(1.95em, 1fr));
+  grid-template-rows: 2.05em repeat(${({ $recordLimit }) => $recordLimit}, minmax(1.95em, 1fr));
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -189,11 +225,14 @@ type CValNewsPresenter = (
 ) => CValNewsEvent[];
 
 type CValNewsThreadTiming = "market" | "society";
+type CValNewsAdmissionHandler = (admission: CValNewsAudioAdmission) => void;
 
 function useCValNewsThread(
   snapshot: CValSnapshot,
   presentEvents: CValNewsPresenter,
   timing: CValNewsThreadTiming,
+  recordLimit: number,
+  onAdmission: CValNewsAdmissionHandler,
 ) {
   const previousRef = useRef<CValSnapshot | null>(null);
   const seenIdsRef = useRef(new Set<string>());
@@ -209,8 +248,12 @@ function useCValNewsThread(
       : cValSocietyAdmissionIntervalMs(snapshot.market.oneSecondMovePercent),
   );
   const scheduleNextRef = useRef<() => void>(() => {});
+  const onAdmissionRef = useRef(onAdmission);
+  const recordLimitRef = useRef(recordLimit);
   const runRef = useRef(snapshot.runId);
+  const phaseRef = useRef(snapshot.phase);
   const [records, setRecords] = useState<CValNewsEvent[]>([]);
+  onAdmissionRef.current = onAdmission;
 
   useEffect(() => {
     let timer: number | null = null;
@@ -234,7 +277,7 @@ function useCValNewsThread(
         pendingRef.current = remaining;
         if (!nextStory) return;
 
-        const nextRecords = [nextStory, ...recordsRef.current].slice(0, COLUMN_RECORDS);
+        const nextRecords = [nextStory, ...recordsRef.current].slice(0, recordLimitRef.current);
         recordsRef.current = nextRecords;
         visibleHeadlinesRef.current = new Set(nextRecords.map((event) => event.headline));
         visibleTemplateIdsRef.current = new Set(nextRecords.map((event) => event.templateId));
@@ -243,6 +286,12 @@ function useCValNewsThread(
           cadenceRef.current = cValSocietyAdmissionIntervalMs(marketMoveRef.current);
         }
         startTransition(() => setRecords(nextRecords));
+        onAdmissionRef.current({
+          event: nextStory,
+          timing,
+          oneSecondMovePercent: marketMoveRef.current,
+          phase: phaseRef.current,
+        });
         scheduleNext();
       }, delay);
     };
@@ -254,6 +303,15 @@ function useCValNewsThread(
       scheduleNextRef.current = () => {};
     };
   }, [timing]);
+
+  useEffect(() => {
+    recordLimitRef.current = recordLimit;
+    if (recordsRef.current.length <= recordLimit) return;
+    recordsRef.current = recordsRef.current.slice(0, recordLimit);
+    visibleHeadlinesRef.current = new Set(recordsRef.current.map((event) => event.headline));
+    visibleTemplateIdsRef.current = new Set(recordsRef.current.map((event) => event.templateId));
+    startTransition(() => setRecords(recordsRef.current));
+  }, [recordLimit]);
 
   useEffect(() => {
     if (runRef.current !== snapshot.runId) {
@@ -280,6 +338,7 @@ function useCValNewsThread(
     }
 
     marketMoveRef.current = snapshot.market.oneSecondMovePercent;
+    phaseRef.current = snapshot.phase;
     if (timing === "market") {
       cadenceRef.current = cValNewsAdmissionIntervalMs(snapshot.market.oneSecondMovePercent);
     }
@@ -337,14 +396,16 @@ const NewsArchive = memo(function NewsArchive({
   marketRecords,
   societyRecords,
   showEntryQr,
+  recordLimit,
 }: {
   marketRecords: CValNewsEvent[];
   societyRecords: CValNewsEvent[];
   showEntryQr: boolean;
+  recordLimit: number;
 }) {
   return (
     <NewsColumns>
-      <WirePane aria-label="C-VAL market and finance news records">
+      <WirePane $recordLimit={recordLimit} aria-label="C-VAL market and finance news records">
         <PaneHeader>
           <strong>Market / Finance</strong>
           <span>TYPE</span>
@@ -353,7 +414,7 @@ const NewsArchive = memo(function NewsArchive({
         {marketRecords.map((event) => <NewsItem key={event.id} event={event} />)}
         {showEntryQr ? <EntryPoint><CValEntryQr /></EntryPoint> : null}
       </WirePane>
-      <WirePane aria-label="C-VAL society and politics news records">
+      <WirePane $recordLimit={recordLimit} aria-label="C-VAL society and politics news records">
         <PaneHeader>
           <strong>Society / Politics</strong>
           <span>TYPE</span>
@@ -367,19 +428,34 @@ const NewsArchive = memo(function NewsArchive({
 });
 
 export default function CValNewsScreen({ snapshot }: { snapshot: CValSnapshot }) {
-  const marketRecords = useCValNewsThread(snapshot, presentCValNewsEvents, "market");
-  const societyRecords = useCValNewsThread(snapshot, presentCValSocietyEvents, "society");
+  const recordLimit = useCValNewsRecordLimit();
+  const { playAdmission } = useCValNewsAdmissionAudio();
+  const marketRecords = useCValNewsThread(
+    snapshot,
+    presentCValNewsEvents,
+    "market",
+    recordLimit,
+    playAdmission,
+  );
+  const societyRecords = useCValNewsThread(
+    snapshot,
+    presentCValSocietyEvents,
+    "society",
+    recordLimit,
+    playAdmission,
+  );
 
   return (
     <NewsTerminal aria-label="C-VAL continuously accumulating public-signal news wire">
       <StreamBar>
-        <StreamLabel>NEWS ROOM</StreamLabel>
+        <StreamLabel>BREAKING NEWS</StreamLabel>
         <StreamReadout>LAST {snapshot.market.index.toFixed(2)}</StreamReadout>
       </StreamBar>
       <NewsArchive
         marketRecords={marketRecords}
         societyRecords={societyRecords}
         showEntryQr={snapshot.phase === "waiting"}
+        recordLimit={recordLimit}
       />
     </NewsTerminal>
   );

@@ -83,7 +83,7 @@ function ProcessRibbon({ snapshot }: { snapshot: CValSnapshot }) {
         snapshot.phase === "waiting"
           ? "market held at 100"
           : closingAuction
-            ? "30s without active phone input · resumes on movement"
+            ? "20s without active phone input · resumes on movement"
             : "direct phone input · 0–100",
     },
     {
@@ -221,9 +221,23 @@ function PriceDiscovery({ snapshot }: { snapshot: CValSnapshot }) {
           <line className={styles.openingLine} x1="0" x2="720" y1={openingY} y2={openingY} />
           <polyline className={styles.priceLine} points={points(series, 720, 146, 7)} />
           <line className={styles.lastLine} x1="676" x2="720" y1={lastY} y2={lastY} />
-          <text x="7" y={Math.max(10, openingY - 4)}>OPEN {openingPrice.toFixed(2)}</text>
-          <text className={styles.lastLabel} x="714" y={Math.max(10, lastY - 4)} textAnchor="end">LAST {snapshot.market.index.toFixed(2)}</text>
+          <text className={styles.svgChartLabel} x="7" y={Math.max(10, openingY - 4)}>OPEN {openingPrice.toFixed(2)}</text>
+          <text className={`${styles.svgChartLabel} ${styles.lastLabel}`} x="714" y={Math.max(10, lastY - 4)} textAnchor="end">LAST {snapshot.market.index.toFixed(2)}</text>
         </svg>
+        <span
+          aria-hidden="true"
+          className={`${styles.chartLabelOverlay} ${styles.chartOpeningLabel}`}
+          style={{ "--label-y": `${(Math.max(10, openingY - 4) / 154) * 100}%` } as VisualProperties}
+        >
+          OPEN {openingPrice.toFixed(2)}
+        </span>
+        <span
+          aria-hidden="true"
+          className={`${styles.chartLabelOverlay} ${styles.chartLastLabel}`}
+          style={{ "--label-y": `${(Math.max(10, lastY - 4) / 154) * 100}%` } as VisualProperties}
+        >
+          LAST {snapshot.market.index.toFixed(2)}
+        </span>
       </div>
       <div className={styles.trackGrid} aria-label="Aligned condition and market outcome histories">
         <MiniTrack label="V" value={(snapshot.parameters.volatility * 100).toFixed(0)} unit="CONDITION" series={snapshot.history.volatility} toneName="volatility" />
@@ -279,12 +293,62 @@ function orderPrice(order: CValOrder) {
   return order.kind === "market" || order.price === null ? "MKT" : order.price.toFixed(2);
 }
 
-function ParticipantFlow({ snapshot }: { snapshot: CValSnapshot }) {
+const macChromeAspectRatio = 1470 / 744;
+const defaultTableDensity = {
+  tall: false,
+  orderRows: 16,
+  bookLevels: 9,
+  tradeRows: 12,
+};
+
+type CValTableDensity = typeof defaultTableDensity;
+
+function tableDensityForViewport(width: number, height: number): CValTableDensity {
+  if (!width || !height) return defaultTableDensity;
+  const verticalExpansion = macChromeAspectRatio / (width / height);
+  if (verticalExpansion <= 1) return defaultTableDensity;
+  return {
+    tall: true,
+    orderRows: Math.min(32, Math.ceil(defaultTableDensity.orderRows * verticalExpansion)),
+    bookLevels: Math.min(16, Math.ceil(defaultTableDensity.bookLevels * verticalExpansion)),
+    // The taller controller field is reserved for the execution log: it has
+    // 24 retained real trades available from the socket, not synthetic rows.
+    tradeRows: Math.min(24, Math.ceil(defaultTableDensity.tradeRows * verticalExpansion * 1.5)),
+  };
+}
+
+function useCValTableDensity() {
+  const [density, setDensity] = useState<CValTableDensity>(defaultTableDensity);
+
+  useEffect(() => {
+    const updateDensity = () => {
+      setDensity(tableDensityForViewport(window.innerWidth, window.innerHeight));
+    };
+    updateDensity();
+    window.addEventListener("resize", updateDensity);
+    return () => window.removeEventListener("resize", updateDensity);
+  }, []);
+
+  return density;
+}
+
+function rowsWithPlaceholders<T>(records: readonly T[], count: number, tall: boolean) {
+  if (!tall) return records;
+  return Array.from({ length: count }, (_, index) => records[index] ?? null);
+}
+
+function ParticipantFlow({
+  participants,
+  orders,
+}: {
+  participants: CValSnapshot["participants"];
+  orders: CValOrder[];
+}) {
   return (
     <div className={styles.participantFlow}>
       <header><span>PARTICIPANT</span><span>BUY</span><span>SELL</span><span>MKT</span><span>LMT</span><span>FILL %</span><span>QTY</span></header>
-      {snapshot.participants.map(({ type }) => {
-        const group = snapshot.recentOrders.filter((order) => order.participantType === type);
+      {participants.map(({ type }) => {
+        const group = orders.filter((order) => order.participantType === type);
         const quantity = group.reduce((sum, order) => sum + order.quantity, 0);
         const filled = group.reduce((sum, order) => sum + order.filled, 0);
         const values = [
@@ -306,14 +370,21 @@ function ParticipantFlow({ snapshot }: { snapshot: CValSnapshot }) {
   );
 }
 
-function OrdersPanel({ snapshot }: { snapshot: CValSnapshot }) {
-  const orders = [...snapshot.recentOrders].reverse();
+function OrdersPanel({ snapshot, density }: { snapshot: CValSnapshot; density: CValTableDensity }) {
+  const orders = [...snapshot.recentOrders]
+    .reverse()
+    .slice(0, density.tall ? density.orderRows : defaultTableDensity.orderRows);
+  const visibleOrders = rowsWithPlaceholders(orders, density.orderRows, density.tall);
   return (
     <section className={`${styles.panel} ${styles.ordersPanel}`} aria-label="All recent agent orders and participant behavior">
       <PanelTitle title="AGENT ORDER FLOW" detail={`${orders.length} RECENT · ${snapshot.market.submittedOrders} SUBMITTED · ${snapshot.market.cancelledOrders} CANCELLED`} />
       <div className={styles.orderColumns}><span>SIDE</span><span>PARTICIPANT</span><span>TYPE</span><span>STATUS</span><span>PRICE</span><span>FILLED</span></div>
-      <ol className={styles.orderRows}>
-        {orders.map((order) => (
+      <ol
+        className={styles.orderRows}
+        data-tall={density.tall || undefined}
+        style={density.tall ? { "--cval-row-count": `${density.orderRows}` } as VisualProperties : undefined}
+      >
+        {visibleOrders.map((order, index) => order ? (
           <li data-kind={order.kind} data-side={order.side} key={order.id}>
             <b>{order.side === "buy" ? "BUY" : "SELL"}</b>
             <span>{participantLabel(order.participantType)}</span>
@@ -322,27 +393,38 @@ function OrdersPanel({ snapshot }: { snapshot: CValSnapshot }) {
             <strong>{orderPrice(order)}</strong>
             <em>{order.filled}/{order.quantity}</em>
           </li>
-        ))}
+        ) : <li aria-hidden="true" data-empty="true" key={`order-empty-${index}`} />)}
       </ol>
-      <ParticipantFlow snapshot={snapshot} />
+      <ParticipantFlow orders={orders} participants={snapshot.participants} />
     </section>
   );
 }
 
-function BookSide({ levels, side, maximum }: { levels: CValBookLevel[]; side: "buy" | "sell"; maximum: number }) {
-  return levels.map((level) => (
+function BookSide({
+  levels,
+  side,
+  maximum,
+  rowCount,
+}: {
+  levels: CValBookLevel[];
+  side: "buy" | "sell";
+  maximum: number;
+  rowCount: number;
+}) {
+  return rowsWithPlaceholders(levels, rowCount, rowCount !== levels.length).map((level, index) => level ? (
     <div className={styles.bookRow} data-side={side} key={`${side}-${level.price}`}>
       <i style={{ "--depth": `${(level.quantity / maximum) * 100}%` } as VisualProperties} />
       <span>{level.orderCount}</span>
       <strong>{level.price.toFixed(2)}</strong>
       <b>{level.quantity.toLocaleString()}</b>
     </div>
-  ));
+  ) : <div aria-hidden="true" className={styles.bookRow} data-empty="true" key={`${side}-empty-${index}`} />);
 }
 
-function OrderBookPanel({ snapshot }: { snapshot: CValSnapshot }) {
-  const asks = [...snapshot.orderBook.asks].reverse();
-  const bids = snapshot.orderBook.bids;
+function OrderBookPanel({ snapshot, density }: { snapshot: CValSnapshot; density: CValTableDensity }) {
+  const levelCount = density.tall ? density.bookLevels : defaultTableDensity.bookLevels;
+  const asks = snapshot.orderBook.asks.slice(0, levelCount).reverse();
+  const bids = snapshot.orderBook.bids.slice(0, levelCount);
   const maximum = Math.max(1, ...asks.map((level) => level.quantity), ...bids.map((level) => level.quantity));
   const totalOrders = [...asks, ...bids].reduce((sum, level) => sum + level.orderCount, 0);
 
@@ -350,14 +432,18 @@ function OrderBookPanel({ snapshot }: { snapshot: CValSnapshot }) {
     <section className={`${styles.panel} ${styles.bookPanel}`} aria-label="Full resting limit order book">
       <PanelTitle title="MARKET BY PRICE" detail={`${totalOrders} RESTING ORDERS · PRICE / FIFO PRIORITY`} />
       <div className={styles.bookColumns}><span>ORDERS</span><span>PRICE</span><span>QUANTITY</span></div>
-      <div className={styles.bookRows}>
-        <BookSide levels={asks} side="sell" maximum={maximum} />
+      <div
+        className={styles.bookRows}
+        data-tall={density.tall || undefined}
+        style={density.tall ? { "--cval-book-level-count": `${density.bookLevels}` } as VisualProperties : undefined}
+      >
+        <BookSide levels={asks} side="sell" maximum={maximum} rowCount={density.tall ? density.bookLevels : asks.length} />
         <div className={styles.insideMarket}>
           <span>BID <b>{snapshot.market.bestBid.toFixed(2)}</b></span>
           <strong>{snapshot.market.spreadBps.toFixed(1)} BPS SPREAD</strong>
           <span>ASK <b>{snapshot.market.bestAsk.toFixed(2)}</b></span>
         </div>
-        <BookSide levels={bids} side="buy" maximum={maximum} />
+        <BookSide levels={bids} side="buy" maximum={maximum} rowCount={density.tall ? density.bookLevels : bids.length} />
       </div>
     </section>
   );
@@ -378,23 +464,34 @@ function executionSummary(trades: CValTrade[], fallbackPrice: number) {
   };
 }
 
-function ExecutionsPanel({ snapshot }: { snapshot: CValSnapshot }) {
-  const trades = [...snapshot.recentTrades].reverse();
-  const summary = useMemo(() => executionSummary(snapshot.recentTrades, snapshot.market.index), [snapshot.market.index, snapshot.recentTrades]);
+function ExecutionsPanel({ snapshot, density }: { snapshot: CValSnapshot; density: CValTableDensity }) {
+  const trades = [...snapshot.recentTrades]
+    .reverse()
+    .slice(0, density.tall ? density.tradeRows : defaultTableDensity.tradeRows);
+  const visibleTrades = rowsWithPlaceholders(trades, density.tradeRows, density.tall);
+  const summary = useMemo(() => executionSummary(trades, snapshot.market.index), [snapshot.market.index, trades]);
   const buyShare = summary.volume > 0 ? (summary.buyVolume / summary.volume) * 100 : 50;
   return (
-    <section className={`${styles.panel} ${styles.executionsPanel}`} aria-label="Recent market executions and execution quality">
+    <section
+      className={`${styles.panel} ${styles.executionsPanel}`}
+      data-tall={density.tall || undefined}
+      aria-label="Recent market executions and execution quality"
+    >
       <PanelTitle title="TIME & SALES" detail={`${trades.length} RECENT EXECUTIONS · ACTUAL MATCHES`} />
       <div className={styles.tradeColumns}><span>ACTION</span><span>PRICE</span><span>SIZE</span><span>COUNTERPARTY</span></div>
-      <ol className={styles.tradeRows}>
-        {trades.map((trade) => (
+      <ol
+        className={styles.tradeRows}
+        data-tall={density.tall || undefined}
+        style={density.tall ? { "--cval-row-count": `${density.tradeRows}` } as VisualProperties : undefined}
+      >
+        {visibleTrades.map((trade, index) => trade ? (
           <li data-side={trade.side} key={trade.id}>
             <b>{trade.side === "buy" ? "BOT" : "SLD"}</b>
             <strong>{trade.price.toFixed(2)}</strong>
             <em>{trade.quantity}</em>
             <span>{trade.side === "buy" ? trade.sellerId : trade.buyerId}</span>
           </li>
-        ))}
+        ) : <li aria-hidden="true" data-empty="true" key={`trade-empty-${index}`} />)}
       </ol>
       <div className={styles.executionSummary}>
         <div><span>VWAP</span><strong>{summary.vwap.toFixed(2)}</strong></div>
@@ -414,6 +511,7 @@ function ExecutionsPanel({ snapshot }: { snapshot: CValSnapshot }) {
 
 export default function CValController() {
   const [fallback] = useState(() => createInitialCValSnapshot());
+  const tableDensity = useCValTableDensity();
   const [recordCommand, setRecordCommand] = useState("RECORD 30");
   const [recordCommandResult, setRecordCommandResult] = useState("READY");
   const recordAckTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -498,9 +596,9 @@ export default function CValController() {
         <MarketConditions snapshot={snapshot} />
         <PriceDiscovery snapshot={snapshot} />
         <MarketOutcomes snapshot={snapshot} />
-        <OrdersPanel snapshot={snapshot} />
-        <OrderBookPanel snapshot={snapshot} />
-        <ExecutionsPanel snapshot={snapshot} />
+        <OrdersPanel density={tableDensity} snapshot={snapshot} />
+        <OrderBookPanel density={tableDensity} snapshot={snapshot} />
+        <ExecutionsPanel density={tableDensity} snapshot={snapshot} />
       </div>
     </CValBloombergWorkstationFrame>
   );

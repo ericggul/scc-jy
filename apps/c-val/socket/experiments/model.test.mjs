@@ -514,7 +514,7 @@ test("long runs remain finite with bounded books, histories, and payloads", () =
       (values) => values.length === cValModelTiming.historyLength,
     ),
   );
-  assert.ok(snapshot.recentOrders.length <= 16);
-  assert.ok(snapshot.recentTrades.length <= 12);
+  assert.ok(snapshot.recentOrders.length <= 32);
+  assert.ok(snapshot.recentTrades.length <= 24);
   assert.doesNotThrow(() => JSON.stringify(snapshot));
 });
