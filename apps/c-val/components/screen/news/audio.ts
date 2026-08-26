@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef } from "react";
 import { cValSocialAdmissionIntervalMs } from "../cadence";
 import type { CValNewsEvent } from "./presenter";
 
+// Set to false for a completely silent news wire without changing its timing.
 export const C_VAL_NEWS_ADMISSION_AUDIO_ENABLED = true;
 const C_VAL_NEWS_AUDIO_FASTEST_GAP_MS = 60;
 
@@ -20,8 +21,7 @@ function finiteMagnitude(value: number) {
 
 /**
  * The news wire may admit rows faster than a short three-pulse phrase can be
- * heard. This gate follows the same market clock but never queues old hits:
- * a later admission simply replaces a missed one with the current intensity.
+ * heard. This gate follows the same market clock but never queues old hits.
  */
 export function cValNewsAudioMinimumGapMs(oneSecondMovePercent: number) {
   return Math.max(
@@ -33,20 +33,24 @@ export function cValNewsAudioMinimumGapMs(oneSecondMovePercent: number) {
 function newsAudioProfile(admission: CValNewsAudioAdmission) {
   const magnitude = finiteMagnitude(admission.oneSecondMovePercent);
   const intensity = Math.min(1, magnitude / 30);
-  const spacingSeconds = 0.115 - intensity * 0.05;
-  const firstDurationSeconds = 0.19 - intensity * 0.08;
-  const secondDurationSeconds = 0.27 - intensity * 0.11;
-  const masterGain = 0.02 + 0.032 * Math.sqrt(intensity);
+  const direction = Math.sign(admission.oneSecondMovePercent);
+  const root = admission.timing === "market" ? 92 : 82;
+  const finalPitch = direction > 0 ? 1.13 : direction < 0 ? 0.87 : 1;
+  const spacingSeconds = 0.046 - intensity * 0.022;
+  const tailSeconds = 0.13 - intensity * 0.055;
+  const masterGain = (0.018 + 0.048 * Math.sqrt(intensity))
+    * (admission.timing === "market" ? 1 : 0.82);
 
   return {
+    root,
+    finalPitch,
     spacingSeconds,
-    firstDurationSeconds,
-    secondDurationSeconds,
+    tailSeconds,
     masterGain,
   };
 }
 
-function scheduleChime(
+function schedulePulse(
   context: AudioContext,
   output: AudioNode,
   startAt: number,
@@ -54,31 +58,23 @@ function scheduleChime(
   gain: number,
   durationSeconds: number,
 ) {
+  const oscillator = context.createOscillator();
   const envelope = context.createGain();
+  oscillator.type = "triangle";
+  oscillator.frequency.setValueAtTime(frequencyHz, startAt);
+  oscillator.frequency.exponentialRampToValueAtTime(
+    Math.max(28, frequencyHz * 0.88),
+    startAt + durationSeconds,
+  );
   envelope.gain.setValueAtTime(0.0001, startAt);
-  envelope.gain.exponentialRampToValueAtTime(Math.max(0.0001, gain), startAt + 0.016);
+  envelope.gain.exponentialRampToValueAtTime(Math.max(0.0001, gain), startAt + 0.008);
   envelope.gain.exponentialRampToValueAtTime(0.0001, startAt + durationSeconds);
-  envelope.connect(output);
-
-  for (const partial of [
-    { ratio: 1, gain: 0.8 },
-    { ratio: 2, gain: 0.12 },
-  ]) {
-    const oscillator = context.createOscillator();
-    const partialGain = context.createGain();
-    oscillator.type = "sine";
-    oscillator.frequency.setValueAtTime(frequencyHz * partial.ratio, startAt);
-    partialGain.gain.setValueAtTime(partial.gain, startAt);
-    oscillator.connect(partialGain).connect(envelope);
-    oscillator.start(startAt);
-    oscillator.stop(startAt + durationSeconds + 0.015);
-  }
+  oscillator.connect(envelope).connect(output);
+  oscillator.start(startAt);
+  oscillator.stop(startAt + durationSeconds + 0.015);
 }
 
-/**
- * A restrained two-note broadcast cue. Both notes belong to the same perfect
- * fifth, so rapid alerts overlap as one consonant signal rather than clashing.
- */
+/** A low, synthetic two-forebeat-and-landing-pulse news bed. */
 export function useCValNewsAdmissionAudio() {
   const contextRef = useRef<AudioContext | null>(null);
   const outputRef = useRef<DynamicsCompressorNode | null>(null);
@@ -120,22 +116,23 @@ export function useCValNewsAdmissionAudio() {
 
     const profile = newsAudioProfile(admission);
     const startAt = context.currentTime + 0.01;
-    scheduleChime(
-      context,
-      output,
-      startAt,
-      493.88,
-      profile.masterGain * 0.56,
-      profile.firstDurationSeconds,
-    );
-    scheduleChime(
-      context,
-      output,
-      startAt + profile.spacingSeconds,
-      739.99,
-      profile.masterGain,
-      profile.secondDurationSeconds,
-    );
+    const offsets = [0, profile.spacingSeconds, profile.spacingSeconds * 2];
+    const frequencies = [
+      profile.root * 1.34,
+      profile.root * 1.2,
+      profile.root * profile.finalPitch,
+    ];
+    const gains = [0.48, 0.6, 1];
+    for (let index = 0; index < offsets.length; index += 1) {
+      schedulePulse(
+        context,
+        output,
+        startAt + offsets[index]!,
+        frequencies[index]!,
+        profile.masterGain * gains[index]!,
+        profile.tailSeconds,
+      );
+    }
   }, [liveContext]);
 
   useEffect(() => {
