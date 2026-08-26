@@ -19,7 +19,6 @@ export type PageRankNetwork = {
   links: PageLink[];
 };
 
-export type NetworkPreset = "example-1" | "example-2" | "preferential";
 export type RankMethod = "diffusion" | "random-surfer";
 
 export type RandomSurfer = {
@@ -47,6 +46,11 @@ export type PageRankMetrics = {
   maximumPage: number;
   totalVisits: number;
   danglingPages: number;
+};
+
+export type SpringLayoutOptions = {
+  springLengthMultiplier?: number;
+  repulsion?: number;
 };
 
 function link(source: number, target: number): PageLink {
@@ -84,23 +88,39 @@ function seededPositions(nodeCount: number, seed: number) {
     positions.push({
       id,
       position: {
-        x: 0.08 + jitterX * 0.84,
-        y: 0.08 + jitterY * 0.84,
+        x: (jitterX - 0.5) * 32,
+        y: (jitterY - 0.5) * 32,
       },
     });
   }
   return positions;
 }
 
-/** A bounded browser equivalent of NetLogo's repeated layout-spring call. */
+function normalizeLayout(nodes: PageNode[]) {
+  const centerX = nodes.reduce((total, node) => total + node.position.x, 0) / nodes.length;
+  const centerY = nodes.reduce((total, node) => total + node.position.y, 0) / nodes.length;
+  const extentX = Math.max(1, ...nodes.map((node) => Math.abs(node.position.x - centerX)));
+  const extentY = Math.max(1, ...nodes.map((node) => Math.abs(node.position.y - centerY)));
+  return nodes.map((node) => ({
+    ...node,
+    position: {
+      x: 0.5 + ((node.position.x - centerX) / extentX) * 0.44,
+      y: 0.5 + ((node.position.y - centerY) / extentY) * 0.44,
+    },
+  }));
+}
+
+/** A browser implementation of NetLogo's layout-spring parameters: 0.2, 20 / sqrt(n), 0.5. */
 export function settleNetwork(
   network: PageRankNetwork,
   seed = 0x9e3779b9,
   iterations = 300,
+  options: SpringLayoutOptions = {},
 ): PageRankNetwork {
   const nodes = seededPositions(network.nodes.length, seed);
   const velocity = nodes.map(() => ({ x: 0, y: 0 }));
-  const idealLength = Math.min(0.28, 0.84 / Math.sqrt(nodes.length));
+  const springLength = (20 / Math.sqrt(nodes.length)) * (options.springLengthMultiplier ?? 1);
+  const repulsionStrength = options.repulsion ?? 0.5;
 
   for (let step = 0; step < iterations; step += 1) {
     const force = nodes.map(() => ({ x: 0, y: 0 }));
@@ -110,9 +130,9 @@ export function settleNetwork(
         const two = nodes[second]!;
         const dx = two.position.x - one.position.x;
         const dy = two.position.y - one.position.y;
-        const distanceSquared = Math.max(0.00012, dx * dx + dy * dy);
+        const distanceSquared = Math.max(0.0001, dx * dx + dy * dy);
         const distance = Math.sqrt(distanceSquared);
-        const repulsion = 0.00082 / distanceSquared;
+        const repulsion = repulsionStrength / distanceSquared;
         const pushX = (dx / distance) * repulsion;
         const pushY = (dy / distance) * repulsion;
         force[first]!.x -= pushX;
@@ -128,7 +148,7 @@ export function settleNetwork(
       const dx = target.position.x - source.position.x;
       const dy = target.position.y - source.position.y;
       const distance = Math.max(0.0001, Math.hypot(dx, dy));
-      const spring = (distance - idealLength) * 0.026;
+      const spring = Math.max(-1.5, Math.min(1.5, (distance - springLength) * 0.2));
       const pullX = (dx / distance) * spring;
       const pullY = (dy / distance) * spring;
       force[current.source]!.x += pullX;
@@ -139,21 +159,16 @@ export function settleNetwork(
     for (let index = 0; index < nodes.length; index += 1) {
       const node = nodes[index]!;
       const nodeVelocity = velocity[index]!;
-      nodeVelocity.x = (nodeVelocity.x + force[index]!.x) * 0.82;
-      nodeVelocity.y = (nodeVelocity.y + force[index]!.y) * 0.82;
-      node.position.x = Math.max(0.055, Math.min(0.945, node.position.x + nodeVelocity.x));
-      node.position.y = Math.max(0.07, Math.min(0.93, node.position.y + nodeVelocity.y));
+      nodeVelocity.x = (nodeVelocity.x + force[index]!.x * 0.045) * 0.83;
+      nodeVelocity.y = (nodeVelocity.y + force[index]!.y * 0.045) * 0.83;
+      node.position.x += nodeVelocity.x;
+      node.position.y += nodeVelocity.y;
     }
   }
-  return { ...network, nodes };
+  return { ...network, nodes: normalizeLayout(nodes) };
 }
 
-/**
- * A directed Barabási–Albert-style graph. Targets are sampled in proportion
- * to the current total degree, while the direction of each new edge is a
- * separate seeded choice, as in NetLogo's preferential attachment example.
- */
-export function createPreferentialNetwork(
+function createPreferentialTopology(
   nodeCount: number,
   linksPerNewPage: number,
   seed = 0x9e3779b9,
@@ -204,45 +219,43 @@ export function createPreferentialNetwork(
     degreePool.unshift(...Array.from({ length: safeLinks }, () => page));
   }
 
-  return settleNetwork({ nodes, links }, seed);
+  return { nodes, links };
+}
+
+/**
+ * A directed Barabási–Albert-style graph. Targets are sampled in proportion
+ * to the current total degree, while the direction of each new edge is a
+ * separate seeded choice, as in NetLogo's preferential attachment example.
+ */
+export function createPreferentialNetwork(
+  nodeCount: number,
+  linksPerNewPage: number,
+  seed = 0x9e3779b9,
+): PageRankNetwork {
+  return settleNetwork(createPreferentialTopology(nodeCount, linksPerNewPage, seed), seed);
+}
+
+export function createExpandedNetwork(
+  nodeCount: number,
+  linksPerNewPage: number,
+  seed = 0x9e3779b9,
+): PageRankNetwork {
+  return settleNetwork(
+    createPreferentialTopology(nodeCount, linksPerNewPage, seed),
+    seed,
+    300,
+    { springLengthMultiplier: 1.35, repulsion: 0.8 },
+  );
 }
 
 export function createNetwork(
-  preset: NetworkPreset,
   options: { nodeCount?: number; linksPerNewPage?: number; seed?: number } = {},
 ): PageRankNetwork {
-  if (preset === "preferential") {
-    return createPreferentialNetwork(
-      options.nodeCount ?? 32,
-      options.linksPerNewPage ?? 2,
-      options.seed,
-    );
-  }
-
-  if (preset === "example-1") {
-    return settleNetwork({
-      nodes: pages(11),
-      links: [
-        link(3, 0),
-        link(2, 1), link(3, 1), link(4, 1), link(5, 1), link(6, 1), link(7, 1), link(8, 1),
-        link(1, 2), link(4, 3),
-        link(5, 4), link(6, 4), link(7, 4), link(8, 4), link(9, 4), link(10, 4),
-        link(4, 5),
-      ],
-    }, options.seed);
-  }
-
-  return settleNetwork({
-    nodes: pages(7),
-    links: [
-      link(1, 0), link(2, 0), link(4, 0), link(5, 0),
-      link(0, 1), link(2, 1), link(3, 1),
-      link(0, 2), link(3, 2), link(4, 2),
-      link(0, 3), link(4, 3),
-      link(0, 4), link(3, 4), link(5, 4), link(6, 4),
-      link(4, 5), link(0, 6),
-    ],
-  }, options.seed);
+  return createPreferentialNetwork(
+    options.nodeCount ?? 100,
+    options.linksPerNewPage ?? 2,
+    options.seed,
+  );
 }
 
 export function outgoingLinks(network: PageRankNetwork, pageId: number) {
@@ -251,6 +264,17 @@ export function outgoingLinks(network: PageRankNetwork, pageId: number) {
 
 export function incomingLinks(network: PageRankNetwork, pageId: number) {
   return network.links.filter((current) => current.target === pageId);
+}
+
+function pageIds(network: PageRankNetwork) {
+  return network.nodes.map((node) => node.id);
+}
+
+function outgoingByPage(network: PageRankNetwork) {
+  const outgoing = new Map<number, PageLink[]>();
+  for (const node of network.nodes) outgoing.set(node.id, []);
+  for (const current of network.links) outgoing.get(current.source)?.push(current);
+  return outgoing;
 }
 
 export function createPageRankState(
@@ -263,9 +287,10 @@ export function createPageRankState(
   const visits = Array.from({ length: nodeCount }, () => 0);
   const walkers: number[] = [];
   const surfers: RandomSurfer[] = [];
+  const ids = pageIds(network);
   let randomState = seed;
   for (let index = 0; index < walkerCount; index += 1) {
-    const [page, nextState] = randomChoice(network.nodes.map((node) => node.id), randomState);
+    const [page, nextState] = randomChoice(ids, randomState);
     const [colour, afterColour] = randomChoice(Array.from({ length: 12 }, (_, value) => value), nextState);
     walkers.push(page);
     surfers.push({ id: index, currentPage: page, previousPage: page, colour });
@@ -298,7 +323,7 @@ export function stepDiffusion(
   dampingFactor: number,
 ): PageRankState {
   const nodeCount = network.nodes.length;
-  const outgoing = new Map(network.nodes.map((node) => [node.id, outgoingLinks(network, node.id)]));
+  const outgoing = outgoingByPage(network);
   const flux = emptyFlux(network);
   const nextRanks = Array.from({ length: nodeCount }, () => 0);
   let danglingRank = 0;
@@ -341,9 +366,10 @@ export function resizeWalkerEnsemble(
   if (state.walkers.length === targetCount) return state;
   const walkers = state.walkers.slice(0, targetCount);
   const surfers = state.surfers.slice(0, targetCount);
+  const ids = pageIds(network);
   let randomState = state.randomState;
   while (walkers.length < targetCount) {
-    const [page, nextState] = randomChoice(network.nodes.map((node) => node.id), randomState);
+    const [page, nextState] = randomChoice(ids, randomState);
     const [colour, afterColour] = randomChoice(Array.from({ length: 12 }, (_, value) => value), nextState);
     walkers.push(page);
     surfers.push({
@@ -367,6 +393,8 @@ export function stepRandomSurfer(
   const linkColours: Record<string, number> = {};
   const walkers: number[] = [];
   const surfers: RandomSurfer[] = [];
+  const outgoing = outgoingByPage(network);
+  const ids = pageIds(network);
   let randomState = state.randomState;
   for (let index = 0; index < state.walkers.length; index += 1) {
     const currentPage = state.walkers[index]!;
@@ -377,7 +405,7 @@ export function stepRandomSurfer(
       colour: index % 12,
     };
     visits[currentPage] = (visits[currentPage] ?? 0) + 1;
-    const possibleLinks = outgoingLinks(network, currentPage);
+    const possibleLinks = outgoing.get(currentPage) ?? [];
     const [moveNoise, afterMoveNoise] = nextRandom(randomState);
     randomState = afterMoveNoise;
     if (moveNoise <= dampingFactor && possibleLinks.length > 0) {
@@ -388,7 +416,7 @@ export function stepRandomSurfer(
       linkColours[nextLink.id] = surfer.colour;
       surfers.push({ ...surfer, previousPage: currentPage, currentPage: nextLink.target });
     } else {
-      const [nextPage, nextState] = randomChoice(network.nodes.map((node) => node.id), randomState);
+      const [nextPage, nextState] = randomChoice(ids, randomState);
       randomState = nextState;
       walkers.push(nextPage);
       surfers.push({ ...surfer, previousPage: currentPage, currentPage: nextPage });

@@ -33,11 +33,10 @@
 }
 
 .surfers path { stroke: rgba(0, 0, 0, 0.14); stroke-width: 0.75; }
-.frame { fill: none; stroke: #050505; stroke-width: 2; pointer-events: none; }
 
 .pageNode { cursor: grab; outline: none; }
 .pageNode:active { cursor: grabbing; }
-.pageNode circle { stroke: rgba(0, 0, 0, 0.28); stroke-width: 1; transition: r 180ms ease; }
+.pageNode circle { stroke: rgba(0, 0, 0, 0.28); stroke-width: 1; }
 .pageNode:focus-visible circle { stroke: #000; stroke-width: 2.2; }
 
 .rankLabel {
@@ -96,7 +95,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .canvas, .pageNode { cursor: default; }
-  .pageNode circle { transition: none; }
 }
 
 @media (max-width: 54rem) {

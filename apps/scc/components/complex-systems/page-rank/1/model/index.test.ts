@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   createNetwork,
+  createExpandedNetwork,
   createPageRankState,
   createPreferentialNetwork,
   pageRankMetrics,
@@ -30,7 +31,7 @@ test("diffusion keeps rank normalized, including dangling pages", () => {
 });
 
 test("the seeded random-surfer ensemble is deterministic and its visit rank is normalized", () => {
-  const network = createNetwork("example-2");
+  const network = createNetwork({ nodeCount: 64, linksPerNewPage: 3, seed: 441 });
   let first = createPageRankState(network, 320, 837);
   let second = createPageRankState(network, 320, 837);
   for (let iteration = 0; iteration < 90; iteration += 1) {
@@ -45,7 +46,7 @@ test("the seeded random-surfer ensemble is deterministic and its visit rank is n
 });
 
 test("watched surfers retain colour and mark only the directed links they traverse", () => {
-  const network = createNetwork("example-2");
+  const network = createNetwork({ nodeCount: 64, linksPerNewPage: 3, seed: 441 });
   const next = stepRandomSurfer(network, createPageRankState(network, 96, 912), 0.85);
   assert.ok(Object.keys(next.linkColours).length > 0);
   assert.ok(Object.values(next.linkColours).every((colour) => colour >= 0 && colour < 12));
@@ -64,14 +65,28 @@ test("preferential construction is seeded, directed, and does not make self-link
   assert.equal(new Set(first.links.map((current) => current.id)).size, first.links.length);
 });
 
-test("the spring layout is seeded and keeps every page in the visible field", () => {
-  const graph = createNetwork("example-1");
+test("the expanded graph distributes its spring layout beyond the central hub", () => {
+  const graph = createExpandedNetwork(160, 3, 0x1d872b41);
+  const centralPages = graph.nodes.filter((page) => (
+    Math.hypot(page.position.x - 0.5, page.position.y - 0.5) < 0.16
+  ));
+  const outerPages = graph.nodes.filter((page) => (
+    Math.hypot(page.position.x - 0.5, page.position.y - 0.5) > 0.32
+  ));
+  assert.ok(centralPages.length < 60);
+  assert.ok(outerPages.length > 25);
+});
+
+test("the spring layout is seeded, bounded, and does not pin a dense graph to its edges", () => {
+  const graph = createNetwork({ nodeCount: 100, linksPerNewPage: 2 });
   const first = settleNetwork(graph, 553, 40);
   const second = settleNetwork(graph, 553, 40);
   assert.deepEqual(first, second);
   assert.ok(first.nodes.every((page) => (
     Number.isFinite(page.position.x) && Number.isFinite(page.position.y) &&
-    page.position.x >= 0.055 && page.position.x <= 0.945 &&
-    page.position.y >= 0.07 && page.position.y <= 0.93
+    page.position.x >= 0.05 && page.position.x <= 0.95 &&
+    page.position.y >= 0.05 && page.position.y <= 0.95
   )));
+  assert.ok(first.nodes.filter((page) => page.position.x < 0.065 || page.position.x > 0.935).length < 8);
+  assert.ok(first.nodes.filter((page) => page.position.y < 0.065 || page.position.y > 0.935).length < 8);
 });
