@@ -1,4 +1,7 @@
-import type { CSSProperties } from "react";
+import type {
+  CSSProperties,
+  PointerEvent as ReactPointerEvent,
+} from "react";
 import {
   cValParameterLabels,
   type CValHumanControlInput,
@@ -23,6 +26,10 @@ export default function CValMobileView({
   recordingStatus,
   recordingMessage,
   onEnableMotion,
+  touchOrientationAddOnEnabled,
+  onSpherePointerDown,
+  onSpherePointerMove,
+  onSpherePointerEnd,
 }: {
   price: number;
   priceMove: number;
@@ -34,6 +41,10 @@ export default function CValMobileView({
   recordingStatus: RecordingStatus;
   recordingMessage: string;
   onEnableMotion: () => void | Promise<void>;
+  touchOrientationAddOnEnabled: boolean;
+  onSpherePointerDown: (event: ReactPointerEvent<HTMLDivElement>) => void;
+  onSpherePointerMove: (event: ReactPointerEvent<HTMLDivElement>) => void;
+  onSpherePointerEnd: (event: ReactPointerEvent<HTMLDivElement>) => void;
 }) {
   const globeStyle = {
     "--globe-alpha": `${-phoneOrientation.alpha}deg`,
@@ -78,7 +89,29 @@ export default function CValMobileView({
           className={styles.globeShell}
           style={globeStyle}
           role="img"
-          aria-label="World-stabilized alpha beta gamma orientation globe"
+          aria-label={
+            touchOrientationAddOnEnabled
+              ? "World-stabilized alpha beta gamma orientation globe. Touch and drag to add rotation."
+              : "World-stabilized alpha beta gamma orientation globe"
+          }
+          data-interactive={
+            touchOrientationAddOnEnabled ? "true" : undefined
+          }
+          onPointerDown={
+            touchOrientationAddOnEnabled ? onSpherePointerDown : undefined
+          }
+          onPointerMove={
+            touchOrientationAddOnEnabled ? onSpherePointerMove : undefined
+          }
+          onPointerUp={
+            touchOrientationAddOnEnabled ? onSpherePointerEnd : undefined
+          }
+          onPointerCancel={
+            touchOrientationAddOnEnabled ? onSpherePointerEnd : undefined
+          }
+          onLostPointerCapture={
+            touchOrientationAddOnEnabled ? onSpherePointerEnd : undefined
+          }
         >
           <span className={styles.alphaScale} />
           <span className={styles.alphaDatum} />

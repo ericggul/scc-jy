@@ -64,6 +64,7 @@ function PanelTitle({ title, detail }: { title: string; detail: string }) {
 }
 
 function ProcessRibbon({ snapshot }: { snapshot: CValSnapshot }) {
+  const closingAuction = snapshot.phase === "closing-auction";
   const humanControl = snapshot.humanControl ?? {
     contributors: 0,
   };
@@ -75,9 +76,15 @@ function ProcessRibbon({ snapshot }: { snapshot: CValSnapshot }) {
       primary:
         snapshot.phase === "waiting"
           ? "NO HUMAN INPUT"
+          : closingAuction
+            ? "CLOSING AUCTION · MARKET HALTED"
           : `V ${Math.round(snapshot.parameters.volatility * 100)}  A ${Math.round(snapshot.parameters.activity * 100)}  L ${Math.round(snapshot.parameters.liquidity * 100)}`,
       secondary:
-        snapshot.phase === "waiting" ? "market held at 100" : "direct phone input · 0–100",
+        snapshot.phase === "waiting"
+          ? "market held at 100"
+          : closingAuction
+            ? "30s without active phone input · resumes on movement"
+            : "direct phone input · 0–100",
     },
     {
       id: "orders",
@@ -86,10 +93,14 @@ function ProcessRibbon({ snapshot }: { snapshot: CValSnapshot }) {
       primary:
         snapshot.phase === "waiting"
           ? "0 participants"
+          : closingAuction
+            ? "ORDER FLOW STOPPED"
           : `${snapshot.market.submittedOrders} orders · ${snapshot.market.executions} trades`,
       secondary:
         snapshot.phase === "waiting"
           ? "opens on first phone movement"
+          : closingAuction
+            ? "book and last execution held"
           : `${humanControl.contributors} human · participant response`,
     },
     {

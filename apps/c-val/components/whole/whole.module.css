@@ -1,0 +1,29 @@
+.stage {
+  height: 100dvh;
+  overflow: hidden;
+  position: fixed;
+  inset: 0;
+  width: 100dvw;
+}
+
+.pane {
+  container-type: size;
+  height: 100dvh;
+  left: 0;
+  overflow: hidden;
+  position: absolute;
+  top: 0;
+  transform: scale(0.5);
+  transform-origin: top left;
+  width: 100dvw;
+}
+
+.topRight,
+.bottomRight {
+  left: 50dvw;
+}
+
+.bottomLeft,
+.bottomRight {
+  top: 50dvh;
+}

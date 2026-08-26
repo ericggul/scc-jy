@@ -166,7 +166,7 @@ export type CValHistory = {
 export type CValSnapshot = {
   version: "2";
   runId: string;
-  phase: "waiting" | "active" | "settling";
+  phase: "waiting" | "active" | "closing-auction";
   activatedAt: number | null;
   revision: number;
   serverTime: number;

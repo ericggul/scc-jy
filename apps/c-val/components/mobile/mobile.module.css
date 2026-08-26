@@ -125,6 +125,16 @@
   border-radius: 50%;
 }
 
+.globeShell[data-interactive="true"] {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.globeShell[data-interactive="true"]:active {
+  cursor: grabbing;
+}
+
 .sphereViewport {
   position: absolute;
   inset: 8%;

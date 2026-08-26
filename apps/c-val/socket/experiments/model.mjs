@@ -31,7 +31,6 @@ const INTERNAL_TRADE_LIMIT = 240;
 const INTERNAL_FLOW_LIMIT = 480;
 const BOOK_LEVELS_IN_SNAPSHOT = 9;
 const ORIENTATION_ACTIVATION_THRESHOLD_DEGREES = 2;
-const C_VAL_SETTLEMENT_DURATION_MS = 3_000;
 
 function clamp(value, minimum, maximum) {
   if (!Number.isFinite(value)) return minimum;
@@ -393,7 +392,6 @@ export function createCValRuntime(
     runId,
     phase: "waiting",
     activatedAt: null,
-    settlement: null,
     revision: 0,
     serverTime: now,
     randomSeed: randomSeed >>> 0,
@@ -436,9 +434,8 @@ export function createCValRuntime(
 
 export function activateCValRuntime(runtime, now = Date.now()) {
   if (runtime.phase === "active") return false;
-  if (runtime.phase === "settling") {
+  if (runtime.phase === "closing-auction") {
     runtime.phase = "active";
-    runtime.settlement = null;
     runtime.activatedAt = now;
     return true;
   }
@@ -452,54 +449,17 @@ export function activateCValRuntime(runtime, now = Date.now()) {
   return true;
 }
 
-function interpolate(start, target, progress) {
-  return start + (target - start) * progress;
-}
-
 /**
- * Leave an unattended market in view long enough for its price to travel home
- * rather than jumping to the dormant 100-point baseline. No new orders are
- * placed during this passage; a fresh phone signal can cancel it immediately.
+ * Stop an unattended market at its final execution-derived state. The closing
+ * state never interpolates a price, mutates the order book, or manufactures a
+ * closing trade; a fresh engaged phone signal reopens this same market.
  */
-export function beginCValRuntimeSettlement(runtime, now = Date.now()) {
-  if (runtime.phase !== "active" || runtime.settlement) return false;
-  runtime.phase = "settling";
-  runtime.settlement = {
-    startedAt: now,
-    durationMs: C_VAL_SETTLEMENT_DURATION_MS,
-    parameters: copyRecord(runtime.parameters),
-    market: copyRecord(runtime.market),
-  };
-  return true;
-}
-
-function stepCValSettlement(runtime, now) {
-  const settlement = runtime.settlement;
-  if (!settlement) return resetCValRuntime(runtime, now);
-  const progress = clamp((now - settlement.startedAt) / settlement.durationMs, 0, 1);
-  for (const parameterId of cValParameterIds) {
-    runtime.parameters[parameterId] = interpolate(
-      settlement.parameters[parameterId],
-      cValNeutralParameters[parameterId],
-      progress,
-    );
-  }
-  for (const [key, value] of Object.entries(settlement.market)) {
-    if (!Number.isFinite(value)) continue;
-    const target = ["index", "openingPrice", "oneSecondLow", "oneSecondHigh", "fundamental", "bestBid", "bestAsk"].includes(key)
-      ? 100
-      : key === "volatilityRegime"
-        ? cValNeutralParameters.volatility
-        : 0;
-    const next = interpolate(value, target, progress);
-    runtime.market[key] = ["submittedOrders", "cancelledOrders", "executions", "depth"].includes(key)
-      ? Math.round(next)
-      : next;
-  }
+export function beginCValRuntimeClosingAuction(runtime, now = Date.now()) {
+  if (runtime.phase !== "active") return false;
+  runtime.phase = "closing-auction";
   runtime.revision += 1;
   runtime.serverTime = now;
-  if (progress >= 1) resetCValRuntime(runtime, now);
-  return runtime;
+  return true;
 }
 
 export function resetCValRuntime(runtime, now = Date.now()) {
@@ -1116,7 +1076,6 @@ function sampleHistory(runtime) {
 }
 
 export function stepCValRuntime(runtime, now = Date.now(), dt = 0.05) {
-  if (runtime.phase === "settling") return stepCValSettlement(runtime, now);
   if (runtime.phase !== "active") {
     runtime.serverTime = now;
     return runtime;
@@ -1196,8 +1155,4 @@ export const cValModelTiming = {
   signalReleaseMs: SIGNAL_RELEASE_MS,
   orientationActivationThresholdDegrees:
     ORIENTATION_ACTIVATION_THRESHOLD_DEGREES,
-};
-
-export const cValSettlementTiming = {
-  durationMs: C_VAL_SETTLEMENT_DURATION_MS,
 };

@@ -1,6 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 import {
   checkpointOrientationToParameters,
   cValOneOrientationToParameters,
@@ -12,6 +18,7 @@ import {
   type CValRecordingCommand,
   type CValRecordedMotionEvent,
   type CValRecordedOrientationEvent,
+  type CValRotationRate,
   type CValSensorTrace,
 } from "@/components/model";
 import { useCValSocket } from "@/components/transport";
@@ -38,6 +45,11 @@ type RecordingStatus =
 
 const DEFAULT_RECORDING_DURATION_MS = 12_000;
 const ORIENTATION_ENGAGEMENT_DEGREES = 2;
+// Bounded mobile-only trial: false restores the current sensor-only behavior.
+const ENABLE_TOUCH_ORIENTATION_ADD_ON = true;
+const TOUCH_DEGREES_PER_PIXEL = 0.16;
+const TOUCH_ROLL_DEGREES_PER_ORBIT = 36;
+const TOUCH_ROTATION_RATE_LIMIT = 48;
 const initialControl: CValHumanControlInput = {
   volatility: 0.5,
   activity: 0.5,
@@ -58,13 +70,74 @@ const initialAxisSignal: CValMobileAxisSignal = {
   gamma: 0,
 };
 
+type SpherePointer = {
+  pointerId: number;
+  centerX: number;
+  centerY: number;
+  radius: number;
+  clientX: number;
+  clientY: number;
+  normalizedX: number;
+  normalizedY: number;
+  sampledAt: number;
+};
+
 function finiteSensorValue(value: number | null) {
   return Number.isFinite(value) ? Number(value) : null;
+}
+
+function clamp(value: number, minimum: number, maximum: number) {
+  return Math.min(Math.max(value, minimum), maximum);
+}
+
+function wrapAngle(value: number) {
+  return ((value + 180) % 360 + 360) % 360 - 180;
+}
+
+function addAxisSignals(
+  left: CValMobileAxisSignal,
+  right: CValMobileAxisSignal,
+): CValMobileAxisSignal {
+  return {
+    alpha: wrapAngle(left.alpha + right.alpha),
+    beta: wrapAngle(left.beta + right.beta),
+    gamma: wrapAngle(left.gamma + right.gamma),
+  };
+}
+
+function finiteRotationRate(value: number | null | undefined) {
+  return Number.isFinite(value) ? Number(value) : 0;
+}
+
+function combineRotationRates(
+  physical: CValRotationRate,
+  touch: CValMobileAxisSignal,
+): CValRotationRate {
+  return {
+    alpha: finiteRotationRate(physical.alpha) + touch.alpha,
+    beta: finiteRotationRate(physical.beta) + touch.beta,
+    gamma: finiteRotationRate(physical.gamma) + touch.gamma,
+  };
+}
+
+function sphereCoordinates(
+  clientX: number,
+  clientY: number,
+  centerX: number,
+  centerY: number,
+  radius: number,
+) {
+  return {
+    x: clamp((clientX - centerX) / radius, -1, 1),
+    y: clamp((clientY - centerY) / radius, -1, 1),
+  };
 }
 
 export default function CValMobile() {
   const [control, setControl] = useState<CValHumanControlInput>(initialControl);
   const [phoneOrientation, setPhoneOrientation] =
+    useState<CValMobileAxisSignal>(initialAxisSignal);
+  const [touchOrientation, setTouchOrientation] =
     useState<CValMobileAxisSignal>(initialAxisSignal);
   const [permission, setPermission] = useState<MotionPermission>("idle");
   // The archived orientation mappings stay available in the model, while this
@@ -76,6 +149,10 @@ export default function CValMobile() {
   const lastSentAtRef = useRef(0);
   const listeningRef = useRef<"orientation" | "motion" | null>(null);
   const visualOrientationListeningRef = useRef(false);
+  const physicalRotationRateRef = useRef<CValRotationRate>(initialAxisSignal);
+  const touchRotationRateRef = useRef<CValMobileAxisSignal>(initialAxisSignal);
+  const touchOrientationRef = useRef<CValMobileAxisSignal>(initialAxisSignal);
+  const spherePointerRef = useRef<SpherePointer | null>(null);
   const recordingRef = useRef<{
     startedAt: number;
     recordedAt: string;
@@ -97,6 +174,37 @@ export default function CValMobile() {
         remoteRecordingCommandRef.current(command),
       onHumanControlReset: () => remoteControlResetRef.current(),
     });
+
+  const publishRotationRate = useCallback(
+    (
+      rotationRate: CValRotationRate,
+      sampledAt = performance.now(),
+      force = false,
+    ) => {
+      const gesture = rotationRateToCValControl(rotationRate);
+      const nextControl = {
+        ...gesture.parameters,
+        engaged: gesture.engaged,
+        sampledAt,
+      };
+      setControl(nextControl);
+
+      if (force || sampledAt - lastSentAtRef.current >= 16) {
+        lastSentAtRef.current = sampledAt;
+        sendHumanControl(nextControl);
+      }
+    },
+    [sendHumanControl],
+  );
+
+  const resetTouchOrientationAddOn = useCallback(() => {
+    spherePointerRef.current = null;
+    touchRotationRateRef.current = initialAxisSignal;
+    touchOrientationRef.current = initialAxisSignal;
+    if (ENABLE_TOUCH_ORIENTATION_ADD_ON) {
+      setTouchOrientation(initialAxisSignal);
+    }
+  }, []);
 
   const reportDisengaged = useCallback(() => {
     const nextControl = { ...initialControl, sampledAt: performance.now() };
@@ -120,10 +228,11 @@ export default function CValMobile() {
   useEffect(() => {
     remoteControlResetRef.current = () => {
       baselineRef.current = latestRawRef.current;
+      resetTouchOrientationAddOn();
       setControl(initialControl);
       sendHumanControl({ ...initialControl, sampledAt: performance.now() });
     };
-  }, [sendHumanControl]);
+  }, [resetTouchOrientationAddOn, sendHumanControl]);
 
   const handleOrientation = useCallback(
     (event: DeviceOrientationEvent) => {
@@ -202,19 +311,17 @@ export default function CValMobile() {
         gamma: finiteSensorValue(event.rotationRate?.gamma ?? null),
       };
       if (Object.values(rotationRate).every((value) => value === null)) return;
+      physicalRotationRateRef.current = rotationRate;
       const sampledAt = performance.now();
-      const gesture = rotationRateToCValControl(rotationRate);
-      const nextControl = {
-        ...gesture.parameters,
-        engaged: gesture.engaged,
+      publishRotationRate(
+        ENABLE_TOUCH_ORIENTATION_ADD_ON
+          ? combineRotationRates(
+              rotationRate,
+              touchRotationRateRef.current,
+            )
+          : rotationRate,
         sampledAt,
-      };
-      setControl(nextControl);
-
-      if (sampledAt - lastSentAtRef.current >= 16) {
-        lastSentAtRef.current = sampledAt;
-        sendHumanControl(nextControl);
-      }
+      );
 
       const recording = recordingRef.current;
       if (recording) {
@@ -236,7 +343,121 @@ export default function CValMobile() {
         });
       }
     },
-    [sendHumanControl],
+    [publishRotationRate],
+  );
+
+  const handleSpherePointerDown = useCallback(
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      if (spherePointerRef.current) return;
+      const rect = event.currentTarget.getBoundingClientRect();
+      const radius = Math.max(Math.min(rect.width, rect.height) / 2, 1);
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      const point = sphereCoordinates(
+        event.clientX,
+        event.clientY,
+        centerX,
+        centerY,
+        radius,
+      );
+
+      event.currentTarget.setPointerCapture(event.pointerId);
+      spherePointerRef.current = {
+        pointerId: event.pointerId,
+        centerX,
+        centerY,
+        radius,
+        clientX: event.clientX,
+        clientY: event.clientY,
+        normalizedX: point.x,
+        normalizedY: point.y,
+        sampledAt: performance.now(),
+      };
+      event.preventDefault();
+    },
+    [],
+  );
+
+  const handleSpherePointerMove = useCallback(
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      if (spherePointerRef.current?.pointerId !== event.pointerId) return;
+      const samples = event.nativeEvent.getCoalescedEvents?.() ?? [event.nativeEvent];
+
+      for (const sample of samples) {
+        const activePointer: SpherePointer | null = spherePointerRef.current;
+        if (!activePointer) return;
+        const sampledAt = performance.now();
+        const point = sphereCoordinates(
+          sample.clientX,
+          sample.clientY,
+          activePointer.centerX,
+          activePointer.centerY,
+          activePointer.radius,
+        );
+        const deltaAlpha =
+          (sample.clientX - activePointer.clientX) * TOUCH_DEGREES_PER_PIXEL;
+        const deltaBeta =
+          -(sample.clientY - activePointer.clientY) * TOUCH_DEGREES_PER_PIXEL;
+        const deltaGamma =
+          (activePointer.normalizedX * point.y -
+            activePointer.normalizedY * point.x) *
+          TOUCH_ROLL_DEGREES_PER_ORBIT;
+        const elapsedSeconds = Math.max(
+          (sampledAt - activePointer.sampledAt) / 1_000,
+          1 / 120,
+        );
+        const touchRate = {
+          alpha: clamp(
+            deltaAlpha / elapsedSeconds,
+            -TOUCH_ROTATION_RATE_LIMIT,
+            TOUCH_ROTATION_RATE_LIMIT,
+          ),
+          beta: clamp(
+            deltaBeta / elapsedSeconds,
+            -TOUCH_ROTATION_RATE_LIMIT,
+            TOUCH_ROTATION_RATE_LIMIT,
+          ),
+          gamma: clamp(
+            deltaGamma / elapsedSeconds,
+            -TOUCH_ROTATION_RATE_LIMIT,
+            TOUCH_ROTATION_RATE_LIMIT,
+          ),
+        };
+        const nextTouchOrientation = addAxisSignals(
+          touchOrientationRef.current,
+          { alpha: deltaAlpha, beta: deltaBeta, gamma: deltaGamma },
+        );
+
+        touchRotationRateRef.current = touchRate;
+        touchOrientationRef.current = nextTouchOrientation;
+        setTouchOrientation(nextTouchOrientation);
+        publishRotationRate(
+          combineRotationRates(physicalRotationRateRef.current, touchRate),
+          sampledAt,
+        );
+        spherePointerRef.current = {
+          ...activePointer,
+          clientX: sample.clientX,
+          clientY: sample.clientY,
+          normalizedX: point.x,
+          normalizedY: point.y,
+          sampledAt,
+        };
+      }
+
+      event.preventDefault();
+    },
+    [publishRotationRate],
+  );
+
+  const handleSpherePointerEnd = useCallback(
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      if (spherePointerRef.current?.pointerId !== event.pointerId) return;
+      spherePointerRef.current = null;
+      touchRotationRateRef.current = initialAxisSignal;
+      publishRotationRate(physicalRotationRateRef.current, performance.now(), true);
+    },
+    [publishRotationRate],
   );
 
   const finishRecording = useCallback(async () => {
@@ -385,8 +606,15 @@ export default function CValMobile() {
     window.removeEventListener("deviceorientation", handleVisualOrientation);
     listeningRef.current = null;
     visualOrientationListeningRef.current = false;
+    resetTouchOrientationAddOn();
     reportDisengaged();
-  }, [handleMotion, handleOrientation, handleVisualOrientation, reportDisengaged]);
+  }, [
+    handleMotion,
+    handleOrientation,
+    handleVisualOrientation,
+    reportDisengaged,
+    resetTouchOrientationAddOn,
+  ]);
 
   useEffect(() => {
     return () => {
@@ -408,6 +636,9 @@ export default function CValMobile() {
         : priceMove < -0.04
           ? "FALLING"
           : "STILL";
+  const displayedPhoneOrientation = ENABLE_TOUCH_ORIENTATION_ADD_ON
+    ? addAxisSignals(phoneOrientation, touchOrientation)
+    : phoneOrientation;
 
   return (
     <CValMobileView
@@ -417,10 +648,16 @@ export default function CValMobile() {
       priceHistory={state?.history.index ?? [price]}
       permission={permission}
       control={control}
-      phoneOrientation={phoneOrientation}
+      phoneOrientation={displayedPhoneOrientation}
       recordingStatus={recordingStatus}
       recordingMessage={recordingMessage}
       onEnableMotion={enableMotion}
+      touchOrientationAddOnEnabled={
+        ENABLE_TOUCH_ORIENTATION_ADD_ON && permission === "listening"
+      }
+      onSpherePointerDown={handleSpherePointerDown}
+      onSpherePointerMove={handleSpherePointerMove}
+      onSpherePointerEnd={handleSpherePointerEnd}
     />
   );
 }

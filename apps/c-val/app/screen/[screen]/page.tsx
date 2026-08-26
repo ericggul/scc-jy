@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import CValScreen, { CValScreenExperience } from "@/components/screen";
+import CValScreen from "@/components/screen";
 import { cValScreenIds, isCValScreenRoute } from "@/components/screens";
+import CValWhole from "@/components/whole";
 
 export function generateStaticParams() {
   return [...cValScreenIds, "whole"].map((screen) => ({ screen }));
@@ -23,6 +24,6 @@ export default async function CValScreenPage({
 }) {
   const { screen } = await params;
   if (!isCValScreenRoute(screen)) notFound();
-  if (screen === "whole") return <CValScreenExperience screenIds={cValScreenIds} />;
+  if (screen === "whole") return <CValWhole />;
   return <CValScreen screenId={screen} />;
 }

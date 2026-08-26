@@ -8,7 +8,7 @@ import CValEntryQr from "../entry-qr";
 
 const media = {
   gain: { src: "/video/left.mp4", start: 5, end: 15, scale: 1 },
-  loss: { src: "/video/right.mp4", start: 65, end: 74, scale: 1.2 },
+  loss: { src: "/video/right.mp4", start: 65, end: 71, scale: 1.2 },
 } as const;
 
 const Stage = styled.main`
