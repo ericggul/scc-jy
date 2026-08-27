@@ -6,9 +6,8 @@ import {
   getKoreanDayKey,
   useBrowserArchive,
 } from "./archive/browser-archive";
-import CampusMapView from "./campus-map";
-import RankingView from "./ranking";
 import EntryQr from "./entry-qr";
+import EventField from "./event-field";
 import type {
   DdongMeongArchiveEntry,
   DdongMeongSession,
@@ -156,11 +155,10 @@ function LiveOverview({
   );
 }
 
-const views = ["live", "ranking", "map"] as const;
+const views = ["live", "events"] as const;
 const viewLabels = {
   live: "현황",
-  ranking: "랭킹",
-  map: "지도",
+  events: "똥트맵",
 };
 
 export default function DdongMeongScreen() {
@@ -184,7 +182,7 @@ export default function DdongMeongScreen() {
     return () => window.clearInterval(timer);
   }, []);
 
-  const activeView = views[viewIndex];
+  const activeView = views[viewIndex % views.length];
 
   return (
     <main
@@ -216,8 +214,11 @@ export default function DdongMeongScreen() {
 
       <div className={styles.viewStage}>
         {activeView === "live" ? <LiveOverview activeSessions={activeSessions} now={now} /> : null}
-        {activeView === "ranking" ? <RankingView archive={archive} /> : null}
-        {activeView === "map" ? <CampusMapView archive={archive} /> : null}
+        {activeView === "events" ? (
+          <div className={`${styles.eventFieldStage} ${styles.screenView}`}>
+            <EventField archive={archive} />
+          </div>
+        ) : null}
       </div>
 
       <aside className={styles.archive} aria-labelledby="archive-title">

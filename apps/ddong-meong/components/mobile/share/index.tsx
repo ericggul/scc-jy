@@ -13,28 +13,20 @@ import styles from "./styles.module.css";
 const totalSeconds = 273;
 const kakaoTemplateId = 136302;
 const kakaoJavaScriptKey = process.env.NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY;
-const kakaoShareTitle = "똥싸며 멍때리기, 같이 해볼래요?";
+const kakaoShareBody = "똥싸며 멍때리기, 같이 해볼래요?";
 
-function objectParticle(title: string) {
-  const finalSyllable = Array.from(title.trim()).at(-1);
-  if (!finalSyllable) return "를";
-  const codePoint = finalSyllable.codePointAt(0);
-  if (codePoint === undefined || codePoint < 0xac00 || codePoint > 0xd7a3) {
-    return "를";
-  }
-  return (codePoint - 0xac00) % 28 === 0 ? "를" : "을";
-}
-
-function kakaoShareBody({
-  contentTitle,
+function kakaoShareTitle({
   duration,
   nickname,
+  overflowed,
 }: {
-  contentTitle: string;
   duration: string;
   nickname: string;
+  overflowed: boolean;
 }) {
-  return `${nickname}님은 ${contentTitle}${objectParticle(contentTitle)} ${duration} 동안 했어요. 똥싸고 멍때리기, 같이 해봐요.`;
+  return overflowed
+    ? `${nickname}님은 똥싸다 변기가 넘쳤어요!`
+    : `${nickname}님은 ${duration} 동안 똥쌌어요`;
 }
 
 type KakaoSdk = {
@@ -249,7 +241,7 @@ export default function DdongMeongShare() {
   const contentTitle = searchParams.get("content") || "오늘의 똥멍";
   const imagePath = searchParams.get("image") || "/meditations/thick-poop-imagination.png";
   const overflowed = searchParams.get("outcome") === "overflowed";
-  const shareMessage = kakaoShareBody({ contentTitle, duration, nickname });
+  const shareTitle = kakaoShareTitle({ duration, nickname, overflowed });
 
   useEffect(() => {
     setNickname(readSavedNickname() ?? "당신");
@@ -302,9 +294,9 @@ export default function DdongMeongShare() {
       share.sendCustom({
         templateId: kakaoTemplateId,
         templateArgs: {
-          BODY: shareMessage,
+          BODY: kakaoShareBody,
           IMG: uploadedImageUrl,
-          TITLE: kakaoShareTitle,
+          TITLE: shareTitle,
         },
       });
     } catch (error) {
@@ -368,7 +360,7 @@ export default function DdongMeongShare() {
 
         <main className={styles.main}>
           <section className={`${mainStyles.introduction} ${styles.introduction}`}>
-            <h1>{overflowed ? <><span>{nickname}님,</span> 똥멍에 집중한 나머지 변기가 넘쳤어요!</> : `${nickname}님, 잘 비웠어요.`}</h1>
+            <h1>{overflowed ? <><span>{nickname}님,</span> 변기가 넘쳤어요!</> : `${nickname}님, 잘 비웠어요.`}</h1>
           </section>
           <article className={`${mainStyles.contentCard} ${styles.completedCard}`}>
             <ContentArtwork eager src={imagePath} />
