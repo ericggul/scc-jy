@@ -1,0 +1,508 @@
+.screen {
+  min-height: 100dvh;
+  background: #0f0f0f;
+  color: #f1f1f1;
+}
+
+.mobileHeader {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  height: 56px;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px;
+  background: #0f0f0f;
+}
+
+.mobileMenu,
+.mobileHome,
+.homeButton,
+.roundIcon,
+.searchField button,
+.createButton,
+.navButton,
+.activeNav,
+.libraryButton,
+.subscription,
+.mobileNavigation button,
+.thumbnailButton,
+.videoTitle,
+.more,
+.chip,
+.activeChip {
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+}
+
+.mobileMenu,
+.roundIcon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: 999px;
+  background: transparent;
+}
+
+.mobileMenu svg,
+.roundIcon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.mobileHome {
+  padding: 0 4px;
+  background: transparent;
+}
+
+.mobileActions {
+  display: flex;
+  margin-left: auto;
+}
+
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.logoMark {
+  display: grid;
+  width: 28px;
+  height: 19px;
+  place-items: center;
+  border-radius: 5px;
+  background: #ff0033;
+}
+
+.logoPlay {
+  width: 14px;
+  height: 14px;
+  margin-left: 1px;
+}
+
+.logoWord {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -1.25px;
+}
+
+.desktopHeader,
+.desktopGuide {
+  display: none;
+}
+
+.content {
+  min-width: 0;
+  padding-bottom: 88px;
+}
+
+.topicRail {
+  position: sticky;
+  top: 56px;
+  z-index: 20;
+  display: flex;
+  gap: 5px;
+  overflow-x: auto;
+  padding: 10px 8px;
+  background: #0f0f0f;
+  scrollbar-width: none;
+}
+
+.chip,
+.activeChip {
+  height: 24px;
+  flex: none;
+  border-radius: 5px;
+  padding: 0 8px;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.chip {
+  background: #272727;
+}
+
+.activeChip {
+  background: #f1f1f1;
+  color: #0f0f0f;
+}
+
+.denseGrid {
+  display: grid;
+  grid-template-columns: repeat(var(--dense-columns), minmax(0, 1fr));
+  column-gap: var(--dense-column-gap);
+  row-gap: var(--dense-row-gap);
+  padding: 0 4px;
+}
+
+.videoCard {
+  min-width: 0;
+  color: #f1f1f1;
+}
+
+.thumbnailButton {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: var(--dense-thumbnail-radius);
+  background: #272727;
+  padding: 0;
+  text-align: left;
+}
+
+.thumbnail {
+  object-fit: cover;
+}
+
+.progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: var(--dense-progress-height);
+  background: #ff0033;
+}
+
+.duration {
+  position: absolute;
+  right: var(--dense-duration-inset);
+  bottom: var(--dense-duration-inset);
+  border-radius: 1px;
+  background: rgb(0 0 0 / 80%);
+  padding: var(--dense-duration-padding-y) var(--dense-duration-padding-x);
+  font-size: var(--dense-duration-font-size);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.live {
+  background: #cc0000;
+}
+
+.videoMeta {
+  display: flex;
+  gap: var(--dense-meta-gap);
+  padding: var(--dense-meta-padding-top) 0 0;
+}
+
+.avatar {
+  width: var(--dense-avatar-size);
+  height: var(--dense-avatar-size);
+  flex: none;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.videoText {
+  min-width: 0;
+  flex: 1;
+}
+
+.videoTitle {
+  display: -webkit-box;
+  overflow: hidden;
+  width: 100%;
+  background: transparent;
+  padding: 0;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: var(--dense-title-font-size);
+  font-weight: 600;
+  line-height: var(--dense-title-line-height);
+  text-align: left;
+}
+
+.creator,
+.stats {
+  overflow: hidden;
+  margin: 2px 0 0;
+  color: #aaa;
+  font-size: var(--dense-text-font-size);
+  line-height: var(--dense-text-line-height);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stats {
+  margin-top: 0;
+}
+
+.more {
+  display: grid;
+  width: var(--dense-more-size);
+  height: var(--dense-more-size);
+  flex: none;
+  place-items: center;
+  background: transparent;
+  padding: 0;
+}
+
+.more svg {
+  width: var(--dense-more-svg-size);
+  height: var(--dense-more-svg-size);
+}
+
+.mobileNavigation {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 40;
+  display: grid;
+  height: 64px;
+  grid-template-columns: repeat(5, 1fr);
+  background: #0f0f0f;
+  color: #f1f1f1;
+}
+
+.mobileNavigation button {
+  display: grid;
+  place-items: center;
+  gap: 2px;
+  background: transparent;
+  padding: 5px 0;
+  font-size: 10px;
+}
+
+.mobileNavigation svg {
+  width: 24px;
+  height: 24px;
+}
+
+.createMobile span {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border-radius: 50%;
+  background: #272727;
+}
+
+@media (min-width: 768px) {
+  .mobileHeader,
+  .mobileNavigation {
+    display: none;
+  }
+
+  .desktopHeader {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    display: flex;
+    height: 56px;
+    align-items: center;
+    gap: 12px;
+    padding: 0 20px;
+    background: #0f0f0f;
+  }
+
+  .headerBrand,
+  .headerActions,
+  .searchForm {
+    display: flex;
+    align-items: center;
+  }
+
+  .headerBrand {
+    flex: none;
+    gap: 8px;
+  }
+
+  .homeButton {
+    background: transparent;
+    padding: 0 4px;
+  }
+
+  .searchForm {
+    width: 100%;
+    max-width: 690px;
+    min-width: 220px;
+    gap: 12px;
+    margin: 0 auto;
+  }
+
+  .searchField {
+    display: flex;
+    height: 40px;
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
+    border: 1px solid #303030;
+    border-radius: 999px;
+    background: #121212;
+  }
+
+  .searchField input {
+    min-width: 0;
+    flex: 1;
+    border: 0;
+    background: transparent;
+    color: #f1f1f1;
+    padding: 0 16px;
+    font-size: 16px;
+    outline: 0;
+  }
+
+  .searchField button {
+    display: grid;
+    width: 64px;
+    place-items: center;
+    border-left: 1px solid #303030;
+    background: #222;
+  }
+
+  .searchField svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .headerActions {
+    flex: none;
+    gap: 4px;
+  }
+
+  .createButton {
+    display: inline-flex;
+    height: 36px;
+    align-items: center;
+    gap: 6px;
+    border-radius: 999px;
+    background: #272727;
+    padding: 0 12px;
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  .createButton svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .account {
+    width: 32px;
+    height: 32px;
+    margin-left: 4px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  .layout {
+    display: flex;
+  }
+
+  .desktopGuide {
+    position: sticky;
+    top: 56px;
+    display: block;
+    width: 240px;
+    height: calc(100dvh - 56px);
+    flex: none;
+    overflow-y: auto;
+    background: #0f0f0f;
+    padding: 12px;
+  }
+
+  .primaryNavigation {
+    display: grid;
+    gap: 4px;
+  }
+
+  .navButton,
+  .activeNav {
+    display: flex;
+    min-height: 44px;
+    align-items: center;
+    gap: 24px;
+    border-radius: 10px;
+    background: transparent;
+    padding: 0 12px;
+    font-size: 14px;
+    font-weight: 500;
+    text-align: left;
+  }
+
+  .activeNav {
+    background: #272727;
+    font-weight: 600;
+  }
+
+  .navButton svg,
+  .activeNav svg,
+  .libraryButton svg {
+    width: 20px;
+    height: 20px;
+    flex: none;
+  }
+
+  .guideSection {
+    display: grid;
+    gap: 4px;
+    margin-top: 24px;
+    padding: 0 12px;
+  }
+
+  .guideSection h2 {
+    margin: 0 0 4px;
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  .libraryButton,
+  .subscription {
+    display: flex;
+    height: 40px;
+    align-items: center;
+    gap: 20px;
+    overflow: hidden;
+    border-radius: 8px;
+    background: transparent;
+    padding: 0;
+    font-size: 14px;
+    text-align: left;
+  }
+
+  .subscription {
+    gap: 12px;
+  }
+
+  .subscription img {
+    width: 24px;
+    height: 24px;
+    flex: none;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  .libraryButton span,
+  .subscription span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .content {
+    min-width: 0;
+    flex: 1;
+    padding-bottom: 32px;
+  }
+
+  .topicRail {
+    top: 56px;
+    gap: 8px;
+    padding: 12px 32px;
+  }
+
+  .chip,
+  .activeChip {
+    height: 32px;
+    border-radius: 8px;
+    padding: 0 12px;
+    font-size: 14px;
+  }
+
+}

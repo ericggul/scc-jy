@@ -8,6 +8,10 @@ Routes:
 - `/sns/navigation/1`
 - `/sns/youtube/1`
 - `/sns/youtube/2`
+- `/sns/youtube/3`
+- `/sns/youtube/4`
+- `/sns/youtube/5`
+- `/sns/youtube/6`
 - `/sns/linkedin/1`
 
 Files:
@@ -48,6 +52,10 @@ The larger service reconstructions have variant-specific contracts:
 
 - [YouTube 1](./youtube/1.md)
 - [YouTube 2](./youtube/2.md)
+- [YouTube 3](./youtube/3.md)
+- [YouTube 4](./youtube/4.md)
+- [YouTube 5](./youtube/5.md)
+- [YouTube 6](./youtube/6.md)
 - [LinkedIn 1](./linkedin/1.md)
 
 The icon system must communicate these cycles without visible explanatory

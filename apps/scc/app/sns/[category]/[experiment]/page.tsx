@@ -7,6 +7,10 @@ import SnsNavigationDefault from "@/components/sns/navigation/default";
 import SnsLinkedinOne from "@/components/sns/linkedin/1";
 import SnsYoutubeOne from "@/components/sns/youtube/1";
 import SnsYoutubeTwo from "@/components/sns/youtube/2";
+import SnsYoutubeThree from "@/components/sns/youtube/3";
+import SnsYoutubeFour from "@/components/sns/youtube/4";
+import SnsYoutubeFive from "@/components/sns/youtube/5";
+import SnsYoutubeSix from "@/components/sns/youtube/6";
 import {
   findSnsExperiment,
   snsExperiments,
@@ -20,6 +24,10 @@ const components: Record<SnsExperimentKey, ComponentType> = {
   "linkedin/1": SnsLinkedinOne,
   "youtube/1": SnsYoutubeOne,
   "youtube/2": SnsYoutubeTwo,
+  "youtube/3": SnsYoutubeThree,
+  "youtube/4": SnsYoutubeFour,
+  "youtube/5": SnsYoutubeFive,
+  "youtube/6": SnsYoutubeSix,
 };
 
 export function generateStaticParams() {

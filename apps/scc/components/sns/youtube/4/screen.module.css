@@ -1,0 +1,15 @@
+.surface {
+  position: fixed;
+  inset: 0;
+  width: 100dvw;
+  height: 100dvh;
+  overflow: hidden;
+  background: #0f0f0f;
+}
+
+.frame {
+  position: absolute;
+  display: block;
+  border: 0;
+  transform-origin: top left;
+}
