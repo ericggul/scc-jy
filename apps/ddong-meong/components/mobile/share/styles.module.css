@@ -124,6 +124,7 @@ section.introduction h1 span {
 }
 
 .shareButton:active { transform: scale(0.985); }
+.shareButton:disabled { cursor: wait; opacity: 0.56; }
 .shareButton svg { width: 20px; height: 20px; flex: none; }
 
 .kakaoButton { background: #fee500; color: #1d1900; }
@@ -136,7 +137,6 @@ section.introduction h1 span {
 }
 
 .instagramButton svg { fill: none; stroke: currentcolor; stroke-width: 2.1; }
-.instagramButton:disabled { cursor: wait; opacity: 0.56; }
 
 .notice {
   min-height: 15px;

@@ -43,6 +43,9 @@ type KakaoSdk = {
       templateId: number;
       templateArgs?: Record<string, string>;
     }) => void;
+    uploadImage: (options: { file: FileList }) => Promise<{
+      infos: { original: { url: string } };
+    }>;
   };
   init: (key: string) => void;
   isInitialized: () => boolean;
@@ -68,8 +71,33 @@ function formatDuration(seconds: number) {
   return remainder === 0 ? `${minutes}분` : `${minutes}분 ${remainder}초`;
 }
 
-function absoluteImageUrl(imagePath: string) {
-  return new URL(imagePath, window.location.origin).toString();
+async function uploadImageToKakao(
+  imagePath: string,
+  share: NonNullable<KakaoSdk["Share"]>,
+) {
+  const response = await fetch(imagePath);
+  if (!response.ok) {
+    throw new Error("대표 이미지를 불러오지 못했습니다.");
+  }
+
+  const image = await response.blob();
+  if (image.size > 5 * 1024 * 1024) {
+    throw new Error("대표 이미지가 카카오 업로드 제한(5MB)을 넘습니다.");
+  }
+
+  const sourceUrl = new URL(imagePath, window.location.origin);
+  const filename = sourceUrl.pathname.split("/").at(-1) || "ddong-meong.png";
+  const file = new File([image], filename, {
+    type: image.type || "image/png",
+  });
+  const transfer = new DataTransfer();
+  transfer.items.add(file);
+  const uploaded = await share.uploadImage({ file: transfer.files });
+  const imageUrl = uploaded.infos.original.url;
+  if (!imageUrl) {
+    throw new Error("카카오 이미지 URL을 받지 못했습니다.");
+  }
+  return imageUrl;
 }
 
 function loadImage(src: string) {
@@ -213,6 +241,7 @@ export default function DdongMeongShare() {
   const searchParams = useSearchParams();
   const [nickname, setNickname] = useState("당신");
   const [notice, setNotice] = useState<string>();
+  const [isPreparingKakao, setIsPreparingKakao] = useState(false);
   const [isPreparingStory, setIsPreparingStory] = useState(false);
   const elapsedSeconds = Number(searchParams.get("seconds")) || totalSeconds;
   const elapsedClock = formatClock(elapsedSeconds);
@@ -256,21 +285,25 @@ export default function DdongMeongShare() {
     window.location.assign("/main");
   }
 
-  function shareToKakao() {
+  async function shareToKakao() {
+    setIsPreparingKakao(true);
+    setNotice(undefined);
     try {
       initializeKakao();
       if (!window.Kakao?.Share) {
         throw new Error("Kakao.Share 모듈을 찾지 못했습니다.");
       }
+      const share = window.Kakao.Share;
+      const uploadedImageUrl = await uploadImageToKakao(imagePath, share);
       console.info("[ddong-meong:kakao] sendCustom requested", {
         templateArgs: ["TITLE", "BODY", "IMG"],
         templateId: kakaoTemplateId,
       });
-      window.Kakao.Share.sendCustom({
+      share.sendCustom({
         templateId: kakaoTemplateId,
         templateArgs: {
           BODY: shareMessage,
-          IMG: absoluteImageUrl(imagePath),
+          IMG: uploadedImageUrl,
           TITLE: kakaoShareTitle,
         },
       });
@@ -278,6 +311,8 @@ export default function DdongMeongShare() {
       const message = describeError(error);
       console.error("[ddong-meong:kakao] share failed", error);
       setNotice(`카카오톡 공유 오류: ${message}`);
+    } finally {
+      setIsPreparingKakao(false);
     }
   }
 
@@ -349,9 +384,9 @@ export default function DdongMeongShare() {
 
         <div className={styles.actions}>
           <p className={styles.sharePrompt}>똥멍 메이트 구하기 💩</p>
-          <button aria-label="카카오톡으로 공유" className={`${styles.shareButton} ${styles.kakaoButton}`} onClick={shareToKakao} type="button">
+          <button aria-label="카카오톡으로 공유" className={`${styles.shareButton} ${styles.kakaoButton}`} disabled={isPreparingKakao} onClick={shareToKakao} type="button">
             <KakaoTalkIcon />
-            <span>카카오톡으로 공유</span>
+            <span>{isPreparingKakao ? "카카오톡 공유 준비 중" : "카카오톡으로 공유"}</span>
           </button>
           <button aria-label="인스타그램 스토리용 이미지 만들기" className={`${styles.shareButton} ${styles.instagramButton}`} disabled={isPreparingStory} onClick={shareToInstagram} type="button">
             <InstagramIcon />
