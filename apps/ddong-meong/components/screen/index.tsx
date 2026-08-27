@@ -147,16 +147,6 @@ function LiveOverview({
         </p>
       )}
 
-      <div className={styles.entryPoint}>
-        <div className={styles.qrFrame}>
-          <EntryQr />
-        </div>
-        <p>
-          휴대폰으로 스캔해
-          <br />
-          똥멍에 들어오기
-        </p>
-      </div>
     </section>
   );
 }
@@ -262,6 +252,16 @@ export default function DdongMeongScreen() {
             <EventField archive={displayedArchive} />
           </div>
         ) : null}
+        <section className={styles.scanEntry} aria-label="똥멍 입장 QR 코드">
+          <div className={styles.scanQrFrame}>
+            <EntryQr />
+          </div>
+          <p>
+            스캔해
+            <br />
+            똥멍 시작
+          </p>
+        </section>
       </div>
 
       <aside className={styles.archive} aria-labelledby="archive-title">
