@@ -489,7 +489,9 @@
   min-height: 0;
   padding: var(--screen-section-top) clamp(28px, 3.5vw, 56px);
   overflow-y: auto;
-  background: #ece4dd;
+  background: rgb(236 228 221 / 75%);
+  -webkit-backdrop-filter: blur(3vw) saturate(112%);
+  backdrop-filter: blur(3vw) saturate(112%);
   color: #30231e;
   scrollbar-width: none;
 }

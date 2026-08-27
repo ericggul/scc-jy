@@ -35,7 +35,6 @@ type EventFieldSceneOptions = {
 };
 
 type RecordLabel = {
-  appearsAt: number;
   height: number;
   id: string;
   sprite: THREE.Sprite;
@@ -91,7 +90,6 @@ function createRecordLabel(point: EventFieldPoint) {
   );
   const width = Math.min(4.8, Math.max(1.55, text.length * 0.11));
   return {
-    appearsAt: 0,
     height: width / (canvas.width / canvas.height),
     id: point.entry.id,
     sprite: label,
@@ -334,6 +332,7 @@ export class EventFieldScene {
     new THREE.LineBasicMaterial({
       color: "#f4f2ed",
       depthWrite: false,
+      linewidth: 2,
       transparent: true,
       opacity: 0.18,
     }),
@@ -345,6 +344,7 @@ export class EventFieldScene {
     new THREE.LineBasicMaterial({
       color: "#f4f2ed",
       depthWrite: false,
+      linewidth: 2,
       transparent: true,
       opacity: 0.18,
     }),
@@ -354,7 +354,11 @@ export class EventFieldScene {
   private readonly matrix = new THREE.Matrix4();
   private readonly position = new THREE.Vector3();
   private readonly rotation = new THREE.Euler();
+  private readonly quaternion = new THREE.Quaternion();
   private readonly scale = new THREE.Vector3();
+  private readonly intersections: THREE.Intersection<THREE.InstancedMesh>[] = [];
+  private readonly projectedPoint = new THREE.Vector3();
+  private readonly worldPoint = new THREE.Vector3();
   private readonly appearanceById = new Map<string, number>();
   private readonly exitById = new Map<string, number>();
   private points: EventFieldPoint[] = [];
@@ -420,7 +424,10 @@ export class EventFieldScene {
     this.options.canvas.addEventListener("pointerenter", this.handlePointerEnter);
     this.options.canvas.addEventListener("pointerleave", this.handlePointerLeave);
     this.options.canvas.addEventListener("pointermove", this.handlePointerMove);
-    this.renderer.setAnimationLoop(this.render);
+    document.addEventListener("visibilitychange", this.handleVisibilityChange);
+    if (document.visibilityState !== "hidden") {
+      this.renderer.setAnimationLoop(this.render);
+    }
   }
 
   setSize(width: number, height: number) {
@@ -447,10 +454,11 @@ export class EventFieldScene {
     if (pointsChanged) this.startAppearanceCycle(time);
 
     this.points.forEach((point, index) => {
-      this.setRecordTransform(index, point, time);
+      this.setRecordTransform(index, point, time, true);
       this.poopMesh.setColorAt(index, colorFor(point));
     });
     this.setRecordLabels();
+    this.updateRecordLabelScale(time);
     this.updateDataLines(time);
     this.poopMesh.instanceMatrix.needsUpdate = true;
     this.hitMesh.instanceMatrix.needsUpdate = true;
@@ -464,6 +472,7 @@ export class EventFieldScene {
     this.options.canvas.removeEventListener("pointerenter", this.handlePointerEnter);
     this.options.canvas.removeEventListener("pointerleave", this.handlePointerLeave);
     this.options.canvas.removeEventListener("pointermove", this.handlePointerMove);
+    document.removeEventListener("visibilitychange", this.handleVisibilityChange);
     this.controls.dispose();
     this.field.traverse((object) => {
       if (object instanceof THREE.Mesh || object instanceof THREE.LineSegments) {
@@ -489,7 +498,6 @@ export class EventFieldScene {
     this.points.forEach((point) => {
       const existing = previous.get(point.entry.id);
       if (existing) {
-        existing.appearsAt = this.appearanceById.get(point.entry.id) ?? performance.now();
         existing.sprite.position.set(
           point.x,
           projectionPlaneY + projectionLabelLift,
@@ -501,7 +509,6 @@ export class EventFieldScene {
       }
 
       const label = createRecordLabel(point);
-      label.appearsAt = this.appearanceById.get(point.entry.id) ?? performance.now();
       label.sprite.position.set(
         point.x,
         projectionPlaneY + projectionLabelLift,
@@ -524,6 +531,7 @@ export class EventFieldScene {
     index: number,
     point: EventFieldPoint,
     time: number,
+    updateHitMesh = false,
   ) {
     const { eased, isTransitioning } = this.getPointAppearance(point, time);
     this.position.set(point.x, point.y, point.z);
@@ -535,11 +543,13 @@ export class EventFieldScene {
     this.scale.setScalar(poopScale * eased);
     this.matrix.compose(
       this.position,
-      new THREE.Quaternion().setFromEuler(this.rotation),
+      this.quaternion.setFromEuler(this.rotation),
       this.scale,
     );
     this.poopMesh.setMatrixAt(index, this.matrix);
-    this.hitMesh.setMatrixAt(index, this.matrix);
+    if (updateHitMesh || isTransitioning) {
+      this.hitMesh.setMatrixAt(index, this.matrix);
+    }
     return isTransitioning;
   }
 
@@ -567,9 +577,6 @@ export class EventFieldScene {
         point.entry.id,
         time + exitStartMs + index * this.exitIntervalMs,
       );
-    });
-    this.recordLabels.forEach((label) => {
-      label.appearsAt = this.appearanceById.get(label.id) ?? time;
     });
   }
 
@@ -666,7 +673,9 @@ export class EventFieldScene {
     ) {
       geometry.setAttribute(
         "position",
-        new THREE.Float32BufferAttribute(segments, 3),
+        new THREE.Float32BufferAttribute(segments, 3).setUsage(
+          THREE.DynamicDrawUsage,
+        ),
       );
     } else {
       position.copyArray(segments);
@@ -676,9 +685,14 @@ export class EventFieldScene {
     geometry.computeBoundingSphere();
   }
 
-  private updateLabelVisibility() {
+  private updateRecordLabelScale(time: number) {
     this.recordLabels.forEach((label) => {
-      label.sprite.visible = true;
+      const { eased } = this.getRecordAppearance(label.id, time);
+      label.sprite.scale.set(
+        label.width * eased,
+        label.height * eased,
+        1,
+      );
     });
   }
 
@@ -708,7 +722,12 @@ export class EventFieldScene {
     this.pointer.y = -((event.clientY - bounds.top) / bounds.height) * 2 + 1;
     this.field.updateMatrixWorld(true);
     this.raycaster.setFromCamera(this.pointer, this.camera);
-    const hit = this.raycaster.intersectObject(this.hitMesh, false)[0];
+    this.intersections.length = 0;
+    const hit = this.raycaster.intersectObject(
+      this.hitMesh,
+      false,
+      this.intersections,
+    )[0];
     const index = hit?.instanceId ?? -1;
 
     this.setFocusedIndex(index);
@@ -730,8 +749,8 @@ export class EventFieldScene {
     this.field.updateMatrixWorld(true);
     let closestIndex = -1;
     let closestDistance = Number.POSITIVE_INFINITY;
-    const projected = new THREE.Vector3();
-    const worldPosition = new THREE.Vector3();
+    const projected = this.projectedPoint;
+    const worldPosition = this.worldPoint;
 
     this.points.forEach((point, index) => {
       worldPosition.set(point.x, point.y, point.z).applyMatrix4(this.field.matrixWorld);
@@ -789,19 +808,20 @@ export class EventFieldScene {
     if (hasTransitioningRecord) {
       this.hitMesh.instanceMatrix.needsUpdate = true;
     }
-    if (this.isDataTransitioning(time)) {
+    const isDataTransitioning = this.isDataTransitioning(time);
+    if (isDataTransitioning) {
       this.updateDataLines(time);
+      this.updateRecordLabelScale(time);
     }
-    this.updateLabelVisibility();
-    this.recordLabels.forEach((label) => {
-      const { eased } = this.getRecordAppearance(label.id, time);
-      label.sprite.scale.set(
-        label.width * eased,
-        label.height * eased,
-        1,
-      );
-    });
     this.updateAmbientFocus(time);
     this.renderer.render(this.scene, this.camera);
+  };
+
+  private handleVisibilityChange = () => {
+    if (document.visibilityState === "hidden") {
+      this.renderer.setAnimationLoop(null);
+      return;
+    }
+    if (!this.disposed) this.renderer.setAnimationLoop(this.render);
   };
 }
