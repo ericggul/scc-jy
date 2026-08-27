@@ -1,6 +1,6 @@
 export const cValIdleLifecycleTiming = Object.freeze({
-  inactiveToClosingMs: 5_000,
-  closingToResetMs: 120_000,
+  inactiveToClosingMs: 10_000,
+  closingToResetMs: 60_000,
 });
 
 /**
