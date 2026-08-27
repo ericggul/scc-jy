@@ -1,0 +1,75 @@
+.page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: #f1f0eb;
+  color: #151512;
+}
+
+.panel {
+  width: min(100%, 440px);
+  display: grid;
+  gap: 28px;
+}
+
+.panel h1 {
+  margin: 0;
+  font-size: clamp(2.5rem, 10vw, 4.5rem);
+  font-weight: 800;
+  line-height: 0.9;
+  letter-spacing: -0.075em;
+}
+
+.status {
+  display: grid;
+  gap: 16px;
+  margin: 0;
+}
+
+.status div {
+  display: grid;
+  gap: 3px;
+}
+
+.status dt {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.status dd {
+  margin: 0;
+  font-size: 1.125rem;
+  line-height: 1.35;
+}
+
+.panel button {
+  min-height: 56px;
+  border: 0;
+  border-radius: 0;
+  background: #151512;
+  color: #f1f0eb;
+  font: inherit;
+  font-size: 1.125rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.panel button:disabled {
+  cursor: wait;
+  opacity: 0.45;
+}
+
+.panel button:focus-visible {
+  outline: 3px solid #151512;
+  outline-offset: 4px;
+}
+
+.message {
+  min-height: 1.4em;
+  margin: -12px 0 0;
+  font-size: 0.9375rem;
+  line-height: 1.4;
+}

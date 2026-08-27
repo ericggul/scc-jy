@@ -10,7 +10,7 @@ import type {
   CValSnapshot,
 } from "@/components/model";
 
-export type CValRole = "mobile" | "controller" | "screen";
+export type CValRole = "mobile" | "controller" | "screen" | "reset";
 
 export type CValPresence = {
   experimentId: "c-val";
@@ -40,6 +40,8 @@ const events = {
   recordingStatusOut: "c-val-2:recording-status:out",
   humanControlResetOut: "c-val-2:human-control-reset:out",
   resetIn: "c-val-2:reset:in",
+  relayRestartIn: "c-val-2:relay-restart:in",
+  relayReloadOut: "c-val-2:relay-reload:out",
 } as const;
 
 function getSocketOrigin() {
@@ -61,6 +63,7 @@ export function useCValSocket({
   onRecordingStatus,
   onHumanControlReset,
   retainState = true,
+  reloadOnServerRestart = true,
 }: {
   role: CValRole;
   onState?: (state: CValSnapshot) => void;
@@ -68,6 +71,7 @@ export function useCValSocket({
   onRecordingStatus?: (status: CValRecordingStatus) => void;
   onHumanControlReset?: () => void;
   retainState?: boolean;
+  reloadOnServerRestart?: boolean;
 }) {
   const socketRef = useRef<Socket | null>(null);
   const onStateRef = useRef(onState);
@@ -117,7 +121,17 @@ export function useCValSocket({
     socket.on("connect", () => {
       setConnected(true);
       setConnectionError(null);
-      socket.emit(events.join, { version: "2", role });
+      socket.emit(
+        events.join,
+        { version: "2", role },
+        (result?: { ok?: boolean; error?: string }) => {
+          if (result?.ok === false) {
+            setConnectionError(result.error ?? "C-VAL relay access was denied");
+            setConnected(false);
+            socket.disconnect();
+          }
+        },
+      );
     });
     socket.on("disconnect", () => setConnected(false));
     socket.on("connect_error", (error) => {
@@ -147,12 +161,15 @@ export function useCValSocket({
     socket.on(events.humanControlResetOut, () => {
       onHumanControlResetRef.current?.();
     });
+    socket.on(events.relayReloadOut, () => {
+      if (reloadOnServerRestart) window.location.reload();
+    });
 
     return () => {
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [retainState, role]);
+  }, [reloadOnServerRestart, retainState, role]);
 
   const sendHumanControl = useCallback((control: CValHumanControlInput) => {
     socketRef.current?.emit(events.humanControlIn, control);
@@ -199,6 +216,26 @@ export function useCValSocket({
     socketRef.current?.emit(events.resetIn);
   }, []);
 
+  const restartServer = useCallback(() => {
+    return new Promise<{ ok: boolean; error?: string }>((resolve) => {
+      const socket = socketRef.current;
+      if (!socket?.connected) {
+        resolve({ ok: false, error: "C-VAL relay is not connected" });
+        return;
+      }
+      const timeout = window.setTimeout(() => {
+        resolve({ ok: false, error: "C-VAL relay did not acknowledge the restart" });
+      }, 6_000);
+      socket.emit(
+        events.relayRestartIn,
+        (result: { ok: boolean; error?: string }) => {
+          window.clearTimeout(timeout);
+          resolve(result);
+        },
+      );
+    });
+  }, []);
+
   return {
     connected,
     connectionError,
@@ -209,5 +246,6 @@ export function useCValSocket({
     sendRecordingCommand,
     sendRecordingStatus,
     resetSystem,
+    restartServer,
   };
 }

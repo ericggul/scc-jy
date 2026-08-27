@@ -41,15 +41,12 @@ get a dedicated document.
 | `apps/scc/components/dashboard/palantir` | `1` | [palantir/1](../apps/scc/docs/experiments/dashboard/palantir/1.md) |
 | `apps/scc/components/dashboard/stock` | `default`, `1`, `2`, `3`, `4` | [stock index](../apps/scc/docs/experiments/dashboard/stock/README.md) |
 | `apps/scc/components/realtime/calendar` | `default`, `1` | [calendar](../apps/scc/docs/experiments/realtime/calendar/README.md) |
-| `apps/scc/components/complex-systems/living-topology` | `1`–`5` | [living topology](../apps/scc/docs/experiments/complex-systems/living-topology/README.md) |
+| `apps/scc/components/complex-systems/living-topology` | `1`–`4` | [living topology](../apps/scc/docs/experiments/complex-systems/living-topology/README.md) |
 | `apps/scc/components/complex-systems/face-voronoi` | `1`–`3` | [face voronoi](../apps/scc/docs/experiments/complex-systems/face-voronoi/README.md) |
 | `apps/scc/components/complex-systems/page-rank` | `1` | [page rank](../apps/scc/docs/experiments/complex-systems/page-rank/README.md) |
-| `apps/scc/components/complex-systems/mycorrhizal-wave` | `1`, `2` | [mycorrhizal wave](../apps/scc/docs/experiments/complex-systems/mycorrhizal-wave/README.md) |
 | `apps/scc/components/complex-systems/cellular-automata` | `1` | [cellular automata](../apps/scc/docs/experiments/complex-systems/cellular-automata/README.md) |
 | `apps/scc/components/complex-systems/adaptive-coevolving-network` | `polling-ecology` | [polling ecology](../apps/scc/docs/experiments/complex-systems/adaptive-coevolving-network/README.md) |
-| `apps/scc/components/complex-systems/temporal-network` | `repair-relay` | [temporal network](../apps/scc/docs/experiments/complex-systems/temporal-network/README.md) |
 | Complex-systems acceptance standard | — | [removals and simulation standard](../apps/scc/docs/experiments/complex-systems/rejected-examples.md) |
-| `apps/scc/components/complex-systems/terminal` | `1` | [terminal colony](../apps/scc/docs/experiments/complex-systems/terminal/README.md) |
 | `apps/scc/components/standalone/bastille-day` | `1`, `2` | [bastille-day](../apps/scc/docs/experiments/standalone/bastille-day/README.md) |
 | `apps/scc/components/standalone/cv` | `1`, `2`, `3` | [cv](../apps/scc/docs/experiments/standalone/cv/README.md) |
 | `apps/scc/components/standalone/macos` | `1` | [macos](../apps/scc/docs/experiments/standalone/macos/README.md) |

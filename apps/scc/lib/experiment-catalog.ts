@@ -54,16 +54,6 @@ export const experimentCatalog = [
       "A directed graph where rank mass moves through links by diffusion or surfer visits.",
   },
   {
-    href: "/mycorrhizal-wave",
-    label: "mycorrhizal-wave",
-    description: "Observed fungal-network growth and synchronized replicate comparisons.",
-  },
-  {
-    href: "/temporal-network",
-    label: "temporal-network",
-    description: "A repair relay whose support is limited by the order of its contacts.",
-  },
-  {
     href: "/adaptive-coevolving-network",
     label: "adaptive-coevolving-network",
     description: "A synthetic cellular polling ecology with local stance dynamics.",
@@ -72,12 +62,6 @@ export const experimentCatalog = [
     href: "/cellular-automata",
     label: "cellular-automata",
     description: "A directly editable field of cells evolving by local rules.",
-  },
-  {
-    href: "/terminal",
-    label: "terminal",
-    description:
-      "A growing terminal colony whose local agents write, signal, and fork themselves.",
   },
   {
     href: "/c-val",

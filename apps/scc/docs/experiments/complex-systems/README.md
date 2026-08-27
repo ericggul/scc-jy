@@ -36,22 +36,3 @@ For a field-based perceptual experiment, begin with only the field. Do not add a
 title, legend, metric, explanation, or control until a concrete interaction or
 observation failure proves it necessary. Scientific measurements belong in
 tests and experiment records unless the participant actually needs them.
-
-## Constellation-specific consequence
-
-A constellation experiment must make stars, changing luminosity, relation
-formation, relation loss, and their temporal pattern the primary encounter. It
-must not inherit the pale-background, serif-heading, monospaced-corner-readout
-style of earlier graph experiments.
-
-If darkness is used, it is justified as the contrast condition that makes
-luminosity, emergence, and fading perceptible—not as a generic futuristic
-theme. Every visible light, haze, line, and moving point must encode star
-energy, resource density, relation strength, or actual relation flow. Do not
-add decorative background stars, grids, labels, glow, or astronomical scenery
-that the model does not contain.
-
-Permanent title text, metrics, event counters, instructions, and control buttons
-are unnecessary for the first constellation trial. Direct field input and
-keyboard actions may remain available through accessible semantics without
-occupying the visual field.

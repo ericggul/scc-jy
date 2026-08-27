@@ -153,10 +153,6 @@ This version has breaking changes — APIs, conventions, and file structure may 
   text or controls only when the participant cannot perform or understand the
   assigned interaction without them. Prefer keyboard or direct-field actions
   when they remain discoverable and accessible without permanent chrome.
-- A subject such as a constellation must not be forced into the mineral-paper,
-  serif-title, monospaced-readout style of earlier graph experiments. Its light,
-  depth, darkness, motion, and relation language must be derived specifically
-  from how constellation formation and loss need to be seen.
 
 ## Verification
 

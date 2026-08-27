@@ -36,7 +36,10 @@ let externalSlackPublisher = null;
 let externalTelegramPublisher = null;
 let ioRef = null;
 let disengagedAt = null;
+let relayRestartAt = null;
 const C_VAL_IDLE_CLOSING_DELAY_MS = 20_000;
+const C_VAL_RELAY_RESTART_DELAY_MS = 500;
+const C_VAL_RELAY_RESTART_EXIT_CODE = 75;
 
 const events = {
   join: "c-val-2:join",
@@ -51,6 +54,8 @@ const events = {
   recordingStatusOut: "c-val-2:recording-status:out",
   humanControlResetOut: "c-val-2:human-control-reset:out",
   resetIn: "c-val-2:reset:in",
+  relayRestartIn: "c-val-2:relay-restart:in",
+  relayReloadOut: "c-val-2:relay-reload:out",
 };
 
 const TRACE_EVENT_LIMIT = 6_000;
@@ -209,6 +214,20 @@ function broadcastState(io) {
   return state;
 }
 
+function requestRelayRestart(io) {
+  if (relayRestartAt !== null) {
+    return { ok: false, error: "C-VAL relay restart is already pending" };
+  }
+
+  relayRestartAt = Date.now();
+  io.to(cValRoom).emit(events.relayReloadOut);
+  setTimeout(() => {
+    console.info("[c-val:v2] relay restart requested from /reset");
+    process.exit(C_VAL_RELAY_RESTART_EXIT_CODE);
+  }, C_VAL_RELAY_RESTART_DELAY_MS).unref();
+  return { ok: true };
+}
+
 setInterval(() => {
   const now = Date.now();
   let enteredClosingAuction = false;
@@ -254,10 +273,13 @@ function register({ io, socket }) {
   externalSlackPublisher ??= createCValSlackPublisher();
   externalTelegramPublisher ??= createCValTelegramPublisher();
 
-  socket.on(events.join, ({ role, version: requestedVersion } = {}) => {
-    if (requestedVersion !== version) return;
+  socket.on(events.join, ({ role, version: requestedVersion } = {}, acknowledge = () => {}) => {
+    if (requestedVersion !== version) {
+      acknowledge({ ok: false, error: "C-VAL version 2 is required" });
+      return;
+    }
     const normalizedRole =
-      role === "mobile" || role === "controller" || role === "screen"
+      role === "mobile" || role === "controller" || role === "screen" || role === "reset"
         ? role
         : "unknown";
     socket.data[id] = { role: normalizedRole, version };
@@ -268,6 +290,7 @@ function register({ io, socket }) {
       presence: getPresence(io),
     });
     broadcastPresence(io);
+    acknowledge({ ok: true });
   });
 
   socket.on(events.humanControlIn, (payload = {}) => {
@@ -377,6 +400,17 @@ function register({ io, socket }) {
     clearCValDiagnostics(diagnostics, now);
     io.to(cValRoom).emit(events.humanControlResetOut);
     broadcastState(io);
+  });
+
+  socket.on(events.relayRestartIn, (acknowledge = () => {}) => {
+    if (
+      socket.data[id]?.role !== "reset" ||
+      !socket.rooms.has(cValRoom)
+    ) {
+      acknowledge({ ok: false, error: "C-VAL reset route required" });
+      return;
+    }
+    acknowledge(requestRelayRestart(io));
   });
 
   socket.on("disconnect", () => {

@@ -95,14 +95,15 @@ export default function CValMobileView({
   return (
     <main className={styles.page}>
       <header className={styles.header}>
+        <h1 className={styles.brand}>C-VAL</h1>
         <output
           className={styles.market}
           aria-label={`${priceState}, market ${price.toFixed(2)}, ${priceMove.toFixed(1)} percent`}
         >
-          <strong className={marketTone}>{price.toFixed(2)}</strong>
           <span className={marketTone}>
             {priceMove >= 0 ? "+" : ""}{priceMove.toFixed(1)}%
           </span>
+          <strong className={marketTone}>{price.toFixed(2)}</strong>
         </output>
       </header>
 

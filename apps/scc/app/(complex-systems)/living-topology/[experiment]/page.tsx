@@ -5,9 +5,6 @@ import LivingTopologyOne from "@/components/complex-systems/living-topology/1";
 import LivingTopologyTwo from "@/components/complex-systems/living-topology/2";
 import LivingTopologyThree from "@/components/complex-systems/living-topology/3";
 import LivingTopologyFour from "@/components/complex-systems/living-topology/4";
-import LivingTopologyFive from "@/components/complex-systems/living-topology/5";
-import LivingTopologySix from "@/components/complex-systems/living-topology/6";
-import LivingTopologyEight from "@/components/complex-systems/living-topology/8";
 import {
   isLivingTopologyExperimentSlug,
   livingTopologyExperiments,
@@ -19,9 +16,6 @@ const components: Record<LivingTopologyExperimentSlug, ComponentType> = {
   "2": LivingTopologyTwo,
   "3": LivingTopologyThree,
   "4": LivingTopologyFour,
-  "5": LivingTopologyFive,
-  "6": LivingTopologySix,
-  "8": LivingTopologyEight,
 };
 
 export function generateStaticParams() {

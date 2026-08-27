@@ -188,8 +188,10 @@ function spawnSocket() {
   });
 }
 
-const children = [...selected.map(spawnNext), spawnSocket()];
+const nextChildren = selected.map(spawnNext);
+let socketChild = spawnSocket();
 let stopping = false;
+const relayRestartExitCode = 75;
 
 console.log("");
 for (const application of selected) {
@@ -202,7 +204,7 @@ console.log("");
 function stopAll(signal) {
   if (stopping) return;
   stopping = true;
-  for (const child of children) {
+  for (const child of [...nextChildren, socketChild]) {
     if (!child.killed) child.kill(signal);
   }
 }
@@ -214,10 +216,26 @@ for (const signal of ["SIGINT", "SIGTERM"]) {
   });
 }
 
-for (const child of children) {
+function stopHarness(code, signal) {
+  if (stopping) return;
+  stopAll(signal || "SIGTERM");
+  process.exit(code ?? 0);
+}
+
+function watchSocket(child) {
   child.on("exit", (code, signal) => {
     if (stopping) return;
-    stopAll(signal || "SIGTERM");
-    process.exit(code ?? 0);
+    if (code === relayRestartExitCode) {
+      socketChild = spawnSocket();
+      watchSocket(socketChild);
+      return;
+    }
+    stopHarness(code, signal);
   });
 }
+
+for (const child of nextChildren) {
+  child.on("exit", (code, signal) => stopHarness(code, signal));
+}
+
+watchSocket(socketChild);

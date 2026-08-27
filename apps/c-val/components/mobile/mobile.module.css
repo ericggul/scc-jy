@@ -23,13 +23,24 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 16px;
   min-height: 52px;
   padding: 0 16px;
+}
+
+.brand {
+  margin: 0;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1;
 }
 
 .market {
   display: flex;
   align-items: baseline;
+  margin-left: auto;
   gap: 10px;
   font-variant-numeric: tabular-nums;
 }
