@@ -4,6 +4,7 @@ import type { EventFieldPoint } from "../model/project-events";
 
 const maximumEventCount = 500;
 const projectionPlaneY = -0.26;
+const projectionLabelLift = 0.045;
 const projectionXStart = -11.4;
 const projectionXEnd = 11.4;
 const projectionZStart = -7.2;
@@ -16,7 +17,6 @@ const entryWindowMs = 8_000;
 const defaultAppearanceIntervalMs = 72;
 const poopSpinRadiansPerMs = 0.00055;
 const poopScale = 0.42;
-const poopLabelOffsetY = poopScale * 3.1;
 const baseColor = new THREE.Color("#b96a32");
 const focusColor = new THREE.Color("#ffd29b");
 const pausedColor = new THREE.Color("#85604a");
@@ -424,7 +424,7 @@ export class EventFieldScene {
   }
 
   setSize(width: number, height: number) {
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
     this.renderer.setSize(width, height, false);
     this.camera.aspect = width / Math.max(height, 1);
     this.camera.updateProjectionMatrix();
@@ -490,7 +490,11 @@ export class EventFieldScene {
       const existing = previous.get(point.entry.id);
       if (existing) {
         existing.appearsAt = this.appearanceById.get(point.entry.id) ?? performance.now();
-        existing.sprite.position.set(point.x, point.y + poopLabelOffsetY, point.z);
+        existing.sprite.position.set(
+          point.x,
+          projectionPlaneY + projectionLabelLift,
+          point.z,
+        );
         next.push(existing);
         previous.delete(point.entry.id);
         return;
@@ -498,7 +502,11 @@ export class EventFieldScene {
 
       const label = createRecordLabel(point);
       label.appearsAt = this.appearanceById.get(point.entry.id) ?? performance.now();
-      label.sprite.position.set(point.x, point.y + poopLabelOffsetY, point.z);
+      label.sprite.position.set(
+        point.x,
+        projectionPlaneY + projectionLabelLift,
+        point.z,
+      );
       label.sprite.scale.set(0, 0, 1);
       this.field.add(label.sprite);
       next.push(label);
