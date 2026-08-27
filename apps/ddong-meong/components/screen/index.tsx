@@ -8,6 +8,11 @@ import {
 } from "./archive/browser-archive";
 import EntryQr from "./entry-qr";
 import EventField from "./event-field";
+import { createEventFieldTestDataset } from "./event-field/model/test-dataset";
+import {
+  playMeditationSoundtrack,
+  scheduleMeditationSoundtrackStop,
+} from "../mobile/media";
 import type {
   DdongMeongArchiveEntry,
   DdongMeongSession,
@@ -22,6 +27,7 @@ import theme from "../design-system/theme.module.css";
 import styles from "./styles.module.css";
 
 const emptyArchive: DdongMeongArchiveEntry[] = [];
+const holdEventFieldForTesting = true;
 
 function formatDuration(durationMs: number) {
   const seconds = Math.max(0, Math.floor(durationMs / 1000));
@@ -164,10 +170,12 @@ const viewLabels = {
 export default function DdongMeongScreen() {
   const { connected, snapshot } = useDdongMeongSocket("screen");
   const now = useClock();
-  const [viewIndex, setViewIndex] = useState(0);
+  const [viewIndex, setViewIndex] = useState(1);
+  const [testArchive, setTestArchive] = useState<DdongMeongArchiveEntry[] | null>(null);
   const activeSessions = snapshot?.activeSessions ?? [];
   const archive = useBrowserArchive(snapshot?.archive ?? emptyArchive);
-  const todayArchive = archive.filter(
+  const displayedArchive = testArchive ?? archive;
+  const todayArchive = displayedArchive.filter(
     (entry) => entry.dayKey === getKoreanDayKey(now),
   );
   const participantIds = new Set([
@@ -176,13 +184,48 @@ export default function DdongMeongScreen() {
   ]);
 
   useEffect(() => {
+    if (holdEventFieldForTesting || activeSessions.length === 0) {
+      setViewIndex(1);
+      return undefined;
+    }
+
+    setViewIndex(0);
     const timer = window.setInterval(() => {
       setViewIndex((current) => (current + 1) % views.length);
     }, 12_000);
     return () => window.clearInterval(timer);
+  }, [activeSessions.length]);
+
+  useEffect(() => {
+    const resumeSoundtrack = () => playMeditationSoundtrack();
+    playMeditationSoundtrack();
+    window.addEventListener("pointerdown", resumeSoundtrack, { once: true });
+    window.addEventListener("keydown", resumeSoundtrack, { once: true });
+
+    return () => {
+      window.removeEventListener("pointerdown", resumeSoundtrack);
+      window.removeEventListener("keydown", resumeSoundtrack);
+      scheduleMeditationSoundtrackStop();
+    };
   }, []);
 
   const activeView = views[viewIndex % views.length];
+
+  const toggleTestArchive = () => {
+    if (testArchive) {
+      setTestArchive(null);
+      return;
+    }
+
+    const seedValues = new Uint32Array(1);
+    window.crypto.getRandomValues(seedValues);
+    setTestArchive(
+      createEventFieldTestDataset({
+        now: Date.now(),
+        seed: seedValues[0],
+      }),
+    );
+  };
 
   return (
     <main
@@ -216,7 +259,7 @@ export default function DdongMeongScreen() {
         {activeView === "live" ? <LiveOverview activeSessions={activeSessions} now={now} /> : null}
         {activeView === "events" ? (
           <div className={`${styles.eventFieldStage} ${styles.screenView}`}>
-            <EventField archive={archive} />
+            <EventField archive={displayedArchive} />
           </div>
         ) : null}
       </div>
@@ -224,9 +267,17 @@ export default function DdongMeongScreen() {
       <aside className={styles.archive} aria-labelledby="archive-title">
         <div className={styles.archiveHeading}>
           <div>
-            <span>오늘의 기록</span>
+            <span>{testArchive ? "가상 기록 100건" : "오늘의 기록"}</span>
             <h2 id="archive-title">똥싼 사람들</h2>
           </div>
+          <button
+            aria-pressed={testArchive !== null}
+            className={styles.testArchiveButton}
+            onClick={toggleTestArchive}
+            type="button"
+          >
+            {testArchive ? "실제 기록 보기" : "가상 100개 보기"}
+          </button>
         </div>
 
         {todayArchive.length > 0 ? (

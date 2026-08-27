@@ -8,7 +8,7 @@ import type {
 import { isDdongMeongEntryContext } from "../../model/entry-context";
 
 const cacheKey = "ddong-meong:screen-archive";
-const retentionMs = 30 * 24 * 60 * 60 * 1000;
+const retentionMs = 7 * 24 * 60 * 60 * 1000;
 const maximumEntries = 500;
 const emptyArchive: DdongMeongArchiveEntry[] = [];
 const listeners = new Set<() => void>();

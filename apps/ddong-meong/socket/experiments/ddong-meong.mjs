@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 const id = "ddong-meong";
 const room = "experiment:ddong-meong";
 const archiveLimit = 5_000;
-const archiveSnapshotRetentionMs = 30 * 24 * 60 * 60 * 1000;
+const archiveSnapshotRetentionMs = 7 * 24 * 60 * 60 * 1000;
 const activeSessions = new Map();
 
 const contents = {

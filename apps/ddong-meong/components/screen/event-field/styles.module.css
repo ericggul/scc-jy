@@ -33,51 +33,6 @@
   transform: translate(-50%, -50%);
 }
 
-.eventLabel {
-  position: absolute;
-  z-index: 1;
-  top: var(--event-y);
-  left: var(--event-x);
-  display: grid;
-  min-width: min(230px, calc(100% - 48px));
-  max-width: min(290px, calc(100% - 48px));
-  gap: 3px;
-  padding: 9px 11px 10px;
-  background: rgb(16 13 11 / 84%);
-  box-shadow: 0 0 0 1px rgb(241 235 227 / 24%);
-  color: #f1ebe3;
-  font-size: 12px;
-  font-style: normal;
-  letter-spacing: -0.035em;
-  line-height: 1.28;
-  pointer-events: none;
-  transform: translate(12px, -50%);
-}
-
-.eventLabel p,
-.eventLabel strong,
-.eventLabel span {
-  overflow: hidden;
-  margin: 0;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.eventLabel p {
-  color: rgb(241 235 227 / 60%);
-  font-size: 10px;
-  font-variant-numeric: tabular-nums;
-}
-
-.eventLabel strong {
-  font-size: 14px;
-  font-weight: 650;
-}
-
-.eventLabel span {
-  color: rgb(241 235 227 / 80%);
-}
-
 @media (prefers-reduced-motion: reduce) {
   .field {
     cursor: default;

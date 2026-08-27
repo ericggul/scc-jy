@@ -3,9 +3,20 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import type { EventFieldPoint } from "../model/project-events";
 
 const maximumEventCount = 500;
-const fieldWidth = 24;
-const fieldDepth = 16;
-const fieldHeight = 8;
+const projectionPlaneY = -0.26;
+const projectionXStart = -11.4;
+const projectionXEnd = 11.4;
+const projectionZStart = -7.2;
+const projectionZEnd = 7.2;
+const projectionGridDivisions = 60;
+const projectionFootMarkSize = 0.12;
+const exitStartMs = 12_000;
+const appearanceDurationMs = 180;
+const entryWindowMs = 8_000;
+const defaultAppearanceIntervalMs = 72;
+const poopSpinRadiansPerMs = 0.00055;
+const poopScale = 0.42;
+const poopLabelOffsetY = poopScale * 3.1;
 const baseColor = new THREE.Color("#b96a32");
 const focusColor = new THREE.Color("#ffd29b");
 const pausedColor = new THREE.Color("#85604a");
@@ -23,52 +34,46 @@ type EventFieldSceneOptions = {
   reducedMotion: boolean;
 };
 
-function addSegment(
-  segments: number[],
-  from: readonly [number, number, number],
-  to: readonly [number, number, number],
-) {
-  segments.push(...from, ...to);
+type RecordLabel = {
+  appearsAt: number;
+  height: number;
+  id: string;
+  sprite: THREE.Sprite;
+  width: number;
+};
+
+type TemporalConnection = {
+  first: EventFieldPoint;
+  second: EventFieldPoint;
+};
+
+function formatDuration(durationMs: number) {
+  const seconds = Math.max(0, Math.floor(durationMs / 1_000));
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 }
 
-function createAxes() {
-  const axisSegments: number[] = [];
-  const origin: readonly [number, number, number] = [
-    -fieldWidth / 2,
-    0,
-    -fieldDepth / 2,
-  ];
-
-  addSegment(axisSegments, origin, [fieldWidth / 2, 0, -fieldDepth / 2]);
-  addSegment(axisSegments, origin, [-fieldWidth / 2, fieldHeight, -fieldDepth / 2]);
-  addSegment(axisSegments, origin, [-fieldWidth / 2, 0, fieldDepth / 2]);
-
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute(
-    "position",
-    new THREE.Float32BufferAttribute(axisSegments, 3),
-  );
-  return new THREE.LineSegments(
-    geometry,
-    new THREE.LineBasicMaterial({
-      color: "#f4f2ed",
-      transparent: true,
-      opacity: 0.7,
-    }),
-  );
+function truncateLabel(value: string, maximumLength: number) {
+  return value.length > maximumLength
+    ? `${value.slice(0, maximumLength - 1)}…`
+    : value;
 }
 
-function createAxisLabel(text: string, width: number) {
+function createRecordLabel(point: EventFieldPoint) {
   const canvas = document.createElement("canvas");
   const context = canvas.getContext("2d");
-  if (!context) throw new Error("Axis label canvas is unavailable.");
+  if (!context) throw new Error("Record label canvas is unavailable.");
 
-  const font = "560 26px Pretendard, Arial, sans-serif";
+  const text = [
+    truncateLabel(point.entry.nickname, 10),
+    formatDuration(point.entry.durationMs),
+    truncateLabel(point.entry.contentTitle, 20),
+  ].join(" · ");
+  const font = "560 22px Pretendard, Arial, sans-serif";
   context.font = font;
   canvas.width = Math.ceil(context.measureText(text).width) + 8;
-  canvas.height = 54;
+  canvas.height = 46;
   context.font = font;
-  context.fillStyle = "rgb(244 242 237 / 72%)";
+  context.fillStyle = "rgb(244 242 237 / 88%)";
   context.textBaseline = "middle";
   context.fillText(text, 2, canvas.height / 2);
 
@@ -80,12 +85,129 @@ function createAxisLabel(text: string, width: number) {
       depthTest: false,
       depthWrite: false,
       map: texture,
-      opacity: 0.7,
+      opacity: 0.88,
       transparent: true,
     }),
   );
-  label.scale.set(width, width / (canvas.width / canvas.height), 1);
-  return label;
+  const width = Math.min(4.8, Math.max(1.55, text.length * 0.11));
+  return {
+    appearsAt: 0,
+    height: width / (canvas.width / canvas.height),
+    id: point.entry.id,
+    sprite: label,
+    width,
+  };
+}
+
+function appendProjectionSegment(
+  segments: number[],
+  from: readonly [number, number, number],
+  to: readonly [number, number, number],
+) {
+  segments.push(...from, ...to);
+}
+
+function compareEventTime(first: EventFieldPoint, second: EventFieldPoint) {
+  return (
+    first.entry.endedAt - second.entry.endedAt ||
+    first.entry.id.localeCompare(second.entry.id)
+  );
+}
+
+function createTemporalConnections(points: EventFieldPoint[]) {
+  const chronologicallyOrdered = points.slice().sort(compareEventTime);
+  return chronologicallyOrdered.slice(1).map((point, index) => ({
+    first: chronologicallyOrdered[index],
+    second: point,
+  }));
+}
+
+function appendRevealedFloorProjection(
+  segments: number[],
+  point: EventFieldPoint,
+  reveal: number,
+) {
+  const foot: readonly [number, number, number] = [
+    point.x,
+    projectionPlaneY,
+    point.z,
+  ];
+  const markSize = projectionFootMarkSize * reveal;
+  const markY = projectionPlaneY + 0.012;
+  appendProjectionSegment(
+    segments,
+    foot,
+    [point.x, THREE.MathUtils.lerp(projectionPlaneY, point.y, reveal), point.z],
+  );
+  appendProjectionSegment(
+    segments,
+    [point.x - markSize, markY, point.z - markSize],
+    [point.x + markSize, markY, point.z + markSize],
+  );
+  appendProjectionSegment(
+    segments,
+    [point.x - markSize, markY, point.z + markSize],
+    [point.x + markSize, markY, point.z - markSize],
+  );
+}
+
+function appendRevealedConnection(
+  segments: number[],
+  connection: TemporalConnection,
+  reveal: number,
+) {
+  const { first, second } = connection;
+  appendProjectionSegment(
+    segments,
+    [first.x, first.y, first.z],
+    [
+      THREE.MathUtils.lerp(first.x, second.x, reveal),
+      THREE.MathUtils.lerp(first.y, second.y, reveal),
+      THREE.MathUtils.lerp(first.z, second.z, reveal),
+    ],
+  );
+}
+
+function createGlobalProjectionPlane() {
+  const segments: number[] = [];
+
+  for (let index = 0; index <= projectionGridDivisions; index += 1) {
+    const x = THREE.MathUtils.lerp(
+      projectionXStart,
+      projectionXEnd,
+      index / projectionGridDivisions,
+    );
+    appendProjectionSegment(
+      segments,
+      [x, projectionPlaneY, projectionZStart],
+      [x, projectionPlaneY, projectionZEnd],
+    );
+  }
+  for (let index = 0; index <= projectionGridDivisions; index += 1) {
+    const z = THREE.MathUtils.lerp(
+      projectionZStart,
+      projectionZEnd,
+      index / projectionGridDivisions,
+    );
+    appendProjectionSegment(
+      segments,
+      [projectionXStart, projectionPlaneY, z],
+      [projectionXEnd, projectionPlaneY, z],
+    );
+  }
+
+  return new THREE.LineSegments(
+    new THREE.BufferGeometry().setAttribute(
+      "position",
+      new THREE.Float32BufferAttribute(segments, 3),
+    ),
+    new THREE.LineBasicMaterial({
+      color: "#f4f2ed",
+      depthWrite: false,
+      transparent: true,
+      opacity: 0.18,
+    }),
+  );
 }
 
 function spiralCenter(t: number, target: THREE.Vector3) {
@@ -206,6 +328,17 @@ export class EventFieldScene {
     new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false }),
     maximumEventCount,
   );
+  private readonly connectionGeometry = new THREE.BufferGeometry();
+  private readonly connectionLines = new THREE.LineSegments(
+    this.connectionGeometry,
+    new THREE.LineBasicMaterial({
+      color: "#f4f2ed",
+      depthWrite: false,
+      transparent: true,
+      opacity: 0.18,
+    }),
+  );
+  private readonly projectionPlane = createGlobalProjectionPlane();
   private readonly projectionGeometry = new THREE.BufferGeometry();
   private readonly projectionLines = new THREE.LineSegments(
     this.projectionGeometry,
@@ -213,7 +346,7 @@ export class EventFieldScene {
       color: "#f4f2ed",
       depthWrite: false,
       transparent: true,
-      opacity: 0.16,
+      opacity: 0.18,
     }),
   );
   private readonly raycaster = new THREE.Raycaster();
@@ -222,7 +355,15 @@ export class EventFieldScene {
   private readonly position = new THREE.Vector3();
   private readonly rotation = new THREE.Euler();
   private readonly scale = new THREE.Vector3();
+  private readonly appearanceById = new Map<string, number>();
+  private readonly exitById = new Map<string, number>();
   private points: EventFieldPoint[] = [];
+  private connections: TemporalConnection[] = [];
+  private recordLabels: RecordLabel[] = [];
+  private appearanceIntervalMs = defaultAppearanceIntervalMs;
+  private exitIntervalMs = defaultAppearanceIntervalMs;
+  private cycleStartedAt = 0;
+  private pointSignature = "";
   private focusedIndex = -1;
   private pointerInside = false;
   private previousAmbientFocus = 0;
@@ -243,7 +384,7 @@ export class EventFieldScene {
     this.camera.lookAt(0, 3.2, 0);
     this.controls = new OrbitControls(this.camera, options.canvas);
     this.controls.autoRotate = !options.reducedMotion;
-    this.controls.autoRotateSpeed = 0.28;
+    this.controls.autoRotateSpeed = 1.1;
     this.controls.dampingFactor = 0.045;
     this.controls.enableDamping = true;
     this.controls.enablePan = false;
@@ -261,13 +402,6 @@ export class EventFieldScene {
     rim.position.set(-13, 7, -15);
     this.scene.add(ambient, key, rim);
 
-    const axes = createAxes();
-    const timeLabel = createAxisLabel("X · 마친 시점", 2.65);
-    timeLabel.position.set(0, -0.58, -fieldDepth / 2);
-    const durationLabel = createAxisLabel("Y · 머문 시간", 2.65);
-    durationLabel.position.set(-fieldWidth / 2 - 0.45, fieldHeight / 2, -fieldDepth / 2);
-    const contentLabel = createAxisLabel("Z · 고른 콘텐츠", 3.25);
-    contentLabel.position.set(-fieldWidth / 2 - 0.45, -0.58, 0);
     this.poopMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     this.poopMesh.count = 0;
     this.poopMesh.frustumCulled = false;
@@ -275,11 +409,9 @@ export class EventFieldScene {
     this.hitMesh.count = 0;
     this.hitMesh.frustumCulled = false;
     this.field.add(
-      axes,
-      timeLabel,
-      durationLabel,
-      contentLabel,
+      this.projectionPlane,
       this.projectionLines,
+      this.connectionLines,
       this.poopMesh,
       this.hitMesh,
     );
@@ -299,48 +431,27 @@ export class EventFieldScene {
   }
 
   setPoints(points: EventFieldPoint[]) {
-    this.points = points.slice(0, maximumEventCount);
+    const nextPoints = points
+      .slice(0, maximumEventCount)
+      .sort(compareEventTime);
+    const nextPointSignature = nextPoints.map((point) => point.entry.id).join("|");
+    const pointsChanged = this.pointSignature !== nextPointSignature;
+    const time = performance.now();
+
+    this.points = nextPoints;
+    this.pointSignature = nextPointSignature;
+    this.connections = createTemporalConnections(this.points);
     this.focusedIndex = -1;
     this.poopMesh.count = this.points.length;
     this.hitMesh.count = this.points.length;
+    if (pointsChanged) this.startAppearanceCycle(time);
 
     this.points.forEach((point, index) => {
-      this.position.set(point.x, point.y, point.z);
-      this.rotation.set(0.14, point.rotation, 0.06);
-      this.scale.setScalar(0.21);
-      this.matrix.compose(
-        this.position,
-        new THREE.Quaternion().setFromEuler(this.rotation),
-        this.scale,
-      );
-      this.poopMesh.setMatrixAt(index, this.matrix);
-      this.hitMesh.setMatrixAt(index, this.matrix);
+      this.setRecordTransform(index, point, time);
       this.poopMesh.setColorAt(index, colorFor(point));
     });
-    const projectionSegments: number[] = [];
-    this.points.forEach((point) => {
-      const source: readonly [number, number, number] = [
-        point.x,
-        point.y,
-        point.z,
-      ];
-      addSegment(
-        projectionSegments,
-        source,
-        [-fieldWidth / 2, point.y, point.z],
-      );
-      addSegment(projectionSegments, source, [point.x, 0, point.z]);
-      addSegment(
-        projectionSegments,
-        source,
-        [point.x, point.y, -fieldDepth / 2],
-      );
-    });
-    this.projectionGeometry.setAttribute(
-      "position",
-      new THREE.Float32BufferAttribute(projectionSegments, 3),
-    );
-    this.projectionGeometry.computeBoundingSphere();
+    this.setRecordLabels();
+    this.updateDataLines(time);
     this.poopMesh.instanceMatrix.needsUpdate = true;
     this.hitMesh.instanceMatrix.needsUpdate = true;
     if (this.poopMesh.instanceColor) this.poopMesh.instanceColor.needsUpdate = true;
@@ -368,6 +479,199 @@ export class EventFieldScene {
       }
     });
     this.renderer.dispose();
+  }
+
+  private setRecordLabels() {
+    const previous = new Map(
+      this.recordLabels.map((label) => [label.id, label]),
+    );
+    const next: RecordLabel[] = [];
+    this.points.forEach((point) => {
+      const existing = previous.get(point.entry.id);
+      if (existing) {
+        existing.appearsAt = this.appearanceById.get(point.entry.id) ?? performance.now();
+        existing.sprite.position.set(point.x, point.y + poopLabelOffsetY, point.z);
+        next.push(existing);
+        previous.delete(point.entry.id);
+        return;
+      }
+
+      const label = createRecordLabel(point);
+      label.appearsAt = this.appearanceById.get(point.entry.id) ?? performance.now();
+      label.sprite.position.set(point.x, point.y + poopLabelOffsetY, point.z);
+      label.sprite.scale.set(0, 0, 1);
+      this.field.add(label.sprite);
+      next.push(label);
+    });
+
+    previous.forEach((label) => {
+      this.field.remove(label.sprite);
+      label.sprite.material.map?.dispose();
+      label.sprite.material.dispose();
+    });
+    this.recordLabels = next;
+  }
+
+  private setRecordTransform(
+    index: number,
+    point: EventFieldPoint,
+    time: number,
+  ) {
+    const { eased, isTransitioning } = this.getPointAppearance(point, time);
+    this.position.set(point.x, point.y, point.z);
+    this.rotation.set(
+      0.14,
+      point.rotation + (this.options.reducedMotion ? 0 : time * poopSpinRadiansPerMs),
+      0.06,
+    );
+    this.scale.setScalar(poopScale * eased);
+    this.matrix.compose(
+      this.position,
+      new THREE.Quaternion().setFromEuler(this.rotation),
+      this.scale,
+    );
+    this.poopMesh.setMatrixAt(index, this.matrix);
+    this.hitMesh.setMatrixAt(index, this.matrix);
+    return isTransitioning;
+  }
+
+  private startAppearanceCycle(time: number) {
+    const availableStaggerMs = Math.max(
+      0,
+      entryWindowMs - appearanceDurationMs,
+    );
+    this.appearanceIntervalMs = Math.min(
+      defaultAppearanceIntervalMs,
+      this.points.length > 1
+        ? availableStaggerMs / (this.points.length - 1)
+        : 0,
+    );
+    this.exitIntervalMs = this.appearanceIntervalMs;
+    this.cycleStartedAt = time;
+    this.appearanceById.clear();
+    this.exitById.clear();
+    this.points.forEach((point, index) => {
+      this.appearanceById.set(
+        point.entry.id,
+        time + index * this.appearanceIntervalMs,
+      );
+      this.exitById.set(
+        point.entry.id,
+        time + exitStartMs + index * this.exitIntervalMs,
+      );
+    });
+    this.recordLabels.forEach((label) => {
+      label.appearsAt = this.appearanceById.get(label.id) ?? time;
+    });
+  }
+
+  private getAppearanceProgress(appearedAt: number, time: number) {
+    const progress = this.options.reducedMotion
+      ? 1
+      : Math.min(
+          1,
+          Math.max(0, (time - appearedAt) / appearanceDurationMs),
+        );
+    return {
+      eased: 1 - Math.pow(1 - progress, 3),
+      progress,
+    };
+  }
+
+  private getPointAppearance(point: EventFieldPoint, time: number) {
+    return this.getRecordAppearance(point.entry.id, time);
+  }
+
+  private getRecordAppearance(id: string, time: number) {
+    const entry = this.getAppearanceProgress(
+      this.appearanceById.get(id) ?? time,
+      time,
+    );
+    const exitedAt = this.exitById.get(id) ?? Number.POSITIVE_INFINITY;
+    if (time < exitedAt) {
+      return {
+        eased: entry.eased,
+        isTransitioning: entry.progress < 1,
+      };
+    }
+
+    const exitProgress = this.options.reducedMotion
+      ? 0
+      : Math.min(
+          1,
+          Math.max(0, (time - exitedAt) / appearanceDurationMs),
+        );
+    return {
+      eased: Math.pow(1 - exitProgress, 3),
+      isTransitioning: exitProgress < 1,
+    };
+  }
+
+  private getCycleEnd() {
+    return (
+      this.cycleStartedAt +
+      exitStartMs +
+      (this.points.length - 1) * this.exitIntervalMs +
+      appearanceDurationMs
+    );
+  }
+
+  private isDataTransitioning(time: number) {
+    if (this.options.reducedMotion || this.points.length === 0) return false;
+    const lastEntry =
+      this.cycleStartedAt +
+      (this.points.length - 1) * this.appearanceIntervalMs +
+      appearanceDurationMs;
+    return (
+      time < lastEntry ||
+      (time >= this.cycleStartedAt + exitStartMs && time < this.getCycleEnd())
+    );
+  }
+
+  private updateDataLines(time: number) {
+    const projectionSegments: number[] = [];
+    this.points.forEach((point) => {
+      appendRevealedFloorProjection(
+        projectionSegments,
+        point,
+        this.getPointAppearance(point, time).eased,
+      );
+    });
+    this.setLineSegments(this.projectionGeometry, projectionSegments);
+
+    const connectionSegments: number[] = [];
+    this.connections.forEach((connection) => {
+      const reveal = Math.min(
+        this.getPointAppearance(connection.first, time).eased,
+        this.getPointAppearance(connection.second, time).eased,
+      );
+      appendRevealedConnection(connectionSegments, connection, reveal);
+    });
+    this.setLineSegments(this.connectionGeometry, connectionSegments);
+  }
+
+  private setLineSegments(geometry: THREE.BufferGeometry, segments: number[]) {
+    const position = geometry.getAttribute("position");
+    if (
+      !(position instanceof THREE.BufferAttribute) ||
+      position.count * 3 !== segments.length
+    ) {
+      geometry.setAttribute(
+        "position",
+        new THREE.Float32BufferAttribute(segments, 3),
+      );
+    } else {
+      position.copyArray(segments);
+      position.needsUpdate = true;
+    }
+    geometry.setDrawRange(0, segments.length / 3);
+    geometry.computeBoundingSphere();
+  }
+
+  private updateLabelVisibility() {
+    this.recordLabels.forEach((label) => {
+      label.sprite.visible = true;
+    });
   }
 
   private setFocusedIndex(index: number) {
@@ -461,6 +765,34 @@ export class EventFieldScene {
   private render = (time: number) => {
     if (this.disposed) return;
     this.controls.update();
+    if (
+      !this.options.reducedMotion &&
+      this.points.length > 0 &&
+      time >= this.getCycleEnd()
+    ) {
+      this.startAppearanceCycle(time);
+    }
+    let hasTransitioningRecord = false;
+    this.points.forEach((point, index) => {
+      const isTransitioning = this.setRecordTransform(index, point, time);
+      hasTransitioningRecord ||= isTransitioning;
+    });
+    this.poopMesh.instanceMatrix.needsUpdate = true;
+    if (hasTransitioningRecord) {
+      this.hitMesh.instanceMatrix.needsUpdate = true;
+    }
+    if (this.isDataTransitioning(time)) {
+      this.updateDataLines(time);
+    }
+    this.updateLabelVisibility();
+    this.recordLabels.forEach((label) => {
+      const { eased } = this.getRecordAppearance(label.id, time);
+      label.sprite.scale.set(
+        label.width * eased,
+        label.height * eased,
+        1,
+      );
+    });
     this.updateAmbientFocus(time);
     this.renderer.render(this.scene, this.camera);
   };

@@ -1,7 +1,7 @@
 "use client";
 
 import Script from "next/script";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import DdongMeongWordmark from "../../design-system/wordmark";
 import { readSavedNickname } from "../identity";
@@ -131,17 +131,86 @@ function drawCoverImage(
   );
 }
 
+function getTextLines(
+  context: CanvasRenderingContext2D,
+  text: string,
+  {
+    maxLines,
+    maxWidth,
+  }: {
+    maxLines: number;
+    maxWidth: number;
+  },
+) {
+  const lines: string[] = [];
+  let line = "";
+
+  for (const character of Array.from(text)) {
+    const candidate = `${line}${character}`;
+    if (line && context.measureText(candidate).width > maxWidth) {
+      lines.push(line);
+      line = character;
+    } else {
+      line = candidate;
+    }
+  }
+  if (line) lines.push(line);
+
+  const visibleLines = lines.slice(0, maxLines);
+  if (lines.length > maxLines) {
+    let finalLine = visibleLines.at(-1) ?? "";
+    while (
+      finalLine &&
+      context.measureText(`${finalLine}…`).width > maxWidth
+    ) {
+      finalLine = Array.from(finalLine).slice(0, -1).join("");
+    }
+    visibleLines[visibleLines.length - 1] = `${finalLine}…`;
+  }
+
+  return visibleLines;
+}
+
+function drawTextLines(
+  context: CanvasRenderingContext2D,
+  text: string,
+  {
+    lineHeight,
+    maxLines,
+    maxWidth,
+    x,
+    y,
+  }: {
+    lineHeight: number;
+    maxLines: number;
+    maxWidth: number;
+    x: number;
+    y: number;
+  },
+) {
+  const lines = getTextLines(context, text, { maxLines, maxWidth });
+  lines.forEach((value, index) => {
+    context.fillText(value, x, y + index * lineHeight);
+  });
+  return lines.length;
+}
+
 async function createStoryImage({
   contentTitle,
   duration,
   elapsedClock,
+  fontFamily,
   imagePath,
+  nickname,
 }: {
   contentTitle: string;
   duration: string;
   elapsedClock: string;
+  fontFamily: string;
   imagePath: string;
+  nickname: string;
 }) {
+  await document.fonts.load(`500 16px ${fontFamily}`);
   await document.fonts.ready;
   const canvas = document.createElement("canvas");
   canvas.width = 1080;
@@ -156,44 +225,80 @@ async function createStoryImage({
   canvasField.addColorStop(1, "#30211b");
   context.fillStyle = canvasField;
   context.fillRect(0, 0, canvas.width, canvas.height);
-  const leftLight = context.createRadialGradient(108, 190, 0, 108, 190, 500);
-  leftLight.addColorStop(0, "rgba(157, 108, 58, .76)");
+  const leftLight = context.createRadialGradient(108, 190, 0, 108, 190, 630);
+  leftLight.addColorStop(0, "rgba(157, 108, 58, .86)");
   leftLight.addColorStop(1, "rgba(157, 108, 58, 0)");
   context.fillStyle = leftLight;
   context.fillRect(0, 0, canvas.width, canvas.height);
-  const rightLight = context.createRadialGradient(900, 1040, 0, 900, 1040, 660);
-  rightLight.addColorStop(0, "rgba(119, 73, 42, .54)");
+  const upperRightLight = context.createRadialGradient(930, 340, 0, 930, 340, 700);
+  upperRightLight.addColorStop(0, "rgba(102, 67, 40, .78)");
+  upperRightLight.addColorStop(1, "rgba(102, 67, 40, 0)");
+  context.fillStyle = upperRightLight;
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  const rightLight = context.createRadialGradient(886, 1612, 0, 886, 1612, 780);
+  rightLight.addColorStop(0, "rgba(119, 73, 42, .92)");
   rightLight.addColorStop(1, "rgba(119, 73, 42, 0)");
   context.fillStyle = rightLight;
   context.fillRect(0, 0, canvas.width, canvas.height);
 
   const wordmark = await loadImage("/wordmarks/ddong-meong.png");
-  context.drawImage(wordmark, 160, 559.3, 334.1, 72.7);
+  context.drawImage(wordmark, 58, 62, 323, 70.2);
 
+  context.fillStyle = "#f1e7e1";
+  context.font = `510 60px ${fontFamily}`;
+  drawTextLines(
+    context,
+    `${nickname}님, 잘 비웠어요.`,
+    { lineHeight: 77, maxLines: 2, maxWidth: 964, x: 58, y: 278 },
+  );
   const image = await loadImage(imagePath);
+  const cardX = 58;
+  const cardWidth = 964;
+  const artworkHeight = cardWidth / 1.75;
+  const cardInset = 48;
+  const titleLineHeight = 60;
+
+  context.font = `630 50px ${fontFamily}`;
+  const titleLines = getTextLines(context, contentTitle, {
+    maxLines: 2,
+    maxWidth: cardWidth - cardInset * 2,
+  });
+  const cardHeight = artworkHeight + cardInset * 2 + titleLines.length * titleLineHeight + 57;
+  const cardY = (canvas.height - cardHeight) / 2;
   context.save();
   context.beginPath();
-  context.roundRect(160, 673, 760, 574, 30);
+  context.roundRect(cardX, cardY, cardWidth, cardHeight, 44);
   context.clip();
   context.fillStyle = "#f5ede7";
-  context.fillRect(160, 673, 760, 574);
-  drawCoverImage(context, image, 160, 673, 760, 434);
+  context.fillRect(cardX, cardY, cardWidth, cardHeight);
+  drawCoverImage(context, image, cardX, cardY, cardWidth, artworkHeight);
   context.restore();
 
   context.fillStyle = "#30231e";
-  context.font = "630 38px Pretendard, Arial, sans-serif";
-  context.fillText(contentTitle, 202, 1160);
+  context.font = `630 50px ${fontFamily}`;
+  titleLines.forEach((line, index) => {
+    context.fillText(
+      line,
+      cardX + cardInset,
+      cardY + artworkHeight + cardInset + 45 + index * titleLineHeight,
+    );
+  });
+  const detailY = cardY + artworkHeight + cardInset + 45 + titleLines.length * titleLineHeight + 4;
   context.fillStyle = "rgba(48, 35, 30, .64)";
-  context.font = "450 26px Pretendard, Arial, sans-serif";
-  context.fillText(`${duration} 동안 똥멍했어요.`, 202, 1205);
+  context.font = `450 28px ${fontFamily}`;
+  context.fillText(`${duration} 동안 똥멍했어요.`, cardX + cardInset, detailY);
   context.textAlign = "right";
   context.fillStyle = "rgba(48, 35, 30, .62)";
-  context.font = "620 25px Pretendard, Arial, sans-serif";
-  context.fillText(`${elapsedClock} / 04:33`, 876, 1196);
+  context.font = `620 26px ${fontFamily}`;
+  context.fillText(`${elapsedClock} / 04:33`, cardX + cardWidth - cardInset, detailY);
   context.textAlign = "center";
   context.fillStyle = "rgba(241, 231, 225, .82)";
-  context.font = "500 31px Pretendard, Arial, sans-serif";
-  context.fillText("똥싸고 멍때리기, 같이 해보실래요?", 540, 1320);
+  context.font = `500 30px ${fontFamily}`;
+  context.fillText(
+    "똥싸며 멍때리기, 같이 해볼래요?",
+    canvas.width / 2,
+    cardY + cardHeight + 142,
+  );
   context.textAlign = "left";
 
   return new Promise<Blob>((resolve, reject) => {
@@ -230,6 +335,7 @@ function describeError(error: unknown) {
 }
 
 export default function DdongMeongShare() {
+  const sharePageRef = useRef<HTMLElement>(null);
   const searchParams = useSearchParams();
   const [nickname, setNickname] = useState("당신");
   const [notice, setNotice] = useState<string>();
@@ -316,7 +422,11 @@ export default function DdongMeongShare() {
         contentTitle,
         duration,
         elapsedClock,
+        fontFamily: sharePageRef.current
+          ? window.getComputedStyle(sharePageRef.current).fontFamily
+          : "system-ui, sans-serif",
         imagePath,
+        nickname,
       });
       const file = new File([image], "ddong-meong-story.png", { type: "image/png" });
       const shareData = { files: [file], title: "똥멍" };
@@ -343,7 +453,7 @@ export default function DdongMeongShare() {
 
   return (
     <GradientShell>
-      <section className={styles.page} aria-label="똥멍 완료 및 공유 화면">
+      <section ref={sharePageRef} className={styles.page} aria-label="똥멍 완료 및 공유 화면">
         <Script
           crossOrigin="anonymous"
           onError={handleKakaoScriptError}
