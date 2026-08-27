@@ -1,10 +1,11 @@
+import DdongMeongWordmark from "../../design-system/wordmark";
 import styles from "./styles.module.css";
 
 export default function SplashPage() {
   return (
     <section className={styles.page}>
       <div className={styles.identity}>
-        <h1>ddong-meong</h1>
+        <h1><DdongMeongWordmark /></h1>
         <p>똥멍</p>
       </div>
       <p className={styles.message}>

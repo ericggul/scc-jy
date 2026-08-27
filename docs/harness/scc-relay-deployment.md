@@ -1,16 +1,19 @@
-# SCC relay deployment
+# SCC shared relay deployment
 
-This is the deployment procedure for the SCC Socket.IO relay only. It applies
-to C-VAL and ddong-meong, which share the `scc-io` process on port `4001`.
+One EC2 instance runs two independent Socket.IO processes:
 
-It must never be substituted with the Banpo deployment procedure: do not touch
-`banpo-io`, its `4000` port, Banpo's code directory, or Nginx for a normal SCC
-relay release.
+| Process | Port | Directory | Owner |
+| --- | --- | --- | --- |
+| `banpo-io` | `127.0.0.1:4000` | `/home/ubuntu/banpo-socket` | Banpo-Xism only |
+| `scc-io` | `127.0.0.1:4001` | `/home/ubuntu/scc-socket` | C-VAL, ddong-meong, SCC |
+
+`scc-socket.banpo-xism.com` is the existing Nginx/TLS proxy for port 4001.
 
 ## What needs deployment
 
-- Changes under `apps/c-val/socket/experiments/` or
-  `apps/ddong-meong/socket/experiments/` require an `scc-io` relay update.
+- Changes under `apps/c-val/socket/experiments/`,
+  `apps/ddong-meong/socket/experiments/`, or
+  `apps/scc/socket/experiments/` require an `scc-io` relay update.
 - Changes under `socket/`, `socket-server-production.mjs`, or relay
   dependencies also require an `scc-io` relay update.
 - Frontend-only changes are deployed by Vercel and do not require a relay
@@ -27,70 +30,55 @@ relay release.
 | Relay entry point | `socket-server-production.mjs` |
 
 The remote directory is a deployed file copy, not a Git checkout. Do not run
-`git pull` there. Copy only the changed relay files into a staging directory,
-verify them, then replace the matching SCC files.
+`git pull` there. The deployment command synchronizes the server entry and all
+three app-owned handler directories; it does not copy frontend code.
 
-## Normal release
+## Normal relay release
 
-1. Confirm the local changes and run the targeted checks. Never use
-   `pnpm build` for this repository.
+Every C-VAL, ddong-meong, or SCC relay update is one command:
 
-   ```bash
-   git diff --check
-   pnpm --filter @scc/ddong-meong typecheck
-   ```
+```bash
+pnpm deploy:scc-relay
+```
 
-2. Use the existing SCC relay SSH identity and host. Keep the actual key path
-   and host in the invoking shell; do not commit either to this repository.
+The command uses the existing Banpo EC2 target and its existing PEM file. It
+first confirms `scc-io` and 4001, synchronizes the production entry plus all
+three app socket-handler directories (excluding tests), checks the entry
+syntax, restarts only `scc-io`, and checks the loopback health endpoint. It
+does not use a remote Git checkout, run an install or build, touch `banpo-io`,
+or expose port 4001.
 
-   ```bash
-   export SCC_RELAY_KEY='/absolute/path/to/key.pem'
-   export SCC_RELAY_HOST='ubuntu@your-scc-relay-host'
-   ```
+## Agent procedure
 
-3. Read the target process before changing it. The output must name
-   `scc-io`, use `/home/ubuntu/scc-socket`, and listen on port `4001`.
+When the user asks to deploy changed relay/server logic, run only:
 
-   ```bash
-   ssh -i "$SCC_RELAY_KEY" "$SCC_RELAY_HOST" \
-     'pm2 describe scc-io; ss -ltnp | grep ":4001"'
-   ```
+```bash
+pnpm deploy:scc-relay
+```
 
-4. Copy changed relay files to `/home/ubuntu/scc-deploy-staging/`, verify
-   SHA-256 checksums, then copy them into `/home/ubuntu/scc-socket/`. Keep the
-   source-relative path intact. For example, an update that touches C-VAL and
-   ddong-meong experiment handlers copies only those handler modules.
-
-5. Restart only the SCC relay and check its loopback endpoint:
-
-   ```bash
-   ssh -i "$SCC_RELAY_KEY" "$SCC_RELAY_HOST" \
-     'cd /home/ubuntu/scc-socket && pm2 restart scc-io && curl -fsS http://127.0.0.1:4001/socket'
-   ```
-
-   A successful response includes `"ok":true`, `"service":"scc-socket"`,
-   and the expected experiment list. A restart resets in-memory realtime
-   state, so do it when a short reconnection is acceptable.
-
-6. Remove the staging directory after a successful check:
-
-   ```bash
-   ssh -i "$SCC_RELAY_KEY" "$SCC_RELAY_HOST" \
-     'rm -rf /home/ubuntu/scc-deploy-staging'
-   ```
+Success means the command ends with `"ok":true` from the 4001 health endpoint.
+If it fails, do not retry by changing PM2, Nginx, AWS, DNS, ports, credentials,
+or Banpo files. Report the command error and inspect only `scc-io` read-only
+status/logs until the user gives a new instruction.
 
 ## Dependency or entry-point change
 
-If `package.json`, `pnpm-lock.yaml`, `socket-server-production.mjs`, or a
-shared `socket/` module changes, stage the complete affected relay set. For a
-dependency change, run `pnpm install --frozen-lockfile` inside
-`/home/ubuntu/scc-socket` before restarting `scc-io`. Do not install packages
-for an experiment-handler-only release.
+`socket-server-production.mjs` and `socket/create-socket-server.mjs` are
+included. If `package.json`, `pnpm-lock.yaml`, or another shared socket module
+becomes a runtime dependency, add it to `scripts/deploy-scc-relay.mjs` before
+deploying that change.
 
 ## Boundaries
 
-- Do not restart `banpo-io`.
+- Do not restart `banpo-io`; it owns Banpo-Xism's port `4000` service.
 - Do not change Nginx, DNS, TLS, security groups, or Vercel variables as part
   of this procedure.
 - Do not expose port `4001`; it remains loopback-only.
-- Do not store private keys, IP addresses, or credentials in this repository.
+
+## First SCC browser release
+
+The current relay accepts the C-VAL and ddong-meong Vercel origins by default.
+Before a deployed SCC browser is pointed at
+`https://scc-socket.banpo-xism.com`, set its exact deployed origin once in the
+`SOCKET_ALLOWED_ORIGINS` environment of `scc-io`, alongside those two existing
+origins, then restart `scc-io`. Do not guess an SCC Vercel hostname.

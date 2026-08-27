@@ -18,7 +18,6 @@ import { displayMeditationContentTitle } from "../model/content-catalog";
 import { getPausableElapsedMs } from "../model/session-timing";
 import { ddongMeongSans } from "../design-system/fonts";
 import InteractionLock from "../design-system/interaction-lock";
-import DdongMeongWordmark from "../design-system/wordmark";
 import theme from "../design-system/theme.module.css";
 import styles from "./styles.module.css";
 
@@ -193,7 +192,7 @@ export default function DdongMeongScreen() {
     >
       <InteractionLock />
       <header className={styles.header}>
-        <h1><DdongMeongWordmark /></h1>
+        <h1>ddong-meong</h1>
         <nav className={styles.viewNavigation} aria-label="전시장 화면">
           {views.map((view, index) => (
             <button

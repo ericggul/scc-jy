@@ -8,6 +8,7 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
+import DdongMeongWordmark from "../../design-system/wordmark";
 import { meditationContents } from "../../model/content-catalog";
 import { readDdongMeongGreeting } from "../identity";
 import { playMeditationSoundtrack } from "../media";
@@ -122,7 +123,7 @@ export default function DdongMeongMain() {
         className={`${styles.page} ${resumeSlug ? styles.isResuming : ""}`}
       >
         <header className={styles.header}>
-          <span className={styles.wordmark}>ddong-meong</span>
+          <DdongMeongWordmark className={styles.wordmark} />
         </header>
 
         <div className={styles.body}>

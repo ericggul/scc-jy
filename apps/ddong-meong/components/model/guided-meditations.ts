@@ -112,7 +112,7 @@ export const guidedMeditations = [
   },
   {
     slug: "do-androids-ddong-meong",
-    title: "안드로이드는 똥멍을 싸는가?",
+    title: "안드로이드는 똥을 싸는가?",
     description: "계산하지 않고 멈추는 몸의 비효율과 인간적인 여백을 생각하는 시간.",
     durationSeconds: 4 * 60 + 33,
     imagePath: "/meditations/do-androids-ddong-meong.png",

@@ -12,7 +12,14 @@ export type AccumulationMaterialKind =
   | "segmented-rope"
   | "counter-plop"
   | "fan-spray"
-  | "anxious-spray";
+  | "anxious-spray"
+  | "organic-stream"
+  | "coagulated-stream"
+  | "distributed-stream"
+  | "drill-stream"
+  | "stool-lump"
+  | "drill-stool"
+  | "sushi-stool";
 
 export type AccumulationProfile = {
   id: string;
@@ -60,6 +67,9 @@ export type AccumulationProfile = {
     travelExponent: number;
     spawnHeight: number;
     laneCenter: number;
+    lowerSpread: number;
+    trailVisibility: number;
+    mistCoreRatio: number;
     laneDrift: number;
     primaryWander: number;
     secondaryWander: number;
@@ -181,6 +191,9 @@ const baselineValues: AccumulationProfile = {
     travelExponent: 1.16,
     spawnHeight: 1.12,
     laneCenter: 0.5,
+    lowerSpread: 0,
+    trailVisibility: 0,
+    mistCoreRatio: 0,
     laneDrift: 0.045,
     primaryWander: 0.019,
     secondaryWander: 0.007,
@@ -334,7 +347,16 @@ function assertProfile(profile: AccumulationProfile) {
     profile.boundary.highlightLineStrength < 0 ||
     profile.boundary.highlightLineStrength > 1 ||
     profile.fall.laneCenter < 0 ||
-    profile.fall.laneCenter > 1
+    profile.fall.laneCenter > 1 ||
+    !Number.isFinite(profile.fall.lowerSpread) ||
+    profile.fall.lowerSpread < 0 ||
+    profile.fall.lowerSpread > 0.16 ||
+    !Number.isFinite(profile.fall.trailVisibility) ||
+    profile.fall.trailVisibility < 0 ||
+    profile.fall.trailVisibility > 1 ||
+    !Number.isFinite(profile.fall.mistCoreRatio) ||
+    profile.fall.mistCoreRatio < 0 ||
+    profile.fall.mistCoreRatio > 1
   ) {
     throw new Error(`Invalid accumulation value in profile: ${profile.id}`);
   }
@@ -359,7 +381,10 @@ function assertProfile(profile: AccumulationProfile) {
     !Number.isInteger(profile.solid.count) ||
     profile.solid.count < 0 ||
     ((profile.materialKind === "solid-form" ||
-      profile.materialKind === "pellet-cluster") &&
+      profile.materialKind === "pellet-cluster" ||
+      profile.materialKind === "stool-lump" ||
+      profile.materialKind === "drill-stool" ||
+      profile.materialKind === "sushi-stool") &&
       profile.solid.count === 0)
   ) {
     throw new Error(`Invalid solid form count in profile: ${profile.id}`);
@@ -647,7 +672,7 @@ const constipationDialogueProfile = defineAccumulationProfile({
   },
   particles: {
     reservoirCount: 5400,
-    filamentCount: 4000,
+    filamentCount: 14000,
     reservoirSeed: 0x700a11,
     filamentSeed: 0x500ace,
   },
@@ -677,6 +702,7 @@ const constipationDialogueProfile = defineAccumulationProfile({
     backgroundDuration: 4.1,
     travelExponent: 1.03,
     laneCenter: 0.47,
+    trailVisibility: 0.44,
     laneDrift: 0.078,
     primaryWander: 0.026,
     secondaryWander: 0.012,
@@ -698,10 +724,10 @@ const constipationDialogueProfile = defineAccumulationProfile({
   material: {
     reservoirAlpha: [0.14, 0.4],
     reservoirPointSize: [1.2, 3.4],
-    coreAlpha: [0.36, 0.78],
+    coreAlpha: [0.46, 0.86],
     veilAlpha: [0.08, 0.2],
     veilThreshold: 0.6,
-    corePointSize: [1.2, 3.2],
+    corePointSize: [1.8, 4.6],
     veilPointSize: [13, 29],
     coreStretch: [1.8, 3.2],
     veilStretch: [3.8, 6.4],
@@ -1070,48 +1096,158 @@ export const guidedAccumulationProfiles = {
   "constipation-dialogue": constipationDialogueProfile,
   "five-minute-meeting": defineAccumulationProfile({
     id: "five-minute-meeting",
-    materialKind: "anxious-spray",
-    palette: { deep: [0.16, 0.058, 0.02], middle: [0.41, 0.115, 0.025], surface: [0.69, 0.27, 0.07], highlight: [0.92, 0.55, 0.18] },
-    particles: { reservoirCount: 7800, filamentCount: 5100, reservoirSeed: 0x411ea, filamentSeed: 0x411f5 },
-    emission: { phraseDuration: 6.4, firstDuration: [0.72, 1.18], firstPause: [0.36, 0.78], secondDuration: [0.5, 0.92], secondPause: [0.28, 0.56], thirdDuration: [0.32, 0.62], thirdProbability: 0.82, pressure: [1.32, 1.75], pressureFrequency: 1.84, rhythmSeed: 411 },
-    fall: { duration: [0.72, 1.3], backgroundDuration: 1.08, travelExponent: 1.54, laneDrift: 0.042, primaryWander: 0.026, secondaryWander: 0.014, laneWidth: [0.16, 0.42], backgroundWidth: [0.06, 0.24], widthPulse: [0.4, 1.9], microFlow: 0.018, turbulence: 0.072 },
-    material: { coreAlpha: [0.42, 0.9], veilAlpha: [0.08, 0.28], veilThreshold: 0.58, corePointSize: [1.6, 4.2], veilPointSize: [8, 20], coreStretch: [0.8, 1.5], veilStretch: [1.8, 4.4], coreSoftness: 0.12, veilSoftness: 0.28 },
-    interaction: { holdAccumulationAmount: 0.48, holdIntervalMs: 118, holdStartDelayMs: 32, pressAccumulationAmount: 2.1, pressVisualStrength: 1.58, traceMinimumDistancePx: 3, traceVisualStrength: [0.8, 1.6], traceVolumeDistancePx: 90 },
+    materialKind: "organic-stream",
+    palette: {
+      deep: [0.06, 0.026, 0.017],
+      middle: [0.21, 0.078, 0.043],
+      surface: [0.42, 0.17, 0.085],
+      highlight: [0.56, 0.26, 0.13],
+    },
+    particles: {
+      reservoirCount: 6600,
+      filamentCount: 6400,
+      reservoirSeed: 0x411ea,
+      filamentSeed: 0x411f5,
+    },
+    emission: {
+      phraseDuration: 8.8,
+      firstDuration: [2.6, 3.8],
+      firstPause: [0.5, 1.2],
+      secondDuration: [1.6, 2.6],
+      secondPause: [0.45, 1],
+      thirdDuration: [0.7, 1.25],
+      thirdProbability: 0.48,
+      pressure: [0.82, 0.96],
+      pressureFrequency: 0.88,
+      rhythmSeed: 411,
+    },
+    fall: {
+      duration: [0.86, 0.98],
+      backgroundDuration: 0.92,
+      travelExponent: 1.16,
+      laneCenter: 0.49,
+      lowerSpread: 0.06,
+      laneDrift: 0.021,
+      primaryWander: 0.015,
+      secondaryWander: 0.007,
+      laneWidth: [0.028, 0.06],
+      backgroundWidth: [0.024, 0.09],
+      widthPulse: [0.96, 1.04],
+      microFlow: 0.0025,
+      turbulence: 0.012,
+    },
+    material: {
+      coreAlpha: [0.32, 0.72],
+      veilAlpha: [0.05, 0.14],
+      veilThreshold: 0.8,
+      corePointSize: [1.7, 4.2],
+      veilPointSize: [8, 18],
+      coreStretch: [1.6, 2.8],
+      veilStretch: [2.8, 4.8],
+      coreSoftness: 0.2,
+      veilSoftness: 0.42,
+      backgroundOpacity: 0.9,
+    },
+    interaction: {
+      holdAccumulationAmount: 0.44,
+      holdIntervalMs: 136,
+      holdStartDelayMs: 42,
+      pressAccumulationAmount: 2,
+      pressVisualStrength: 1.5,
+      traceMinimumDistancePx: 1,
+      traceVisualStrength: [0.72, 1.5],
+      traceVolumeDistancePx: 120,
+    },
   }),
   "poop-politics": defineAccumulationProfile({
     id: "poop-politics",
-    materialKind: "fan-spray",
-    palette: { deep: [0.08, 0.07, 0.06], middle: [0.27, 0.19, 0.13], surface: [0.53, 0.39, 0.27], highlight: [0.82, 0.68, 0.51] },
-    particles: { reservoirCount: 5400, filamentCount: 6400, reservoirSeed: 0x743ea, filamentSeed: 0x743f5 },
-    emission: { phraseDuration: 13.5, firstDuration: [1.2, 2.1], firstPause: [2.8, 4.6], secondDuration: [0.8, 1.5], secondPause: [1.6, 2.8], thirdDuration: [0.5, 0.9], thirdProbability: 0.76, pressure: [0.62, 0.92], pressureFrequency: 0.36, rhythmSeed: 743 },
-    fall: { duration: [1.5, 2.6], backgroundDuration: 2.2, travelExponent: 1.1, laneCenter: 0.5, laneDrift: 0.02, primaryWander: 0.034, secondaryWander: 0.018, laneWidth: [0.028, 0.082], backgroundWidth: [0.01, 0.09], widthPulse: [0.7, 1.34], microFlow: 0.012, turbulence: 0.042 },
-    material: { coreAlpha: [0.42, 0.96], veilAlpha: [0.06, 0.16], veilThreshold: 0.9, corePointSize: [1.8, 9.6], veilPointSize: [4, 12], coreStretch: [0.72, 1.72], veilStretch: [1.6, 3.2], coreSoftness: 0.1, veilSoftness: 0.22 },
-    interaction: { holdAccumulationAmount: 0.19, holdIntervalMs: 280, holdStartDelayMs: 116, pressAccumulationAmount: 0.7, pressVisualStrength: 0.72, traceMinimumDistancePx: 12, traceVisualStrength: [0.16, 0.62], traceVolumeDistancePx: 340 },
+    materialKind: "coagulated-stream",
+    palette: {
+      deep: [0.06, 0.038, 0.022],
+      middle: [0.2, 0.115, 0.055],
+      surface: [0.42, 0.25, 0.12],
+      highlight: [0.6, 0.41, 0.22],
+    },
+    particles: {
+      reservoirCount: 5800,
+      filamentCount: 5200,
+      reservoirSeed: 0x743ea,
+      filamentSeed: 0x743f5,
+    },
+    emission: {
+      phraseDuration: 11.5,
+      firstDuration: [2.4, 3.6],
+      firstPause: [1, 2],
+      secondDuration: [1.2, 2],
+      secondPause: [0.8, 1.6],
+      thirdDuration: [0.6, 1.1],
+      thirdProbability: 0.32,
+      pressure: [0.78, 0.96],
+      pressureFrequency: 0.62,
+      rhythmSeed: 743,
+    },
+    fall: {
+      duration: [1.65, 2.2],
+      backgroundDuration: 1.9,
+      travelExponent: 1.18,
+      laneCenter: 0.5,
+      lowerSpread: 0.024,
+      laneDrift: 0.025,
+      primaryWander: 0.018,
+      secondaryWander: 0.008,
+      laneWidth: [0.02, 0.062],
+      backgroundWidth: [0.006, 0.078],
+      widthPulse: [0.9, 1.12],
+      microFlow: 0.0024,
+      turbulence: 0.014,
+    },
+    material: {
+      coreAlpha: [0.34, 0.78],
+      veilAlpha: [0.06, 0.16],
+      veilThreshold: 0.68,
+      corePointSize: [1.7, 4.5],
+      veilPointSize: [10, 21],
+      coreStretch: [2.2, 4.2],
+      veilStretch: [3.8, 6.4],
+      coreSoftness: 0.16,
+      veilSoftness: 0.36,
+      backgroundOpacity: 0.3,
+    },
+    interaction: {
+      holdAccumulationAmount: 0.22,
+      holdIntervalMs: 220,
+      holdStartDelayMs: 92,
+      pressAccumulationAmount: 0.9,
+      pressVisualStrength: 0.9,
+      traceMinimumDistancePx: 4,
+      traceVisualStrength: [0.28, 0.82],
+      traceVolumeDistancePx: 260,
+    },
   }),
   "bathroom-without-urge": defineAccumulationProfile({
     id: "bathroom-without-urge",
     materialKind: "drifting-mist",
-    palette: { deep: [0.16, 0.145, 0.128], middle: [0.4, 0.355, 0.3], surface: [0.66, 0.6, 0.5], highlight: [0.9, 0.84, 0.72] },
-    particles: { reservoirCount: 3800, filamentCount: 7200, reservoirSeed: 0x109ea, filamentSeed: 0x109f5 },
-    emission: { phraseDuration: 24, firstDuration: [3.8, 6.2], firstPause: [8.4, 13.6], secondDuration: [2.4, 4.1], secondPause: [7.2, 11.5], thirdDuration: [1.4, 2.4], thirdProbability: 0.1, pressure: [0.24, 0.54], pressureFrequency: 0.16, rhythmSeed: 109 },
-    fall: { duration: [4.8, 8.2], backgroundDuration: 8.6, travelExponent: 0.82, laneDrift: 0.26, primaryWander: 0.078, secondaryWander: 0.043, laneWidth: [0.22, 0.62], backgroundWidth: [0.08, 0.32], widthPulse: [0.5, 1.8], microFlow: 0.036, turbulence: 0.065 },
-    material: { coreAlpha: [0.08, 0.28], veilAlpha: [0.16, 0.42], veilThreshold: 0.34, corePointSize: [2, 5], veilPointSize: [20, 44], coreStretch: [2.4, 5.2], veilStretch: [5.8, 11], coreSoftness: 0.28, veilSoftness: 0.46 },
+    palette: { deep: [0.11, 0.055, 0.022], middle: [0.36, 0.18, 0.058], surface: [0.62, 0.36, 0.11], highlight: [0.84, 0.57, 0.21] },
+    particles: { reservoirCount: 4200, filamentCount: 6000, reservoirSeed: 0x109ea, filamentSeed: 0x109f5 },
+    emission: { phraseDuration: 16, firstDuration: [3.4, 4.6], firstPause: [1.4, 2.2], secondDuration: [2.2, 3.4], secondPause: [1.4, 2.4], thirdDuration: [0.8, 1.4], thirdProbability: 0.45, pressure: [0.42, 0.66], pressureFrequency: 0.18, rhythmSeed: 109 },
+    fall: { duration: [4.8, 8.2], backgroundDuration: 8.6, travelExponent: 0.82, laneCenter: 0.48, lowerSpread: 0.012, trailVisibility: 0.64, mistCoreRatio: 0.66, laneDrift: 0.08, primaryWander: 0.028, secondaryWander: 0.014, laneWidth: [0.045, 0.13], backgroundWidth: [0.018, 0.08], widthPulse: [0.82, 1.16], microFlow: 0.006, turbulence: 0.016 },
+    material: { coreAlpha: [0.42, 0.86], veilAlpha: [0.08, 0.18], veilThreshold: 0.64, corePointSize: [2.1, 5.1], veilPointSize: [9, 18], coreStretch: [2, 3.8], veilStretch: [3.2, 5.6], coreSoftness: 0.18, veilSoftness: 0.32, backgroundOpacity: 0.72 },
     interaction: { holdAccumulationAmount: 0.08, holdIntervalMs: 420, holdStartDelayMs: 220, pressAccumulationAmount: 0.22, pressVisualStrength: 0.34, traceMinimumDistancePx: 26, traceVisualStrength: [0.08, 0.3], traceVolumeDistancePx: 480 },
   }),
   "who-pooped-on-my-head": defineAccumulationProfile({
     id: "who-pooped-on-my-head",
-    materialKind: "pellet-cluster",
-    palette: { deep: [0.18, 0.07, 0.02], middle: [0.47, 0.18, 0.04], surface: [0.7, 0.34, 0.08], highlight: [0.94, 0.62, 0.22] },
+    materialKind: "stool-lump",
+    palette: { deep: [0.065, 0.026, 0.009], middle: [0.2, 0.08, 0.025], surface: [0.38, 0.15, 0.05], highlight: [0.58, 0.27, 0.08] },
     particles: { reservoirCount: 2700, filamentCount: 1, reservoirSeed: 0x672ea, filamentSeed: 0x672f5 },
-    emission: { phraseDuration: 8.2, firstDuration: [0.26, 0.54], firstPause: [1.1, 2.1], secondDuration: [0.18, 0.38], secondPause: [0.42, 0.92], thirdDuration: [0.12, 0.28], thirdProbability: 0.94, pressure: [1.12, 1.56], pressureFrequency: 2.6, rhythmSeed: 672 },
-    fall: { duration: [0.74, 1.48], backgroundDuration: 1.18, travelExponent: 1.46, laneCenter: 0.56, laneDrift: 0.18, primaryWander: 0.06, secondaryWander: 0.035, laneWidth: [0.12, 0.42], backgroundWidth: [0.06, 0.22], widthPulse: [0.46, 1.74], microFlow: 0.02, turbulence: 0.1 },
+    emission: { phraseDuration: 24, firstDuration: [10, 11.5], firstPause: [0.1, 0.25], secondDuration: [6, 6.8], secondPause: [0.1, 0.2], thirdDuration: [4.8, 5.2], thirdProbability: 1, pressure: [0.94, 1.34], pressureFrequency: 0.72, rhythmSeed: 672 },
+    fall: { duration: [1.35, 2.4], backgroundDuration: 1.18, travelExponent: 1.28, laneCenter: 0.56, laneDrift: 0.18, primaryWander: 0.06, secondaryWander: 0.035, laneWidth: [0.12, 0.42], backgroundWidth: [0.06, 0.22], widthPulse: [0.46, 1.74], microFlow: 0.02, turbulence: 0.1 },
     material: { coreAlpha: [0.66, 1], veilAlpha: [0.01, 0.06], veilThreshold: 0.98, corePointSize: [4.4, 10.8], veilPointSize: [4, 8], coreStretch: [0.8, 1.18], veilStretch: [1, 1.4], coreSoftness: 0.08, veilSoftness: 0.14 },
     interaction: { holdAccumulationAmount: 0.7, holdIntervalMs: 96, holdStartDelayMs: 24, pressAccumulationAmount: 3.4, pressVisualStrength: 1.9, traceMinimumDistancePx: 1, traceVisualStrength: [1.1, 2.2], traceVolumeDistancePx: 72 },
-    solid: { count: 96, size: [0.08, 0.32], aspect: [0.58, 0.96], horizontalSpread: 0.86, curvature: 0.72, rotation: 0.92, roughness: 0.36 },
+    solid: { count: 64, size: [0.065, 0.15], aspect: [0.5, 0.78], horizontalSpread: 0.78, curvature: 0.22, rotation: 0.38, roughness: 0.085 },
   }),
   "inspiration-from-ddong-meong": defineAccumulationProfile({
     id: "inspiration-from-ddong-meong",
-    materialKind: "filament",
+    materialKind: "distributed-stream",
     palette: { deep: [0.22, 0.1, 0.028], middle: [0.58, 0.29, 0.055], surface: [0.86, 0.58, 0.16], highlight: [1, 0.88, 0.48] },
     particles: { reservoirCount: 4400, filamentCount: 7600, reservoirSeed: 0x534ea, filamentSeed: 0x534f5 },
     emission: { phraseDuration: 20, firstDuration: [2.6, 4.6], firstPause: [5.2, 8.4], secondDuration: [1.3, 2.4], secondPause: [4.4, 7.2], thirdDuration: [0.7, 1.4], thirdProbability: 0.44, pressure: [0.34, 0.62], pressureFrequency: 0.24, rhythmSeed: 534 },
@@ -1121,44 +1257,39 @@ export const guidedAccumulationProfiles = {
   }),
   "boot-camp-poop": defineAccumulationProfile({
     id: "boot-camp-poop",
-    materialKind: "counter-plop",
-    palette: { deep: [0.09, 0.1, 0.065], middle: [0.26, 0.29, 0.16], surface: [0.48, 0.48, 0.28], highlight: [0.7, 0.66, 0.4] },
-    particles: { reservoirCount: 7300, filamentCount: 4600, reservoirSeed: 0x826ea, filamentSeed: 0x826f5 },
-    emission: { phraseDuration: 7.2, firstDuration: [0.8, 1.4], firstPause: [0.7, 1.3], secondDuration: [0.6, 1.1], secondPause: [0.48, 0.9], thirdDuration: [0.42, 0.7], thirdProbability: 0.9, pressure: [1.08, 1.48], pressureFrequency: 1.44, rhythmSeed: 826 },
-    fall: { duration: [0.9, 1.6], backgroundDuration: 1.28, travelExponent: 1.38, laneCenter: 0.5, laneDrift: 0.004, primaryWander: 0.002, secondaryWander: 0.001, laneWidth: [0.038, 0.1], backgroundWidth: [0.016, 0.08], widthPulse: [0.88, 1.26], microFlow: 0.001, turbulence: 0.006 },
-    material: { coreAlpha: [0.48, 0.9], veilAlpha: [0.04, 0.12], veilThreshold: 0.84, corePointSize: [2.8, 6], veilPointSize: [6, 14], coreStretch: [0.92, 1.58], veilStretch: [1.3, 2.6], coreSoftness: 0.12, veilSoftness: 0.22 },
+    materialKind: "organic-stream",
+    palette: { deep: [0.06, 0.033, 0.015], middle: [0.22, 0.135, 0.04], surface: [0.46, 0.3, 0.08], highlight: [0.64, 0.46, 0.15] },
+    particles: { reservoirCount: 7300, filamentCount: 6200, reservoirSeed: 0x826ea, filamentSeed: 0x826f5 },
+    emission: { phraseDuration: 6.8, firstDuration: [0.7, 0.96], firstPause: [0.56, 0.94], secondDuration: [0.52, 0.78], secondPause: [0.44, 0.78], thirdDuration: [0.3, 0.5], thirdProbability: 0.78, pressure: [0.94, 1.16], pressureFrequency: 1.06, rhythmSeed: 826 },
+    fall: { duration: [0.76, 1.04], backgroundDuration: 0.92, travelExponent: 1.18, laneCenter: 0.5, lowerSpread: 0.056, laneDrift: 0.01, primaryWander: 0.005, secondaryWander: 0.002, laneWidth: [0.034, 0.08], backgroundWidth: [0.028, 0.1], widthPulse: [0.96, 1.05], microFlow: 0.002, turbulence: 0.007 },
+    material: { coreAlpha: [0.42, 0.84], veilAlpha: [0.06, 0.14], veilThreshold: 0.78, corePointSize: [2.1, 5.2], veilPointSize: [8, 17], coreStretch: [1.5, 2.5], veilStretch: [2.8, 4.6], coreSoftness: 0.18, veilSoftness: 0.36, backgroundOpacity: 0.84 },
     interaction: { holdAccumulationAmount: 0.34, holdIntervalMs: 145, holdStartDelayMs: 52, pressAccumulationAmount: 1.5, pressVisualStrength: 1.22, traceMinimumDistancePx: 5, traceVisualStrength: [0.46, 1.24], traceVolumeDistancePx: 154 },
   }),
   "omakase-poop": defineAccumulationProfile({
     id: "omakase-poop",
-    materialKind: "viscous-stream",
-    palette: { deep: [0.1, 0.056, 0.026], middle: [0.31, 0.15, 0.045], surface: [0.59, 0.36, 0.12], highlight: [0.82, 0.66, 0.32] },
-    particles: { reservoirCount: 5100, filamentCount: 3500, reservoirSeed: 0x948ea, filamentSeed: 0x948f5 },
+    materialKind: "sushi-stool",
+    palette: { deep: [0.065, 0.022, 0.008], middle: [0.34, 0.12, 0.032], surface: [0.82, 0.15, 0.042], highlight: [1, 0.56, 0.17] },
+    particles: { reservoirCount: 5100, filamentCount: 1, reservoirSeed: 0x948ea, filamentSeed: 0x948f5 },
     emission: { phraseDuration: 28, firstDuration: [4.4, 6.8], firstPause: [7.2, 11.6], secondDuration: [2.8, 4.6], secondPause: [6, 9.6], thirdDuration: [1.5, 2.6], thirdProbability: 0.2, pressure: [0.38, 0.66], pressureFrequency: 0.14, rhythmSeed: 948 },
-    fall: { duration: [4.6, 7.8], backgroundDuration: 7.4, travelExponent: 0.76, laneCenter: 0.61, laneDrift: 0.008, primaryWander: 0.004, secondaryWander: 0.002, laneWidth: [0.044, 0.11], backgroundWidth: [0.012, 0.052], widthPulse: [0.92, 1.08], microFlow: 0.0012, turbulence: 0.004 },
+    fall: { duration: [1.8, 3], backgroundDuration: 2.4, travelExponent: 0.96, laneCenter: 0.61, laneDrift: 0.008, primaryWander: 0.004, secondaryWander: 0.002, laneWidth: [0.044, 0.11], backgroundWidth: [0.012, 0.052], widthPulse: [0.92, 1.08], microFlow: 0.0012, turbulence: 0.004 },
     material: { coreAlpha: [0.52, 0.94], veilAlpha: [0.03, 0.1], veilThreshold: 0.88, corePointSize: [4.8, 10.4], veilPointSize: [7, 14], coreStretch: [3.8, 7.6], veilStretch: [5.6, 10.2], coreSoftness: 0.1, veilSoftness: 0.2 },
     interaction: { holdAccumulationAmount: 0.1, holdIntervalMs: 380, holdStartDelayMs: 180, pressAccumulationAmount: 0.32, pressVisualStrength: 0.44, traceMinimumDistancePx: 22, traceVisualStrength: [0.12, 0.42], traceVolumeDistancePx: 420 },
+    solid: { count: 36, size: [0.08, 0.15], aspect: [1.25, 1.6], horizontalSpread: 0.16, curvature: 0.01, rotation: 0.06, roughness: 0.012 },
   }),
   "do-androids-ddong-meong": defineAccumulationProfile({
+    ...celebrityApplauseProfile,
     id: "do-androids-ddong-meong",
-    materialKind: "liquid-burst",
-    palette: { deep: [0.06, 0.12, 0.1], middle: [0.12, 0.39, 0.27], surface: [0.32, 0.62, 0.4], highlight: [0.72, 0.94, 0.62] },
-    particles: { reservoirCount: 4600, filamentCount: 6400, reservoirSeed: 0x260ea, filamentSeed: 0x260f5 },
-    emission: { phraseDuration: 10.2, firstDuration: [0.54, 1.06], firstPause: [1.8, 3.4], secondDuration: [0.36, 0.84], secondPause: [1, 2.1], thirdDuration: [0.22, 0.54], thirdProbability: 0.7, pressure: [0.92, 1.28], pressureFrequency: 1.08, rhythmSeed: 260 },
-    fall: { duration: [0.86, 1.72], backgroundDuration: 1.44, travelExponent: 1.56, laneCenter: 0.48, laneDrift: 0.12, primaryWander: 0.042, secondaryWander: 0.022, laneWidth: [0.09, 0.26], backgroundWidth: [0.035, 0.16], widthPulse: [0.38, 1.86], microFlow: 0.028, turbulence: 0.078 },
-    material: { coreAlpha: [0.3, 0.82], veilAlpha: [0.12, 0.34], veilThreshold: 0.44, corePointSize: [1.8, 4.8], veilPointSize: [14, 34], coreStretch: [0.82, 1.6], veilStretch: [2.8, 6], coreSoftness: 0.16, veilSoftness: 0.34 },
-    interaction: { holdAccumulationAmount: 0.28, holdIntervalMs: 168, holdStartDelayMs: 64, pressAccumulationAmount: 1.28, pressVisualStrength: 1.38, traceMinimumDistancePx: 4, traceVisualStrength: [0.52, 1.4], traceVolumeDistancePx: 128 },
+    palette: { deep: [0.075, 0.24, 0.09], middle: [0.18, 0.56, 0.19], surface: [0.48, 0.84, 0.28], highlight: [0.78, 0.98, 0.46] },
   }),
   "ten-reasons-to-poop-meditate": defineAccumulationProfile({
     id: "ten-reasons-to-poop-meditate",
-    materialKind: "solid-form",
-    palette: { deep: [0.17, 0.1, 0.045], middle: [0.43, 0.25, 0.09], surface: [0.72, 0.49, 0.18], highlight: [0.96, 0.8, 0.38] },
-    particles: { reservoirCount: 5000, filamentCount: 1, reservoirSeed: 0x1001ea, filamentSeed: 0x1001f5 },
-    emission: { phraseDuration: 18, firstDuration: [1.5, 2.6], firstPause: [3.8, 5.6], secondDuration: [1, 1.7], secondPause: [2.4, 3.8], thirdDuration: [0.64, 1.1], thirdProbability: 0.48, pressure: [0.7, 1.02], pressureFrequency: 0.46, rhythmSeed: 1001 },
-    fall: { duration: [1.9, 3.6], backgroundDuration: 2.4, travelExponent: 1.2, laneCenter: 0.54, laneDrift: 0.09, primaryWander: 0.024, secondaryWander: 0.014, laneWidth: [0.12, 0.34], backgroundWidth: [0.04, 0.18], widthPulse: [0.56, 1.42], microFlow: 0.008, turbulence: 0.028 },
-    material: { coreAlpha: [0.7, 1], veilAlpha: [0.01, 0.05], veilThreshold: 0.99, corePointSize: [3.8, 8.2], veilPointSize: [4, 7], coreStretch: [0.8, 1.18], veilStretch: [1, 1.4], coreSoftness: 0.08, veilSoftness: 0.14 },
+    materialKind: "organic-stream",
+    palette: { deep: [0.065, 0.028, 0.01], middle: [0.28, 0.12, 0.03], surface: [0.56, 0.28, 0.07], highlight: [0.76, 0.46, 0.14] },
+    particles: { reservoirCount: 5000, filamentCount: 6000, reservoirSeed: 0x1001ea, filamentSeed: 0x1001f5 },
+    emission: { phraseDuration: 12.5, firstDuration: [2.6, 3.8], firstPause: [1.2, 2], secondDuration: [1.4, 2.3], secondPause: [0.8, 1.5], thirdDuration: [0.7, 1.2], thirdProbability: 0.5, pressure: [0.76, 0.98], pressureFrequency: 0.54, rhythmSeed: 1001 },
+    fall: { duration: [1.12, 1.74], backgroundDuration: 1.38, travelExponent: 1.18, laneCenter: 0.54, lowerSpread: 0.065, laneDrift: 0.028, primaryWander: 0.013, secondaryWander: 0.006, laneWidth: [0.04, 0.1], backgroundWidth: [0.03, 0.12], widthPulse: [0.9, 1.14], microFlow: 0.004, turbulence: 0.016 },
+    material: { coreAlpha: [0.4, 0.86], veilAlpha: [0.05, 0.14], veilThreshold: 0.8, corePointSize: [2.4, 6.2], veilPointSize: [8, 18], coreStretch: [1.1, 2], veilStretch: [2.2, 4], coreSoftness: 0.18, veilSoftness: 0.38, backgroundOpacity: 0.9 },
     interaction: { holdAccumulationAmount: 0.18, holdIntervalMs: 300, holdStartDelayMs: 144, pressAccumulationAmount: 0.64, pressVisualStrength: 0.78, traceMinimumDistancePx: 16, traceVisualStrength: [0.2, 0.74], traceVolumeDistancePx: 300 },
-    solid: { count: 10, size: [0.2, 0.44], aspect: [0.5, 0.8], horizontalSpread: 0.72, curvature: 0.88, rotation: 0.64, roughness: 0.24 },
   }),
 } satisfies Record<GuidedMeditationSlug, AccumulationProfile>;
 import type { GuidedMeditationSlug } from "../../model/guided-meditations";

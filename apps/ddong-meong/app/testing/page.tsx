@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
+import DdongMeongBackgroundLab from "@/components/testing/interactive-background-lab";
 import { titleFor } from "../seo";
 
 export const metadata: Metadata = {
@@ -9,5 +9,5 @@ export const metadata: Metadata = {
 };
 
 export default function DdongMeongTestingPage() {
-  redirect("/testing/original");
+  return <DdongMeongBackgroundLab />;
 }

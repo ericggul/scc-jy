@@ -21,6 +21,7 @@ import type {
   DdongMeongPhase,
   DdongMeongSessionOutcome,
 } from "../../model/types";
+import DdongMeongWordmark from "../../design-system/wordmark";
 import { getPausableElapsedMs } from "../../model/session-timing";
 import type { ReadingLine } from "../../model/reading-script";
 import InteractiveAccumulationBackground from "../background/interactive-accumulation";
@@ -157,7 +158,7 @@ function TimerHeader({
         href="/main"
         onClick={onExit}
       >
-        ddong-meong
+        <DdongMeongWordmark />
       </Link>
       {showTimeBar ? (
         <>

@@ -1,4 +1,5 @@
 import type { FormEvent } from "react";
+import DdongMeongWordmark from "../../design-system/wordmark";
 import styles from "./styles.module.css";
 
 type NicknamePageProps = {
@@ -25,7 +26,7 @@ export default function NicknamePage({
 
   return (
     <section className={styles.page}>
-      <span className={styles.wordmark}>ddong-meong</span>
+      <DdongMeongWordmark className={styles.wordmark} />
 
       <div className={styles.body}>
         <h1>어떻게 불러드릴까요?</h1>

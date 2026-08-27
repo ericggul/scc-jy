@@ -19,6 +19,7 @@ import {
   aggregateCValHumanControls,
   normalizeCValHumanControl,
 } from "./multi-user-control.mjs";
+import { advanceCValIdleLifecycle } from "./idle-lifecycle.mjs";
 import { createCValDiscordPublisher } from "./external-publisher.mjs";
 import { createCValSlackPublisher } from "./slack-publisher.mjs";
 import { createCValTelegramPublisher } from "./telegram-publisher.mjs";
@@ -36,8 +37,8 @@ let externalSlackPublisher = null;
 let externalTelegramPublisher = null;
 let ioRef = null;
 let disengagedAt = null;
+let closingAuctionAt = null;
 let relayRestartAt = null;
-const C_VAL_IDLE_CLOSING_DELAY_MS = 20_000;
 const C_VAL_RELAY_RESTART_DELAY_MS = 500;
 const C_VAL_RELAY_RESTART_EXIT_CODE = 75;
 
@@ -231,19 +232,30 @@ function requestRelayRestart(io) {
 setInterval(() => {
   const now = Date.now();
   let enteredClosingAuction = false;
+  let resetAfterClosingAuction = false;
   const control = aggregateCValHumanControls(humanControls, now);
   setCValHumanControl(runtime, control, now);
-  if (control.engaged) {
-    disengagedAt = null;
-  } else if (runtime.phase === "active") {
-    disengagedAt ??= now;
-    if (now - disengagedAt >= C_VAL_IDLE_CLOSING_DELAY_MS) {
-      if (beginCValRuntimeClosingAuction(runtime, now)) {
-        enteredClosingAuction = true;
-        clearCValDiagnostics(diagnostics, now);
-        console.info("[c-val:v2] inactive for 20s; market stopped in closing auction");
-      }
+  const lifecycle = advanceCValIdleLifecycle({
+    phase: runtime.phase,
+    engaged: control.engaged,
+    now,
+    inactiveAt: disengagedAt,
+    closingAt: closingAuctionAt,
+  });
+  disengagedAt = lifecycle.inactiveAt;
+  closingAuctionAt = lifecycle.closingAt;
+  if (lifecycle.transition === "close") {
+    if (beginCValRuntimeClosingAuction(runtime, now)) {
+      enteredClosingAuction = true;
+      clearCValDiagnostics(diagnostics, now);
+      console.info("[c-val:v2] inactive for 5s; market stopped in closing auction");
     }
+  } else if (lifecycle.transition === "reset") {
+    humanControls.clear();
+    resetCValRuntime(runtime, now);
+    clearCValDiagnostics(diagnostics, now);
+    resetAfterClosingAuction = true;
+    console.info("[c-val:v2] closing auction reached 120s; market reset to 100");
   }
   stepCValRuntime(runtime, now, cValModelTiming.broadcastIntervalMs / 1000);
   const activeClientCount =
@@ -253,6 +265,9 @@ setInterval(() => {
     // a new engaged phone signal resumes its existing order book.
     broadcastState(ioRef);
     clearCValDiagnostics(diagnostics, now);
+  } else if (resetAfterClosingAuction && activeClientCount > 0) {
+    ioRef.to(cValRoom).emit(events.humanControlResetOut);
+    broadcastState(ioRef);
   } else if (activeClientCount > 0 && runtime.phase === "active") {
     const state = broadcastState(ioRef);
     observeCValDiagnostics(diagnostics, state);
@@ -304,7 +319,10 @@ function register({ io, socket }) {
     const control = normalizeCValHumanControl(payload, now);
     if (!control) return;
     humanControls.set(socket.id, control);
-    if (control.engaged) disengagedAt = null;
+    if (control.engaged) {
+      disengagedAt = null;
+      closingAuctionAt = null;
+    }
     setCValHumanControl(
       runtime,
       aggregateCValHumanControls(humanControls, now),
@@ -396,6 +414,7 @@ function register({ io, socket }) {
     const now = Date.now();
     humanControls.clear();
     disengagedAt = null;
+    closingAuctionAt = null;
     resetCValRuntime(runtime, now);
     clearCValDiagnostics(diagnostics, now);
     io.to(cValRoom).emit(events.humanControlResetOut);

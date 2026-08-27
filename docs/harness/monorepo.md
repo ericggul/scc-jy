@@ -26,11 +26,11 @@ string are carried to the standalone app.
 Browser clients continue to use `NEXT_PUBLIC_SOCKET_URL` when explicitly
 configured. Otherwise the existing HTTPS hostname plus
 `NEXT_PUBLIC_SOCKET_PORT` behavior remains. The local runner can scope its
-registry for an individual artwork. Production C-VAL and ddong-meong instead
-share one small relay process on the Banpo-Xism EC2; both Vercel projects point
-at its one socket hostname. Socket deployment remains a stateful service and is
-not part of an app's Vercel Root Directory. See
-[the shared EC2 decision](./banpo-ec2-scc-cohosting.md).
+registry for an individual artwork. Production C-VAL, ddong-meong, and SCC
+share one `scc-io` relay process on the Banpo-Xism EC2; their browser origins
+point at its one socket hostname. Socket deployment remains a stateful service
+and is not part of an app's Vercel Root Directory. See
+[the shared relay deployment](./scc-relay-deployment.md).
 
 To add a future standalone artwork, create another `apps/<artwork>` workspace,
 give it its own Next.js config and public directory, add it to the HTTPS runner,

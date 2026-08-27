@@ -1,19 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import Image from "next/image";
 import InteractionLock from "../../design-system/interaction-lock";
 import InteractiveAccumulationBackground from "../../mobile/background/interactive-accumulation";
 import { useDropInteraction } from "../../mobile/background/interaction/use-drop-interaction";
-import type { BackgroundExperiment } from "./registry";
+import {
+  accumulationProgressFromAutomaticFall,
+  accumulationProgressFromInteractions,
+  flushDurationMsFromAccumulation,
+} from "../../mobile/background/interaction-progress";
 import { backgroundExperiments } from "./registry";
 import styles from "./styles.module.css";
 
-const flushDrainDurationMs = 2800;
-const labTimelineDurationMs = 60_000;
+const minimumFlushDurationMs = 1000;
 
 type LabFlushState = {
+  durationMs: number;
   frozenElapsedMs: number;
   startedAt: number;
 };
@@ -36,18 +39,15 @@ function FlushIcon() {
   );
 }
 
-type InteractiveBackgroundLabProps = {
-  experiment: BackgroundExperiment;
-};
-
-export default function InteractiveBackgroundLab({
-  experiment,
-}: InteractiveBackgroundLabProps) {
+export default function InteractiveBackgroundLab() {
+  const [selectedExperimentIndex, setSelectedExperimentIndex] = useState(0);
+  const [isNavigationOpen, setIsNavigationOpen] = useState(false);
   const [startedAt, setStartedAt] = useState(() =>
     createLabStartedAt(),
   );
   const [settledDropCount, setSettledDropCount] = useState(0);
   const [flushState, setFlushState] = useState<LabFlushState | null>(null);
+  const experiment = backgroundExperiments[selectedExperimentIndex]!;
   const { dropStream, interactionProps, stopDrops } = useDropInteraction({
     disabled: flushState !== null,
     onDropSettled: (amount) =>
@@ -61,7 +61,7 @@ export default function InteractiveBackgroundLab({
       setSettledDropCount(0);
       setStartedAt(createLabStartedAt());
       setFlushState(null);
-    }, flushDrainDurationMs);
+    }, flushState.durationMs);
 
     return () => window.clearTimeout(resetTimer);
   }, [flushState]);
@@ -70,23 +70,123 @@ export default function InteractiveBackgroundLab({
     if (flushState !== null) return;
 
     const now = Date.now();
+    const frozenElapsedMs = Math.min(
+      experiment.durationMs,
+      Math.max(0, now - startedAt),
+    );
+    const accumulationProgress = Math.min(
+      1,
+      accumulationProgressFromAutomaticFall(
+        frozenElapsedMs,
+        experiment.durationMs,
+        experiment.profile.fall.backgroundDuration,
+      ) + accumulationProgressFromInteractions(settledDropCount),
+    );
     stopDrops();
     setFlushState({
-      frozenElapsedMs: Math.min(
-        labTimelineDurationMs,
-        Math.max(0, now - startedAt),
-      ),
+      durationMs: flushDurationMsFromAccumulation(accumulationProgress),
+      frozenElapsedMs,
       startedAt: now,
     });
+  }
+
+  function selectExperiment(nextIndex: number) {
+    if (nextIndex === selectedExperimentIndex) {
+      setIsNavigationOpen(false);
+      return;
+    }
+
+    stopDrops();
+    setSelectedExperimentIndex(nextIndex);
+    setSettledDropCount(0);
+    setStartedAt(createLabStartedAt());
+    setFlushState(null);
+    setIsNavigationOpen(false);
+  }
+
+  function selectAdjacentExperiment(direction: -1 | 1) {
+    selectExperiment(
+      (selectedExperimentIndex + direction + backgroundExperiments.length) %
+        backgroundExperiments.length,
+    );
   }
 
   return (
     <main className={styles.page}>
       <InteractionLock />
-      <div className={styles.visual} aria-hidden="true">
+      <nav
+        aria-label="배경 경험 전환"
+        className={styles.navigation}
+      >
+        <div className={styles.navigationBar}>
+          <button
+            aria-controls="background-experiment-list"
+            aria-expanded={isNavigationOpen}
+            className={styles.navigationToggle}
+            onClick={() => setIsNavigationOpen((open) => !open)}
+            type="button"
+          >
+            <span className={styles.navigationIndex}>
+              {String(selectedExperimentIndex + 1).padStart(2, "0")} /
+              {String(backgroundExperiments.length).padStart(2, "0")}
+            </span>
+            <span className={styles.navigationTitle}>{experiment.label}</span>
+            <span aria-hidden="true" className={styles.navigationChevron}>
+              {isNavigationOpen ? "−" : "+"}
+            </span>
+          </button>
+          <div className={styles.adjacentControls}>
+            <button
+              aria-label="이전 배경 경험"
+              className={styles.adjacentButton}
+              onClick={() => selectAdjacentExperiment(-1)}
+              type="button"
+            >
+              ←
+            </button>
+            <button
+              aria-label="다음 배경 경험"
+              className={styles.adjacentButton}
+              onClick={() => selectAdjacentExperiment(1)}
+              type="button"
+            >
+              →
+            </button>
+          </div>
+        </div>
+
+        {isNavigationOpen ? (
+          <div
+            className={styles.experimentList}
+            id="background-experiment-list"
+          >
+            {backgroundExperiments.map((backgroundExperiment, index) => (
+              <button
+                aria-current={
+                  index === selectedExperimentIndex ? "true" : undefined
+                }
+                className={
+                  index === selectedExperimentIndex
+                    ? `${styles.routeButton} ${styles.isCurrent}`
+                    : styles.routeButton
+                }
+                key={backgroundExperiment.slug}
+                onClick={() => selectExperiment(index)}
+                type="button"
+              >
+                <span>{String(index + 1).padStart(2, "0")}</span>
+                <strong>{backgroundExperiment.label}</strong>
+              </button>
+            ))}
+          </div>
+        ) : null}
+      </nav>
+
+      <section className={styles.visual}>
         <InteractiveAccumulationBackground
+          key={experiment.slug}
           dropStream={dropStream}
-          flushDurationMs={flushDrainDurationMs}
+          flushDurationMs={flushState?.durationMs ?? minimumFlushDurationMs}
           flushStartedAt={flushState?.startedAt ?? null}
           frozenElapsedMs={flushState?.frozenElapsedMs ?? null}
           overflowStartedAt={null}
@@ -95,45 +195,27 @@ export default function InteractiveBackgroundLab({
           settledDropCount={settledDropCount}
           profile={experiment.profile}
           startedAt={startedAt}
-          totalMs={labTimelineDurationMs}
+          totalMs={experiment.durationMs}
         />
-      </div>
 
-      <div
-        aria-label={`${experiment.label}: 누른 위치에서 물질 떨어뜨리기`}
-        className={styles.interactionSurface}
-        {...interactionProps}
-        role="button"
-        tabIndex={flushState === null ? 0 : -1}
-      />
+        <div
+          aria-label={`${experiment.label}: 누른 위치에서 물질 떨어뜨리기`}
+          className={styles.interactionSurface}
+          {...interactionProps}
+          role="button"
+          tabIndex={flushState === null ? 0 : -1}
+        />
 
-      <nav aria-label="배경 실험 선택" className={styles.navigation}>
-        {backgroundExperiments.map((backgroundExperiment) => (
-          <Link
-            aria-current={
-              backgroundExperiment.slug === experiment.slug ? "page" : undefined
-            }
-            className={
-              backgroundExperiment.slug === experiment.slug
-                ? `${styles.routeButton} ${styles.isCurrent}`
-                : styles.routeButton
-            }
-            href={`/testing/${backgroundExperiment.slug}`}
-            key={backgroundExperiment.slug}
-          >
-            {backgroundExperiment.label}
-          </Link>
-        ))}
-      </nav>
-      <button
-        aria-label={`${experiment.label} 물 내리기`}
-        className={styles.flushButton}
-        disabled={flushState !== null}
-        onClick={flushVisual}
-        type="button"
-      >
-        <FlushIcon />
-      </button>
+        <button
+          aria-label={`${experiment.label} 물 내리기`}
+          className={styles.flushButton}
+          disabled={flushState !== null}
+          onClick={flushVisual}
+          type="button"
+        >
+          <FlushIcon />
+        </button>
+      </section>
     </main>
   );
 }

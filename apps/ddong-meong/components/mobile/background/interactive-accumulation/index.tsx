@@ -37,12 +37,39 @@ const materialModeValues = {
   "counter-plop": 8,
   "fan-spray": 9,
   "anxious-spray": 10,
+  "organic-stream": 11,
+  "coagulated-stream": 12,
+  "distributed-stream": 13,
+  "drill-stream": 14,
+  "stool-lump": 15,
+  "drill-stool": 16,
+  "sushi-stool": 17,
 } satisfies Record<AccumulationMaterialKind, number>;
+
+const sushiTextureCache = new Map<string, THREE.Texture>();
+
+function loadSushiTexture(path: string) {
+  const cached = sushiTextureCache.get(path);
+  if (cached) return cached;
+
+  const texture = new THREE.TextureLoader().load(path);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.generateMipmaps = true;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.wrapS = THREE.ClampToEdgeWrapping;
+  texture.wrapT = THREE.ClampToEdgeWrapping;
+  sushiTextureCache.set(path, texture);
+  return texture;
+}
 
 function usesSolidDrops(profile: AccumulationProfile) {
   return (
     profile.materialKind === "solid-form" ||
-    profile.materialKind === "pellet-cluster"
+    profile.materialKind === "pellet-cluster" ||
+    profile.materialKind === "stool-lump" ||
+    profile.materialKind === "drill-stool" ||
+    profile.materialKind === "sushi-stool"
   );
 }
 
@@ -56,7 +83,10 @@ function solidItemsPerInteractiveDrop(
   profile: AccumulationProfile,
   useHoldTrace: boolean,
 ) {
-  if (profile.materialKind === "pellet-cluster") {
+  if (
+    profile.materialKind === "pellet-cluster" ||
+    profile.materialKind === "stool-lump"
+  ) {
     return useHoldTrace ? Math.min(5, profile.solid.count) : 3;
   }
 
@@ -251,6 +281,9 @@ function createProfileUniforms(profile: AccumulationProfile) {
     uFallTravelExponent: { value: profile.fall.travelExponent },
     uFallSpawnHeight: { value: profile.fall.spawnHeight },
     uFallLaneCenter: { value: profile.fall.laneCenter },
+    uFallLowerSpread: { value: profile.fall.lowerSpread },
+    uFallTrailVisibility: { value: profile.fall.trailVisibility },
+    uFallMistCoreRatio: { value: profile.fall.mistCoreRatio },
     uFallWander: {
       value: new THREE.Vector3(
         profile.fall.laneDrift,
@@ -314,6 +347,10 @@ function createProfileUniforms(profile: AccumulationProfile) {
     uSolidCurvature: { value: profile.solid.curvature },
     uSolidRotation: { value: profile.solid.rotation },
     uSolidRoughness: { value: profile.solid.roughness },
+    uSushiRedTexture: { value: loadSushiTexture("/particles/omakase-tuna-nigiri.png") },
+    uSushiBrownTexture: {
+      value: loadSushiTexture("/particles/omakase-poop-nigiri.png"),
+    },
   };
 }
 

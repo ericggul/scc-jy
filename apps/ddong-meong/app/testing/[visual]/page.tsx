@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
-import DdongMeongBackgroundLab from "@/components/testing/interactive-background-lab";
+import { notFound, redirect } from "next/navigation";
 import {
   backgroundExperiments,
   findBackgroundExperiment,
@@ -22,7 +21,7 @@ export async function generateMetadata({
   if (!backgroundExperiment) return {};
 
   return {
-    title: titleFor(backgroundExperiment.label),
+    title: titleFor("인터랙티브 배경 테스트"),
     description: "똥멍 인터랙티브 배경의 내부 테스트 화면입니다.",
     robots: { index: false, follow: false },
   };
@@ -38,10 +37,5 @@ export default async function DdongMeongBackgroundTestingPage({
 
   if (!backgroundExperiment) notFound();
 
-  return (
-    <DdongMeongBackgroundLab
-      experiment={backgroundExperiment}
-      key={backgroundExperiment.slug}
-    />
-  );
+  redirect("/testing");
 }

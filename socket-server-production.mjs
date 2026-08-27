@@ -5,10 +5,12 @@ import {
 } from "./socket/create-socket-server.mjs";
 import { cValExperiments } from "./apps/c-val/socket/experiments/index.mjs";
 import { ddongMeongExperiments } from "./apps/ddong-meong/socket/experiments/index.mjs";
+import { sccExperiments } from "./apps/scc/socket/experiments/index.mjs";
 
 const experiments = Object.freeze([
   ...cValExperiments,
   ...ddongMeongExperiments,
+  ...sccExperiments,
 ]);
 
 const configuredOrigins = (process.env.SOCKET_ALLOWED_ORIGINS || "")

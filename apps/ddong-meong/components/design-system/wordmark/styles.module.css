@@ -1,0 +1,8 @@
+.wordmark {
+  display: block;
+  width: 4.6403em;
+  height: 1.0097em;
+  background-color: currentColor;
+  -webkit-mask: url("/wordmarks/ddong-meong.png") center / 100% 100% no-repeat;
+  mask: url("/wordmarks/ddong-meong.png") center / 100% 100% no-repeat;
+}

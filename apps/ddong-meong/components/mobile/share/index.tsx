@@ -2,7 +2,8 @@
 
 import Script from "next/script";
 import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import DdongMeongWordmark from "../../design-system/wordmark";
 import { readSavedNickname } from "../identity";
 import ContentArtwork from "../main/content-artwork";
 import mainStyles from "../main/styles.module.css";
@@ -10,7 +11,6 @@ import GradientShell from "../surface/gradient-shell";
 import styles from "./styles.module.css";
 
 const totalSeconds = 273;
-const returnDelayMs = 50_000;
 const kakaoTemplateId = 136302;
 const kakaoJavaScriptKey = process.env.NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY;
 const kakaoShareTitle = "똥싸며 멍때리기, 같이 해볼래요?";
@@ -66,6 +66,10 @@ function formatDuration(seconds: number) {
   const minutes = Math.floor(safeSeconds / 60);
   const remainder = safeSeconds % 60;
   return remainder === 0 ? `${minutes}분` : `${minutes}분 ${remainder}초`;
+}
+
+function absoluteImageUrl(imagePath: string) {
+  return new URL(imagePath, window.location.origin).toString();
 }
 
 function loadImage(src: string) {
@@ -143,9 +147,8 @@ async function createStoryImage({
   context.fillStyle = rightLight;
   context.fillRect(0, 0, canvas.width, canvas.height);
 
-  context.fillStyle = "#f1e7e1";
-  context.font = '400 72px "Snell Roundhand", "Brush Script MT", cursive';
-  context.fillText("ddong-meong", 160, 610);
+  const wordmark = await loadImage("/wordmarks/ddong-meong.png");
+  context.drawImage(wordmark, 160, 559.3, 334.1, 72.7);
 
   const image = await loadImage(imagePath);
   context.save();
@@ -207,14 +210,10 @@ function describeError(error: unknown) {
 }
 
 export default function DdongMeongShare() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [nickname, setNickname] = useState("당신");
   const [notice, setNotice] = useState<string>();
   const [isPreparingStory, setIsPreparingStory] = useState(false);
-  const [remainingSeconds, setRemainingSeconds] = useState(
-    Math.ceil(returnDelayMs / 1000),
-  );
   const elapsedSeconds = Number(searchParams.get("seconds")) || totalSeconds;
   const elapsedClock = formatClock(elapsedSeconds);
   const duration = formatDuration(elapsedSeconds);
@@ -225,17 +224,7 @@ export default function DdongMeongShare() {
 
   useEffect(() => {
     setNickname(readSavedNickname() ?? "당신");
-    const deadline = Date.now() + returnDelayMs;
-    const updateRemainingSeconds = () => {
-      setRemainingSeconds(Math.max(0, Math.ceil((deadline - Date.now()) / 1000)));
-    };
-    const interval = window.setInterval(updateRemainingSeconds, 250);
-    const timer = window.setTimeout(() => router.replace("/main"), returnDelayMs);
-    return () => {
-      window.clearInterval(interval);
-      window.clearTimeout(timer);
-    };
-  }, [router]);
+  }, []);
 
   function initializeKakao() {
     if (!kakaoJavaScriptKey) {
@@ -274,14 +263,15 @@ export default function DdongMeongShare() {
         throw new Error("Kakao.Share 모듈을 찾지 못했습니다.");
       }
       console.info("[ddong-meong:kakao] sendCustom requested", {
-        templateArgs: ["TITLE", "BODY"],
+        templateArgs: ["TITLE", "BODY", "IMG"],
         templateId: kakaoTemplateId,
       });
       window.Kakao.Share.sendCustom({
         templateId: kakaoTemplateId,
         templateArgs: {
-        BODY: shareMessage,
-        TITLE: kakaoShareTitle,
+          BODY: shareMessage,
+          IMG: absoluteImageUrl(imagePath),
+          TITLE: kakaoShareTitle,
         },
       });
     } catch (error) {
@@ -335,7 +325,7 @@ export default function DdongMeongShare() {
           strategy="afterInteractive"
         />
         <header className={`${mainStyles.header} ${styles.header}`}>
-          <span className={mainStyles.wordmark}>ddong-meong</span>
+          <DdongMeongWordmark className={mainStyles.wordmark} />
           <button aria-label="메인으로 돌아가기" className={styles.closeButton} onClick={returnToMain} type="button">
             <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18" /></svg>
           </button>
@@ -343,7 +333,7 @@ export default function DdongMeongShare() {
 
         <main className={styles.main}>
           <section className={`${mainStyles.introduction} ${styles.introduction}`}>
-            <h1><span>{nickname}님,</span>{overflowed ? "똥멍에 집중한 나머지 변기가 넘쳤어요!" : "잘 비웠어요."}</h1>
+            <h1>{overflowed ? <><span>{nickname}님,</span> 똥멍에 집중한 나머지 변기가 넘쳤어요!</> : `${nickname}님, 잘 비웠어요.`}</h1>
           </section>
           <article className={`${mainStyles.contentCard} ${styles.completedCard}`}>
             <ContentArtwork eager src={imagePath} />
@@ -374,7 +364,6 @@ export default function DdongMeongShare() {
           <button className={styles.returnButton} onClick={returnToMain} type="button">
             다른 똥멍하러 가기
           </button>
-          <p>{remainingSeconds}초 후에 메인으로 돌아갑니다.</p>
         </div>
       </section>
     </GradientShell>

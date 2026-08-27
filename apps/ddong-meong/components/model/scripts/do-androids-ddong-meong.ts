@@ -1,7 +1,7 @@
 import { defineReadingScript } from "./define-reading-script";
 
 export const doAndroidsDdongMeongScript = defineReadingScript("do-androids-ddong-meong", [
-  "안드로이드는 똥멍을 싸는가.",
+  "안드로이드는 똥을 싸는가.",
   "안드로이드는 전기를 먹고, 나는 밥을 먹습니다.",
   "안드로이드는 쉬지 않고 계산하고, 나는 가끔 화장실을 찾습니다.",
   "그 차이는 생각보다 큽니다.",

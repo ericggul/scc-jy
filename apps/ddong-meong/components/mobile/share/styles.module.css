@@ -167,13 +167,6 @@ section.introduction h1 span {
   -webkit-appearance: none;
 }
 
-.returnArea p {
-  margin: 2px 0 0;
-  color: rgb(var(--dm-color-ink-rgb) / 48%);
-  font-size: 11px;
-  letter-spacing: -0.025em;
-}
-
 .closeButton:focus-visible,
 .shareButton:focus-visible,
 .returnButton:focus-visible {

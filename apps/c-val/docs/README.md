@@ -211,6 +211,8 @@ requested, against an already-running HTTPS server.
   checkpoint, and concurrent-work note.
 - [Relay reset route](./reset-route.md): protected C-VAL-wide reload and PM2
   relay restart control.
+- [Idle lifecycle timing](./2.md#idle-lifecycle-retiming--2026-08-27): 5 seconds
+  of no mobile input closes the market; 120 seconds closed resets it to 100.
 - [C-VAL 1](./1.md): promoted and frozen behavioral, visual, and market contract.
 - [C-VAL 2](./2.md): active branch contract and future iteration record.
 - [C-VAL 2 mobile v2 gyroscope interface](./2-mobile-v2-gyroscope-interface-2026-08-11.md):

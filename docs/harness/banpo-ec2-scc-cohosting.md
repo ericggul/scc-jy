@@ -1,12 +1,16 @@
 # 반포자이즘 EC2와 SCC socket 공동 운영 결정
 
+> 현재 운영 상태(2026-08-27 확인): C-VAL, ddong-meong, SCC의 socket handler는
+> 같은 EC2의 `scc-io` process와 `127.0.0.1:4001`을 공유한다. 일반 서버
+> 업데이트의 유일한 명령은 `pnpm deploy:scc-relay`이며, 상세 규칙은
+> [SCC shared relay deployment](./scc-relay-deployment.md)이 source of truth다.
+
 ## 결정
 
-- 당분간 SCC의 C-VAL과 ddong-meong은 반포자이즘이 이미 사용하는 서울
-  `t4g.small` EC2의 **relay 하나**에 공동 배치한다.
-- 이는 **현재 사용자 승인된 비용 우선안**이다. 실제 AWS 변경, DNS 전환,
-  Vercel 환경 변수 변경, 기존 Banpo PM2 재시작은 그때그때 별도 승인이
-  있어야 한다.
+- C-VAL, ddong-meong, SCC는 반포자이즘이 이미 사용하는 서울 `t4g.small` EC2의
+  **`scc-io` relay 하나**에 공동 배치한다.
+- 일반 relay 코드 업데이트는 `scc-io`만 재시작한다. AWS 변경, DNS 전환,
+  Vercel 환경 변수 변경, 기존 Banpo PM2 재시작은 별도 승인 대상이다.
 - 프론트엔드는 계속 각자의 Vercel 앱(`c-val.vercel.app`,
   `ddong-meong.vercel.app`)이다. EC2에는 realtime socket relay만 둔다.
 
@@ -17,12 +21,14 @@ Banpo socket hostname  -> Nginx -> Banpo Socket.IO process (기존 4000)
 SCC socket hostname    -> Nginx -> SCC Socket.IO process (loopback 4001)
 ```
 
-- 기존 Banpo가 PM2로 관리되므로 새 relay도 `scc-io`라는 PM2 프로세스 하나로
-  둔다. C-VAL과 ddong-meong은 이미 서로 다른 Socket.IO 이벤트·room·상태를
-  가지므로, relay 하나 안에서도 상태가 섞이지 않는다.
+- 기존 Banpo가 PM2로 관리되므로 SCC relay도 `scc-io`라는 PM2 프로세스 하나로
+  둔다. C-VAL, ddong-meong, SCC는 서로 다른 Socket.IO 이벤트·room·상태를
+  가지므로 relay 하나 안에서도 상태가 섞이지 않는다.
 - Nginx가 TLS와 hostname별 WebSocket proxy를 담당한다. 외부에는 80/443만
   열고 relay port는 `127.0.0.1`에만 bind한다.
-- 두 Vercel 앱은 같은 `NEXT_PUBLIC_SOCKET_URL`을 사용한다.
+- 각 Vercel 앱은 같은 `NEXT_PUBLIC_SOCKET_URL`을 사용한다. SCC 브라우저를
+  새로 연결할 때에는 그 정확한 deployed origin을 `SOCKET_ALLOWED_ORIGINS`에
+  먼저 추가한다.
 
 ## 비용 판단
 
@@ -42,18 +48,8 @@ SCC socket hostname    -> Nginx -> SCC Socket.IO process (loopback 4001)
 ddong-meong은 기존 SCC relay에 둔다. Socket 서버의 인메모리 세션은 호스트
 간 이전되지 않으므로 전환은 유휴 시간에 한다.
 
-## 실행 전 확인 항목
-
-1. EC2의 실제 인스턴스 ID, OS, SSH 권한, 현재 Nginx vhost, Banpo PM2
-   프로세스 및 4000 port 점유를 읽기 전용으로 확인한다.
-2. `scc-io` production relay의 4001 port와 두 Vercel origin을 확정한다.
-3. 전시 기기 수로 C-VAL 20 Hz snapshot 상황을 포함해 CPU, 메모리,
-   `CPUSurplusCreditsCharged`, 네트워크 송신량, reconnect를 관측한다.
-4. 위 결과를 보고 socket hostname·Nginx·Vercel 환경 변수 변경안을
-   사용자에게 먼저 제시하고 승인 후에만 배포한다.
-
 ## 에이전트 주의
 
-다른 에이전트는 이 문서를 배포 승인으로 해석하면 안 된다. 특히 기존
-반포자이즘 process 재시작, DNS 레코드 변경, AWS firewall 변경, Vercel
-재배포, secret 기록은 사용자의 명시적 승인 없이는 금지다.
+다른 에이전트는 일반 relay 업데이트 때 `pnpm deploy:scc-relay`만 사용한다.
+특히 기존 반포자이즘 process 재시작, DNS 레코드 변경, AWS firewall 변경,
+Vercel 재배포, secret 기록은 사용자의 명시적 승인 없이는 금지다.

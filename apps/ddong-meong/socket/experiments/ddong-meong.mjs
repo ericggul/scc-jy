@@ -19,7 +19,7 @@ const contents = {
   "inspiration-from-ddong-meong": "좋은 영감은 똥멍에서 출발한다",
   "boot-camp-poop": "훈련소에서 싸는 똥",
   "omakase-poop": "오마카세 먹은 후에 싸는 똥",
-  "do-androids-ddong-meong": "안드로이드는 똥멍을 싸는가?",
+  "do-androids-ddong-meong": "안드로이드는 똥을 싸는가?",
   "ten-reasons-to-poop-meditate": "명상하면서 똥을 싸야 하는 10가지 이유",
 };
 
