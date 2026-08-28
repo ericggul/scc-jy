@@ -9,7 +9,7 @@ Date: 2026-08-28.
 1. **Participant situation:** one person encounters an uninterrupted field of
    analogue clocks, each held at the tip of an earlier clock hand.
 2. **Primary parameters:** child-clock radius ratio, initially `0.60`, and
-   descendant depth, initially `5`.
+   descendant depth, initially `4`.
 3. **Perceptual job:** follow how the three distinct hour, minute, and second
    rotations branch into increasingly small, overlapping clock paths.
 4. **Interaction job:** open the lower control bar, adjust scale or depth, and
@@ -48,8 +48,8 @@ Date: 2026-08-28.
   rotations and radius relation are changed.
 - **Participant intervention and contrast:** the expandable control bar changes
   the actual radius multiplier, clamped to `0.42–0.62`, and the descendant
-  depth from `1` through `6`. The default is five descendant generations
-  beneath the root (364 clocks total); higher depths are explicit rather than
+  depth from `1` through `6`. The default is four descendant generations
+  beneath the root (121 clocks total); higher depths are explicit rather than
   silently added. The root begins at the browser's current local clock time.
 - **Causal checks:** pure-model tests assert the complete three-way tree count,
   exact child-to-parent hand-tip attachment, conventional hand orientation, and

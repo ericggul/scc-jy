@@ -42,6 +42,7 @@ get a dedicated document.
 | `apps/scc/components/dashboard/stock` | `default`, `1`, `2`, `3`, `4` | [stock index](../apps/scc/docs/experiments/dashboard/stock/README.md) |
 | `apps/scc/components/realtime/calendar` | `default`, `1` | [calendar](../apps/scc/docs/experiments/realtime/calendar/README.md) |
 | `apps/scc/components/complex-systems/living-topology` | `1`–`4` | [living topology](../apps/scc/docs/experiments/complex-systems/living-topology/README.md) |
+| `apps/scc/components/complex-systems/attractor` | `1` | [attractor sequence](../apps/scc/docs/experiments/complex-systems/attractor/README.md) |
 | `apps/scc/components/complex-systems/face-voronoi` | `1`–`3` | [face voronoi](../apps/scc/docs/experiments/complex-systems/face-voronoi/README.md) |
 | `apps/scc/components/complex-systems/page-rank` | `1` | [page rank](../apps/scc/docs/experiments/complex-systems/page-rank/README.md) |
 | `apps/scc/components/complex-systems/cellular-automata` | `1` | [cellular automata](../apps/scc/docs/experiments/complex-systems/cellular-automata/README.md) |

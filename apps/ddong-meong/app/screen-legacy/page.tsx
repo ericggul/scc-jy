@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import DdongMeongScreen from "@/components/screen-legacy";
+import DdongMeongScreen from "@/components/screen-event-field-legacy";
 import { titleFor } from "../seo";
 
 export const metadata: Metadata = {

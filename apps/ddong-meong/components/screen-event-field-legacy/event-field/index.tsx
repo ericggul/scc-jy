@@ -7,13 +7,9 @@ import { EventFieldScene } from "./rendering/event-field-scene";
 import styles from "./styles.module.css";
 
 export default function EventField({
-  active,
   archive,
-  onPresentationComplete,
 }: {
-  active: boolean;
   archive: DdongMeongArchiveEntry[];
-  onPresentationComplete: () => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sceneRef = useRef<EventFieldScene | null>(null);
@@ -24,10 +20,8 @@ export default function EventField({
     if (!canvas) return undefined;
 
     const scene = new EventFieldScene({
-      active,
       canvas,
       onFocusChange: () => undefined,
-      onPresentationComplete,
       reducedMotion: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
     });
     sceneRef.current = scene;
@@ -45,22 +39,11 @@ export default function EventField({
       scene.dispose();
       sceneRef.current = null;
     };
-  }, [onPresentationComplete]);
+  }, []);
 
   useEffect(() => {
     sceneRef.current?.setPoints(points);
   }, [points]);
-
-  useEffect(() => {
-    sceneRef.current?.setActive(active);
-  }, [active]);
-
-  useEffect(() => {
-    if (!active || points.length > 0) return undefined;
-
-    const timer = window.setTimeout(onPresentationComplete, 12_000);
-    return () => window.clearTimeout(timer);
-  }, [active, onPresentationComplete, points.length]);
 
   return (
     <section

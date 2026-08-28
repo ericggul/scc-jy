@@ -1,6 +1,6 @@
 "use client";
 
-import type { CSSProperties, PointerEvent, ReactNode } from "react";
+import type { CSSProperties, PointerEvent } from "react";
 import { useEffect, useRef, useState } from "react";
 import styles from "./navigation.module.css";
 
@@ -10,107 +10,15 @@ type ActionDefinition = {
   id: ActionId;
   label: string;
   count?: string;
-  icon: ReactNode;
 };
 
 const actions: readonly ActionDefinition[] = [
-  { id: "like", label: "Like", count: "3,473", icon: <LikeIcon /> },
-  { id: "comment", label: "Comment", count: "81", icon: <CommentIcon /> },
-  { id: "repost", label: "Repost", icon: <RepostIcon /> },
-  { id: "send", label: "Send", count: "525", icon: <SendIcon /> },
-  { id: "save", label: "Save", icon: <SaveIcon /> },
+  { id: "like", label: "Like", count: "3,473" },
+  { id: "comment", label: "Comment", count: "81" },
+  { id: "repost", label: "Repost" },
+  { id: "send", label: "Send", count: "525" },
+  { id: "save", label: "Save" },
 ];
-
-function LikeIcon() {
-  return (
-    <svg aria-hidden="true" className={styles.icon} viewBox="0 0 24 24">
-      <path
-        d="M20.8 4.6c-2-2-5.2-1.8-6.9.4L12 7.3 10.1 5C8.4 2.8 5.2 2.6 3.2 4.6.9 6.9 1 10.5 3.4 12.8L12 21l8.6-8.2c2.4-2.3 2.5-5.9.2-8.2Z"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.8"
-      />
-    </svg>
-  );
-}
-
-function CommentIcon() {
-  return (
-    <svg aria-hidden="true" className={styles.icon} viewBox="0 0 24 24">
-      <g transform="translate(24 0) scale(-1 1)">
-        <path
-          d="M21 11.5a8.4 8.4 0 0 1-8.7 8.3 9.7 9.7 0 0 1-3.5-.7L3 20.6l1.6-5.2a8.1 8.1 0 0 1-.9-3.9A8.4 8.4 0 0 1 12.3 3 8.4 8.4 0 0 1 21 11.5Z"
-          fill="none"
-          stroke="currentColor"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="1.8"
-        />
-      </g>
-    </svg>
-  );
-}
-
-function RepostIcon() {
-  return (
-    <svg aria-hidden="true" className={styles.repostIcon} viewBox="0 0 24 24">
-      <path
-        d="M5.1 9.15h9.65l-2.9-2.9"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.95"
-      />
-      <path
-        d="M18.9 14.85H9.25l2.9 2.9M18.9 9.15v2.05a3.65 3.65 0 0 1-3.65 3.65H9.25M5.1 14.85V12.8a3.65 3.65 0 0 1 3.65-3.65h6"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.95"
-      />
-    </svg>
-  );
-}
-
-function SendIcon() {
-  return (
-    <svg aria-hidden="true" className={styles.icon} viewBox="0 0 24 24">
-      <path
-        d="m21 3-7.2 18-4.1-8.7L1 8.2 21 3Z"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.8"
-      />
-      <path
-        d="m9.7 12.3 5.6-4.9"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeWidth="1.8"
-      />
-    </svg>
-  );
-}
-
-function SaveIcon() {
-  return (
-    <svg aria-hidden="true" className={styles.icon} viewBox="0 0 24 24">
-      <path
-        d="M3.5 2.5h17v19.9L12 17.2l-8.5 5.2V2.5Z"
-        fill="none"
-        stroke="currentColor"
-        strokeLinejoin="round"
-        strokeWidth="1.8"
-      />
-    </svg>
-  );
-}
 
 function isActionId(value: string | undefined): value is ActionId {
   return actions.some((action) => action.id === value);
@@ -145,18 +53,12 @@ function ActionButton({
           onActivate();
         }
       }}
-    >
-      {action.icon}
-      {action.count ? <span className={styles.count}>{action.count}</span> : null}
-    </button>
+    />
   );
 }
 
 export default function SnsNavigationTwo() {
-  const [stackMetrics, setStackMetrics] = useState({
-    rowCount: 8,
-    rowHeight: 72,
-  });
+  const [rowCount, setRowCount] = useState(8);
   const [selectedActions, setSelectedActions] = useState<(ActionId | null)[]>(
     () => Array.from({ length: 8 }, () => null),
   );
@@ -168,27 +70,19 @@ export default function SnsNavigationTwo() {
     function syncRowCount() {
       const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
       const viewportWidth = window.visualViewport?.width ?? window.innerWidth;
-      const verticalPadding = 16;
       const referenceRowHeight = Math.min(
-        202,
-        Math.max(76, viewportWidth * 0.1715),
+        127,
+        Math.max(34, viewportWidth * 0.1078),
       );
       const nextRowCount = Math.max(
-        3,
+        1,
         Math.min(
-          12,
-          Math.floor((viewportHeight - verticalPadding * 2) / referenceRowHeight),
+          18,
+          Math.floor(viewportHeight / referenceRowHeight),
         ),
       );
-      const nextRowHeight = Math.max(
-        52,
-        Math.floor((viewportHeight - verticalPadding * 2) / nextRowCount),
-      );
 
-      setStackMetrics({
-        rowCount: nextRowCount,
-        rowHeight: nextRowHeight,
-      });
+      setRowCount(nextRowCount);
       setSelectedActions((current) =>
         Array.from({ length: nextRowCount }, (_, index) => current[index] ?? null),
       );
@@ -204,11 +98,9 @@ export default function SnsNavigationTwo() {
     };
   }, []);
 
-  const { rowCount, rowHeight } = stackMetrics;
   const stackStyle = {
-    "--action-row-height": `${rowHeight}px`,
-    gridTemplateRows: `repeat(${rowCount}, minmax(0, 1fr))`,
-  } as CSSProperties & { "--action-row-height": string };
+    gridTemplateRows: `repeat(${rowCount}, var(--reference-row-height))`,
+  } as CSSProperties;
 
   function setRowAction(rowIndex: number, actionId: ActionId) {
     setSelectedActions((current) => {
@@ -314,6 +206,12 @@ export default function SnsNavigationTwo() {
             className={styles.actionRow}
             key={`sns-navigation-2-row-${rowIndex}`}
           >
+            <img
+              alt=""
+              aria-hidden="true"
+              className={styles.referenceStrip}
+              src="/images/sns/navigation/2/instagram-action-row-reference.jpg"
+            />
             {actions.map((action) => {
               const selectionKey = `${rowIndex}:${action.id}`;
 

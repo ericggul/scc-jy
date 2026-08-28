@@ -25,6 +25,7 @@ Files:
 - `components/sns/navigation/default/index.tsx`
 - `components/sns/navigation/1/index.tsx`
 - `components/sns/navigation/2/index.tsx`
+- `public/images/sns/navigation/2/instagram-action-row-reference.jpg`
 - `components/sns/youtube/1/`
 - `components/sns/youtube/2/`
 - `components/sns/linkedin/1/`

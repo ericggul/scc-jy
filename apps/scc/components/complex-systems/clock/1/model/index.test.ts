@@ -10,7 +10,7 @@ import {
   rootClockRadiusForViewport,
 } from "./index.ts";
 
-test("five recursive generations create a complete three-hand clock tree", () => {
+test("four recursive generations create a complete three-hand clock tree", () => {
   const tree = createClockTree({
     center: { x: 400, y: 300 },
     rootRadius: 120,

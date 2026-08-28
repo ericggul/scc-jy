@@ -50,7 +50,6 @@
 }
 
 .header {
-  z-index: 4;
   grid-column: 1 / -1;
   display: flex;
   align-items: center;
@@ -112,32 +111,7 @@
 }
 
 .screenView {
-  position: absolute;
-  inset: 0;
-  height: auto;
-  opacity: 0;
-  pointer-events: none;
-  transform: translate3d(0, 10px, 0) scale(0.992);
-  transition:
-    opacity 520ms cubic-bezier(0.22, 0.61, 0.36, 1),
-    transform 700ms cubic-bezier(0.22, 0.61, 0.36, 1);
-  will-change: opacity, transform;
-}
-
-.isLiveView .live,
-.isEventsView .eventFieldStage {
-  opacity: 1;
-  pointer-events: auto;
-  transform: translate3d(0, 0, 0) scale(1);
-}
-
-.isLiveView .live {
-  transition-delay: 70ms;
-}
-
-.isEventsView .viewStage {
-  z-index: 2;
-  grid-column: 1 / -1;
+  height: 100%;
 }
 
 .viewStage > .screenView:not(.live) {
@@ -493,14 +467,6 @@
   align-items: center;
   gap: 14px;
   pointer-events: none;
-  transition:
-    opacity 360ms ease,
-    transform 520ms cubic-bezier(0.22, 0.61, 0.36, 1);
-}
-
-.isEventsView .scanEntry {
-  opacity: 0;
-  transform: translate3d(0, 10px, 0);
 }
 
 .scanQrFrame {
@@ -528,16 +494,6 @@
   backdrop-filter: blur(3vw) saturate(112%);
   color: #30231e;
   scrollbar-width: none;
-  transition:
-    opacity 400ms ease,
-    transform 650ms cubic-bezier(0.22, 0.61, 0.36, 1);
-  will-change: opacity, transform;
-}
-
-.isEventsView .archive {
-  opacity: 0;
-  pointer-events: none;
-  transform: translate3d(2vw, 0, 0);
 }
 
 .archiveHeading {
@@ -739,11 +695,5 @@
 @media (prefers-reduced-motion: reduce) {
   .page::before {
     animation: none;
-  }
-
-  .screenView,
-  .scanEntry,
-  .archive {
-    transition: none;
   }
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useDdongMeongSocket } from "./transport/use-ddong-meong-socket";
 import {
   getKoreanDayKey,
@@ -27,8 +27,7 @@ import theme from "../design-system/theme.module.css";
 import styles from "./styles.module.css";
 
 const emptyArchive: DdongMeongArchiveEntry[] = [];
-const emptyLiveDurationMs = 8_000;
-const occupiedLiveDurationMs = 10_000;
+const holdEventFieldForTesting = true;
 
 function formatDuration(durationMs: number) {
   const seconds = Math.max(0, Math.floor(durationMs / 1000));
@@ -121,18 +120,12 @@ function ArchiveRow({ entry }: { entry: DdongMeongArchiveEntry }) {
 function LiveOverview({
   activeSessions,
   now,
-  hidden,
 }: {
   activeSessions: DdongMeongSession[];
   now: number;
-  hidden: boolean;
 }) {
   return (
-    <section
-      aria-hidden={hidden}
-      aria-labelledby="live-title"
-      className={`${styles.live} ${styles.screenView}`}
-    >
+    <section className={`${styles.live} ${styles.screenView}`} aria-labelledby="live-title">
       <div className={styles.liveHeading}>
         <div>
           <p>지금</p>
@@ -159,7 +152,6 @@ function LiveOverview({
 }
 
 const views = ["live", "events"] as const;
-type ScreenView = (typeof views)[number];
 const viewLabels = {
   live: "현황",
   events: "똥트맵",
@@ -168,7 +160,7 @@ const viewLabels = {
 export default function DdongMeongScreen() {
   const { connected, snapshot } = useDdongMeongSocket("screen");
   const now = useClock();
-  const [activeView, setActiveView] = useState<ScreenView>("events");
+  const [viewIndex, setViewIndex] = useState(1);
   const [testArchive, setTestArchive] = useState<DdongMeongArchiveEntry[] | null>(null);
   const activeSessions = snapshot?.activeSessions ?? [];
   const archive = useBrowserArchive(snapshot?.archive ?? emptyArchive);
@@ -182,16 +174,17 @@ export default function DdongMeongScreen() {
   ]);
 
   useEffect(() => {
-    if (activeView !== "live") return undefined;
+    if (holdEventFieldForTesting || activeSessions.length === 0) {
+      setViewIndex(1);
+      return undefined;
+    }
 
-    const timer = window.setTimeout(
-      () => setActiveView("events"),
-      activeSessions.length === 0
-        ? emptyLiveDurationMs
-        : occupiedLiveDurationMs,
-    );
-    return () => window.clearTimeout(timer);
-  }, [activeSessions.length, activeView]);
+    setViewIndex(0);
+    const timer = window.setInterval(() => {
+      setViewIndex((current) => (current + 1) % views.length);
+    }, 12_000);
+    return () => window.clearInterval(timer);
+  }, [activeSessions.length]);
 
   useEffect(() => {
     const resumeSoundtrack = () => playMeditationSoundtrack();
@@ -206,9 +199,7 @@ export default function DdongMeongScreen() {
     };
   }, []);
 
-  const handleEventPresentationComplete = useCallback(() => {
-    setActiveView((current) => (current === "events" ? "live" : current));
-  }, []);
+  const activeView = views[viewIndex % views.length];
 
   const toggleTestArchive = () => {
     if (testArchive) {
@@ -228,21 +219,19 @@ export default function DdongMeongScreen() {
 
   return (
     <main
-      className={`${ddongMeongSans.variable} ${theme.theme} ${styles.page} ${
-        activeView === "events" ? styles.isEventsView : styles.isLiveView
-      }`}
+      className={`${ddongMeongSans.variable} ${theme.theme} ${styles.page}`}
       lang="ko"
     >
       <InteractionLock />
       <header className={styles.header}>
         <h1><DdongMeongWordmark /></h1>
         <nav className={styles.viewNavigation} aria-label="전시장 화면">
-          {views.map((view) => (
+          {views.map((view, index) => (
             <button
               aria-current={activeView === view ? "page" : undefined}
               className={activeView === view ? styles.activeViewButton : undefined}
               key={view}
-              onClick={() => setActiveView(view)}
+              onClick={() => setViewIndex(index)}
               type="button"
             >
               {viewLabels[view]}
@@ -257,21 +246,12 @@ export default function DdongMeongScreen() {
       </header>
 
       <div className={styles.viewStage}>
-        <LiveOverview
-          activeSessions={activeSessions}
-          hidden={activeView !== "live"}
-          now={now}
-        />
-        <div
-          aria-hidden={activeView !== "events"}
-          className={`${styles.eventFieldStage} ${styles.screenView}`}
-        >
-          <EventField
-            active={activeView === "events"}
-            archive={displayedArchive}
-            onPresentationComplete={handleEventPresentationComplete}
-          />
-        </div>
+        {activeView === "live" ? <LiveOverview activeSessions={activeSessions} now={now} /> : null}
+        {activeView === "events" ? (
+          <div className={`${styles.eventFieldStage} ${styles.screenView}`}>
+            <EventField archive={displayedArchive} />
+          </div>
+        ) : null}
         <section className={styles.scanEntry} aria-label="똥멍 입장 QR 코드">
           <div className={styles.scanQrFrame}>
             <EntryQr />
@@ -284,11 +264,7 @@ export default function DdongMeongScreen() {
         </section>
       </div>
 
-      <aside
-        aria-hidden={activeView === "events"}
-        className={styles.archive}
-        aria-labelledby="archive-title"
-      >
+      <aside className={styles.archive} aria-labelledby="archive-title">
         <div className={styles.archiveHeading}>
           <div>
             <span>{testArchive ? "가상 기록 100건" : "오늘의 기록"}</span>

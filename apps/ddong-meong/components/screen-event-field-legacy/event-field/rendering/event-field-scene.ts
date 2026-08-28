@@ -11,7 +11,7 @@ const projectionZStart = -7.2;
 const projectionZEnd = 7.2;
 const projectionGridDivisions = 60;
 const projectionFootMarkSize = 0.12;
-const presentationDurationMs = 12_000;
+const exitStartMs = 12_000;
 const appearanceDurationMs = 180;
 const entryWindowMs = 8_000;
 const defaultAppearanceIntervalMs = 72;
@@ -29,10 +29,8 @@ export type EventFieldFocus = {
 };
 
 type EventFieldSceneOptions = {
-  active: boolean;
   canvas: HTMLCanvasElement;
   onFocusChange: (focus: EventFieldFocus | null) => void;
-  onPresentationComplete: () => void;
   reducedMotion: boolean;
 };
 
@@ -370,15 +368,12 @@ export class EventFieldScene {
   private exitIntervalMs = defaultAppearanceIntervalMs;
   private cycleStartedAt = 0;
   private pointSignature = "";
-  private active: boolean;
-  private presentationCompleted = false;
   private focusedIndex = -1;
   private pointerInside = false;
   private previousAmbientFocus = 0;
   private disposed = false;
 
   constructor(private readonly options: EventFieldSceneOptions) {
-    this.active = options.active;
     this.renderer = new THREE.WebGLRenderer({
       alpha: true,
       antialias: true,
@@ -389,7 +384,7 @@ export class EventFieldScene {
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.08;
     this.renderer.setClearColor("#000000", 0);
-    this.camera.position.set(17.5, 11.8, 19.3);
+    this.camera.position.set(20, 13.5, 22);
     this.camera.lookAt(0, 3.2, 0);
     this.controls = new OrbitControls(this.camera, options.canvas);
     this.controls.autoRotate = !options.reducedMotion;
@@ -397,9 +392,9 @@ export class EventFieldScene {
     this.controls.dampingFactor = 0.045;
     this.controls.enableDamping = true;
     this.controls.enablePan = false;
-    this.controls.maxDistance = 38;
+    this.controls.maxDistance = 42;
     this.controls.maxPolarAngle = 1.38;
-    this.controls.minDistance = 13;
+    this.controls.minDistance = 15;
     this.controls.minPolarAngle = 0.48;
     this.controls.target.set(0, 3.2, 0);
     this.controls.update();
@@ -430,7 +425,7 @@ export class EventFieldScene {
     this.options.canvas.addEventListener("pointerleave", this.handlePointerLeave);
     this.options.canvas.addEventListener("pointermove", this.handlePointerMove);
     document.addEventListener("visibilitychange", this.handleVisibilityChange);
-    if (this.active && document.visibilityState !== "hidden") {
+    if (document.visibilityState !== "hidden") {
       this.renderer.setAnimationLoop(this.render);
     }
   }
@@ -456,7 +451,7 @@ export class EventFieldScene {
     this.focusedIndex = -1;
     this.poopMesh.count = this.points.length;
     this.hitMesh.count = this.points.length;
-    if (pointsChanged && this.active) this.startAppearanceCycle(time);
+    if (pointsChanged) this.startAppearanceCycle(time);
 
     this.points.forEach((point, index) => {
       this.setRecordTransform(index, point, time, true);
@@ -469,32 +464,6 @@ export class EventFieldScene {
     this.hitMesh.instanceMatrix.needsUpdate = true;
     if (this.poopMesh.instanceColor) this.poopMesh.instanceColor.needsUpdate = true;
     this.options.onFocusChange(null);
-  }
-
-  setActive(active: boolean) {
-    if (this.active === active) return;
-
-    this.active = active;
-    this.presentationCompleted = false;
-    if (!active) {
-      this.renderer.setAnimationLoop(null);
-      this.setFocusedIndex(-1);
-      this.options.onFocusChange(null);
-      return;
-    }
-
-    const time = performance.now();
-    this.startAppearanceCycle(time);
-    this.points.forEach((point, index) => {
-      this.setRecordTransform(index, point, time, true);
-    });
-    this.updateDataLines(time);
-    this.updateRecordLabelScale(time);
-    this.poopMesh.instanceMatrix.needsUpdate = true;
-    this.hitMesh.instanceMatrix.needsUpdate = true;
-    if (document.visibilityState !== "hidden") {
-      this.renderer.setAnimationLoop(this.render);
-    }
   }
 
   dispose() {
@@ -597,7 +566,6 @@ export class EventFieldScene {
     );
     this.exitIntervalMs = this.appearanceIntervalMs;
     this.cycleStartedAt = time;
-    this.presentationCompleted = false;
     this.appearanceById.clear();
     this.exitById.clear();
     this.points.forEach((point, index) => {
@@ -607,7 +575,7 @@ export class EventFieldScene {
       );
       this.exitById.set(
         point.entry.id,
-        time + presentationDurationMs + index * this.exitIntervalMs,
+        time + exitStartMs + index * this.exitIntervalMs,
       );
     });
   }
@@ -655,12 +623,9 @@ export class EventFieldScene {
   }
 
   private getCycleEnd() {
-    if (this.options.reducedMotion) {
-      return this.cycleStartedAt + presentationDurationMs;
-    }
     return (
       this.cycleStartedAt +
-      presentationDurationMs +
+      exitStartMs +
       (this.points.length - 1) * this.exitIntervalMs +
       appearanceDurationMs
     );
@@ -674,7 +639,7 @@ export class EventFieldScene {
       appearanceDurationMs;
     return (
       time < lastEntry ||
-      (time >= this.cycleStartedAt + presentationDurationMs && time < this.getCycleEnd())
+      (time >= this.cycleStartedAt + exitStartMs && time < this.getCycleEnd())
     );
   }
 
@@ -825,28 +790,14 @@ export class EventFieldScene {
   }
 
   private render = (time: number) => {
-    if (this.disposed || !this.active) return;
+    if (this.disposed) return;
     this.controls.update();
     if (
+      !this.options.reducedMotion &&
       this.points.length > 0 &&
       time >= this.getCycleEnd()
     ) {
-      if (!this.presentationCompleted) {
-        this.presentationCompleted = true;
-        this.points.forEach((point, index) => {
-          this.setRecordTransform(index, point, time);
-        });
-        this.poopMesh.instanceMatrix.needsUpdate = true;
-        this.updateDataLines(time);
-        this.updateRecordLabelScale(time);
-        this.renderer.render(this.scene, this.camera);
-        window.requestAnimationFrame(() => {
-          if (!this.disposed && this.active) {
-            this.options.onPresentationComplete();
-          }
-        });
-      }
-      return;
+      this.startAppearanceCycle(time);
     }
     let hasTransitioningRecord = false;
     this.points.forEach((point, index) => {
@@ -871,6 +822,6 @@ export class EventFieldScene {
       this.renderer.setAnimationLoop(null);
       return;
     }
-    if (!this.disposed && this.active) this.renderer.setAnimationLoop(this.render);
+    if (!this.disposed) this.renderer.setAnimationLoop(this.render);
   };
 }
