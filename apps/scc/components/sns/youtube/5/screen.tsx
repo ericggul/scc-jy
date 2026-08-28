@@ -9,9 +9,15 @@ type Canvas = {
   width: number;
 };
 
+type ColumnMotion = {
+  lastInputAt: number;
+  target: number;
+  velocity: number;
+};
+
 type SkatingSurfaceStyle = CSSProperties & Record<"--youtube-five-column-count", string>;
 
-const columnCount = 7;
+const columnCount = 3;
 const columns = Array.from({ length: columnCount }, (_, index) => ({ id: `column-${index}`, index }));
 const columnIds = new Set(columns.map((column) => column.id));
 const skatingSurfaceStyle: SkatingSurfaceStyle = {
@@ -32,9 +38,12 @@ function frameForViewport(width: number, height: number) {
 
 export function YoutubeFiveScreen() {
   const [frame, setFrame] = useState<ReturnType<typeof frameForViewport>>();
-  const [selectedColumnId, setSelectedColumnId] = useState<string | null>(null);
   const activePointerId = useRef<number | null>(null);
-  const selectedColumnIdRef = useRef<string | null>(null);
+  const animationFrame = useRef<number | null>(null);
+  const frameRefs = useRef(new Map<string, HTMLIFrameElement>());
+  const lastPointerPosition = useRef<{ x: number; y: number } | null>(null);
+  const lastScrollFrameAt = useRef<number | null>(null);
+  const motions = useRef(new Map<string, ColumnMotion>());
   const pointerGestureEndedAt = useRef(0);
 
   useEffect(() => {
@@ -45,37 +54,105 @@ export function YoutubeFiveScreen() {
     return () => window.removeEventListener("resize", resize);
   }, []);
 
+  useEffect(() => () => {
+    if (animationFrame.current !== null) window.cancelAnimationFrame(animationFrame.current);
+  }, []);
+
   if (!frame) {
     return <main className={styles.surface} />;
   }
 
   const { canvas, scaleX, scaleY } = frame;
 
-  const selectColumn = (columnId: string) => {
-    if (!columnIds.has(columnId) || selectedColumnIdRef.current === columnId) return;
-    selectedColumnIdRef.current = columnId;
-    setSelectedColumnId(columnId);
-  };
-
-  const selectAtPoint = (clientX: number, clientY: number) => {
+  const columnAtPoint = (clientX: number, clientY: number) => {
     const columnId = document
       .elementFromPoint(clientX, clientY)
       ?.closest<HTMLElement>("[data-youtube-five-column]")
       ?.dataset.youtubeFiveColumn;
-    if (columnId) selectColumn(columnId);
+    return columnId && columnIds.has(columnId) ? columnId : null;
   };
 
-  const selectPointerSamples = (event: ReactPointerEvent<HTMLDivElement>) => {
+  const maxScroll = (columnWindow: Window) => {
+    const documentHeight = Math.max(
+      columnWindow.document.body.scrollHeight,
+      columnWindow.document.documentElement.scrollHeight,
+    );
+    return Math.max(0, documentHeight - columnWindow.innerHeight);
+  };
+
+  const requestScrollFrame = () => {
+    if (animationFrame.current !== null) return;
+    animationFrame.current = window.requestAnimationFrame((now) => {
+      animationFrame.current = null;
+      const previousFrame = lastScrollFrameAt.current ?? now;
+      const elapsed = Math.min(Math.max(now - previousFrame, 8), 34);
+      lastScrollFrameAt.current = now;
+      const easing = 1 - Math.exp(-elapsed * 0.035);
+      let hasMotion = false;
+
+      for (const [columnId, motion] of motions.current) {
+        const columnWindow = frameRefs.current.get(columnId)?.contentWindow;
+        if (!columnWindow) continue;
+
+        const limit = maxScroll(columnWindow);
+        if (activePointerId.current === null && Math.abs(motion.velocity) > 0.04) {
+          motion.target += motion.velocity * (elapsed / 16.667);
+          motion.velocity *= Math.pow(0.9, elapsed / 16.667);
+        } else if (activePointerId.current === null) {
+          motion.velocity = 0;
+        }
+
+        motion.target = Math.min(Math.max(motion.target, 0), limit);
+        const difference = motion.target - columnWindow.scrollY;
+        if (Math.abs(difference) > 0.1) {
+          columnWindow.scrollTo(0, columnWindow.scrollY + difference * easing);
+        }
+
+        if (Math.abs(difference) > 0.35 || Math.abs(motion.velocity) > 0.04) {
+          hasMotion = true;
+        }
+      }
+
+      if (hasMotion) requestScrollFrame();
+      else lastScrollFrameAt.current = null;
+    });
+  };
+
+  const queueScroll = (columnId: string, pointerDeltaY: number) => {
+    const columnWindow = frameRefs.current.get(columnId)?.contentWindow;
+    if (!columnWindow || pointerDeltaY === 0) return;
+
+    const now = performance.now();
+    const motion = motions.current.get(columnId) ?? {
+      lastInputAt: now,
+      target: columnWindow.scrollY,
+      velocity: 0,
+    };
+    const sourceDelta = -pointerDeltaY / scaleY;
+    const elapsed = Math.min(Math.max(now - motion.lastInputAt, 8), 40);
+
+    motion.target += sourceDelta;
+    motion.velocity = motion.velocity * 0.42 + sourceDelta * (16.667 / elapsed) * 0.58;
+    motion.lastInputAt = now;
+    motions.current.set(columnId, motion);
+    requestScrollFrame();
+  };
+
+  const reactToPointerSamples = (event: ReactPointerEvent<HTMLDivElement>) => {
     const samples = event.nativeEvent.getCoalescedEvents?.();
     for (const sample of samples?.length ? samples : [event.nativeEvent]) {
-      selectAtPoint(sample.clientX, sample.clientY);
+      const columnId = columnAtPoint(sample.clientX, sample.clientY);
+      const previous = lastPointerPosition.current;
+      if (columnId && previous) queueScroll(columnId, sample.clientY - previous.y);
+      lastPointerPosition.current = { x: sample.clientX, y: sample.clientY };
     }
   };
 
   const finishGesture = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (event.pointerId !== activePointerId.current) return;
-    selectPointerSamples(event);
+    reactToPointerSamples(event);
     activePointerId.current = null;
+    lastPointerPosition.current = null;
     pointerGestureEndedAt.current = Date.now();
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
@@ -86,20 +163,24 @@ export function YoutubeFiveScreen() {
     if (activePointerId.current !== null) return;
     activePointerId.current = event.pointerId;
     event.currentTarget.setPointerCapture(event.pointerId);
-    selectPointerSamples(event);
+    reactToPointerSamples(event);
   };
 
   const continueGesture = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (event.pointerId === activePointerId.current) selectPointerSamples(event);
+    if (event.pointerId === activePointerId.current) reactToPointerSamples(event);
   };
 
   return (
     <main className={styles.surface}>
       {columns.map(({ id, index }) => (
         <iframe
-          className={`${styles.frame} ${selectedColumnId && selectedColumnId !== id ? styles.inactiveFrame : ""}`}
+          className={styles.frame}
           height={canvas.height}
           key={id}
+          ref={(node) => {
+            if (node) frameRefs.current.set(id, node);
+            else frameRefs.current.delete(id);
+          }}
           src="/sns/youtube/2"
           style={{
             left: index * canvas.width * scaleX,
@@ -117,12 +198,14 @@ export function YoutubeFiveScreen() {
         onLostPointerCapture={(event) => {
           if (event.pointerId === activePointerId.current) {
             activePointerId.current = null;
+            lastPointerPosition.current = null;
             pointerGestureEndedAt.current = Date.now();
           }
         }}
         onPointerCancel={(event) => {
           if (event.pointerId === activePointerId.current) {
             activePointerId.current = null;
+            lastPointerPosition.current = null;
             pointerGestureEndedAt.current = Date.now();
           }
         }}
@@ -133,14 +216,13 @@ export function YoutubeFiveScreen() {
       >
         {columns.map(({ id }) => (
           <button
-            aria-label={`Select YouTube column ${id.replace("column-", "")}`}
-            aria-pressed={selectedColumnId === id}
+            aria-label={`Scroll YouTube column ${id.replace("column-", "")}`}
             className={styles.skatingColumn}
             data-youtube-five-column={id}
             key={id}
             onClick={(event) => {
               if (event.detail !== 0 && Date.now() - pointerGestureEndedAt.current < 750) return;
-              selectColumn(id);
+              queueScroll(id, -(canvas.height * scaleY) / 2);
             }}
             type="button"
           />

@@ -6,6 +6,7 @@ Routes:
 - `/sns/feed/1`
 - `/sns/navigation/default`
 - `/sns/navigation/1`
+- `/sns/navigation/2`
 - `/sns/youtube/1`
 - `/sns/youtube/2`
 - `/sns/youtube/3`
@@ -23,6 +24,7 @@ Files:
 - `components/sns/feed/1/data.ts`
 - `components/sns/navigation/default/index.tsx`
 - `components/sns/navigation/1/index.tsx`
+- `components/sns/navigation/2/index.tsx`
 - `components/sns/youtube/1/`
 - `components/sns/youtube/2/`
 - `components/sns/linkedin/1/`
@@ -47,6 +49,13 @@ worker's day to bed, commute, work, meal, and phone reels. `Life` compresses a
 modern worker's lifetime to birth, education, work, hospital, and death. Its
 bottom-left `24h / Life` switch preserves separate interaction state for both
 timescales so they can be compared without leaving the route.
+
+`/sns/navigation/2` preserves the Instagram post-action row as a dark,
+full-width reference interface: like with `3,473`, comment with `81`, repost,
+send with `525`, then a save control held at the far edge. It removes the source
+carousel indicator and stacks this exact row as independently selectable
+finger-skating groups. See [navigation/2](./navigation/2.md) for the variant
+contract.
 
 The larger service reconstructions have variant-specific contracts:
 
@@ -79,7 +88,7 @@ Interaction:
 - Each post has a horizontally snapping media carousel with two to five images.
 - The active media index is tracked per carousel and shown as progress dots.
 - Like, save, comment, and send are present as direct feed controls.
-- `/sns/navigation/default` and `/sns/navigation/1` use the shared
+- `/sns/navigation/default`, `/sns/navigation/1`, and `/sns/navigation/2` use the shared
   finger-skating behavior defined in
   `apps/scc/docs/experiments/finger-skating/README.md`.
 - Double-clicking media triggers a heart burst and likes the post.

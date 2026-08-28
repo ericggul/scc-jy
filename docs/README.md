@@ -61,7 +61,7 @@ get a dedicated document.
 | `apps/scc/components/finger-skating` | `1`, `2` | [finger-skating](../apps/scc/docs/experiments/finger-skating/README.md) |
 | `apps/c-val/components` | `1`, `2` | [c-val](../apps/c-val/docs/README.md) |
 | `apps/scc/components/network-system` | `default`, `macro-economy`, `cycle`, `population`, `competitive-firms` | [network-system index](../apps/scc/docs/experiments/network-system/README.md) |
-| `apps/scc/components/sns` | `feed/1`, `navigation/default`, `navigation/1`, `youtube/1`, `youtube/2`, `linkedin/1` | [sns index](../apps/scc/docs/experiments/sns/README.md) |
+| `apps/scc/components/sns` | `feed/1`, `navigation/default`, `navigation/1`, `navigation/2`, `youtube/1`, `youtube/2`, `linkedin/1` | [sns index](../apps/scc/docs/experiments/sns/README.md) |
 
 The registries under `apps/*/components/**/experiments.ts` remain the source of truth
 for executable variants. This index describes them; it does not replace those

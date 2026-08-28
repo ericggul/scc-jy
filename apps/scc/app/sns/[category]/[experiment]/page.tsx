@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import type { ComponentType } from "react";
 import SnsFeedOne from "@/components/sns/feed/1";
 import SnsNavigationOne from "@/components/sns/navigation/1";
+import SnsNavigationTwo from "@/components/sns/navigation/2";
 import SnsNavigationDefault from "@/components/sns/navigation/default";
 import SnsLinkedinOne from "@/components/sns/linkedin/1";
 import SnsYoutubeOne from "@/components/sns/youtube/1";
@@ -21,6 +22,7 @@ const components: Record<SnsExperimentKey, ComponentType> = {
   "feed/1": SnsFeedOne,
   "navigation/default": SnsNavigationDefault,
   "navigation/1": SnsNavigationOne,
+  "navigation/2": SnsNavigationTwo,
   "linkedin/1": SnsLinkedinOne,
   "youtube/1": SnsYoutubeOne,
   "youtube/2": SnsYoutubeTwo,
