@@ -141,7 +141,9 @@ recorded exclamations whose source audio contains an audited profanity interval:
 - downward extremes select negative or mixed high-arousal performances;
 - visible `씨발` is always rendered as `C-VAL`;
 - only the recorded profanity interval is muted and replaced by the accepted
-  1000 Hz base broadcast beep;
+  1000 Hz base broadcast beep, with its runtime gain set to 70% for final
+  listening balance. Its browser envelope is a 12ms fade in/out, followed by
+  a subtle 2.5% exponential pitch fall across the censored interval;
 - voice spacing uses the same continuous news curve at roughly three times the
   previous density: about 145 ms at 2%, 76 ms at 6%, 45 ms at 10%, and a 30 ms
   floor from 15% onward. A browser monotonic clock, rather than the 50 ms market

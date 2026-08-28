@@ -12,6 +12,7 @@ import styles from "./entry-qr.module.css";
 const version = 5;
 const moduleCount = version * 4 + 17;
 const dataCodewordCount = 108;
+export const maximumDdongMeongQrValueLength = 106;
 const errorCorrectionCodewordCount = 26;
 const errorCorrectionLevelL = 1;
 const exponentTable = Array<number>(512).fill(0);
@@ -107,7 +108,9 @@ function maskApplies(maskPattern: number, row: number, column: number) {
 
 function makeCodewords(value: string) {
   const bytes = Array.from(value, (character) => character.charCodeAt(0));
-  if (bytes.length > 106) throw new Error("The QR value is too long.");
+  if (bytes.length > maximumDdongMeongQrValueLength) {
+    throw new Error("The QR value is too long.");
+  }
 
   const bits: boolean[] = [];
   const put = (number: number, length: number) => {
@@ -356,30 +359,76 @@ type EntryQrProps = {
   entryContext?: DdongMeongEntryContext;
 };
 
-export default function EntryQr({
-  entryContext = ddongMeongCampaignEntryContext,
-}: EntryQrProps) {
-  const entryQuery = entryContextToQuery(entryContext);
-  const entryPath = entryQuery
-    ? `${ddongMeongEntryPath}?${entryQuery}`
-    : ddongMeongEntryPath;
-  const entryUrl = useSyncExternalStore(
-    () => () => undefined,
-    () => `${window.location.origin}${entryPath}`,
-    () => null,
-  );
+type DdongMeongQrCodeProps = {
+  ariaLabel: string;
+  className?: string;
+  value: string;
+};
 
-  const matrix = useMemo(() => (entryUrl ? makeMatrix(entryUrl) : null), [entryUrl]);
-  if (!matrix) return <div aria-hidden="true" className={styles.placeholder} />;
+type DdongMeongQrSvgOptions = {
+  description: string;
+  title: string;
+};
+
+export function canMakeDdongMeongQrCode(value: string) {
+  return (
+    Array.from(value, (character) => character.charCodeAt(0)).length <=
+    maximumDdongMeongQrValueLength
+  );
+}
+
+function escapeXml(value: string) {
+  return value.replace(/[<>&"']/g, (character) => {
+    const entities: Record<string, string> = {
+      "<": "&lt;",
+      ">": "&gt;",
+      "&": "&amp;",
+      '"': "&quot;",
+      "'": "&apos;",
+    };
+    return entities[character];
+  });
+}
+
+export function createDdongMeongQrSvg(
+  value: string,
+  { description, title }: DdongMeongQrSvgOptions,
+) {
+  const matrix = makeMatrix(value);
+  const path = matrix
+    .flatMap((row, rowIndex) =>
+      row.flatMap((module, columnIndex) =>
+        module ? `M${columnIndex} ${rowIndex}h1v1H${columnIndex}z` : [],
+      ),
+    )
+    .join("");
+  const svgSize = moduleCount + 8;
+
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" viewBox="-4 -4 ${svgSize} ${svgSize}" shape-rendering="crispEdges">\n  <title>${escapeXml(title)}</title>\n  <desc>${escapeXml(description)}</desc>\n  <rect x="-4" y="-4" width="${svgSize}" height="${svgSize}" fill="#fff"/>\n  <path fill="#111" d="${path}"/>\n</svg>\n`;
+}
+
+export function DdongMeongQrCode({
+  ariaLabel,
+  className,
+  value,
+}: DdongMeongQrCodeProps) {
+  const matrix = useMemo(() => makeMatrix(value), [value]);
 
   return (
     <svg
-      aria-label={`${entryUrl}으로 들어가는 QR 코드`}
-      className={styles.qr}
+      aria-label={ariaLabel}
+      className={className}
       role="img"
       shapeRendering="crispEdges"
       viewBox={`-4 -4 ${moduleCount + 8} ${moduleCount + 8}`}
     >
+      <rect
+        fill="#fff"
+        height={moduleCount + 8}
+        width={moduleCount + 8}
+        x="-4"
+        y="-4"
+      />
       {matrix.map((row, rowIndex) =>
         row.map((module, columnIndex) =>
           module ? (
@@ -394,5 +443,29 @@ export default function EntryQr({
         ),
       )}
     </svg>
+  );
+}
+
+export default function EntryQr({
+  entryContext = ddongMeongCampaignEntryContext,
+}: EntryQrProps) {
+  const entryQuery = entryContextToQuery(entryContext);
+  const entryPath = entryQuery
+    ? `${ddongMeongEntryPath}?${entryQuery}`
+    : ddongMeongEntryPath;
+  const entryUrl = useSyncExternalStore(
+    () => () => undefined,
+    () => `${window.location.origin}${entryPath}`,
+    () => null,
+  );
+
+  if (!entryUrl) return <div aria-hidden="true" className={styles.placeholder} />;
+
+  return (
+    <DdongMeongQrCode
+      ariaLabel={`${entryUrl}으로 들어가는 QR 코드`}
+      className={styles.qr}
+      value={entryUrl}
+    />
   );
 }

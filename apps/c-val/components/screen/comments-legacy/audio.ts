@@ -5,6 +5,11 @@ import type {
   CValCommentCorpus,
   CValCommentCorpusEntry,
 } from "./presenter";
+import {
+  C_VAL_COMMENT_BEEP_FADE_SECONDS,
+  C_VAL_COMMENT_BEEP_FINAL_FREQUENCY_RATIO,
+  C_VAL_COMMENT_BEEP_GAIN_SCALE,
+} from "../comment-beep";
 
 type AudioRequest = {
   entry: CValCommentCorpusEntry;
@@ -67,8 +72,9 @@ export function useCValCommentAudio() {
         && profanityEnd > profanityStart;
 
       if (hasCensorInterval) {
+        const beepPeakGain = request.beep.peakGain * C_VAL_COMMENT_BEEP_GAIN_SCALE;
         const fade = Math.min(
-          request.beep.fadeSeconds,
+          C_VAL_COMMENT_BEEP_FADE_SECONDS,
           Math.max(0, (profanityEnd - profanityStart) / 2),
         );
         const muteStart = sourceTime + profanityStart / playbackRate;
@@ -82,13 +88,17 @@ export function useCValCommentAudio() {
         const beepGain = context.createGain();
         oscillator.type = "sine";
         oscillator.frequency.setValueAtTime(request.beep.frequencyHz, muteStart);
+        oscillator.frequency.exponentialRampToValueAtTime(
+          request.beep.frequencyHz * C_VAL_COMMENT_BEEP_FINAL_FREQUENCY_RATIO,
+          muteEnd,
+        );
         beepGain.gain.setValueAtTime(0, muteStart);
         beepGain.gain.linearRampToValueAtTime(
-          request.beep.peakGain,
+          beepPeakGain,
           muteStart + fade,
         );
         beepGain.gain.setValueAtTime(
-          request.beep.peakGain,
+          beepPeakGain,
           Math.max(muteStart + fade, muteEnd - fade),
         );
         beepGain.gain.linearRampToValueAtTime(0, muteEnd);

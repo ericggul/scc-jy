@@ -1,0 +1,141 @@
+.page {
+  background: #000;
+  color: #fff;
+  min-height: 100dvh;
+  padding: 24px;
+}
+
+.header,
+.figure,
+.details {
+  margin: 0 auto;
+  max-width: 1080px;
+}
+
+.header {
+  align-items: baseline;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.header h1,
+.header p,
+.metadata,
+.entryLink,
+.mobileNotice {
+  font-family: var(--font-geist-mono, "SFMono-Regular"), Menlo, Monaco, Consolas, monospace;
+}
+
+.header h1,
+.header p {
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.3;
+  margin: 0;
+}
+
+.figure {
+  margin-bottom: clamp(64px, 9vw, 144px);
+}
+
+.image {
+  display: block;
+  height: auto;
+  width: 100%;
+}
+
+.details {
+  display: grid;
+  gap: clamp(48px, 8vw, 128px);
+  grid-template-columns: minmax(170px, 0.42fr) minmax(0, 1fr);
+  max-width: 1120px;
+  padding-bottom: clamp(56px, 8vw, 120px);
+}
+
+.metadata {
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.metadata p {
+  margin: 0 0 18px;
+}
+
+.entryLink {
+  color: #fff;
+  display: inline-block;
+  font-size: 12px;
+  line-height: 1.55;
+  margin-top: 20px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.clubLink {
+  color: #fff;
+  display: block;
+  font-size: 12px;
+  line-height: 1.55;
+  margin-top: 20px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.clubLink:hover,
+.entryLink:hover {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.entryLink:focus-visible {
+  outline: 1px solid #fff;
+  outline-offset: 4px;
+}
+
+.statement {
+  display: grid;
+  gap: 28px;
+  max-width: 660px;
+}
+
+.statement p {
+  font-family: var(--font-geist-sans, Inter), "Helvetica Neue", Arial, sans-serif;
+  font-size: clamp(16px, 1.25vw, 20px);
+  font-weight: 400;
+  letter-spacing: -0.035em;
+  line-height: 1.7;
+  margin: 0;
+}
+
+.mobileNotice {
+  display: none;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+@media (max-width: 1023px) {
+  .details {
+    grid-template-columns: 1fr;
+  }
+
+  .entryLink {
+    display: none;
+  }
+
+  .mobileNotice {
+    display: block;
+    margin-top: 20px;
+  }
+}
+
+@media (max-width: 640px) {
+  .page {
+    padding: 16px;
+  }
+
+  .header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+}

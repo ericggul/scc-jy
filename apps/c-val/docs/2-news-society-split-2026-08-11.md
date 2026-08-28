@@ -2,7 +2,8 @@
 
 > Route: `/c-val/2/screen/news`  
 > Changed variable: the semantic ownership and accumulation of the right column  
-> Preserved baseline: `components/c-val/2/screen/news-legacy/`
+> Former preserved baseline: `components/c-val/2/screen/news-legacy/` (removed
+> after it became unused). The active implementation is `screen/news/`.
 
 ## Trial contract
 

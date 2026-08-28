@@ -1,0 +1,476 @@
+.workspace {
+  min-height: 100dvh;
+  padding: clamp(24px, 4vw, 56px);
+  background: #e9e7e4;
+  color: #141414;
+  font-family: var(--font-ddong-meong), Pretendard, system-ui, sans-serif;
+}
+
+.controls {
+  display: grid;
+  width: min(100%, 680px);
+  gap: 28px;
+  margin: 0 auto 52px;
+}
+
+.eyebrow {
+  margin: 0 0 9px;
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+}
+
+.controls h1 {
+  margin: 0;
+  font-size: clamp(30px, 5vw, 44px);
+  font-weight: 640;
+  letter-spacing: -0.06em;
+  line-height: 1.05;
+}
+
+.introduction {
+  max-width: 560px;
+  margin: 14px 0 0;
+  color: rgb(20 20 20 / 70%);
+  font-size: 15px;
+  line-height: 1.65;
+  letter-spacing: -0.025em;
+  word-break: keep-all;
+}
+
+.projectChoices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.projectChoices legend {
+  grid-column: 1 / -1;
+  margin-bottom: 1px;
+  font-size: 12px;
+  font-weight: 660;
+  letter-spacing: -0.015em;
+}
+
+.projectChoices label {
+  position: relative;
+  display: grid;
+  cursor: pointer;
+}
+
+.projectChoices input {
+  position: absolute;
+  opacity: 0;
+}
+
+.projectChoices span {
+  display: grid;
+  min-height: 46px;
+  place-items: center;
+  border: 1px solid rgb(20 20 20 / 26%);
+  border-radius: 6px;
+  background: rgb(255 255 255 / 54%);
+  font-size: 14px;
+  font-weight: 640;
+  letter-spacing: -0.03em;
+}
+
+.projectChoices input:checked + span {
+  border-color: #141414;
+  background: #141414;
+  color: #fff;
+}
+
+.projectChoices input:focus-visible + span {
+  outline: 2px solid #141414;
+  outline-offset: 3px;
+}
+
+.fieldGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.fieldGrid label,
+.urlField {
+  display: grid;
+  gap: 7px;
+}
+
+.fieldGrid span,
+.urlField > span,
+.copyChoices legend {
+  font-size: 12px;
+  font-weight: 660;
+  letter-spacing: -0.015em;
+}
+
+.fieldGrid input,
+.fieldGrid select,
+.urlField textarea {
+  width: 100%;
+  border: 1px solid rgb(20 20 20 / 26%);
+  border-radius: 6px;
+  background: #fff;
+  color: #141414;
+  font: inherit;
+  font-size: 15px;
+  outline: none;
+}
+
+.fieldGrid input,
+.fieldGrid select {
+  height: 46px;
+  padding: 0 12px;
+}
+
+.urlField textarea {
+  min-height: 76px;
+  padding: 10px 12px;
+  resize: vertical;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.fieldGrid input:focus-visible,
+.fieldGrid select:focus-visible,
+.urlField textarea:focus-visible {
+  border-color: #141414;
+  box-shadow: 0 0 0 3px rgb(20 20 20 / 12%);
+}
+
+.fieldHelp,
+.cValHelp,
+.copyStatus,
+.error {
+  min-height: 19px;
+  margin: -19px 0 0;
+  color: rgb(20 20 20 / 62%);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.cValHelp {
+  margin: 0;
+  word-break: keep-all;
+}
+
+.copyChoices {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.copyChoices legend {
+  margin-bottom: 1px;
+}
+
+.copyChoices label {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 14px;
+  line-height: 1.5;
+  letter-spacing: -0.025em;
+}
+
+.copyChoices input {
+  width: 16px;
+  height: 16px;
+  margin: 2px 0 0;
+  accent-color: #141414;
+}
+
+.error {
+  color: #9e1a1a;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.actions button,
+.actions a {
+  min-height: 42px;
+  padding: 0 15px;
+  border: 1px solid #141414;
+  border-radius: 999px;
+  background: transparent;
+  color: #141414;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 40px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.actions button:last-child {
+  background: #141414;
+  color: #fff;
+}
+
+.actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+
+.actions button:focus-visible,
+.actions a:focus-visible {
+  outline: 2px solid #141414;
+  outline-offset: 3px;
+}
+
+.previewArea {
+  display: grid;
+  justify-content: center;
+  padding-bottom: 30px;
+}
+
+.poster {
+  position: relative;
+  width: min(210mm, calc(100vw - 48px));
+  aspect-ratio: 210 / 297;
+  background: #fff;
+  box-shadow: 0 12px 38px rgb(30 25 20 / 18%);
+}
+
+.posterContent {
+  display: grid;
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  width: 72%;
+  justify-items: center;
+  text-align: center;
+  transform: translate(-50%, -50%);
+}
+
+.poster h2 {
+  display: grid;
+  gap: 0.05em;
+  margin: 0 0 clamp(29px, 5.5vw, 54px);
+  font-size: clamp(32px, 4.9vw, 52px);
+  font-weight: 610;
+  letter-spacing: -0.075em;
+  line-height: 1.18;
+  word-break: keep-all;
+}
+
+.poster h2 span {
+  display: block;
+}
+
+.qrCode,
+.qrPlaceholder {
+  display: block;
+  width: 73%;
+  aspect-ratio: 1;
+  fill: #111;
+}
+
+.qrPlaceholder {
+  background: #f2f2f2;
+}
+
+.posterContent > p {
+  margin: clamp(19px, 3.6vw, 34px) 0 0;
+  color: rgb(17 17 17 / 72%);
+  font-size: clamp(14px, 2vw, 20px);
+  font-weight: 560;
+  letter-spacing: -0.03em;
+}
+
+.posterBrand {
+  position: absolute;
+  bottom: 8.2%;
+  left: 50%;
+  display: grid;
+  width: 28%;
+  justify-items: center;
+  gap: clamp(8px, 1.3vw, 13px);
+  color: #111;
+  transform: translateX(-50%);
+}
+
+.posterBrandLogo {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4.6403 / 1.0097;
+  object-fit: contain;
+  filter: brightness(0);
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.posterBrand p {
+  margin: 0;
+  font-size: clamp(12px, 1.7vw, 16px);
+  font-weight: 600;
+  letter-spacing: 0.18em;
+}
+
+.cValPoster {
+  background: #fff;
+  color: #111;
+}
+
+.cValPosterHeader {
+  position: absolute;
+  top: 8.2%;
+  left: 50%;
+  display: grid;
+  width: 72%;
+  justify-items: center;
+  transform: translateX(-50%);
+}
+
+.cValPoster h2 {
+  margin-bottom: clamp(16px, 2.4vw, 26px);
+  color: #111;
+  font-family: inherit;
+  font-weight: 610;
+  letter-spacing: -0.075em;
+}
+
+.cValPosterContent > .cValSupportingLine {
+  margin: 0 0 clamp(27px, 4.6vw, 45px);
+  color: rgb(17 17 17 / 72%);
+  font-family: inherit;
+  font-size: clamp(13px, 1.7vw, 17px);
+  font-weight: 560;
+  letter-spacing: -0.03em;
+}
+
+.cValQrCode {
+  display: block;
+  width: 73%;
+  aspect-ratio: 1;
+  fill: #111;
+}
+
+.cValBrand {
+  margin: 0;
+  color: #111;
+  font-family: inherit;
+  font-size: clamp(17px, 2.25vw, 24px);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  line-height: 1;
+}
+
+.cValExpansion {
+  margin: clamp(7px, 1vw, 10px) 0 0;
+  color: rgb(17 17 17 / 64%);
+  font-family: inherit;
+  font-size: clamp(11px, 1.35vw, 14px);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.35;
+  text-align: center;
+}
+
+@media (max-width: 560px) {
+  .workspace { padding: 26px 24px; }
+  .controls { margin-bottom: 38px; }
+  .fieldGrid { grid-template-columns: 1fr; }
+  .poster { width: min(210mm, calc(100vw - 24px)); }
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+
+  .workspace {
+    display: block;
+    min-height: 0;
+    padding: 0;
+    background: #fff;
+  }
+
+  .controls { display: none; }
+
+  .previewArea {
+    display: block;
+    padding: 0;
+  }
+
+  .poster {
+    width: 210mm;
+    height: 297mm;
+    aspect-ratio: auto;
+    box-shadow: none;
+  }
+
+  .posterContent {
+    top: 44%;
+    width: 151mm;
+  }
+
+  .poster h2 {
+    margin-bottom: 11mm;
+    font-size: 13.2mm;
+    line-height: 1.16;
+  }
+
+  .qrCode,
+  .qrPlaceholder {
+    width: 110mm;
+  }
+
+  .posterContent > p {
+    margin-top: 7.5mm;
+    font-size: 4.2mm;
+  }
+
+  .posterBrand {
+    bottom: 24mm;
+    width: 59mm;
+    gap: 3mm;
+  }
+
+  .posterBrand p {
+    font-size: 4.2mm;
+  }
+
+  .cValPosterContent {
+    top: 48%;
+  }
+
+  .cValPoster h2 {
+    margin-bottom: 5mm;
+    font-size: 13.2mm;
+    line-height: 1.16;
+  }
+
+  .cValPosterContent > .cValSupportingLine {
+    margin-bottom: 9mm;
+    font-size: 4.2mm;
+  }
+
+  .cValPosterHeader {
+    top: 24mm;
+    width: 151mm;
+  }
+
+  .cValBrand {
+    font-size: 5.2mm;
+  }
+
+  .cValExpansion {
+    margin-top: 3mm;
+    font-size: 3.1mm;
+  }
+}

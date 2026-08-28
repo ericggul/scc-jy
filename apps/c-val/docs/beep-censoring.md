@@ -104,9 +104,9 @@ transcriber did not spell the profanity as one of `씨발`, `시발`, `씨팔`, 
 declared initial/medial/final position. Agents must audit every fallback before
 treating a corpus as accepted.
 
-## Runtime beep contract
+## Source beep contract
 
-The accepted beep is the original test beep:
+The accepted source/audition beep is the original test beep:
 
 - sine wave: 1000 Hz
 - effective peak amplitude: 0.175 in Web Audio (`ffmpeg` sine default `0.125`
@@ -119,6 +119,13 @@ feeds a `GainNode`; automate that gain to zero only from `start` to `end`.
 Schedule an `OscillatorNode` through its own gain envelope over the same
 absolute `AudioContext.currentTime` interval. Do not coordinate two HTML audio
 elements with `setTimeout`, because that introduces avoidable scheduling drift.
+
+The browser-only C-VAL comments presentation applies a reversible final trim:
+70% peak gain, 12 ms attack/release, and a 2.5% exponential downward frequency
+glide over the censored interval. These values are shared by current comments,
+legacy comments, and the media overlay in
+`components/screen/comment-beep.ts`; they do not change source WAVs, sidecars,
+or command-line audition output.
 
 ### C-VAL 2 rapid-move presentation trial — 2026-08-12
 

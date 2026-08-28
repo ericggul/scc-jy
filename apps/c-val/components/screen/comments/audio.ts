@@ -9,6 +9,11 @@ import {
   type CValCommentCorpus,
   type CValCommentCorpusEntry,
 } from "./presenter";
+import {
+  C_VAL_COMMENT_BEEP_FADE_SECONDS,
+  C_VAL_COMMENT_BEEP_FINAL_FREQUENCY_RATIO,
+  C_VAL_COMMENT_BEEP_GAIN_SCALE,
+} from "../comment-beep";
 
 type AudioRequest = {
   entry: CValCommentCorpusEntry;
@@ -134,8 +139,11 @@ export function useCValCommentAudio() {
         && profanityEnd > profanityStart;
 
       if (hasCensorInterval) {
+        const beepPeakGain = request.beep.peakGain
+          * C_VAL_COMMENT_BEEP_GAIN_SCALE
+          * gain;
         const fade = Math.min(
-          request.beep.fadeSeconds,
+          C_VAL_COMMENT_BEEP_FADE_SECONDS,
           Math.max(0, (profanityEnd - profanityStart) / 2),
         );
         const censorDelay = cValCommentCensorDelayPlaybackSeconds(effectivePlaybackRate);
@@ -148,22 +156,24 @@ export function useCValCommentAudio() {
 
         const oscillator = context.createOscillator();
         const beepGain = context.createGain();
+        const beepFrequency = cValCommentCensorBeepFrequencyHz(
+          request.beep.frequencyHz,
+          playbackRate,
+          detuneCents,
+        );
         oscillator.type = "sine";
-        oscillator.frequency.setValueAtTime(
-          cValCommentCensorBeepFrequencyHz(
-            request.beep.frequencyHz,
-            playbackRate,
-            detuneCents,
-          ),
-          muteStart,
+        oscillator.frequency.setValueAtTime(beepFrequency, muteStart);
+        oscillator.frequency.exponentialRampToValueAtTime(
+          beepFrequency * C_VAL_COMMENT_BEEP_FINAL_FREQUENCY_RATIO,
+          muteEnd,
         );
         beepGain.gain.setValueAtTime(0, muteStart);
         beepGain.gain.linearRampToValueAtTime(
-          request.beep.peakGain * gain,
+          beepPeakGain,
           muteStart + fade,
         );
         beepGain.gain.setValueAtTime(
-          request.beep.peakGain * gain,
+          beepPeakGain,
           Math.max(muteStart + fade, muteEnd - fade),
         );
         beepGain.gain.linearRampToValueAtTime(0, muteEnd);

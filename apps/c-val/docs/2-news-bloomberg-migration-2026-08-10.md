@@ -5,7 +5,9 @@
 > Preserved baseline: `components/c-val/2/screen-legacy/news/`
 
 > Historical scope note, 2026-08-11: the later accepted compact wire represented
-> by this document is preserved byte-for-byte under `screen/news-legacy/`. The
+> by this document was preserved byte-for-byte under `screen/news-legacy/` until
+> the unused legacy implementation was removed. The historical record remains
+> here; the active implementation is `screen/news/`.
 > active renderer now applies the independent two-thread contract recorded in
 > [`2-news-society-split-2026-08-11.md`](./2-news-society-split-2026-08-11.md).
 

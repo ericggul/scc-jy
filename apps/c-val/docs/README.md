@@ -255,6 +255,9 @@ requested, against an already-running HTTPS server.
 - [C-VAL 2 comments screen](./2-comments.md): rapid-move admission, deterministic
   dialect and performance selection, bounded text field, and runtime censored
   speech playback.
+- [C-VAL desktop entry landing](./2-intro-landing-2026-08-28.md): root-route
+  artwork introduction, representative experience capture, and desktop-only
+  entry into `/whole`.
 - [Discord external publisher](./external-publisher.md): C-VAL-wide Discord
   transport and the V2 community-stream interpreter.
 - [Slack external publisher](./slack-publisher.md): C-VAL-wide Slack Incoming
