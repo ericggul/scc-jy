@@ -1,6 +1,6 @@
 "use client";
 
-import type { PointerEvent, ReactNode } from "react";
+import type { CSSProperties, PointerEvent, ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
 import styles from "./navigation.module.css";
 
@@ -153,7 +153,10 @@ function ActionButton({
 }
 
 export default function SnsNavigationTwo() {
-  const [rowCount, setRowCount] = useState(8);
+  const [stackMetrics, setStackMetrics] = useState({
+    rowCount: 8,
+    rowHeight: 72,
+  });
   const [selectedActions, setSelectedActions] = useState<(ActionId | null)[]>(
     () => Array.from({ length: 8 }, () => null),
   );
@@ -164,21 +167,28 @@ export default function SnsNavigationTwo() {
   useEffect(() => {
     function syncRowCount() {
       const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
-      const minimumRowHeight = 52;
-      const rowGap = 6;
+      const viewportWidth = window.visualViewport?.width ?? window.innerWidth;
       const verticalPadding = 16;
+      const referenceRowHeight = Math.min(
+        202,
+        Math.max(76, viewportWidth * 0.1715),
+      );
       const nextRowCount = Math.max(
-        4,
+        3,
         Math.min(
           12,
-          Math.floor(
-            (viewportHeight - verticalPadding * 2 + rowGap) /
-              (minimumRowHeight + rowGap),
-          ),
+          Math.floor((viewportHeight - verticalPadding * 2) / referenceRowHeight),
         ),
       );
+      const nextRowHeight = Math.max(
+        52,
+        Math.floor((viewportHeight - verticalPadding * 2) / nextRowCount),
+      );
 
-      setRowCount(nextRowCount);
+      setStackMetrics({
+        rowCount: nextRowCount,
+        rowHeight: nextRowHeight,
+      });
       setSelectedActions((current) =>
         Array.from({ length: nextRowCount }, (_, index) => current[index] ?? null),
       );
@@ -193,6 +203,12 @@ export default function SnsNavigationTwo() {
       window.visualViewport?.removeEventListener("resize", syncRowCount);
     };
   }, []);
+
+  const { rowCount, rowHeight } = stackMetrics;
+  const stackStyle = {
+    "--action-row-height": `${rowHeight}px`,
+    gridTemplateRows: `repeat(${rowCount}, minmax(0, 1fr))`,
+  } as CSSProperties & { "--action-row-height": string };
 
   function setRowAction(rowIndex: number, actionId: ActionId) {
     setSelectedActions((current) => {
@@ -290,7 +306,7 @@ export default function SnsNavigationTwo() {
       <section
         aria-label="Instagram post action navigation stack"
         className={styles.stack}
-        style={{ gridTemplateRows: `repeat(${rowCount}, minmax(52px, 1fr))` }}
+        style={stackStyle}
       >
         {Array.from({ length: rowCount }, (_, rowIndex) => (
           <nav

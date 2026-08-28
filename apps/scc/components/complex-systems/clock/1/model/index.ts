@@ -1,5 +1,5 @@
-export const CLOCK_RECURSION_DEPTH = 4;
-export const DEFAULT_CHILD_RADIUS_RATIO = 0.5;
+export const CLOCK_RECURSION_DEPTH = 5;
+export const DEFAULT_CHILD_RADIUS_RATIO = 0.6;
 export const MIN_CHILD_RADIUS_RATIO = 0.42;
 export const MAX_CHILD_RADIUS_RATIO = 0.62;
 export const SIMULATED_SECONDS_PER_SECOND = 12;

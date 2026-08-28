@@ -16,6 +16,7 @@
 }
 
 .stack {
+  --action-row-height: 72px;
   display: grid;
   width: 100%;
   height: 100dvh;
@@ -29,7 +30,7 @@
 .actionRow {
   display: flex;
   min-width: 0;
-  min-height: clamp(76px, 17.15vw, 202px);
+  min-height: 0;
   align-items: center;
   padding: 0 clamp(12px, 2.97vw, 35px);
   background: var(--surface);
@@ -39,7 +40,7 @@
   display: inline-flex;
   position: relative;
   min-width: 0;
-  height: clamp(52px, 12vw, 142px);
+  height: min(clamp(44px, 12vw, 142px), calc(var(--action-row-height) * 0.72));
   padding: 0;
   align-items: center;
   gap: 0;
@@ -115,20 +116,20 @@
 }
 
 .icon {
-  width: clamp(23px, 7.39vw, 87px);
-  height: clamp(23px, 7.39vw, 87px);
+  width: min(clamp(23px, 7.39vw, 87px), calc(var(--action-row-height) * 0.58));
+  height: min(clamp(23px, 7.39vw, 87px), calc(var(--action-row-height) * 0.58));
   flex: none;
 }
 
 .repostIcon {
-  width: clamp(20px, 6.11vw, 72px);
-  height: clamp(20px, 6.11vw, 72px);
+  width: min(clamp(20px, 6.11vw, 72px), calc(var(--action-row-height) * 0.54));
+  height: min(clamp(20px, 6.11vw, 72px), calc(var(--action-row-height) * 0.54));
   flex: none;
 }
 
 .count {
   font-family: var(--font-geist-sans), Arial, sans-serif;
-  font-size: clamp(14px, 3.4vw, 40px);
+  font-size: min(clamp(14px, 3.4vw, 40px), calc(var(--action-row-height) * 0.36));
   font-weight: 620;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.018em;
