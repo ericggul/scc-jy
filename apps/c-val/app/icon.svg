@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" fill="#171914"/>
+  <path d="M8 12.5H56M8 51.5H56" stroke="#555a50" stroke-width="1"/>
+  <path d="M8 43.5H56" stroke="#00a766" stroke-width="3"/>
+  <path d="M8 47.5H56" stroke="#e8465f" stroke-width="3"/>
+  <text x="32" y="35" fill="#f2a900" font-family="Arial, sans-serif" font-size="18" font-weight="700" letter-spacing="-1" text-anchor="middle">C·V</text>
+</svg>

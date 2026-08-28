@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import DdongMeongContent from "@/components/mobile/content";
 import { mobileMeditationContents } from "@/components/mobile/content/registry";
-import { titleFor } from "../seo";
+import { titleFor } from "@/app/seo";
 
 function findContent(content: string) {
   return mobileMeditationContents.find((meditation) => meditation.slug === content);

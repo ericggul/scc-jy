@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import GoogleAnalytics from "@/components/analytics/google-analytics";
 import StyledComponentsRegistry from "@/lib/styled-components-registry";
 import { siteMetadata, structuredData } from "./seo";
 import "./globals.css";
@@ -21,7 +20,6 @@ export default function RootLayout({
           }}
         />
         <StyledComponentsRegistry>{children}</StyledComponentsRegistry>
-        <GoogleAnalytics />
       </body>
     </html>
   );

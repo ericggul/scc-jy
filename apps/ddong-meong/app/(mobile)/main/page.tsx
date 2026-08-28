@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import DdongMeongMain from "@/components/mobile/main";
-import { pageDescription, titleFor } from "../seo";
+import { pageDescription, titleFor } from "@/app/seo";
 
 export const metadata: Metadata = {
   title: titleFor("오늘의 콘텐츠"),

@@ -1,11 +1,16 @@
 import type { Metadata } from "next";
+import { CValGoogleAnalytics } from "@/components/analytics";
 import CValHome from "@/components/home";
+import { cValHomeMetadata, CValStructuredData } from "@/components/seo";
 
-export const metadata: Metadata = {
-  title: "C-VAL: Conducting Volatility, Activity, Liquidity",
-  description: "C-VAL is a multi-device web artwork where audience mobile movement conducts a simulated market.",
-};
+export const metadata: Metadata = cValHomeMetadata;
 
 export default function CValPage() {
-  return <CValHome />;
+  return (
+    <>
+      <CValStructuredData />
+      <CValHome />
+      <CValGoogleAnalytics />
+    </>
+  );
 }

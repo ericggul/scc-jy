@@ -1,11 +1,9 @@
 import type { Metadata } from "next";
 import StyledComponentsRegistry from "@/lib/styled-components-registry";
+import { cValRootMetadata } from "@/components/seo";
 import "./globals.css";
 
-export const metadata: Metadata = {
-  title: "C-VAL",
-  description: "A versioned multi-device V/A/L financial-market artwork.",
-};
+export const metadata: Metadata = cValRootMetadata;
 
 export default function RootLayout({
   children,

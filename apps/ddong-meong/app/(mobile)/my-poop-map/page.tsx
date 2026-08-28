@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import MyPoopMap from "@/components/mobile/my-poop-map";
-import { titleFor } from "../seo";
+import { titleFor } from "@/app/seo";
 
 export const metadata: Metadata = {
   title: titleFor("나의 똥트맵"),
@@ -11,4 +11,3 @@ export const metadata: Metadata = {
 export default function MyPoopMapPage() {
   return <MyPoopMap />;
 }
-

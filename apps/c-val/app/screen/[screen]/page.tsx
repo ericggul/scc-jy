@@ -14,7 +14,10 @@ export async function generateMetadata({
   params: Promise<{ screen: string }>;
 }): Promise<Metadata> {
   const { screen } = await params;
-  return { title: `c-val screen ${screen}` };
+  return {
+    title: `C-VAL screen ${screen}`,
+    robots: { index: false, follow: false },
+  };
 }
 
 export default async function CValScreenPage({
