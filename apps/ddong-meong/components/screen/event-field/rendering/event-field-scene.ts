@@ -427,7 +427,6 @@ export class EventFieldScene {
       antialias: true,
       canvas: options.canvas,
       powerPreference: "high-performance",
-      preserveDrawingBuffer: options.cameraMode === "explore",
     });
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;

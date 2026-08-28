@@ -1,9 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import EventField, { type EventFieldHandle } from "../../screen/event-field";
-import type { EventFieldTiming } from "../../screen/event-field/rendering/event-field-scene";
 import type { DdongMeongArchiveEntry } from "../../model/types";
 import DdongMeongWordmark from "../../design-system/wordmark";
 import GradientShell from "../surface/gradient-shell";
@@ -14,13 +13,6 @@ import {
 import styles from "./styles.module.css";
 
 const emptyRecords: DdongMeongArchiveEntry[] = [];
-const mapCycleBreathMs = 500;
-const personalMapTiming: EventFieldTiming = {
-  appearanceDurationMs: 360,
-  entryWindowMs: 5_000,
-  maximumStaggerIntervalMs: 460,
-  presentationDurationMs: 7_000,
-};
 
 function summaryCopy(recordCount: number) {
   if (recordCount === 0) return "아직 너무 깨끗합니다.";
@@ -38,31 +30,11 @@ export default function MyPoopMap() {
   const [isSharing, setIsSharing] = useState(false);
   const [notice, setNotice] = useState<string>();
   const mapRef = useRef<EventFieldHandle>(null);
-  const mapRestartTimerRef = useRef<number | undefined>(undefined);
-
-  const restartMapCycle = useCallback(() => {
-    if (mapRestartTimerRef.current !== undefined) {
-      window.clearTimeout(mapRestartTimerRef.current);
-    }
-
-    mapRestartTimerRef.current = window.setTimeout(() => {
-      mapRestartTimerRef.current = undefined;
-      mapRef.current?.restartPresentation();
-    }, mapCycleBreathMs);
-  }, []);
 
   useEffect(() => {
     const syncRecords = () => setRecords(readPersonalPoopMapRecords());
     syncRecords();
     return subscribeToPersonalSessionRecords(syncRecords);
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      if (mapRestartTimerRef.current !== undefined) {
-        window.clearTimeout(mapRestartTimerRef.current);
-      }
-    };
   }, []);
 
   async function shareMap() {
@@ -128,10 +100,8 @@ export default function MyPoopMap() {
             cameraMode="explore"
             emptyMessage="나의 첫 기록을 기다리는 중입니다."
             labelMode="personal"
-            onPresentationComplete={restartMapCycle}
-            presentation="cycle"
+            presentation="ambient"
             ref={mapRef}
-            timing={personalMapTiming}
           />
         </section>
 
