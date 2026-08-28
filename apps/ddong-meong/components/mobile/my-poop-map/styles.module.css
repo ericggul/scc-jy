@@ -1,0 +1,178 @@
+.page {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  color: #f4f2ed;
+}
+
+.header {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: max(25px, env(safe-area-inset-top)) var(--dm-page-gutter) 0;
+  animation: headerEnter 1500ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  pointer-events: none;
+}
+
+.wordmark {
+  display: block;
+  font-family: var(--dm-font-wordmark);
+  font-size: 29px;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  pointer-events: auto;
+}
+
+.closeButton {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(255 248 243 / 10%);
+  color: var(--dm-color-ink);
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  pointer-events: auto;
+}
+
+.closeButton svg {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentcolor;
+  stroke-linecap: round;
+  stroke-width: 1.7;
+}
+
+.introduction {
+  position: relative;
+  z-index: 1;
+  padding: clamp(18px, 3svh, 28px) var(--dm-page-gutter) 0;
+  animation: introductionEnter 1800ms cubic-bezier(0.22, 1, 0.36, 1) 180ms both;
+  pointer-events: none;
+}
+
+.introduction h1 {
+  max-width: none;
+  margin: 0;
+  color: rgb(244 242 237 / 82%);
+  font-size: clamp(19px, 5.5vw, 24px);
+  font-weight: 560;
+  letter-spacing: -0.055em;
+  line-height: 1.18;
+}
+
+.introduction p {
+  margin: 6px 0 0;
+  color: rgb(244 242 237 / 52%);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: -0.025em;
+  line-height: 1.45;
+}
+
+.mapStage {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+}
+
+.mapStage :global(canvas) {
+  cursor: grab;
+  touch-action: none;
+}
+
+.footer {
+  position: absolute;
+  z-index: 1;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: grid;
+  gap: 6px;
+  padding: 8px var(--dm-page-gutter) max(12px, calc(env(safe-area-inset-bottom) + 10px));
+  animation: footerEnter 1800ms cubic-bezier(0.22, 1, 0.36, 1) 800ms both;
+  pointer-events: none;
+}
+
+.shareButton {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 999px;
+  background: #f4f2ed;
+  color: #30231e;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 680;
+  letter-spacing: -0.035em;
+  transition: transform 220ms ease, opacity 220ms ease;
+  pointer-events: auto;
+}
+
+.shareButton:active:not(:disabled) {
+  transform: scale(0.982);
+}
+
+.shareButton:disabled {
+  cursor: wait;
+  opacity: 0.58;
+}
+
+.shareButton span {
+  font-size: 15px;
+  font-weight: 460;
+  transform: translateY(-1px);
+}
+
+.notice {
+  min-height: 13px;
+  margin: 0;
+  color: rgb(244 242 237 / 54%);
+  font-size: 10px;
+  letter-spacing: -0.025em;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.wordmark:focus-visible,
+.closeButton:focus-visible,
+.shareButton:focus-visible {
+  outline: 2px solid #f4f2ed;
+  outline-offset: 4px;
+}
+
+@keyframes headerEnter {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes introductionEnter {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes footerEnter {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .header,
+  .introduction,
+  .footer {
+    animation: none;
+  }
+}

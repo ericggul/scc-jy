@@ -3,7 +3,7 @@
 import GradientShell from "../../surface/gradient-shell";
 import ReadingPage from "../../reader";
 import { useMeditationSession } from "../../session/use-meditation-session";
-import { recordLocalMeditationHistory } from "../../main/local-history";
+import { recordPersonalSession } from "../../personal-history";
 import type { MobileMeditationContent } from "../registry";
 
 type MeditationContentExperienceProps = {
@@ -23,11 +23,19 @@ export default function MeditationContentExperience({
 
   function handleSessionComplete(
     outcome: "completed" | "flushed" | "left" | "backgrounded" | "idle" | "overflowed",
+    record: {
+      durationMs: number;
+      endedAt: number;
+      interactionCount: number;
+      startedAt: number;
+    },
   ) {
-    recordLocalMeditationHistory(
-      content.slug,
-      outcome === "completed" || outcome === "flushed" || outcome === "overflowed",
-    );
+    recordPersonalSession({
+      ...record,
+      contentSlug: content.slug,
+      contentTitle: content.title,
+      outcome,
+    });
     finishSession(outcome);
   }
 

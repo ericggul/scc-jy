@@ -12,23 +12,13 @@ import type {
 } from "../../model/types";
 import { readDdongMeongEntryContext } from "../entry-context";
 import { readSavedNickname } from "../identity";
+import { getPersonalParticipantId } from "../personal-history";
 import { useDdongMeongSocket } from "../../transport/use-ddong-meong-socket";
-
-const participantStorageKey = "ddong-meong:participant";
 
 type MeditationSessionContent = {
   slug: string;
   title: string;
 };
-
-function getParticipantId() {
-  const storedId = window.sessionStorage.getItem(participantStorageKey);
-  if (storedId) return storedId;
-
-  const participantId = crypto.randomUUID();
-  window.sessionStorage.setItem(participantStorageKey, participantId);
-  return participantId;
-}
 
 export function useMeditationSession(content: MeditationSessionContent) {
   const {
@@ -56,7 +46,7 @@ export function useMeditationSession(content: MeditationSessionContent) {
     const identity =
       identityRef.current ?? {
         nickname: readSavedNickname() ?? "이름 없는 사람",
-        participantId: getParticipantId(),
+        participantId: getPersonalParticipantId(),
       };
     identityRef.current = identity;
     startSession({

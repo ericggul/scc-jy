@@ -1,6 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useState,
+  type AnimationEvent,
+} from "react";
 import { useDdongMeongSocket } from "./transport/use-ddong-meong-socket";
 import {
   getKoreanDayKey,
@@ -29,6 +34,7 @@ import styles from "./styles.module.css";
 const emptyArchive: DdongMeongArchiveEntry[] = [];
 const emptyLiveDurationMs = 8_000;
 const occupiedLiveDurationMs = 10_000;
+const viewTransitionBreathMs = 500;
 
 function formatDuration(durationMs: number) {
   const seconds = Math.max(0, Math.floor(durationMs / 1000));
@@ -160,6 +166,7 @@ function LiveOverview({
 
 const views = ["live", "events"] as const;
 type ScreenView = (typeof views)[number];
+type EventStagePhase = "hidden" | "entering" | "exiting";
 const viewLabels = {
   live: "현황",
   events: "똥트맵",
@@ -169,6 +176,7 @@ export default function DdongMeongScreen() {
   const { connected, snapshot } = useDdongMeongSocket("screen");
   const now = useClock();
   const [activeView, setActiveView] = useState<ScreenView>("events");
+  const [eventStagePhase, setEventStagePhase] = useState<EventStagePhase>("hidden");
   const [testArchive, setTestArchive] = useState<DdongMeongArchiveEntry[] | null>(null);
   const activeSessions = snapshot?.activeSessions ?? [];
   const archive = useBrowserArchive(snapshot?.archive ?? emptyArchive);
@@ -194,6 +202,32 @@ export default function DdongMeongScreen() {
   }, [activeSessions.length, activeView]);
 
   useEffect(() => {
+    if (activeView !== "events") {
+      setEventStagePhase("hidden");
+      return undefined;
+    }
+
+    setEventStagePhase("hidden");
+    const timer = window.setTimeout(
+      () => setEventStagePhase("entering"),
+      viewTransitionBreathMs,
+    );
+    return () => window.clearTimeout(timer);
+  }, [activeView]);
+
+  useEffect(() => {
+    if (eventStagePhase !== "exiting" || activeView !== "events") {
+      return undefined;
+    }
+
+    const timer = window.setTimeout(
+      () => setActiveView("live"),
+      viewTransitionBreathMs + 100,
+    );
+    return () => window.clearTimeout(timer);
+  }, [activeView, eventStagePhase]);
+
+  useEffect(() => {
     const resumeSoundtrack = () => playMeditationSoundtrack();
     playMeditationSoundtrack();
     window.addEventListener("pointerdown", resumeSoundtrack, { once: true });
@@ -207,8 +241,24 @@ export default function DdongMeongScreen() {
   }, []);
 
   const handleEventPresentationComplete = useCallback(() => {
-    setActiveView((current) => (current === "events" ? "live" : current));
+    setEventStagePhase((phase) =>
+      phase === "entering" ? "exiting" : phase,
+    );
   }, []);
+
+  const handleEventStageAnimationEnd = useCallback(
+    (event: AnimationEvent<HTMLDivElement>) => {
+      if (
+        event.currentTarget !== event.target ||
+        event.animationName !== "eventStageExit"
+      ) {
+        return;
+      }
+
+      setActiveView("live");
+    },
+    [],
+  );
 
   const toggleTestArchive = () => {
     if (testArchive) {
@@ -264,10 +314,17 @@ export default function DdongMeongScreen() {
         />
         <div
           aria-hidden={activeView !== "events"}
-          className={`${styles.eventFieldStage} ${styles.screenView}`}
+          className={`${styles.eventFieldStage} ${styles.screenView} ${
+            eventStagePhase === "entering"
+              ? styles.eventStageEntering
+              : eventStagePhase === "exiting"
+                ? styles.eventStageExiting
+                : ""
+          }`}
+          onAnimationEnd={handleEventStageAnimationEnd}
         >
           <EventField
-            active={activeView === "events"}
+            active={activeView === "events" && eventStagePhase === "entering"}
             archive={displayedArchive}
             onPresentationComplete={handleEventPresentationComplete}
           />

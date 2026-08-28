@@ -18,6 +18,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "weekly",
       priority: 0.9,
     },
+    {
+      url: `${siteUrl}/my-poop-map`,
+      lastModified,
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
     ...mobileMeditationContents.map((meditation) => ({
       url: `${siteUrl}/${meditation.slug}`,
       lastModified,

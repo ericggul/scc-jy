@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import Script from "next/script";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -25,8 +26,8 @@ function kakaoShareTitle({
   overflowed: boolean;
 }) {
   return overflowed
-    ? `${nickname}님은 똥싸다 변기가 넘쳤어요!`
-    : `${nickname}님은 ${duration} 동안 똥쌌어요`;
+    ? `${nickname}님이 방금 똥싸다 변기가 넘쳤어요!`
+    : `${nickname}님이 방금 ${duration} 동안 똥쌌어요`;
 }
 
 type KakaoSdk = {
@@ -330,6 +331,17 @@ function InstagramIcon() {
   );
 }
 
+function MapStatisticsIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <path d="M4.5 19.5h15" />
+      <rect height="6" rx=".8" width="3" x="5" y="12" />
+      <rect height="10" rx=".8" width="3" x="10.5" y="8" />
+      <rect height="14" rx=".8" width="3" x="16" y="4" />
+    </svg>
+  );
+}
+
 function describeError(error: unknown) {
   return error instanceof Error ? error.message : "알 수 없는 오류";
 }
@@ -490,10 +502,16 @@ export default function DdongMeongShare() {
             <KakaoTalkIcon />
             <span>{isPreparingKakao ? "카카오톡 공유 준비 중" : "카카오톡으로 공유"}</span>
           </button>
-          <button aria-label="인스타그램 스토리용 이미지 만들기" className={`${styles.shareButton} ${styles.instagramButton}`} disabled={isPreparingStory} onClick={shareToInstagram} type="button">
-            <InstagramIcon />
-            <span>{isPreparingStory ? "스토리 카드 만드는 중" : "인스타그램 스토리 만들기"}</span>
-          </button>
+          <div className={styles.secondaryActions}>
+            <button aria-label="인스타그램 스토리용 이미지 만들기" className={`${styles.shareButton} ${styles.instagramButton}`} disabled={isPreparingStory} onClick={shareToInstagram} type="button">
+              <InstagramIcon />
+              <span>{isPreparingStory ? "스토리 준비 중" : "인스타 스토리"}</span>
+            </button>
+            <Link aria-label="내 똥트맵 보기" className={`${styles.shareButton} ${styles.mapButton}`} href="/my-poop-map">
+              <MapStatisticsIcon />
+              <span>내 똥트맵 보기</span>
+            </Link>
+          </div>
           {notice ? <p className={styles.notice} role="status">{notice}</p> : null}
         </div>
 

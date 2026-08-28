@@ -15,6 +15,9 @@
 }
 
 .header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   padding:
     max(26px, env(safe-area-inset-top))
     var(--dm-page-gutter)
@@ -28,6 +31,43 @@
   font-size: 29px;
   line-height: 1;
   letter-spacing: -0.04em;
+}
+
+.mapButton {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  margin: -8px -8px -8px 0;
+  place-items: center;
+  border: 1px solid rgb(var(--dm-color-ink-rgb) / 26%);
+  border-radius: 50%;
+  background: rgb(var(--dm-color-ink-rgb) / 7%);
+  color: rgb(var(--dm-color-ink-rgb) / 72%);
+  text-decoration: none;
+  transition: background 180ms ease, transform 180ms ease;
+}
+
+.mapButton svg {
+  width: 18px;
+  height: 18px;
+  fill: currentcolor;
+  stroke: currentcolor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.7;
+}
+
+.mapButton svg path { fill: none; }
+
+.mapButton:active { transform: scale(0.94); }
+
+@media (hover: hover) {
+  .mapButton:hover { background: rgb(var(--dm-color-ink-rgb) / 11%); }
+}
+
+.mapButton:focus-visible {
+  outline: 2px solid var(--dm-color-ink);
+  outline-offset: 3px;
 }
 
 .body {

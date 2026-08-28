@@ -73,6 +73,17 @@ function formatLocalHistoryNote(entry: {
   }`;
 }
 
+function MapStatisticsIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <path d="M4.5 19.5h15" />
+      <rect height="6" rx=".8" width="3" x="5" y="12" />
+      <rect height="10" rx=".8" width="3" x="10.5" y="8" />
+      <rect height="14" rx=".8" width="3" x="16" y="4" />
+    </svg>
+  );
+}
+
 export default function DdongMeongMain() {
   const greeting = useSyncExternalStore(
     subscribeToBrowserGreeting,
@@ -124,6 +135,13 @@ export default function DdongMeongMain() {
       >
         <header className={styles.header}>
           <DdongMeongWordmark className={styles.wordmark} />
+          <Link
+            aria-label="나의 똥트맵 보기"
+            className={styles.mapButton}
+            href="/my-poop-map"
+          >
+            <MapStatisticsIcon />
+          </Link>
         </header>
 
         <div className={styles.body}>

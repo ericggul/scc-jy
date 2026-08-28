@@ -11,12 +11,23 @@ const projectionZStart = -7.2;
 const projectionZEnd = 7.2;
 const projectionGridDivisions = 60;
 const projectionFootMarkSize = 0.12;
-const presentationDurationMs = 12_000;
-const appearanceDurationMs = 180;
-const entryWindowMs = 8_000;
-const defaultAppearanceIntervalMs = 72;
+export const eventFieldPresentationDurationMs = 12_000;
+export type EventFieldTiming = Readonly<{
+  appearanceDurationMs: number;
+  entryWindowMs: number;
+  maximumStaggerIntervalMs: number;
+  presentationDurationMs: number;
+}>;
+
+export const defaultEventFieldTiming: EventFieldTiming = {
+  appearanceDurationMs: 180,
+  entryWindowMs: 8_000,
+  maximumStaggerIntervalMs: 72,
+  presentationDurationMs: eventFieldPresentationDurationMs,
+};
 const poopSpinRadiansPerMs = 0.00055;
 const poopScale = 0.42;
+const focusCameraDurationMs = 760;
 const baseColor = new THREE.Color("#b96a32");
 const focusColor = new THREE.Color("#ffd29b");
 const pausedColor = new THREE.Color("#85604a");
@@ -28,12 +39,20 @@ export type EventFieldFocus = {
   y: number;
 };
 
+export type EventFieldPresentation = "ambient" | "cycle";
+export type EventFieldCameraMode = "exhibition" | "explore";
+export type EventFieldLabelMode = "personal" | "public";
+
 type EventFieldSceneOptions = {
   active: boolean;
+  cameraMode: EventFieldCameraMode;
   canvas: HTMLCanvasElement;
+  labelMode: EventFieldLabelMode;
   onFocusChange: (focus: EventFieldFocus | null) => void;
   onPresentationComplete: () => void;
+  presentation: EventFieldPresentation;
   reducedMotion: boolean;
+  timing: EventFieldTiming;
 };
 
 type RecordLabel = {
@@ -48,9 +67,27 @@ type TemporalConnection = {
   second: EventFieldPoint;
 };
 
+type CameraFocusAnimation = {
+  fromPosition: THREE.Vector3;
+  fromTarget: THREE.Vector3;
+  startedAt: number;
+  toPosition: THREE.Vector3;
+  toTarget: THREE.Vector3;
+};
+
 function formatDuration(durationMs: number) {
   const seconds = Math.max(0, Math.floor(durationMs / 1_000));
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+}
+
+function formatPersonalRecordTime(timestamp: number) {
+  return new Intl.DateTimeFormat("ko-KR", {
+    day: "2-digit",
+    hour: "2-digit",
+    hour12: false,
+    minute: "2-digit",
+    month: "2-digit",
+  }).format(timestamp);
 }
 
 function truncateLabel(value: string, maximumLength: number) {
@@ -59,13 +96,18 @@ function truncateLabel(value: string, maximumLength: number) {
     : value;
 }
 
-function createRecordLabel(point: EventFieldPoint) {
+function createRecordLabel(
+  point: EventFieldPoint,
+  labelMode: EventFieldLabelMode,
+) {
   const canvas = document.createElement("canvas");
   const context = canvas.getContext("2d");
   if (!context) throw new Error("Record label canvas is unavailable.");
 
   const text = [
-    truncateLabel(point.entry.nickname, 10),
+    labelMode === "personal"
+      ? formatPersonalRecordTime(point.entry.endedAt)
+      : truncateLabel(point.entry.nickname, 10),
     formatDuration(point.entry.durationMs),
     truncateLabel(point.entry.contentTitle, 20),
   ].join(" · ");
@@ -366,8 +408,8 @@ export class EventFieldScene {
   private points: EventFieldPoint[] = [];
   private connections: TemporalConnection[] = [];
   private recordLabels: RecordLabel[] = [];
-  private appearanceIntervalMs = defaultAppearanceIntervalMs;
-  private exitIntervalMs = defaultAppearanceIntervalMs;
+  private appearanceIntervalMs = defaultEventFieldTiming.maximumStaggerIntervalMs;
+  private exitIntervalMs = defaultEventFieldTiming.maximumStaggerIntervalMs;
   private cycleStartedAt = 0;
   private pointSignature = "";
   private active: boolean;
@@ -375,6 +417,7 @@ export class EventFieldScene {
   private focusedIndex = -1;
   private pointerInside = false;
   private previousAmbientFocus = 0;
+  private cameraFocusAnimation: CameraFocusAnimation | null = null;
   private disposed = false;
 
   constructor(private readonly options: EventFieldSceneOptions) {
@@ -384,6 +427,7 @@ export class EventFieldScene {
       antialias: true,
       canvas: options.canvas,
       powerPreference: "high-performance",
+      preserveDrawingBuffer: options.cameraMode === "explore",
     });
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -392,15 +436,19 @@ export class EventFieldScene {
     this.camera.position.set(17.5, 11.8, 19.3);
     this.camera.lookAt(0, 3.2, 0);
     this.controls = new OrbitControls(this.camera, options.canvas);
+    const isExplorable = options.cameraMode === "explore";
     this.controls.autoRotate = !options.reducedMotion;
-    this.controls.autoRotateSpeed = 1.1;
-    this.controls.dampingFactor = 0.045;
+    this.controls.autoRotateSpeed = isExplorable ? 0.72 : 1.1;
+    this.controls.dampingFactor = isExplorable ? 0.08 : 0.045;
     this.controls.enableDamping = true;
-    this.controls.enablePan = false;
-    this.controls.maxDistance = 38;
-    this.controls.maxPolarAngle = 1.38;
-    this.controls.minDistance = 13;
-    this.controls.minPolarAngle = 0.48;
+    this.controls.enablePan = isExplorable;
+    this.controls.maxDistance = isExplorable ? 62 : 38;
+    this.controls.maxPolarAngle = isExplorable ? Math.PI - 0.12 : 1.38;
+    this.controls.minDistance = isExplorable ? 5.8 : 13;
+    this.controls.minPolarAngle = isExplorable ? 0.16 : 0.48;
+    this.controls.panSpeed = isExplorable ? 0.72 : 1;
+    this.controls.rotateSpeed = isExplorable ? 0.82 : 1;
+    this.controls.zoomSpeed = isExplorable ? 1.18 : 1;
     this.controls.target.set(0, 3.2, 0);
     this.controls.update();
 
@@ -429,6 +477,7 @@ export class EventFieldScene {
     this.options.canvas.addEventListener("pointerenter", this.handlePointerEnter);
     this.options.canvas.addEventListener("pointerleave", this.handlePointerLeave);
     this.options.canvas.addEventListener("pointermove", this.handlePointerMove);
+    this.options.canvas.addEventListener("click", this.handleCanvasClick);
     document.addEventListener("visibilitychange", this.handleVisibilityChange);
     if (this.active && document.visibilityState !== "hidden") {
       this.renderer.setAnimationLoop(this.render);
@@ -497,12 +546,30 @@ export class EventFieldScene {
     }
   }
 
+  restartPresentation() {
+    if (!this.active || this.disposed) return;
+
+    const time = performance.now();
+    this.startAppearanceCycle(time);
+    this.points.forEach((point, index) => {
+      this.setRecordTransform(index, point, time, true);
+    });
+    this.updateDataLines(time);
+    this.updateRecordLabelScale(time);
+    this.poopMesh.instanceMatrix.needsUpdate = true;
+    this.hitMesh.instanceMatrix.needsUpdate = true;
+    if (document.visibilityState !== "hidden") {
+      this.renderer.setAnimationLoop(this.render);
+    }
+  }
+
   dispose() {
     this.disposed = true;
     this.renderer.setAnimationLoop(null);
     this.options.canvas.removeEventListener("pointerenter", this.handlePointerEnter);
     this.options.canvas.removeEventListener("pointerleave", this.handlePointerLeave);
     this.options.canvas.removeEventListener("pointermove", this.handlePointerMove);
+    this.options.canvas.removeEventListener("click", this.handleCanvasClick);
     document.removeEventListener("visibilitychange", this.handleVisibilityChange);
     this.controls.dispose();
     this.field.traverse((object) => {
@@ -539,7 +606,7 @@ export class EventFieldScene {
         return;
       }
 
-      const label = createRecordLabel(point);
+      const label = createRecordLabel(point, this.options.labelMode);
       label.sprite.position.set(
         point.x,
         projectionPlaneY + projectionLabelLift,
@@ -587,10 +654,13 @@ export class EventFieldScene {
   private startAppearanceCycle(time: number) {
     const availableStaggerMs = Math.max(
       0,
-      entryWindowMs - appearanceDurationMs,
+      Math.min(
+        this.options.timing.entryWindowMs,
+        this.options.timing.presentationDurationMs,
+      ) - this.options.timing.appearanceDurationMs,
     );
     this.appearanceIntervalMs = Math.min(
-      defaultAppearanceIntervalMs,
+      this.options.timing.maximumStaggerIntervalMs,
       this.points.length > 1
         ? availableStaggerMs / (this.points.length - 1)
         : 0,
@@ -607,7 +677,9 @@ export class EventFieldScene {
       );
       this.exitById.set(
         point.entry.id,
-        time + presentationDurationMs + index * this.exitIntervalMs,
+        this.options.presentation === "ambient"
+          ? Number.POSITIVE_INFINITY
+          : time + this.options.timing.presentationDurationMs + index * this.exitIntervalMs,
       );
     });
   }
@@ -617,7 +689,7 @@ export class EventFieldScene {
       ? 1
       : Math.min(
           1,
-          Math.max(0, (time - appearedAt) / appearanceDurationMs),
+          Math.max(0, (time - appearedAt) / this.options.timing.appearanceDurationMs),
         );
     return {
       eased: 1 - Math.pow(1 - progress, 3),
@@ -646,7 +718,7 @@ export class EventFieldScene {
       ? 0
       : Math.min(
           1,
-          Math.max(0, (time - exitedAt) / appearanceDurationMs),
+          Math.max(0, (time - exitedAt) / this.options.timing.appearanceDurationMs),
         );
     return {
       eased: Math.pow(1 - exitProgress, 3),
@@ -655,14 +727,17 @@ export class EventFieldScene {
   }
 
   private getCycleEnd() {
+    if (this.options.presentation === "ambient") {
+      return Number.POSITIVE_INFINITY;
+    }
     if (this.options.reducedMotion) {
-      return this.cycleStartedAt + presentationDurationMs;
+      return this.cycleStartedAt + this.options.timing.presentationDurationMs;
     }
     return (
       this.cycleStartedAt +
-      presentationDurationMs +
+      this.options.timing.presentationDurationMs +
       (this.points.length - 1) * this.exitIntervalMs +
-      appearanceDurationMs
+      this.options.timing.appearanceDurationMs
     );
   }
 
@@ -671,10 +746,11 @@ export class EventFieldScene {
     const lastEntry =
       this.cycleStartedAt +
       (this.points.length - 1) * this.appearanceIntervalMs +
-      appearanceDurationMs;
+      this.options.timing.appearanceDurationMs;
+    if (this.options.presentation === "ambient") return time < lastEntry;
     return (
       time < lastEntry ||
-      (time >= this.cycleStartedAt + presentationDurationMs && time < this.getCycleEnd())
+      (time >= this.cycleStartedAt + this.options.timing.presentationDurationMs && time < this.getCycleEnd())
     );
   }
 
@@ -752,18 +828,7 @@ export class EventFieldScene {
   };
 
   private handlePointerMove = (event: PointerEvent) => {
-    const bounds = this.options.canvas.getBoundingClientRect();
-    this.pointer.x = ((event.clientX - bounds.left) / bounds.width) * 2 - 1;
-    this.pointer.y = -((event.clientY - bounds.top) / bounds.height) * 2 + 1;
-    this.field.updateMatrixWorld(true);
-    this.raycaster.setFromCamera(this.pointer, this.camera);
-    this.intersections.length = 0;
-    const hit = this.raycaster.intersectObject(
-      this.hitMesh,
-      false,
-      this.intersections,
-    )[0];
-    const index = hit?.instanceId ?? -1;
+    const { bounds, index } = this.getPointAtPointer(event);
 
     this.setFocusedIndex(index);
     this.options.onFocusChange(
@@ -776,6 +841,81 @@ export class EventFieldScene {
         : null,
     );
   };
+
+  private handleCanvasClick = (event: MouseEvent) => {
+    if (this.options.cameraMode !== "explore") return;
+    const { index } = this.getPointAtPointer(event);
+    if (index < 0) return;
+
+    this.setFocusedIndex(index);
+    this.focusCameraOnPoint(this.points[index]);
+  };
+
+  private getPointAtPointer(event: MouseEvent | PointerEvent) {
+    const bounds = this.options.canvas.getBoundingClientRect();
+    this.pointer.x = ((event.clientX - bounds.left) / bounds.width) * 2 - 1;
+    this.pointer.y = -((event.clientY - bounds.top) / bounds.height) * 2 + 1;
+    this.field.updateMatrixWorld(true);
+    this.raycaster.setFromCamera(this.pointer, this.camera);
+    this.intersections.length = 0;
+    const hit = this.raycaster.intersectObject(
+      this.hitMesh,
+      false,
+      this.intersections,
+    )[0];
+    return { bounds, index: hit?.instanceId ?? -1 };
+  }
+
+  private focusCameraOnPoint(point: EventFieldPoint) {
+    this.field.updateMatrixWorld(true);
+    const target = new THREE.Vector3(point.x, point.y, point.z).applyMatrix4(
+      this.field.matrixWorld,
+    );
+    const direction = this.camera.position.clone().sub(this.controls.target);
+    if (direction.lengthSq() < 0.001) direction.set(1, 0.5, 1);
+    const distance = THREE.MathUtils.clamp(
+      direction.length() * 0.52,
+      7.2,
+      10.5,
+    );
+    const position = target
+      .clone()
+      .addScaledVector(direction.normalize(), distance);
+
+    if (this.options.reducedMotion) {
+      this.controls.target.copy(target);
+      this.camera.position.copy(position);
+      this.cameraFocusAnimation = null;
+      return;
+    }
+
+    this.cameraFocusAnimation = {
+      fromPosition: this.camera.position.clone(),
+      fromTarget: this.controls.target.clone(),
+      startedAt: performance.now(),
+      toPosition: position,
+      toTarget: target,
+    };
+  }
+
+  private updateCameraFocus(time: number) {
+    const animation = this.cameraFocusAnimation;
+    if (!animation) return;
+
+    const progress = Math.min(1, (time - animation.startedAt) / focusCameraDurationMs);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    this.camera.position.lerpVectors(
+      animation.fromPosition,
+      animation.toPosition,
+      eased,
+    );
+    this.controls.target.lerpVectors(
+      animation.fromTarget,
+      animation.toTarget,
+      eased,
+    );
+    if (progress === 1) this.cameraFocusAnimation = null;
+  }
 
   private updateAmbientFocus(time: number) {
     if (this.pointerInside || time - this.previousAmbientFocus < 400) return;
@@ -826,8 +966,10 @@ export class EventFieldScene {
 
   private render = (time: number) => {
     if (this.disposed || !this.active) return;
+    this.updateCameraFocus(time);
     this.controls.update();
     if (
+      this.options.presentation === "cycle" &&
       this.points.length > 0 &&
       time >= this.getCycleEnd()
     ) {

@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
@@ -21,7 +20,6 @@ import type {
   DdongMeongPhase,
   DdongMeongSessionOutcome,
 } from "../../model/types";
-import DdongMeongWordmark from "../../design-system/wordmark";
 import { getPausableElapsedMs } from "../../model/session-timing";
 import type { ReadingLine } from "../../model/reading-script";
 import InteractiveAccumulationBackground from "../background/interactive-accumulation";
@@ -41,7 +39,15 @@ type ReadingPageProps = {
   imagePath: string;
   lines: ReadingLine[];
   onSessionActivity?: () => void;
-  onSessionComplete?: (outcome: DdongMeongSessionOutcome) => void;
+  onSessionComplete?: (
+    outcome: DdongMeongSessionOutcome,
+    record: {
+      durationMs: number;
+      endedAt: number;
+      interactionCount: number;
+      startedAt: number;
+    },
+  ) => void;
   onSessionPhaseChange?: (
     phase: Exclude<DdongMeongPhase, "complete">,
     interactionCount: number,
@@ -52,8 +58,8 @@ type ReadingPageProps = {
 };
 
 type TimerHeaderProps = {
+  contentTitle: string;
   frozenElapsedMs: number | null;
-  onExit: () => void;
   pausedAt: number | null;
   pausedDurationMs: number;
   startedAt: number | null;
@@ -106,8 +112,8 @@ function formatClock(totalSeconds: number) {
 }
 
 function TimerHeader({
+  contentTitle,
   frozenElapsedMs,
-  onExit,
   pausedAt,
   pausedDurationMs,
   startedAt,
@@ -153,18 +159,11 @@ function TimerHeader({
 
   return (
     <header className={styles.header}>
-      <Link
-        className={styles.wordmark}
-        href="/main"
-        onClick={onExit}
-      >
-        <DdongMeongWordmark />
-      </Link>
       {showTimeBar ? (
         <>
-          <div className={styles.clock}>
-            <time>{formatClock(elapsedSeconds)}</time>
-            <span>/ {formatClock(totalMs / 1000)}</span>
+          <div className={styles.sessionMeta}>
+            <p className={styles.contentTitle}>{contentTitle}</p>
+            <time className={styles.clock}>{formatClock(elapsedSeconds)}</time>
           </div>
           <div className={styles.progressTrack} aria-hidden="true">
             <span className={styles.progressFill} style={progressStyle} />
@@ -222,6 +221,8 @@ export default function ReadingPage({
   const scriptRef = useRef<HTMLDivElement | null>(null);
   const scrollAnimationRef = useRef<Animation | null>(null);
   const sessionCompletedRef = useRef(false);
+  const settledDropCountRef = useRef(0);
+  const startedAtRef = useRef<number | null>(null);
   const overflowWarningShownRef = useRef(false);
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [settledDropCount, setSettledDropCount] = useState(0);
@@ -237,14 +238,20 @@ export default function ReadingPage({
   const { dropStream, interactionProps, stopDrops } = useDropInteraction({
     disabled: interactionDisabled,
     onDropSettled: (amount) =>
-      setSettledDropCount((count) => count + amount),
+      setSettledDropCount((count) => {
+        const nextCount = count + amount;
+        settledDropCountRef.current = nextCount;
+        return nextCount;
+      }),
     profile: accumulationProfile,
   });
   useEffect(() => {
     if (flushState !== null || pausedAt !== null) return;
 
     const preludeTimer = window.setTimeout(() => {
-      setStartedAt(Date.now());
+      const beganAt = Date.now();
+      startedAtRef.current = beganAt;
+      setStartedAt(beganAt);
     }, preludeDurationMs);
 
     return () => window.clearTimeout(preludeTimer);
@@ -295,11 +302,23 @@ export default function ReadingPage({
     return () => window.clearTimeout(fadeTimer);
   }, [flushState, hasSoundPreference]);
 
-  const completeSession = useCallback((outcome: DdongMeongSessionOutcome) => {
-    if (sessionCompletedRef.current) return;
-    sessionCompletedRef.current = true;
-    onSessionComplete?.(outcome);
-  }, [onSessionComplete]);
+  const completeSession = useCallback(
+    (
+      outcome: DdongMeongSessionOutcome,
+      durationMs: number,
+      endedAt = Date.now(),
+    ) => {
+      if (sessionCompletedRef.current) return;
+      sessionCompletedRef.current = true;
+      onSessionComplete?.(outcome, {
+        durationMs,
+        endedAt,
+        interactionCount: settledDropCountRef.current,
+        startedAt: startedAtRef.current ?? endedAt,
+      });
+    },
+    [onSessionComplete],
+  );
 
   useEffect(() => {
     if (startedAt === null || flushState !== null || overflowState !== null) return;
@@ -337,7 +356,7 @@ export default function ReadingPage({
     );
     const stopTimer = window.setTimeout(() => {
       stopMeditationSoundtrack();
-      completeSession("completed");
+      completeSession("completed", totalMs);
       router.replace(
         `/share?seconds=${Math.max(1, Math.round(totalMs / 1000))}&content=${encodeURIComponent(contentTitle)}&image=${encodeURIComponent(imagePath)}`,
       );
@@ -368,7 +387,7 @@ export default function ReadingPage({
   useEffect(() => {
     if (overflowState === null) return;
     const timer = window.setTimeout(() => {
-      completeSession("overflowed");
+      completeSession("overflowed", overflowState.frozenElapsedMs);
       router.replace(`/share?outcome=overflowed&seconds=${Math.max(1, Math.round(overflowState.frozenElapsedMs / 1000))}&content=${encodeURIComponent(contentTitle)}&image=${encodeURIComponent(imagePath)}`);
     }, overflowDurationMs);
     return () => window.clearTimeout(timer);
@@ -449,7 +468,7 @@ export default function ReadingPage({
     scrollAnimationRef.current?.pause();
     stopDrops();
     onSessionPhaseChange?.("releasing", settledDropCount);
-    completeSession("flushed");
+    completeSession("flushed", frozenElapsedMs, now);
     const interactiveProgress = accumulationProgressFromInteractions(
       settledDropCount,
     );
@@ -509,8 +528,8 @@ export default function ReadingPage({
         />
       </div>
       <TimerHeader
+        contentTitle={contentTitle}
         frozenElapsedMs={flushState?.frozenElapsedMs ?? overflowState?.frozenElapsedMs ?? null}
-        onExit={() => completeSession("left")}
         pausedAt={pausedAt}
         pausedDurationMs={pausedDurationMs}
         startedAt={startedAt}
