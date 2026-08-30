@@ -12,7 +12,7 @@ export default function CValHome() {
 
       <figure className={styles.figure}>
         <Image
-          alt="C-VAL whole experience: a simulated equity market with market conditions, price discovery, orders, and trades."
+          alt="C-VAL의 모의 주식시장에서 시장 조건, 가격 발견, 주문, 체결을 보여주는 4채널 화면"
           className={styles.image}
           height={2160}
           priority
@@ -63,7 +63,8 @@ export default function CValHome() {
           </p>
           <p>
             떡상할 때도 {"<C-VAL>"}, 떡락할 때도 {"<C-VAL>"}이다. 기쁠 때도 {"<C-VAL>"},
-            화날 때도 {"<C-VAL>"}이다. {"<C-VAL>"}은 가장 한국적인 표현이자,
+            화날 때도 {"<C-VAL>"}이다. {"<C-VAL>"}은 한국어 감탄사 “씨발”의 음가를 차용한,
+            가장 한국적인 표현이자,
             방향을 상실한채 폭등과 폭락이 일상이 되어버린 현대 금융시장의 실패를 표상한다.
             미쳐 날뛰고 있는 신자유주의적 욕망을 향한 유쾌한 외침, 그것이 바로 {"<C-VAL>"}이다.
           </p>

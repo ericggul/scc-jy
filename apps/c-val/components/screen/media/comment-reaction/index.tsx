@@ -3,18 +3,21 @@
 import { useEffect, useRef, useState } from "react";
 import type { CValSnapshot } from "@/components/model";
 import {
+  C_VAL_COMMENT_FASTEST_GAP_MS,
+  cValCommentGapMs,
   cValCommentPlaybackRate,
   censorCValCommentText,
   presentCValCommentPulse,
   selectCValCommentPerformance,
-  shouldAdmitCValComment,
   type CValCommentCorpus,
   type CValCommentDirection,
+  type CValCommentPulse,
 } from "../../comments-legacy/presenter";
 import { useCValCommentAudio } from "../../comments-legacy/audio";
 import styles from "./comment-reaction.module.css";
 
 const CORPUS_URL = "/audio/c-val/exclamations/comments-index.json";
+const MEDIA_COMMENT_INTERVAL_MULTIPLIER = 2;
 
 type CurrentComment = {
   id: string;
@@ -22,6 +25,22 @@ type CurrentComment = {
   direction: CValCommentDirection;
   text: string;
 };
+
+function shouldAdmitMediaComment(
+  pulse: CValCommentPulse | null,
+  previousSignature: string | null,
+  previousTime: number,
+  currentTime: number,
+) {
+  if (!pulse) return false;
+  if (previousSignature === null) return true;
+  const elapsed = currentTime - previousTime;
+  if (elapsed < C_VAL_COMMENT_FASTEST_GAP_MS * MEDIA_COMMENT_INTERVAL_MULTIPLIER) {
+    return false;
+  }
+  if (pulse.signature !== previousSignature) return true;
+  return elapsed >= cValCommentGapMs(pulse) * MEDIA_COMMENT_INTERVAL_MULTIPLIER;
+}
 
 /**
  * A removable media-only layer. It keeps the media field and its single-line
@@ -68,7 +87,7 @@ export default function CValMediaCommentReaction({
       return;
     }
     const pulse = presentCValCommentPulse(snapshot);
-    if (!shouldAdmitCValComment(
+    if (!shouldAdmitMediaComment(
       pulse,
       admittedRef.current.signature,
       admittedRef.current.time,

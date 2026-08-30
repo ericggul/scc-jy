@@ -11,7 +11,8 @@ Date: 2026-08-26
   `components/screen/media/comment-reaction/`. It still renders only the newest
   large reaction, without the legacy screen's archive, but its comment path is
   now the same as `comments-legacy`: a 0.75% active-move threshold; a
-  direction-and-magnitude bucket signature; the same 100–720ms admission gate;
+  direction-and-magnitude bucket signature; a media-only 200–1440ms admission
+  gate that is exactly twice the legacy interval;
   deterministic voice/style/arousal selection; 0.96–1.42× playback rate; and
   the same `씨발` → `**` text and audio censor treatment.
 - **Visibility/audio coupling:** a committed reaction immediately requests the
@@ -22,9 +23,10 @@ Date: 2026-08-26
   comments screen.
 - **Audio/cadence trial:** this layer no longer warms a separate selection pool
   or follows the current comments screen's social cadence. Each incoming
-  snapshot is admitted by the exact legacy gate: the first valid pulse is
-  immediate; later entries require at least 100ms and otherwise wait according
-  to the legacy pulse intensity.
+  snapshot uses the legacy pulse and selection rules, but admits half as many
+  repeated comments: the first valid pulse is immediate; later entries require
+  at least 200ms and otherwise wait twice the legacy intensity-derived gap.
+  The 260ms text-arrival motion remains unchanged.
 - **Retained invariants:** media video selection, tile count, canvas timing,
   QR waiting state, market snapshot, socket protocol, and all
   standalone comments routes are unchanged. The layer accepts no pointer input
