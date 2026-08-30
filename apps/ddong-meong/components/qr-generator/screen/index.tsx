@@ -3,10 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { ddongMeongSans } from "@/components/design-system/fonts";
 import {
-  canMakeDdongMeongQrCode,
   createDdongMeongQrSvg,
   DdongMeongQrCode,
-  maximumDdongMeongQrValueLength,
 } from "@/components/screen/entry-qr";
 import {
   buildQrPosterEntryUrl,
@@ -78,7 +76,6 @@ export default function QrPosterGenerator({
     [isDdongMeong, parameters],
   );
   const selectedCopy = posterCopies.find((copy) => copy.id === copyId)!;
-  const canMakeCode = canMakeDdongMeongQrCode(entryUrl);
 
   useEffect(() => {
     const query = qrPosterParametersToQuery(parameters);
@@ -86,8 +83,6 @@ export default function QrPosterGenerator({
   }, [parameters]);
 
   async function copyEntryUrl() {
-    if (!canMakeCode) return;
-
     try {
       await navigator.clipboard.writeText(entryUrl);
       setCopyStatus("QR 대상 주소를 복사했습니다.");
@@ -115,7 +110,7 @@ export default function QrPosterGenerator({
 
   const eyebrow = isDdongMeong ? "똥멍 캠퍼스 QR" : "C-VAL 설치 입구";
   const introduction = isDdongMeong
-    ? "한 칸마다 다른 ID를 넣어 인쇄하세요. QR은 위치를 화면에 보이지 않고, 해당 세션의 맥락으로만 전달합니다."
+    ? "건물 하나당 한 장씩 인쇄하세요. QR은 해당 건물의 맥락만 세션에 전달합니다."
     : "4개 화면 앞의 하나의 모바일 입구입니다. 스캔한 뒤 휴대폰을 돌리면 V/A/L 값과 전시장 주가가 움직입니다.";
 
   return (
@@ -149,64 +144,18 @@ export default function QrPosterGenerator({
 
         {isDdongMeong ? (
           <>
-            <div className={styles.fieldGrid}>
-              <label>
-                <span>건물</span>
-                <input
-                  maxLength={20}
-                  onChange={(event) =>
-                    setParameters((current) =>
-                      updateParameter(current, "building", event.target.value),
-                    )
-                  }
-                  value={parameters.building}
-                />
-              </label>
-              <label>
-                <span>층</span>
-                <input
-                  maxLength={12}
-                  onChange={(event) =>
-                    setParameters((current) =>
-                      updateParameter(current, "floor", event.target.value),
-                    )
-                  }
-                  value={parameters.floor}
-                />
-              </label>
-              <label>
-                <span>화장실</span>
-                <select
-                  onChange={(event) =>
-                    setParameters((current) =>
-                      updateParameter(current, "gender", event.target.value),
-                    )
-                  }
-                  value={parameters.gender}
-                >
-                  <option value="men">남자</option>
-                  <option value="women">여자</option>
-                  <option value="all-gender">공용</option>
-                  <option value="other">기타</option>
-                </select>
-              </label>
-              <label>
-                <span>칸 ID</span>
-                <input
-                  aria-describedby="location-id-help"
-                  maxLength={36}
-                  onChange={(event) =>
-                    setParameters((current) =>
-                      updateParameter(current, "locationId", event.target.value),
-                    )
-                  }
-                  value={parameters.locationId}
-                />
-              </label>
-            </div>
-            <p className={styles.fieldHelp} id="location-id-help">
-              예: n25-1-men-01 · 기관은 KAIST로 고정됩니다.
-            </p>
+            <label className={styles.buildingField}>
+              <span>건물</span>
+              <input
+                maxLength={20}
+                onChange={(event) =>
+                  setParameters((current) =>
+                    updateParameter(current, "building", event.target.value),
+                  )
+                }
+                value={parameters.building}
+              />
+            </label>
 
             <fieldset className={styles.copyChoices}>
               <legend>포스터 멘트</legend>
@@ -226,7 +175,7 @@ export default function QrPosterGenerator({
           </>
         ) : (
           <p className={styles.cValHelp}>
-            C-VAL은 설치 전체가 하나의 참여 장면이므로, 칸별 위치값 없이 공개
+            C-VAL은 설치 전체가 하나의 참여 장면이므로, 건물별 위치값 없이 공개
             모바일 입구 하나만 사용합니다.
           </p>
         )}
@@ -235,15 +184,8 @@ export default function QrPosterGenerator({
           <span>QR 대상 주소</span>
           <textarea readOnly rows={3} value={entryUrl} />
         </label>
-        {!canMakeCode ? (
-          <p className={styles.error} role="alert">
-            이 ID에서는 QR 주소가 너무 깁니다. 칸 ID를 줄여
-            {maximumDdongMeongQrValueLength}자 이내의 주소로 만드세요.
-          </p>
-        ) : null}
-
         <div className={styles.actions}>
-          <button disabled={!canMakeCode} onClick={copyEntryUrl} type="button">
+          <button onClick={copyEntryUrl} type="button">
             주소 복사
           </button>
           <a href={entryUrl} rel="noreferrer" target="_blank">
@@ -254,7 +196,7 @@ export default function QrPosterGenerator({
               C-VAL QR SVG 다운로드
             </button>
           ) : null}
-          <button disabled={!canMakeCode} onClick={() => window.print()} type="button">
+          <button onClick={() => window.print()} type="button">
             인쇄 / PDF 저장
           </button>
         </div>
@@ -270,15 +212,11 @@ export default function QrPosterGenerator({
                   <span key={line}>{line}</span>
                 ))}
               </h2>
-              {canMakeCode ? (
-                <DdongMeongQrCode
-                  ariaLabel="똥멍 입장 QR 코드"
-                  className={styles.qrCode}
-                  value={entryUrl}
-                />
-              ) : (
-                <div aria-hidden="true" className={styles.qrPlaceholder} />
-              )}
+              <DdongMeongQrCode
+                ariaLabel="똥멍 입장 QR 코드"
+                className={styles.qrCode}
+                value={entryUrl}
+              />
               <p>4분 33초</p>
             </div>
             <div className={styles.posterBrand}>
