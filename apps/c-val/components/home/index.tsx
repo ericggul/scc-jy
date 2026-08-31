@@ -7,7 +7,9 @@ export default function CValHome() {
     <main className={styles.page}>
       <header className={styles.header}>
         <h1>C-VAL</h1>
-        <p>Jeanyoon Choi</p>
+        <a className={styles.authorLink} href="https://portfolio-jyc.org">
+          Jeanyoon Choi
+        </a>
       </header>
 
       <figure className={styles.figure}>
@@ -37,6 +39,7 @@ export default function CValHome() {
           </a>
           <Link className={styles.entryLink} href="/whole">실제 경험 열기</Link>
           <p className={styles.mobileNotice}>실제 경험은 데스크톱 화면에서 열립니다.</p>
+          <Link className={styles.mobileEntryLink} href="/mobile">휴대폰으로 참여하기</Link>
         </aside>
 
         <div className={styles.statement}>
