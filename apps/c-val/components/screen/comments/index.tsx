@@ -12,6 +12,7 @@ import {
   C_VAL_COMMENT_VOICE_TRIGGER_PERCENT,
   cValCommentAudioMix,
   cValCommentAdmissionIntervalMs,
+  cValCommentCensorEnabled,
   cValCommentDetuneCents,
   cValCommentPlaybackRate,
   cValCommentVoiceGapMs,
@@ -297,6 +298,9 @@ function useCValParallelChat(snapshot: CValSnapshot, visibleRoomCount: number) {
           speak({
             entry: performance,
             beep: audioCorpus.beep,
+            censorEnabled: cValCommentCensorEnabled(
+              new URLSearchParams(window.location.search).get("mute"),
+            ),
             playbackRate: cValCommentPlaybackRate(pulse),
             detuneCents: cValCommentDetuneCents(pulse),
             playbackPolicy: () => {

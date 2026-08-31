@@ -132,10 +132,10 @@ sequence and regime.
 
 ## Extreme profanity and sound
 
-Temporary audition state: `C_VAL_COMMENT_CENSOR_ENABLED` is `false`. The
-recorded source interval is therefore neither muted nor replaced by the beep;
-the visible `씨발` → `C-VAL` treatment remains unchanged. Set the switch back to
-`true` to restore the described audio censoring.
+The recorded source interval is normally neither muted nor replaced by the
+beep; visible `씨발` → `C-VAL` treatment remains unchanged. Add `?mute=true`
+to the comments screen URL to enable the source mute and its accompanying beep
+for that browser session.
 
 The 9,216 ordinary entries contain no `씨발`. Existing Cedar and Marin audio is
 not loaded until the absolute one-second move approaches the voice boundary.

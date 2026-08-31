@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import {
-  C_VAL_COMMENT_CENSOR_ENABLED,
   cValCommentCensorDelayPlaybackSeconds,
   cValCommentCensorBeepFrequencyHz,
   cValCommentEffectivePlaybackRate,
@@ -18,6 +17,7 @@ import {
 type AudioRequest = {
   entry: CValCommentCorpusEntry;
   beep: CValCommentCorpus["beep"];
+  censorEnabled: boolean;
   playbackRate: number;
   detuneCents: number;
   shouldPlay?: () => boolean;
@@ -134,7 +134,7 @@ export function useCValCommentAudio() {
 
       const profanityStart = request.entry.profanityStart;
       const profanityEnd = request.entry.profanityEnd;
-      const hasCensorInterval = C_VAL_COMMENT_CENSOR_ENABLED
+      const hasCensorInterval = request.censorEnabled
         && request.entry.profanityStatus === "present"
         && profanityStart !== null
         && profanityEnd !== null

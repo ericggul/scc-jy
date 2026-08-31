@@ -7,12 +7,12 @@ import {
   C_VAL_COMMENT_VOICE_TRIGGER_PERCENT,
   C_VAL_COMMENT_CENSOR_BEEP_DETUNE_RATIO,
   C_VAL_COMMENT_CENSOR_DELAY_SOURCE_SECONDS,
-  C_VAL_COMMENT_CENSOR_ENABLED,
   C_VAL_COMMENT_DIALECT_ORDER,
   C_VAL_COMMENT_ORDINARY_PER_VOICE,
   cValCommentAdmissionIntervalMs,
   cValCommentCensorDelayPlaybackSeconds,
   cValCommentCensorBeepFrequencyHz,
+  cValCommentCensorEnabled,
   cValCommentDetuneCents,
   cValCommentEffectivePlaybackRate,
   cValCommentPlaybackRate,
@@ -160,7 +160,9 @@ test("profanity and voice remain unavailable below the extreme threshold", () =>
   const pulse = presentCValCommentPulse(activeSnapshot(C_VAL_COMMENT_VOICE_TRIGGER_PERCENT));
   assert.ok(pulse);
   assert.equal(shouldAdmitCValCommentVoice(pulse, 9_900, 10_000), false);
-  assert.equal(C_VAL_COMMENT_CENSOR_ENABLED, false);
+  assert.equal(cValCommentCensorEnabled(null), false);
+  assert.equal(cValCommentCensorEnabled("false"), false);
+  assert.equal(cValCommentCensorEnabled("true"), true);
   assert.equal(censorCValCommentText("씨발, 뭐야. 씨발."), "C-VAL, 뭐야. C-VAL.");
 });
 

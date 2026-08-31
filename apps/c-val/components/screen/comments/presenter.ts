@@ -26,9 +26,6 @@ export const C_VAL_COMMENT_UP_MAXIMUM_DETUNE_CENTS = 1_200;
 export const C_VAL_COMMENT_DOWN_MINIMUM_DETUNE_CENTS = -120;
 export const C_VAL_COMMENT_DOWN_MAXIMUM_DETUNE_CENTS = -360;
 export const C_VAL_COMMENT_CENSOR_BEEP_DETUNE_RATIO = 0.3;
-// Reversible corpus audition switch: false preserves the source utterance in
-// audio only; screen text keeps its established replacement treatment.
-export const C_VAL_COMMENT_CENSOR_ENABLED = false;
 // Source-time offset for the censor window. Audio converts this to playback
 // time, so the apparent delay remains proportional to the voice speed.
 export const C_VAL_COMMENT_CENSOR_DELAY_SOURCE_SECONDS = 0.3;
@@ -78,6 +75,10 @@ export type CValCommentCorpus = {
   };
   entries: CValCommentCorpusEntry[];
 };
+
+export function cValCommentCensorEnabled(mute: string | null) {
+  return mute === "true";
+}
 
 export type CValChatMessage = {
   id: string;

@@ -1,5 +1,8 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { LineMaterial } from "three/examples/jsm/lines/LineMaterial.js";
+import { LineSegments2 } from "three/examples/jsm/lines/LineSegments2.js";
+import { LineSegmentsGeometry } from "three/examples/jsm/lines/LineSegmentsGeometry.js";
 import type { EventFieldPoint } from "../model/project-events";
 
 const maximumEventCount = 500;
@@ -10,7 +13,7 @@ const projectionXEnd = 11.4;
 const projectionZStart = -7.2;
 const projectionZEnd = 7.2;
 const projectionGridDivisions = 60;
-const projectionFootMarkSize = 0.12;
+const projectionFootMarkSize = 0.24;
 export const eventFieldPresentationDurationMs = 12_000;
 export type EventFieldTiming = Readonly<{
   appearanceDurationMs: number;
@@ -26,7 +29,7 @@ export const defaultEventFieldTiming: EventFieldTiming = {
   presentationDurationMs: eventFieldPresentationDurationMs,
 };
 const poopSpinRadiansPerMs = 0.00055;
-const poopScale = 0.42;
+const poopScale = 0.63;
 const focusCameraDurationMs = 760;
 const baseColor = new THREE.Color("#b96a32");
 const focusColor = new THREE.Color("#ffd29b");
@@ -111,14 +114,14 @@ function createRecordLabel(
     formatDuration(point.entry.durationMs),
     truncateLabel(point.entry.contentTitle, 20),
   ].join(" · ");
-  const font = "560 22px Pretendard, Arial, sans-serif";
+  const font = "560 44px Pretendard, Arial, sans-serif";
   context.font = font;
-  canvas.width = Math.ceil(context.measureText(text).width) + 8;
-  canvas.height = 46;
+  canvas.width = Math.ceil(context.measureText(text).width) + 16;
+  canvas.height = 92;
   context.font = font;
   context.fillStyle = "rgb(244 242 237 / 88%)";
   context.textBaseline = "middle";
-  context.fillText(text, 2, canvas.height / 2);
+  context.fillText(text, 4, canvas.height / 2);
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
@@ -132,7 +135,7 @@ function createRecordLabel(
       transparent: true,
     }),
   );
-  const width = Math.min(4.8, Math.max(1.55, text.length * 0.11));
+  const width = Math.min(9.6, Math.max(3.1, text.length * 0.22));
   return {
     height: width / (canvas.width / canvas.height),
     id: point.entry.id,
@@ -238,18 +241,19 @@ function createGlobalProjectionPlane() {
     );
   }
 
-  return new THREE.LineSegments(
-    new THREE.BufferGeometry().setAttribute(
-      "position",
-      new THREE.Float32BufferAttribute(segments, 3),
-    ),
-    new THREE.LineBasicMaterial({
-      color: "#f4f2ed",
-      depthWrite: false,
-      transparent: true,
-      opacity: 0.18,
-    }),
-  );
+  const geometry = new LineSegmentsGeometry();
+  geometry.setPositions(segments);
+  return new LineSegments2(geometry, createEventLineMaterial(1, 0.18));
+}
+
+function createEventLineMaterial(linewidth = 2, opacity = 0.36) {
+  return new LineMaterial({
+    color: "#f4f2ed",
+    depthWrite: false,
+    linewidth,
+    opacity,
+    transparent: true,
+  });
 }
 
 function spiralCenter(t: number, target: THREE.Vector3) {
@@ -370,28 +374,16 @@ export class EventFieldScene {
     new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false }),
     maximumEventCount,
   );
-  private readonly connectionGeometry = new THREE.BufferGeometry();
-  private readonly connectionLines = new THREE.LineSegments(
+  private readonly connectionGeometry = new LineSegmentsGeometry();
+  private readonly connectionLines = new LineSegments2(
     this.connectionGeometry,
-    new THREE.LineBasicMaterial({
-      color: "#f4f2ed",
-      depthWrite: false,
-      linewidth: 2,
-      transparent: true,
-      opacity: 0.18,
-    }),
+    createEventLineMaterial(),
   );
   private readonly projectionPlane = createGlobalProjectionPlane();
-  private readonly projectionGeometry = new THREE.BufferGeometry();
-  private readonly projectionLines = new THREE.LineSegments(
+  private readonly projectionGeometry = new LineSegmentsGeometry();
+  private readonly projectionLines = new LineSegments2(
     this.projectionGeometry,
-    new THREE.LineBasicMaterial({
-      color: "#f4f2ed",
-      depthWrite: false,
-      linewidth: 2,
-      transparent: true,
-      opacity: 0.18,
-    }),
+    createEventLineMaterial(),
   );
   private readonly raycaster = new THREE.Raycaster();
   private readonly pointer = new THREE.Vector2();
@@ -484,10 +476,16 @@ export class EventFieldScene {
   }
 
   setSize(width: number, height: number) {
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+    const pixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);
+    this.renderer.setPixelRatio(pixelRatio);
     this.renderer.setSize(width, height, false);
     this.camera.aspect = width / Math.max(height, 1);
     this.camera.updateProjectionMatrix();
+    [this.projectionPlane, this.projectionLines, this.connectionLines].forEach(
+      (line) => {
+        line.material.resolution.set(width * pixelRatio, height * pixelRatio);
+      },
+    );
   }
 
   setPoints(points: EventFieldPoint[]) {
@@ -775,23 +773,17 @@ export class EventFieldScene {
     this.setLineSegments(this.connectionGeometry, connectionSegments);
   }
 
-  private setLineSegments(geometry: THREE.BufferGeometry, segments: number[]) {
-    const position = geometry.getAttribute("position");
+  private setLineSegments(geometry: LineSegmentsGeometry, segments: number[]) {
+    const position = geometry.getAttribute("instanceStart");
     if (
-      !(position instanceof THREE.BufferAttribute) ||
-      position.count * 3 !== segments.length
+      !(position instanceof THREE.InterleavedBufferAttribute) ||
+      position.data.array.length !== segments.length
     ) {
-      geometry.setAttribute(
-        "position",
-        new THREE.Float32BufferAttribute(segments, 3).setUsage(
-          THREE.DynamicDrawUsage,
-        ),
-      );
+      geometry.setPositions(segments);
     } else {
-      position.copyArray(segments);
-      position.needsUpdate = true;
+      position.data.array.set(segments);
+      position.data.needsUpdate = true;
     }
-    geometry.setDrawRange(0, segments.length / 3);
     geometry.computeBoundingSphere();
   }
 

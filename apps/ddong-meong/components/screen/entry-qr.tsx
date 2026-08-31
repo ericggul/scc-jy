@@ -361,6 +361,7 @@ type EntryQrProps = {
 
 type DdongMeongQrCodeProps = {
   ariaLabel: string;
+  background?: "transparent" | "white";
   className?: string;
   value: string;
 };
@@ -409,6 +410,7 @@ export function createDdongMeongQrSvg(
 
 export function DdongMeongQrCode({
   ariaLabel,
+  background = "white",
   className,
   value,
 }: DdongMeongQrCodeProps) {
@@ -422,13 +424,15 @@ export function DdongMeongQrCode({
       shapeRendering="crispEdges"
       viewBox={`-4 -4 ${moduleCount + 8} ${moduleCount + 8}`}
     >
-      <rect
-        fill="#fff"
-        height={moduleCount + 8}
-        width={moduleCount + 8}
-        x="-4"
-        y="-4"
-      />
+      {background === "white" ? (
+        <rect
+          fill="#fff"
+          height={moduleCount + 8}
+          width={moduleCount + 8}
+          x="-4"
+          y="-4"
+        />
+      ) : null}
       {matrix.map((row, rowIndex) =>
         row.map((module, columnIndex) =>
           module ? (
@@ -464,6 +468,7 @@ export default function EntryQr({
   return (
     <DdongMeongQrCode
       ariaLabel={`${entryUrl}으로 들어가는 QR 코드`}
+      background="transparent"
       className={styles.qr}
       value={entryUrl}
     />
