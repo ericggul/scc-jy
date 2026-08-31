@@ -383,14 +383,21 @@
 
   .previewArea {
     display: block;
+    width: 210mm;
+    height: 297mm;
     padding: 0;
+    overflow: hidden;
   }
 
   .poster {
+    box-sizing: border-box;
     width: 210mm;
     height: 297mm;
     aspect-ratio: auto;
+    break-inside: avoid;
+    page-break-inside: avoid;
     box-shadow: none;
+    overflow: hidden;
   }
 
   .posterContent {
@@ -424,7 +431,10 @@
   }
 
   .cValPosterContent {
-    top: 48%;
+    top: 64mm;
+    display: flex;
+    flex-direction: column;
+    transform: translateX(-50%);
   }
 
   .cValPoster h2 {
@@ -436,6 +446,12 @@
   .cValPosterContent > .cValSupportingLine {
     margin-bottom: 9mm;
     font-size: 4.2mm;
+  }
+
+  .cValQrCode {
+    width: 110mm;
+    height: 110mm;
+    flex: 0 0 110mm;
   }
 
   .cValPosterHeader {

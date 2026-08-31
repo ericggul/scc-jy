@@ -517,7 +517,7 @@
 }
 
 .scanQrFrame {
-  width: clamp(76px, 6.4vw, 102px);
+  width: clamp(114px, 9.6vw, 153px);
   flex: 0 0 auto;
 }
 
