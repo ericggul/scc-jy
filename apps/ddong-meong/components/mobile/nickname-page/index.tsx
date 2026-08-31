@@ -39,13 +39,15 @@ export default function NicknamePage({
               id="ddong-meong-nickname"
               name="nickname"
               type="text"
+              lang="ko"
+              inputMode="text"
               value={nickname}
               onChange={(event) => onNicknameChange(event.target.value)}
               disabled={exiting}
               maxLength={16}
               autoComplete="nickname"
               autoFocus
-              placeholder="ddong-master"
+              placeholder="홍길똥"
             />
             {isHangulNickname(nickname) ? <p>실명 입력은 삼가주세요.</p> : null}
           </div>
