@@ -23,25 +23,27 @@ type AudioRequest = {
   shouldPlay?: () => boolean;
   playbackPolicy?: () => {
     gain: number;
-    maximumConcurrentSources: number;
   } | null;
   onEnded?: () => void;
 };
 
-const activeSpeechSources = new Set<AudioBufferSourceNode>();
+const MAXIMUM_CONCURRENT_SPEECH_SOURCES = 6;
+// Temporary density control for the comments sound field.
+const C_VAL_COMMENT_AUDIO_PLAY_PROBABILITY = 0.5;
 
-function reserveSpeechSource(source: AudioBufferSourceNode, maximum: number) {
-  const capacity = Math.max(1, Math.floor(maximum));
-  const active = [...activeSpeechSources];
-  while (active.length >= capacity) {
-    const oldest = active.shift();
+function reserveSpeechSource(
+  activeSources: Set<AudioBufferSourceNode>,
+  source: AudioBufferSourceNode,
+) {
+  while (activeSources.size >= MAXIMUM_CONCURRENT_SPEECH_SOURCES) {
+    const oldest = activeSources.values().next().value;
     if (!oldest) break;
-    activeSpeechSources.delete(oldest);
+    activeSources.delete(oldest);
     try {
       oldest.stop();
     } catch {}
   }
-  activeSpeechSources.add(source);
+  activeSources.add(source);
 }
 
 export function useCValCommentAudio() {
@@ -182,11 +184,9 @@ export function useCValCommentAudio() {
         oscillator.stop(muteEnd);
       }
 
-      activeSourcesRef.current.add(source);
-      reserveSpeechSource(source, policy?.maximumConcurrentSources ?? Number.MAX_SAFE_INTEGER);
+      reserveSpeechSource(activeSourcesRef.current, source);
       source.onended = () => {
         activeSourcesRef.current.delete(source);
-        activeSpeechSources.delete(source);
         request.onEnded?.();
       };
       source.start(sourceTime);
@@ -197,6 +197,10 @@ export function useCValCommentAudio() {
 
   const speak = useCallback((request: AudioRequest) => {
     if (disposedRef.current) return;
+    if (Math.random() >= C_VAL_COMMENT_AUDIO_PLAY_PROBABILITY) {
+      request.onEnded?.();
+      return;
+    }
     const context = liveContext();
     if (context.state === "running") {
       void playNow(context, request);
@@ -216,7 +220,6 @@ export function useCValCommentAudio() {
     pendingRef.current = null;
     pending?.onEnded?.();
     for (const source of activeSourcesRef.current) {
-      activeSpeechSources.delete(source);
       try {
         source.stop();
       } catch {}

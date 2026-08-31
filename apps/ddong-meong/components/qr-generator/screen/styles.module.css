@@ -89,19 +89,13 @@
   outline-offset: 3px;
 }
 
-.fieldGrid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-}
-
-.fieldGrid label,
+.buildingField,
 .urlField {
   display: grid;
   gap: 7px;
 }
 
-.fieldGrid span,
+.buildingField > span,
 .urlField > span,
 .copyChoices legend {
   font-size: 12px;
@@ -109,8 +103,7 @@
   letter-spacing: -0.015em;
 }
 
-.fieldGrid input,
-.fieldGrid select,
+.buildingField input,
 .urlField textarea {
   width: 100%;
   border: 1px solid rgb(20 20 20 / 26%);
@@ -122,8 +115,7 @@
   outline: none;
 }
 
-.fieldGrid input,
-.fieldGrid select {
+.buildingField input {
   height: 46px;
   padding: 0 12px;
 }
@@ -137,17 +129,14 @@
   line-height: 1.5;
 }
 
-.fieldGrid input:focus-visible,
-.fieldGrid select:focus-visible,
+.buildingField input:focus-visible,
 .urlField textarea:focus-visible {
   border-color: #141414;
   box-shadow: 0 0 0 3px rgb(20 20 20 / 12%);
 }
 
-.fieldHelp,
 .cValHelp,
-.copyStatus,
-.error {
+.copyStatus {
   min-height: 19px;
   margin: -19px 0 0;
   color: rgb(20 20 20 / 62%);
@@ -186,10 +175,6 @@
   height: 16px;
   margin: 2px 0 0;
   accent-color: #141414;
-}
-
-.error {
-  color: #9e1a1a;
 }
 
 .actions {
@@ -270,16 +255,11 @@
   display: block;
 }
 
-.qrCode,
-.qrPlaceholder {
+.qrCode {
   display: block;
   width: 73%;
   aspect-ratio: 1;
   fill: #111;
-}
-
-.qrPlaceholder {
-  background: #f2f2f2;
 }
 
 .posterContent > p {
@@ -383,7 +363,6 @@
 @media (max-width: 560px) {
   .workspace { padding: 26px 24px; }
   .controls { margin-bottom: 38px; }
-  .fieldGrid { grid-template-columns: 1fr; }
   .poster { width: min(210mm, calc(100vw - 24px)); }
 }
 
@@ -425,8 +404,7 @@
     line-height: 1.16;
   }
 
-  .qrCode,
-  .qrPlaceholder {
+  .qrCode {
     width: 110mm;
   }
 

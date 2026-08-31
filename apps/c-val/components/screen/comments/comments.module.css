@@ -33,6 +33,12 @@
   width: 100%;
 }
 
+@container (min-width: 1921px) {
+  .roomGrid {
+    font-size: calc(var(--comments-screen-type) * 1.2);
+  }
+}
+
 .room:nth-child(n + 15) { display: none; }
 
 .room {

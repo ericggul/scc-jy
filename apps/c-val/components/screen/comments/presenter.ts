@@ -16,6 +16,9 @@ export const C_VAL_COMMENT_VOICE_SLOWEST_GAP_MS = 220;
 export const C_VAL_COMMENT_VOICE_FASTEST_GAP_MS = 30;
 export const C_VAL_COMMENT_UP_MINIMUM_PLAYBACK_RATE = 1;
 export const C_VAL_COMMENT_UP_MAXIMUM_PLAYBACK_RATE = 1.2;
+// Reduces only the upward effective-speed excess above 1x. At the +15%
+// extreme, the former 2.4x result becomes 1.7x.
+export const C_VAL_COMMENT_UP_EFFECTIVE_SPEED_EXCESS_SCALE = 0.5;
 export const C_VAL_COMMENT_DOWN_MINIMUM_PLAYBACK_RATE = 0.96;
 export const C_VAL_COMMENT_DOWN_MAXIMUM_PLAYBACK_RATE = 1.06;
 export const C_VAL_COMMENT_UP_MINIMUM_DETUNE_CENTS = 90;
@@ -25,7 +28,7 @@ export const C_VAL_COMMENT_DOWN_MAXIMUM_DETUNE_CENTS = -360;
 export const C_VAL_COMMENT_CENSOR_BEEP_DETUNE_RATIO = 0.3;
 // Reversible corpus audition switch: false preserves the source utterance in
 // audio only; screen text keeps its established replacement treatment.
-export const C_VAL_COMMENT_CENSOR_ENABLED = true;
+export const C_VAL_COMMENT_CENSOR_ENABLED = false;
 // Source-time offset for the censor window. Audio converts this to playback
 // time, so the apparent delay remains proportional to the voice speed.
 export const C_VAL_COMMENT_CENSOR_DELAY_SOURCE_SECONDS = 0.3;
@@ -351,7 +354,17 @@ export function cValCommentPlaybackRate(pulse: CValCommentPulse) {
   const maximum = pulse.direction === "up"
     ? C_VAL_COMMENT_UP_MAXIMUM_PLAYBACK_RATE
     : C_VAL_COMMENT_DOWN_MAXIMUM_PLAYBACK_RATE;
-  return minimum + pulse.intensity * (maximum - minimum);
+  const basePlaybackRate = minimum + pulse.intensity * (maximum - minimum);
+  if (pulse.direction === "down") return basePlaybackRate;
+
+  const detuneCents = cValCommentDetuneCents(pulse);
+  const originalEffectiveRate = cValCommentEffectivePlaybackRate(
+    basePlaybackRate,
+    detuneCents,
+  );
+  const reducedEffectiveRate = 1
+    + (originalEffectiveRate - 1) * C_VAL_COMMENT_UP_EFFECTIVE_SPEED_EXCESS_SCALE;
+  return reducedEffectiveRate / 2 ** (detuneCents / 1_200);
 }
 
 const C_VAL_COMMENT_AUDIO_GAIN_ANCHORS = [
@@ -385,7 +398,6 @@ export function cValCommentAudioMix(pulse: CValCommentPulse) {
       })();
   return {
     gain,
-    maximumConcurrentSources: gain < 0.4 ? 1 : gain < 0.75 ? 2 : 3,
   };
 }
 

@@ -160,7 +160,7 @@ test("profanity and voice remain unavailable below the extreme threshold", () =>
   const pulse = presentCValCommentPulse(activeSnapshot(C_VAL_COMMENT_VOICE_TRIGGER_PERCENT));
   assert.ok(pulse);
   assert.equal(shouldAdmitCValCommentVoice(pulse, 9_900, 10_000), false);
-  assert.equal(C_VAL_COMMENT_CENSOR_ENABLED, true);
+  assert.equal(C_VAL_COMMENT_CENSOR_ENABLED, false);
   assert.equal(censorCValCommentText("씨발, 뭐야. 씨발."), "C-VAL, 뭐야. C-VAL.");
 });
 
@@ -208,10 +208,24 @@ test("rises pitch upward while falls pitch downward with increasing intensity", 
   assert.ok(cValCommentDetuneCents(mildRise) > 0);
   assert.ok(cValCommentDetuneCents(extremeRise) > cValCommentDetuneCents(mildRise));
   assert.equal(cValCommentDetuneCents(extremeRise), 1_200);
-  assert.equal(cValCommentPlaybackRate(extremeRise), 1.2);
+  assert.equal(
+    cValCommentEffectivePlaybackRate(
+      cValCommentPlaybackRate(extremeRise),
+      cValCommentDetuneCents(extremeRise),
+    ),
+    1.7,
+  );
   assert.ok(cValCommentDetuneCents(mildFall) < 0);
   assert.ok(cValCommentDetuneCents(extremeFall) < cValCommentDetuneCents(mildFall));
-  assert.ok(cValCommentPlaybackRate(extremeRise) > cValCommentPlaybackRate(extremeFall));
+  assert.ok(
+    cValCommentEffectivePlaybackRate(
+      cValCommentPlaybackRate(extremeRise),
+      cValCommentDetuneCents(extremeRise),
+    ) > cValCommentEffectivePlaybackRate(
+      cValCommentPlaybackRate(extremeFall),
+      cValCommentDetuneCents(extremeFall),
+    ),
+  );
 });
 
 test("dialect remains an eight-way performance color instead of the diversity limit", () => {

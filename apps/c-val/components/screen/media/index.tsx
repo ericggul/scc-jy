@@ -7,9 +7,9 @@ import { cValMediaCellOrder, presentCValMedia } from "./presenter";
 import CValEntryQr from "../entry-qr";
 import CValMediaCommentReaction from "./comment-reaction";
 
-// One-switch presentation trial. Set false or remove the render below to
-// restore the prior media screen without changing its video implementation.
-const ENABLE_MEDIA_COMMENT_REACTION = true;
+// One-switch presentation trial. Set true to restore the retained comment
+// overlay and audio without changing the video implementation.
+const ENABLE_MEDIA_COMMENT_REACTION = false;
 
 const media = {
   gain: { src: "/video/left.mp4", start: 5, end: 15, scale: 1 },

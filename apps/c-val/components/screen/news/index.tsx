@@ -124,7 +124,7 @@ const EntryPoint = styled.div`
   position: absolute;
   top: 54%;
   transform: translate(-50%, -50%);
-  width: clamp(42px, 8.5cqw, 96px);
+  width: clamp(120px, 20vmin, 280px);
   z-index: 2;
 `;
 

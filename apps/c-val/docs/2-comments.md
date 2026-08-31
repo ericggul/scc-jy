@@ -132,6 +132,11 @@ sequence and regime.
 
 ## Extreme profanity and sound
 
+Temporary audition state: `C_VAL_COMMENT_CENSOR_ENABLED` is `false`. The
+recorded source interval is therefore neither muted nor replaced by the beep;
+the visible `씨발` → `C-VAL` treatment remains unchanged. Set the switch back to
+`true` to restore the described audio censoring.
+
 The 9,216 ordinary entries contain no `씨발`. Existing Cedar and Marin audio is
 not loaded until the absolute one-second move approaches the voice boundary.
 At `|move| >= 2%`, a fast-move text admission may be replaced by one of the
@@ -152,8 +157,9 @@ recorded exclamations whose source audio contains an audited profanity interval:
   crowd aggregation rather than isolated calls;
 - upward voice starts at +90 cents and rises on a 1.7-power intensity curve to
   +1200 cents (one octave), keeping ordinary rises restrained while making
-  extreme rallies unmistakably high. Its playback rate moves from 1.00 to
-  1.20; downward voice
+  extreme rallies unmistakably high. Its combined effective speed retains only
+  50% of the former excess above 1×: approximately 1.03× at +2% and 1.70× at
+  +15% instead of 2.40×. Downward voice
   starts at -120
   cents and falls continuously to -360 cents while its playback rate moves
   from 0.96 to 1.06. The split makes rallies brighter and more airborne while
@@ -181,12 +187,14 @@ dialect rule that reduced a direction to roughly twelve recurring scripts.
 
 Decoded audio uses a 72-buffer eviction limit instead of an unbounded cache.
 The first thirty likely clips are decoded as soon as the boundary is entered.
-Speech and beep share a
-dynamics-compressor output so
-overlapping extremes do not sum directly into the destination. The first user
-gesture now creates and resumes the audio context even if it occurs before the
-market reaches the voice boundary. The source WAV files and timestamp index
-remain unchanged.
+Each eligible voice request has an independent 50% chance of entering the sound
+field; its corresponding visible comment still appears. Up to six speech sources
+continue concurrently. When a seventh begins, only the oldest active source is
+stopped, preserving the six most recent voices as a single crowd. Speech and
+beep share a dynamics-compressor output so overlapping extremes do not sum
+directly into the destination. The first user gesture now creates and resumes
+the audio context even if it occurs before the market reaches the voice boundary.
+The source WAV files and timestamp index remain unchanged.
 
 At the React boundary, each room thread is memoized independently. A new
 message re-renders the changed thread instead of rebuilding the other fifteen
