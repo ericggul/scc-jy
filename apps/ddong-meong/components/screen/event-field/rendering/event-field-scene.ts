@@ -128,7 +128,7 @@ function createRecordLabel(
   texture.minFilter = THREE.LinearFilter;
   const label = new THREE.Sprite(
     new THREE.SpriteMaterial({
-      depthTest: false,
+      depthTest: true,
       depthWrite: false,
       map: texture,
       opacity: 0.88,
@@ -256,6 +256,16 @@ function createEventLineMaterial(linewidth = 2, opacity = 0.36) {
   });
 }
 
+function createDataLineMaterial() {
+  return new LineMaterial({
+    color: "#9b7965",
+    depthTest: false,
+    depthWrite: false,
+    linewidth: 2,
+    transparent: false,
+  });
+}
+
 function spiralCenter(t: number, target: THREE.Vector3) {
   const angle = 0.28 + t * Math.PI * 2 * 2.42;
   const coilRadius = 1.68 * Math.pow(1 - t, 0.78) + 0.06;
@@ -377,13 +387,13 @@ export class EventFieldScene {
   private readonly connectionGeometry = new LineSegmentsGeometry();
   private readonly connectionLines = new LineSegments2(
     this.connectionGeometry,
-    createEventLineMaterial(),
+    createDataLineMaterial(),
   );
   private readonly projectionPlane = createGlobalProjectionPlane();
   private readonly projectionGeometry = new LineSegmentsGeometry();
   private readonly projectionLines = new LineSegments2(
     this.projectionGeometry,
-    createEventLineMaterial(),
+    createDataLineMaterial(),
   );
   private readonly raycaster = new THREE.Raycaster();
   private readonly pointer = new THREE.Vector2();
@@ -453,6 +463,9 @@ export class EventFieldScene {
     this.poopMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     this.poopMesh.count = 0;
     this.poopMesh.frustumCulled = false;
+    this.poopMesh.renderOrder = 2;
+    this.projectionLines.renderOrder = 1;
+    this.connectionLines.renderOrder = 1;
     this.hitMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     this.hitMesh.count = 0;
     this.hitMesh.frustumCulled = false;
@@ -610,6 +623,7 @@ export class EventFieldScene {
         point.z,
       );
       label.sprite.scale.set(0, 0, 1);
+      label.sprite.renderOrder = 1;
       this.field.add(label.sprite);
       next.push(label);
     });

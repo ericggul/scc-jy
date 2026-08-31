@@ -434,6 +434,7 @@
     top: 64mm;
     display: flex;
     flex-direction: column;
+    align-items: center;
     transform: translateX(-50%);
   }
 
@@ -449,6 +450,7 @@
   }
 
   .cValQrCode {
+    align-self: center;
     width: 110mm;
     height: 110mm;
     flex: 0 0 110mm;
