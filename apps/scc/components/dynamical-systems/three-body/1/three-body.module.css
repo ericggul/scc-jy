@@ -1,0 +1,154 @@
+.experiment {
+  min-height: 100svh;
+  background: #090a0a;
+  color: #d9dad4;
+}
+
+.field {
+  position: relative;
+  height: min(72svh, 860px);
+  min-height: 460px;
+  overflow: hidden;
+  background: #070807;
+}
+
+.fieldCanvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.fieldCanvas {
+  position: absolute;
+  inset: 0;
+}
+
+.analysis {
+  width: min(1480px, 100%);
+  margin: 0 auto;
+  padding: clamp(30px, 5vw, 76px) clamp(18px, 3.2vw, 52px) clamp(48px, 7vw, 104px);
+}
+
+.parallelViews {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(26px, 4vw, 68px);
+}
+
+.view {
+  min-width: 0;
+}
+
+.viewLabel {
+  margin: 0 0 10px;
+  color: #aeb2ae;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 0.69rem;
+  font-weight: 500;
+  letter-spacing: 0.035em;
+  line-height: 1.2;
+}
+
+.analysisCanvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1.55 / 1;
+  background: #070807;
+}
+
+.currentCalculation {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(270px, 0.55fr);
+  gap: clamp(30px, 5vw, 84px);
+  margin-top: clamp(38px, 5vw, 74px);
+}
+
+.scalarRegister,
+.relationRegister {
+  margin: 0;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: clamp(0.71rem, 0.82vw, 0.79rem);
+  line-height: 1.35;
+}
+
+.scalarRegister {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 22px clamp(18px, 3vw, 44px);
+}
+
+.scalarRegister div {
+  min-width: 0;
+}
+
+.scalarRegister dt,
+.relationRegister dt {
+  color: #858a86;
+}
+
+.scalarRegister dd,
+.relationRegister dd {
+  margin: 4px 0 0;
+  color: #e2e3dd;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.relationRegister {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+}
+
+.relation {
+  display: grid;
+  grid-template-columns: 44px minmax(78px, 1fr) minmax(82px, 1fr);
+  column-gap: 12px;
+  align-items: baseline;
+}
+
+.relation dd {
+  margin: 0;
+}
+
+@media (max-width: 900px) {
+  .field {
+    height: min(64svh, 680px);
+    min-height: 390px;
+  }
+
+  .parallelViews {
+    grid-template-columns: 1fr;
+    gap: 36px;
+  }
+
+  .analysisCanvas {
+    aspect-ratio: 1.8 / 1;
+  }
+
+  .currentCalculation {
+    grid-template-columns: 1fr;
+    gap: 36px;
+  }
+}
+
+@media (max-width: 560px) {
+  .field {
+    min-height: 330px;
+  }
+
+  .analysis {
+    padding-inline: 14px;
+  }
+
+  .scalarRegister {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 19px 14px;
+  }
+
+  .relation {
+    grid-template-columns: 40px minmax(72px, 1fr) minmax(72px, 1fr);
+    column-gap: 8px;
+  }
+}

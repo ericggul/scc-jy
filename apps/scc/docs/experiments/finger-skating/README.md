@@ -3,27 +3,37 @@
 Routes:
 
 - `/finger-skating`
-- `/finger-skating/1/mobile`
-- `/finger-skating/2/mobile`
-- `/finger-skating/1/screen`
-- `/finger-skating/2/screen`
+- `/finger-skating/default/1/mobile`
+- `/finger-skating/default/2/mobile`
+- `/finger-skating/default/1/screen`
+- `/finger-skating/default/2/screen`
+- `/finger-skating/field/1/mobile`
+- `/finger-skating/field/1/screen`
 
 Files:
 
 - `app/finger-skating/page.tsx`
-- `app/finger-skating/[experiment]/mobile/page.tsx`
-- `app/finger-skating/[experiment]/screen/page.tsx`
+- `app/finger-skating/[group]/[experiment]/mobile/page.tsx`
+- `app/finger-skating/[group]/[experiment]/screen/page.tsx`
 - `components/finger-skating/experiments.ts`
-- `components/finger-skating/1/mobile.tsx`
-- `components/finger-skating/1/screen.tsx`
-- `components/finger-skating/2/mobile.tsx`
-- `components/finger-skating/2/screen.tsx`
+- `components/finger-skating/default/1/mobile.tsx`
+- `components/finger-skating/default/1/screen.tsx`
+- `components/finger-skating/default/2/mobile.tsx`
+- `components/finger-skating/default/2/screen.tsx`
+- `components/finger-skating/field/1/`
 - `hooks/use-experiment-socket.ts`
 - `apps/scc/socket/experiments/finger-skating/index.mjs`
 
 Intent:
 
-`finger-skating` is a multi-device Socket.IO experiment with isolated mobile and screen routes.
+`finger-skating` is a multi-device Socket.IO experiment family. `default` retains
+the two established studies. `field` contains studies where skating becomes an
+abstract spatial input for another screen-side system.
+
+The former `/finger-skating/1/*` and `/finger-skating/2/*` routes permanently
+redirect to their corresponding `default` routes. The moved files and their
+event-room contracts remain the baseline; regrouping does not authorize a
+visual or interaction change to either study.
 
 ## Reusable interaction pattern
 
@@ -90,7 +100,7 @@ iterative testing reveals a failure or correction, record the generalized cause
 and durable rule here, while keeping experiment-specific details in that
 experiment's document.
 
-`/finger-skating/2/mobile` is a non-scrollable finger-skating grid. The viewport width is divided by the `gridColumnCount` value in `components/finger-skating/2/mobile.tsx`; rows are generated from the viewport height. The mobile sends the same x/y signal shape as experiment 1, with fixed hue and intensity values.
+`/finger-skating/default/2/mobile` is a non-scrollable finger-skating grid. The viewport width is divided by the `gridColumnCount` value in `components/finger-skating/default/2/mobile.tsx`; rows are generated from the viewport height. The mobile sends the same x/y signal shape as experiment 1, with fixed hue and intensity values.
 
 Multi-touch behavior for experiment 2 is stream-aware while preserving the original pulse visual. Each finger has a stable `streamId` from pointer down to pointer up/cancel. The screen keeps a separate pulse trail per `streamId`, so a single finger still looks like experiment 1's pulse accumulation/fade, while two or more fingers get independent trails instead of competing for one global pulse list.
 
@@ -98,9 +108,13 @@ Screen rendering for experiment 2 is canvas-based for performance. Incoming sock
 
 Routing rule:
 
-Add future variants under `components/finger-skating/[number]/`, register the slug in `components/finger-skating/experiments.ts`, and wire the mobile/screen component maps in the dynamic route files.
+Add a future study under `components/finger-skating/[group]/[number]/`, register
+both the group and number in `components/finger-skating/experiments.ts`, and
+wire its mobile/screen implementation in the grouped dynamic route files. A
+study may add a new transport only when its abstract state differs from the
+`default` signal contract; it must never share events or room state casually.
 
-Socket contract:
+## default socket contract
 
 - Local transport: same hostname as the app, Socket.IO HTTPS port `4000`, path `/socket.io`.
 - Rooms: `experiment:finger-skating:1` and `experiment:finger-skating:2`
@@ -115,3 +129,12 @@ Rule:
 
 Each `finger-skating` variant has isolated room state. Its state and events must
 not be shared with other variants or future socket experiments.
+
+## field studies
+
+- [field/1 — gesture-derived vector field](./field/1.md) turns continuous
+  finger skating into a screen-local time-dependent vector field.
+
+`field/1` owns `experiment:finger-skating:field:1` and its own
+`finger-skating-field-1:*` event prefix. Its messages contain pointer identity,
+phase, and normalized position only; visual field state remains in each screen.

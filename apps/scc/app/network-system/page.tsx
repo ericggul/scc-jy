@@ -18,6 +18,8 @@ export default function NetworkSystemPage() {
             key={`controller-${experiment.slug}`}
             href={`/network-system/${experiment.slug}/controller`}
             className="border-b border-[#f7f4ec] py-4 text-[clamp(28px,7vw,72px)] font-black leading-none hover:bg-[#f7f4ec] hover:text-[#050505]"
+            target="_blank"
+            rel="noopener noreferrer"
           >
             {experiment.slug}/controller
           </Link>
@@ -28,6 +30,8 @@ export default function NetworkSystemPage() {
               key={`screen-${experiment.slug}-${screenId}`}
               href={`/network-system/${experiment.slug}/screen/${screenId}`}
               className="border-b border-[#f7f4ec] py-4 text-[clamp(28px,7vw,72px)] font-black leading-none hover:bg-[#f7f4ec] hover:text-[#050505]"
+              target="_blank"
+              rel="noopener noreferrer"
             >
               {experiment.slug}/screen/{screenId}
             </Link>
@@ -36,6 +40,8 @@ export default function NetworkSystemPage() {
             key={`screen-${experiment.slug}-whole`}
             href={`/network-system/${experiment.slug}/screen/whole`}
             className="border-b border-[#f7f4ec] py-4 text-[clamp(28px,7vw,72px)] font-black leading-none hover:bg-[#f7f4ec] hover:text-[#050505]"
+            target="_blank"
+            rel="noopener noreferrer"
           >
             {experiment.slug}/screen/whole
           </Link>,

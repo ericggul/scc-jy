@@ -1,0 +1,128 @@
+.field {
+  position: relative;
+  width: 100%;
+  height: 100svh;
+  min-height: 26rem;
+  overflow: hidden;
+  background: #eef0e9;
+}
+
+.canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.canvas:focus-visible {
+  outline: 2px solid #b34d3c;
+  outline-offset: -7px;
+}
+
+.controls {
+  position: absolute;
+  right: clamp(1.1rem, 2.6vw, 2.4rem);
+  bottom: clamp(1.1rem, 2.6vw, 2.4rem);
+  left: clamp(1.1rem, 2.6vw, 2.4rem);
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin: 0;
+  color: #2b4142;
+  font: 0.64rem var(--font-geist-mono), ui-monospace, monospace;
+}
+
+.parameter {
+  display: grid;
+  grid-template-columns: auto minmax(5.5rem, 12vw) auto;
+  gap: 0.55rem;
+  align-items: center;
+}
+
+.symbol {
+  color: #b34d3c;
+  font-size: 1.05em;
+  font-weight: 600;
+}
+
+.range {
+  width: 100%;
+  height: 16px;
+  margin: 0;
+  appearance: none;
+  background: transparent;
+  cursor: ew-resize;
+}
+
+.range::-webkit-slider-runnable-track {
+  height: 1px;
+  background: #738784;
+}
+
+.range::-webkit-slider-thumb {
+  width: 9px;
+  height: 9px;
+  margin-top: -4px;
+  appearance: none;
+  border: 0;
+  border-radius: 50%;
+  background: #b34d3c;
+}
+
+.range::-moz-range-track {
+  height: 1px;
+  background: #738784;
+}
+
+.range::-moz-range-thumb {
+  width: 9px;
+  height: 9px;
+  border: 0;
+  border-radius: 50%;
+  background: #b34d3c;
+}
+
+.range:focus-visible {
+  outline: 2px solid #b34d3c;
+  outline-offset: 4px;
+}
+
+.parameterValue {
+  color: #b34d3c;
+  font-variant-numeric: tabular-nums;
+}
+
+.restart {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #456368;
+  cursor: pointer;
+  font: inherit;
+  text-decoration: underline;
+  text-decoration-color: #94a49d;
+  text-underline-offset: 4px;
+}
+
+.restart:hover {
+  color: #1b2a2d;
+}
+
+.restart:focus-visible {
+  outline: 2px solid #b34d3c;
+  outline-offset: 4px;
+}
+
+@media (max-width: 35rem) {
+  .controls {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+}
