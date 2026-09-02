@@ -9,7 +9,7 @@ the filesystem-only `dynamical-systems` group.
 | --- | --- | --- | --- |
 | `/attractor/1` | One independently integrated phase state and its short trail. | Six fixed ODEs, RK4, 1–20 deterministic states. | Raw Three.js WebGL, OrbitControls, lit spheres. |
 | `/attractor/2` | A reference state and genuinely integrated nearby companion repeatedly separate. | `/1`'s six ODEs plus a Qi four-wing field, analytic Jacobians, tangent RK4, periodic normalization, and finite-time local divergence. | Three.js WebGPU/TSL with WebGL fallback; glossy physical terminals. |
-| `/attractor/3` | A full three-dimensional volume of one Thomas regime, observed as density rather than individual traces. | 30,000 independently seeded Thomas states, forward Euler, `b = .19`, `dt = .015`. | Three.js WebGPU compute + TSL sprite field; CPU/WebGL points fallback. |
+| `/attractor/3` | One selected dense phase-space volume, observed as density rather than individual traces. | 30,000 independently seeded states in Thomas, Lorenz, Aizawa, Dadras, or Halvorsen regimes; forward Euler. | React Three Fiber `Canvas`, Three.js WebGPU compute, and a TSL sprite field. |
 
 The sequence moves from the shape of an orbit to a limited visible observation
 of local sensitivity, then to a dense field of a single system. It does not
@@ -23,8 +23,9 @@ trace contains 12,000 sampled states; a renderer normalizes that trace around
 its own center and radius. The first six systems are shared by the first two variants;
 Qi four-wing belongs only to `/attractor/2`. Camera, colour, material, terminal
 form, and lines cannot modify an ODE or its coefficients. `/attractor/3` is
-a separate Thomas regime and therefore does not share the post-transient trace
-or the `b = .208186` coefficient used by the first two variants.
+a separate particle-field regime and therefore does not share the
+post-transient trace or the `b = .208186` coefficient used by the first two
+variants.
 
 | ID | Fixed regime |
 | --- | --- |
@@ -137,59 +138,71 @@ post-normalization tangent magnitude, and finite divergence values. Browser
 comparison of the WebGPU and fallback output remains an explicit future
 observation rather than a claimed result.
 
-## attractor/3 — Thomas particle field
+## attractor/3 — GPU particle fields
 
-1. **Participant situation:** one person directly orbits a single phase-space
-   volume. Drag rotates it; wheel or pinch performs bounded zoom. There are no
-   coefficient controls because this is a fixed-regime observation.
-2. **Primary parameter:** the position of 30,000 deterministically seeded
-   Thomas states under `b = .19` and `dt = .015`.
-3. **Perceptual job:** see the three-dimensional accumulation, symmetry, and
-   folded density of one coupled flow. The field is not a history texture or a
-   cloud driven by depth sorting; every visible point is one evolving state.
-4. **Interaction job:** camera orbit changes the participant's view of the
-   same state volume only. Pan is disabled, and no interaction can alter the
-   numerical regime or particle count.
-5. **Wrapper justification:** the field occupies the viewport because density,
-   overlap, and changing volumetric form are the entire observation. The dark
-   ground creates only the contrast required for additive points; blue-to-warm
-   tint depends on phase-space distance, not a category or an invented metric.
-6. **System family:** thin route, local deterministic model, direct camera
-   inspection, pure numerical checks, backing-pixel cap, and no simulated
-   instrumentation remain shared with this family. The particle field takes no
-   wrapper, palette, or control grammar from `complex-systems`.
-7. **Removal test:** removing direct rotation, particle density, or the
-   phase-space update removes the observation. Labels, legends, sliders,
-   post-processing, a grid, and numerical counters do not clarify it and are
-   absent.
+1. **Participant situation:** one person directly moves the camera around one
+   selected phase-space volume, then selects another equation from the bare
+   lower row.
+2. **Primary parameter:** the active vector field driving 30,000 independently
+   seeded states.
+3. **Perceptual job:** distinguish cyclic braid, two-lobed switching, axial
+   fold, Dadras's asymmetric recurving volume, and Halvorsen's cyclic
+   threefold recurrence as spatial density, not as a named catalogue.
+4. **Interaction job:** camera controls change only the view. Selecting a
+   system replaces the seed and offset buffers, so it starts that system's own
+   field; it does not alter coefficients or particle count.
+5. **Wrapper justification:** the full viewport preserves density and overlap;
+   the sole control row is needed to make the changed equation legible. The
+   blue-to-warm tint remains phase-space distance, not a category colour.
+6. **Removal test:** without direct orbit, density, phase update, or system
+   selection, the comparison fails. Labels beyond the necessary system names,
+   sliders, metrics, grids, and post-processing remain absent.
 
-- **Model boundary:** the route implements the supplied Thomas system
-  `ẋ = −.19x + sin(y)`, `ẏ = −.19y + sin(z)`,
-  `ż = −.19z + sin(x)`. Each path begins from one fixed sphere-distributed
-  seed and advances with a fixed forward Euler step. This is an intentionally
-  different coefficient and integrator from `/1` and `/2`, not a claim
-  that all Thomas parameterizations have the same attractor.
-- **Rendering boundary:** native WebGPU uses a TSL `instancedArray` for
-  immutable seeds and another for evolving offsets. A compute dispatch advances
-  the offsets once each rendered frame, while the sprite material reads the
-  same buffers. Compute is WebGPU-only; when the renderer falls back to WebGL,
-  the route uses the same seeded-sphere distribution and Euler equations in a
-  CPU typed array rendered as `THREE.Points`. It preserves the 3D object
-  rather than claiming performance, individual sample, or pixel equivalence
-  across backends.
-- **Bounded trial:** the changed relation is from sparse, individually legible
-  trajectories and tangent pairs to a dense evolving state field. It retains
-  direct phase-space view, deterministic local computation, no presentation
-  state in the model, and an 8,000,000-pixel cap. No bloom, vignette, shader
-  control surface, R3F dependency, or decorative label was
-  transferred from the source references.
-- **Evidence:** model-level tests confirm the exact damping coefficient,
-  derivative, finite Euler advancement, deterministic 30,000-point seed
-  buffer, and seed radius. Browser observation is pending an explicit browser
-  test request.
-- **Unresolved question:** whether a later preserved trial should change only
-  the numerical integrator so the visible differences between Euler and RK4
-  become inspectable without changing this field's particle count or wrapper.
+| System | Selected GPU regime | Reason for inclusion |
+| --- | --- | --- |
+| Thomas | `b = .19`, `dt = .015`; cyclic sine coupling. | The supplied source's threefold, braided baseline. |
+| Lorenz | `σ = 10`, `ρ = 28`, `β = 8/3`, `dt = .005`. | Canonical two-lobed switching; the equations and conventional parameters are listed by [Wikipedia](https://en.wikipedia.org/wiki/Lorenz_system). |
+| Aizawa | `/1`'s fixed coefficients, `dt = .003`. | An axial fold unlike the two-lobed systems. |
+| Dadras | `/1`'s fixed coefficients, `dt = .003`. | The nonlinear `yz`, `xz`, and `xy` cross-terms create a large asymmetric recurving volume. |
+| Halvorsen | Cyclic quadratic coupling with `a = 1.4`, `dt = .004`. | A threefold recurrent volume whose coupled quadratic terms stay legible in the same dense-field observation. [PhasePortrait's Halvorsen reference](https://phaseportrait.github.io/reference/legacy/trajectory3d/) gives the equation. |
+
+- **Model boundary:** each selected system has a fixed local seed centre,
+  seed radius, Euler step, display centre, and display scale. Lorenz and
+  Halvorsen are new field equations; Aizawa and Dadras reuse SCC's existing
+  equations but not `/1`'s RK4 trace pipeline. Qi four-wing stays in `/2`:
+  its documented reference needs a long warmup from `(0.001, 0.001, 0.001)`,
+  and it did not create a legible dense field inside this route's bounded
+  real-time Euler regime. Finance, Bouali, and Nosé–Hoover remain in `/1`
+  because their fixed-trace validation does not establish stable
+  30,000-particle Euler clouds.
+- **Rendering boundary:** `Canvas` creates and awaits `WebGPURenderer`.
+  `sprite count={30000}` owns the draw; seed and offset `instancedArray`
+  buffers initialize once per selected field with `computeAsync`, then the
+  selected derivative advances offsets once per rendered frame. The material
+  reads that same GPU state. No CPU fallback or CPU particle simulation is in
+  this route.
+- **Evidence:** the system-configuration test, SCC TypeScript check, and
+  route-file lint pass. On 2026-09-02, Chrome on the reported Mac rendered
+  Thomas, Halvorsen, and Dadras at the 2794 × 1488 backing canvas; the
+  inspected Halvorsen and Dadras fields formed large folded volumes after
+  22 seconds, with no fresh runtime, shader, or WebGPU console errors.
+  `THREE.Clock` emits one non-fatal deprecation warning.
+
+### Why `/attractor/1` and `/attractor/3` differ
+
+`/attractor/1` is an orbit-and-particle instrument: six systems are integrated
+with CPU RK4, warmed up and sampled into a 12,000-point reference trajectory,
+then one to twenty CPU particles and their short trails move against that
+reference. Its question is how a particular orbit folds and how a few states
+travel through it.
+
+`/attractor/3` is a density-field instrument: one of five selected equations
+advances 30,000 GPU-resident states by forward Euler and renders only their
+instantaneous sprite density. It has no reference orbit and no per-particle
+trail. Its question is the collective volume, recurrence, and symmetry made by
+many states at once. The GPU scale makes that observation possible; its Euler
+integrator makes it a different numerical experiment, not a faster or more
+accurate version of `/1`.
 
 ## Consolidation record
 

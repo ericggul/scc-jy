@@ -1,19 +1,24 @@
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import * as THREE from "three/webgpu";
 import {
-  code,
+  Fn,
+  If,
+  Loop,
+  cameraPosition,
   color,
   float,
+  hash,
   instanceIndex,
   instancedArray,
+  mix,
   positionLocal,
   select,
   smoothstep,
-  storage,
+  uint,
   uniform,
   uv,
   vec2,
   vec3,
-  wgslFn,
 } from "three/tsl";
 
 export type VoidParticleParameters = Readonly<{
@@ -34,7 +39,8 @@ export type VoidParticleField = Readonly<{
 const INITIAL_SEED = 0x725f7c13;
 const MIN_AGENT_COUNT = 720;
 const MAX_AGENT_COUNT = 2_400;
-const FIELD_ZOOM = 1.5;
+const FIELD_ZOOM = 1.35;
+const FIELD_DEPTH = 0.42;
 const STEP_INTERVAL_MS = 1_000 / 24;
 const MAX_PIXEL_RATIO = 1.25;
 const MAX_CANVAS_PIXELS = 3_000_000;
@@ -64,13 +70,35 @@ function circleOpacity() {
 type ParticleNodes = ReturnType<typeof createParticleNodes>;
 
 function displayPosition(
-  position: THREE.Node<"vec2">,
+  position: THREE.Node<"vec3">,
   domain: ParticleNodes["domain"],
 ) {
   return vec3(
     position.x.sub(domain.x.mul(0.5)),
     domain.y.mul(0.5).sub(position.y),
-    0,
+    position.z.sub(domain.z.mul(0.5)),
+  );
+}
+
+function periodicDelta(
+  delta: THREE.Node<"vec3">,
+  domain: ParticleNodes["domain"],
+) {
+  return vec3(
+    delta.x.sub(delta.x.div(domain.x).round().mul(domain.x)),
+    delta.y.sub(delta.y.div(domain.y).round().mul(domain.y)),
+    delta.z.sub(delta.z.div(domain.z).round().mul(domain.z)),
+  );
+}
+
+function wrappedPosition(
+  position: THREE.Node<"vec3">,
+  domain: ParticleNodes["domain"],
+) {
+  return vec3(
+    position.x.mod(domain.x).add(domain.x).mod(domain.x),
+    position.y.mod(domain.y).add(domain.y).mod(domain.y),
+    position.z.mod(domain.z).add(domain.z).mod(domain.z),
   );
 }
 
@@ -92,7 +120,7 @@ function createParticleMaterial(
     transparent: true,
   });
   const direction = directions.toAttribute();
-  const displayDirection = vec3(direction.x, direction.y.negate(), 0);
+  const displayDirection = vec3(direction.x, direction.y.negate(), direction.z);
   const markAttractivity = attractivity.toAttribute();
 
   material.positionNode = displayPosition(positions.toAttribute(), domain).add(
@@ -110,13 +138,6 @@ function createParticleMaterial(
   return material;
 }
 
-function createInstancedSprite(material: THREE.SpriteNodeMaterial, count: number) {
-  const sprite = new THREE.Sprite(material);
-  sprite.count = count;
-  sprite.frustumCulled = false;
-  return sprite;
-}
-
 function createDirectionalMarks(
   positions: ParticleNodes["positionsA"],
   directions: ParticleNodes["directionsA"],
@@ -124,132 +145,84 @@ function createDirectionalMarks(
   nodes: ParticleNodes,
   count: number,
 ) {
-  const headMaterial = createParticleMaterial(
-    positions,
-    directions,
-    attractivity,
-    nodes.domain,
-    nodes.pixelSize,
-    0x0d0d0d,
-    0.44,
-    1.05,
-    0.82,
-    0.96,
-  );
-  const bodyMaterial = createParticleMaterial(
-    positions,
-    directions,
-    attractivity,
-    nodes.domain,
-    nodes.pixelSize,
-    0x242424,
-    -0.07,
-    0.7,
-    0.45,
-    0.84,
-  );
-  const tailMaterial = createParticleMaterial(
-    positions,
-    directions,
-    attractivity,
-    nodes.domain,
-    nodes.pixelSize,
-    0x555555,
-    -0.5,
-    0.38,
-    0.22,
-    0.68,
-  );
+  const createMark = (
+    hex: number,
+    offset: number,
+    minimumRadius: number,
+    attractivityRadius: number,
+    opacity: number,
+    order: number,
+  ) => {
+    const material = createParticleMaterial(
+      positions,
+      directions,
+      attractivity,
+      nodes.domain,
+      nodes.pixelSize,
+      hex,
+      offset,
+      minimumRadius,
+      attractivityRadius,
+      opacity,
+    );
+    const mark = new THREE.Sprite(material);
+    mark.count = count;
+    mark.frustumCulled = false;
+    mark.renderOrder = order;
+    return { mark, material };
+  };
 
-  const head = createInstancedSprite(headMaterial, count);
-  const body = createInstancedSprite(bodyMaterial, count);
-  const tail = createInstancedSprite(tailMaterial, count);
-  head.renderOrder = 2;
-  body.renderOrder = 3;
-  tail.renderOrder = 4;
+  const head = createMark(0x0d0d0d, 0.44, 1.05, 0.82, 0.96, 2);
+  const body = createMark(0x242424, -0.07, 0.7, 0.45, 0.84, 3);
+  const tail = createMark(0x555555, -0.5, 0.38, 0.22, 0.68, 4);
 
   return {
     dispose: () => {
-      headMaterial.dispose();
-      bodyMaterial.dispose();
-      tailMaterial.dispose();
+      head.material.dispose();
+      body.material.dispose();
+      tail.material.dispose();
     },
-    marks: [head, body, tail] as const,
+    marks: [head.mark, body.mark, tail.mark] as const,
   };
 }
 
 function createRelationMaterial(
   positions: ParticleNodes["positionsA"],
-  attractivity: ParticleNodes["attractivityA"],
+  relationTargets: ParticleNodes["relationTargetsA"],
+  relationStrengths: ParticleNodes["relationStrengthsA"],
   nodes: ParticleNodes,
 ) {
   const material = new THREE.MeshBasicNodeMaterial({
     depthTest: false,
     depthWrite: false,
+    forceSinglePass: true,
+    side: THREE.DoubleSide,
     transparent: true,
   });
-  const sourceIndex = nodes.edgeSources.element(instanceIndex);
-  const targetIndex = nodes.edgeTargets.element(instanceIndex);
-  const sourcePosition = positions.element(sourceIndex);
+  const sourcePosition = positions.toAttribute();
+  const targetIndex = relationTargets.element(instanceIndex);
   const targetPosition = positions.element(targetIndex);
-  const rawDelta = targetPosition.sub(sourcePosition);
-  const periodicDelta = rawDelta.sub(
-    vec2(
-      rawDelta.x.div(nodes.domain.x).round().mul(nodes.domain.x),
-      rawDelta.y.div(nodes.domain.y).round().mul(nodes.domain.y),
-    ),
-  );
-  const metricLength = periodicDelta.length();
+  const metricDelta = periodicDelta(targetPosition.sub(sourcePosition), nodes.domain);
   const sourceWorld = displayPosition(sourcePosition, nodes.domain);
-  const targetWorld = displayPosition(targetPosition, nodes.domain);
-  const visualSegment = targetWorld.sub(sourceWorld);
+  const visualSegment = vec3(metricDelta.x, metricDelta.y.negate(), metricDelta.z);
   const visualLength = visualSegment.length().max(0.000001);
-  const axis = visualSegment.div(visualLength);
-  const perpendicular = vec3(axis.y.negate(), axis.x, 0);
-  const proximity = float(1)
-    .sub(metricLength.div(nodes.interactionRadius))
-    .clamp(0, 1);
-  const mutualAttractivity = attractivity
-    .element(sourceIndex)
-    .mul(attractivity.element(targetIndex))
-    .sqrt();
-  const weight = float(0.14)
-    .add(proximity.mul(proximity).mul(0.86))
-    .mul(float(0.12).add(mutualAttractivity.mul(0.88)))
-    .mul(nodes.attractionGain);
-  const strength = weight.div(0.8).clamp(0, 1);
-  const stroke = select(
-    strength.greaterThanEqual(0.7),
-    vec2(1.35, 0.78),
-    select(
-      strength.greaterThanEqual(0.4),
-      vec2(0.84, 0.48),
-      select(
-        strength.greaterThanEqual(0.18),
-        vec2(0.52, 0.27),
-        vec2(0.3, 0.12),
-      ),
-    ),
+  const relationStrength = relationStrengths.toAttribute();
+  const axis = select(
+    relationStrength.greaterThan(0.001),
+    visualSegment.div(visualLength),
+    vec3(0, 1, 0),
   );
-  const width = stroke.x.mul(nodes.pixelSize);
   const midpoint = sourceWorld.add(visualSegment.mul(0.5));
+  const perpendicular = axis
+    .cross(cameraPosition.sub(midpoint).normalize())
+    .add(vec3(0.00001, 0.00001, 0.00001))
+    .normalize();
+  const lineWeight = float(0.2).add(relationStrength.mul(0.8));
+  const width = float(0.24)
+    .add(relationStrength.mul(1.1))
+    .mul(nodes.pixelSize);
   const localPosition = positionLocal;
   const halfCap = width.mul(0.5);
-  const edgeMargin = nodes.pixelSize.mul(8).add(0.06);
-  const viewLeft = nodes.domain.x.div(6);
-  const viewRight = nodes.domain.x.mul(5 / 6);
-  const viewTop = nodes.domain.y.div(6);
-  const viewBottom = nodes.domain.y.mul(5 / 6);
-  const sourceOutside = sourcePosition.x
-    .lessThan(viewLeft.sub(edgeMargin))
-    .or(sourcePosition.x.greaterThan(viewRight.add(edgeMargin)))
-    .or(sourcePosition.y.lessThan(viewTop.sub(edgeMargin)))
-    .or(sourcePosition.y.greaterThan(viewBottom.add(edgeMargin)));
-  const targetOutside = targetPosition.x
-    .lessThan(viewLeft.sub(edgeMargin))
-    .or(targetPosition.x.greaterThan(viewRight.add(edgeMargin)))
-    .or(targetPosition.y.lessThan(viewTop.sub(edgeMargin)))
-    .or(targetPosition.y.greaterThan(viewBottom.add(edgeMargin)));
   const capDistance = vec2(
     localPosition.x.mul(width),
     localPosition
@@ -263,11 +236,11 @@ function createRelationMaterial(
   material.positionNode = midpoint
     .add(perpendicular.mul(localPosition.x).mul(width))
     .add(axis.mul(localPosition.y).mul(visualLength));
-  material.colorNode = color(0x121212);
+  material.colorNode = color(0x151515);
   material.opacityNode = float(1)
     .sub(smoothstep(halfCap.mul(0.72), halfCap, capDistance))
-    .mul(stroke.y)
-    .mul(select(sourceOutside.and(targetOutside), 0, 1));
+    .mul(lineWeight)
+    .mul(select(relationStrength.greaterThan(0.001), float(1), float(0)));
   material.alphaTest = 0.012;
 
   return material;
@@ -275,15 +248,25 @@ function createRelationMaterial(
 
 function createRelations(
   positions: ParticleNodes["positionsA"],
-  attractivity: ParticleNodes["attractivityA"],
+  relationTargets: ParticleNodes["relationTargetsA"],
+  relationStrengths: ParticleNodes["relationStrengthsA"],
   nodes: ParticleNodes,
   count: number,
 ) {
-  const material = createRelationMaterial(positions, attractivity, nodes);
-  const geometry = new THREE.PlaneGeometry(1, 1);
-  geometry.setIndirect(nodes.drawCommandAttribute);
-  const mesh = new THREE.InstancedMesh(geometry, material, count);
-  mesh.count = count;
+  const material = createRelationMaterial(
+    positions,
+    relationTargets,
+    relationStrengths,
+    nodes,
+  );
+  const plane = new THREE.PlaneGeometry(1, 1).toNonIndexed();
+  const geometry = new THREE.InstancedBufferGeometry();
+  geometry.setAttribute("position", plane.getAttribute("position")!.clone());
+  geometry.setAttribute("normal", plane.getAttribute("normal")!.clone());
+  geometry.setAttribute("uv", plane.getAttribute("uv")!.clone());
+  plane.dispose();
+  geometry.instanceCount = count;
+  const mesh = new THREE.Mesh(geometry, material);
   mesh.frustumCulled = false;
   mesh.renderOrder = 1;
 
@@ -296,232 +279,55 @@ function createRelations(
   };
 }
 
-function createParticleNodes(
-  count: number,
-  pairCount: number,
-  parameters: VoidParticleParameters,
-) {
-  const positionsA = instancedArray(count, "vec2");
-  const positionsB = instancedArray(count, "vec2");
-  const directionsA = instancedArray(count, "vec2");
-  const directionsB = instancedArray(count, "vec2");
+function createParticleNodes(count: number, parameters: VoidParticleParameters) {
+  const positionsA = instancedArray(count, "vec3");
+  const positionsB = instancedArray(count, "vec3");
+  const directionsA = instancedArray(count, "vec3");
+  const directionsB = instancedArray(count, "vec3");
   const attractivityA = instancedArray(count, "float");
   const attractivityB = instancedArray(count, "float");
-  const edgeSources = instancedArray(pairCount, "uint");
-  const edgeTargets = instancedArray(pairCount, "uint");
-  const edgeCount = instancedArray(1, "uint").toAtomic();
-  const drawCommandAttribute = new THREE.IndirectStorageBufferAttribute(
-    new Uint32Array([6, 0, 0, 0, 0]),
-    1,
-  );
-  const drawCommands = storage(
-    drawCommandAttribute,
-    "uint",
-    5,
-  );
-  const domain = uniform(new THREE.Vector2(1, 1));
+  const relationTargetsA = instancedArray(count, "uint");
+  const relationTargetsB = instancedArray(count, "uint");
+  const relationStrengthsA = instancedArray(count, "float");
+  const relationStrengthsB = instancedArray(count, "float");
+  const domain = uniform(new THREE.Vector3(1, 1, FIELD_DEPTH));
   const pixelSize = uniform(1);
   const interactionRadius = uniform(parameters.interactionRadius);
   const noise = uniform(parameters.noise);
   const attractionGain = uniform(parameters.attractionGain);
   const tick = uniform(0);
-  const simulationMath = code(`
-    const TAU: f32 = 6.283185307179586;
-    const RANDOM_INCREMENT: u32 = 0x6d2b79f5u;
-    const INITIAL_SEED: u32 = ${INITIAL_SEED}u;
 
-    fn randomValue(state: u32) -> f32 {
-      var mixed = state;
-      mixed = (mixed ^ (mixed >> 15u)) * (mixed | 1u);
-      mixed = mixed ^ (mixed + ((mixed ^ (mixed >> 7u)) * (mixed | 61u)));
-      return f32(mixed ^ (mixed >> 14u)) / 4294967296.0;
-    }
+  const initialization = Fn(() => {
+    const seed = instanceIndex.mul(uint(6)).add(uint(INITIAL_SEED));
+    const z = hash(seed.add(uint(3))).mul(2).sub(1);
+    const azimuth = hash(seed.add(uint(4))).mul(Math.PI * 2);
+    const radial = float(1).sub(z.mul(z)).max(0).sqrt();
+    const position = vec3(
+      hash(seed.add(uint(1))).mul(domain.x),
+      hash(seed.add(uint(2))).mul(domain.y),
+      hash(seed.add(uint(3))).mul(domain.z),
+    );
+    const direction = vec3(
+      azimuth.cos().mul(radial),
+      azimuth.sin().mul(radial),
+      z,
+    );
+    const attractivity = float(0.18).add(hash(seed.add(uint(5))).mul(0.64));
 
-    fn wrappedDelta(delta: f32, span: f32) -> f32 {
-      if (delta > span * 0.5) { return delta - span; }
-      if (delta < -span * 0.5) { return delta + span; }
-      return delta;
-    }
+    positionsA.element(instanceIndex).assign(position);
+    positionsB.element(instanceIndex).assign(position);
+    directionsA.element(instanceIndex).assign(direction);
+    directionsB.element(instanceIndex).assign(direction);
+    attractivityA.element(instanceIndex).assign(attractivity);
+    attractivityB.element(instanceIndex).assign(attractivity);
+  })().compute(count);
 
-    fn wrap(value: f32, span: f32) -> f32 {
-      let remainder = value % span;
-      return select(remainder + span, remainder, remainder >= 0.0);
-    }
-
-    fn pairSource(pairIndex: u32) -> u32 {
-      let n = f32(${count}u);
-      let pair = f32(pairIndex);
-      return u32(floor(((2.0 * n - 1.0) - sqrt((2.0 * n - 1.0) * (2.0 * n - 1.0) - 8.0 * pair)) * 0.5));
-    }
-
-    fn pairOffset(source: u32) -> u32 {
-      return source * (${count}u * 2u - source - 1u) / 2u;
-    }
-  `);
-
-  const initializeParticles = wgslFn(
-    `
-      fn initializeParticles(
-        positionsA: ptr<storage, array<vec2f>, read_write>,
-        positionsB: ptr<storage, array<vec2f>, read_write>,
-        directionsA: ptr<storage, array<vec2f>, read_write>,
-        directionsB: ptr<storage, array<vec2f>, read_write>,
-        attractivityA: ptr<storage, array<f32>, read_write>,
-        attractivityB: ptr<storage, array<f32>, read_write>,
-        domain: vec2f,
-        index: u32
-      ) -> void {
-        let initialOffset = index * 4u;
-        let xSample = randomValue(INITIAL_SEED + RANDOM_INCREMENT * (initialOffset + 1u));
-        let ySample = randomValue(INITIAL_SEED + RANDOM_INCREMENT * (initialOffset + 2u));
-        let headingSample = randomValue(INITIAL_SEED + RANDOM_INCREMENT * (initialOffset + 3u));
-        let attractivitySample = randomValue(INITIAL_SEED + RANDOM_INCREMENT * (initialOffset + 4u));
-        let position = vec2f(xSample * domain.x, ySample * domain.y);
-        let heading = headingSample * TAU;
-        let direction = vec2f(cos(heading), sin(heading));
-        let attractivity = 0.18 + attractivitySample * 0.64;
-
-        positionsA[index] = position;
-        positionsB[index] = position;
-        directionsA[index] = direction;
-        directionsB[index] = direction;
-        attractivityA[index] = attractivity;
-        attractivityB[index] = attractivity;
-      }
-    `,
-    [simulationMath],
-  );
-
-  const updateParticles = wgslFn(
-    `
-      fn updateParticles(
-        sourcePositions: ptr<storage, array<vec2f>, read_write>,
-        sourceDirections: ptr<storage, array<vec2f>, read_write>,
-        sourceAttractivity: ptr<storage, array<f32>, read_write>,
-        targetPositions: ptr<storage, array<vec2f>, read_write>,
-        targetDirections: ptr<storage, array<vec2f>, read_write>,
-        targetAttractivity: ptr<storage, array<f32>, read_write>,
-        domain: vec2f,
-        reach: f32,
-        noise: f32,
-        attractionGain: f32,
-        tick: f32,
-        index: u32
-      ) -> void {
-        let sourcePosition = sourcePositions[index];
-        let sourceDirection = sourceDirections[index];
-        let sourceAttractivityValue = sourceAttractivity[index];
-        var heading = sourceDirection;
-        var headingWeight = 1.0;
-
-        for (var other = 0u; other < ${count}u; other = other + 1u) {
-          if (other == index) { continue; }
-
-          let otherPosition = sourcePositions[other];
-          let delta = vec2f(
-            wrappedDelta(otherPosition.x - sourcePosition.x, domain.x),
-            wrappedDelta(otherPosition.y - sourcePosition.y, domain.y)
-          );
-          let distanceToOther = length(delta);
-
-          if (distanceToOther <= reach) {
-            let normalizedDistance = clamp(distanceToOther / reach, 0.0, 1.0);
-            let proximity = 1.0 - normalizedDistance;
-            let reciprocalAttractivity = sqrt(sourceAttractivityValue * sourceAttractivity[other]);
-            let weight = (0.14 + 0.86 * proximity * proximity)
-              * (0.12 + 0.88 * reciprocalAttractivity)
-              * attractionGain;
-            heading = heading + sourceDirections[other] * weight;
-            headingWeight = headingWeight + weight;
-          }
-        }
-
-        let randomOffset = 4u * ${count}u + u32(tick) * ${count}u + index + 1u;
-        let noiseAngle = (randomValue(INITIAL_SEED + RANDOM_INCREMENT * randomOffset) - 0.5) * noise;
-        let coherence = min(1.0, length(heading) / headingWeight);
-        let baseHeading = atan2(heading.y, heading.x);
-        let nextHeading = baseHeading + noiseAngle;
-        let nextDirection = vec2f(cos(nextHeading), sin(nextHeading));
-        let speed = reach * 0.03;
-
-        targetPositions[index] = vec2f(
-          wrap(sourcePosition.x + nextDirection.x * speed, domain.x),
-          wrap(sourcePosition.y + nextDirection.y * speed, domain.y)
-        );
-        targetDirections[index] = nextDirection;
-        targetAttractivity[index] = clamp(
-          sourceAttractivityValue * 0.78 + coherence * 0.22,
-          0.03,
-          1.0
-        );
-      }
-    `,
-    [simulationMath],
-  );
-
-  const resetRelations = wgslFn(
-    `
-      fn resetRelations(
-        edgeCount: ptr<storage, array<atomic<u32>>, read_write>,
-        drawCommands: ptr<storage, array<u32>, read_write>,
-        index: u32
-      ) -> void {
-        atomicStore(&edgeCount[0], 0u);
-        drawCommands[0] = 6u;
-        drawCommands[1] = 0u;
-        drawCommands[2] = 0u;
-        drawCommands[3] = 0u;
-        drawCommands[4] = 0u;
-      }
-    `,
-  );
-
-  const compactRelations = wgslFn(
-    `
-      fn compactRelations(
-        positions: ptr<storage, array<vec2f>, read_write>,
-        attractivity: ptr<storage, array<f32>, read_write>,
-        edgeSources: ptr<storage, array<u32>, read_write>,
-        edgeTargets: ptr<storage, array<u32>, read_write>,
-        edgeCount: ptr<storage, array<atomic<u32>>, read_write>,
-        domain: vec2f,
-        reach: f32,
-        index: u32
-      ) -> void {
-        let source = pairSource(index);
-        let target = source + 1u + (index - pairOffset(source));
-        let sourcePosition = positions[source];
-        let targetPosition = positions[target];
-        let delta = vec2f(
-          wrappedDelta(targetPosition.x - sourcePosition.x, domain.x),
-          wrappedDelta(targetPosition.y - sourcePosition.y, domain.y)
-        );
-
-        if (length(delta) <= reach) {
-          let slot = atomicAdd(&edgeCount[0], 1u);
-          edgeSources[slot] = source;
-          edgeTargets[slot] = target;
-        }
-      }
-    `,
-    [simulationMath],
-  );
-
-  const finalizeRelations = wgslFn(
-    `
-      fn finalizeRelations(
-        edgeCount: ptr<storage, array<atomic<u32>>, read_write>,
-        drawCommands: ptr<storage, array<u32>, read_write>,
-        index: u32
-      ) -> void {
-        drawCommands[0] = 6u;
-        drawCommands[1] = atomicLoad(&edgeCount[0]);
-        drawCommands[2] = 0u;
-        drawCommands[3] = 0u;
-        drawCommands[4] = 0u;
-      }
-    `,
-  );
+  const relationInitialization = Fn(() => {
+    relationTargetsA.element(instanceIndex).assign(instanceIndex);
+    relationTargetsB.element(instanceIndex).assign(instanceIndex);
+    relationStrengthsA.element(instanceIndex).assign(float(0));
+    relationStrengthsB.element(instanceIndex).assign(float(0));
+  })().compute(count);
 
   const createUpdate = (
     sourcePositions: typeof positionsA,
@@ -531,35 +337,103 @@ function createParticleNodes(
     targetDirections: typeof directionsA,
     targetAttractivity: typeof attractivityA,
   ) =>
-    updateParticles({
-      sourceAttractivity,
-      sourceDirections,
-      sourcePositions,
-      targetAttractivity,
-      targetDirections,
-      targetPositions,
-      attractionGain,
-      domain,
-      index: instanceIndex,
-      noise,
-      reach: interactionRadius,
-      tick,
-    }).compute(count);
+    Fn(() => {
+      const currentPosition = sourcePositions.element(instanceIndex).toVar();
+      const currentDirection = sourceDirections.element(instanceIndex).toVar();
+      const currentAttractivity = sourceAttractivity.element(instanceIndex).toVar();
+      const heading = currentDirection.toVar();
+      const headingWeight = float(1).toVar();
 
-  const createRelationCompaction = (
+      Loop(count, ({ i }) => {
+        const otherIndex = i.toUint();
+        If(otherIndex.notEqual(instanceIndex), () => {
+          const delta = periodicDelta(
+            sourcePositions.element(otherIndex).sub(currentPosition),
+            domain,
+          );
+          const distance = delta.length();
+
+          If(distance.lessThanEqual(interactionRadius), () => {
+            const proximity = float(1).sub(distance.div(interactionRadius));
+            const reciprocalAttractivity = currentAttractivity
+              .mul(sourceAttractivity.element(otherIndex))
+              .sqrt();
+            const weight = float(0.14)
+              .add(proximity.mul(proximity).mul(0.86))
+              .mul(float(0.12).add(reciprocalAttractivity.mul(0.88)))
+              .mul(attractionGain);
+            heading.addAssign(sourceDirections.element(otherIndex).mul(weight));
+            headingWeight.addAssign(weight);
+          });
+        });
+      });
+
+      const noiseSeed = tick
+        .toUint()
+        .mul(uint(count * 2))
+        .add(instanceIndex.mul(uint(2)))
+        .add(uint(INITIAL_SEED));
+      const noiseZ = hash(noiseSeed.add(uint(1))).mul(2).sub(1);
+      const noiseAzimuth = hash(noiseSeed.add(uint(2))).mul(Math.PI * 2);
+      const noiseRadial = float(1).sub(noiseZ.mul(noiseZ)).max(0).sqrt();
+      const noiseDirection = vec3(
+        noiseAzimuth.cos().mul(noiseRadial),
+        noiseAzimuth.sin().mul(noiseRadial),
+        noiseZ,
+      );
+      const coherence = heading.length().div(headingWeight).min(1);
+      const nextDirection = mix(
+        heading.normalize(),
+        noiseDirection,
+        noise.div(Math.PI).clamp(0, 1),
+      ).normalize();
+      const speed = interactionRadius.mul(0.03);
+
+      targetPositions
+        .element(instanceIndex)
+        .assign(wrappedPosition(currentPosition.add(nextDirection.mul(speed)), domain));
+      targetDirections.element(instanceIndex).assign(nextDirection);
+      targetAttractivity
+        .element(instanceIndex)
+        .assign(currentAttractivity.mul(0.78).add(coherence.mul(0.22)).clamp(0.03, 1));
+    })().compute(count);
+
+  const createRelationDetection = (
     positions: typeof positionsA,
     attractivity: typeof attractivityA,
+    relationTargets: typeof relationTargetsA,
+    relationStrengths: typeof relationStrengthsA,
   ) =>
-    compactRelations({
-      attractivity,
-      domain,
-      edgeCount,
-      edgeSources,
-      edgeTargets,
-      index: instanceIndex,
-      positions,
-      reach: interactionRadius,
-    }).compute(pairCount);
+    Fn(() => {
+      const sourcePosition = positions.element(instanceIndex).toVar();
+      const sourceAttractivity = attractivity.element(instanceIndex).toVar();
+      const nearestDistance = interactionRadius.toVar();
+      const nearestTarget = instanceIndex.toVar();
+
+      Loop(count, ({ i }) => {
+        const otherIndex = i.toUint();
+        If(otherIndex.notEqual(instanceIndex), () => {
+          const distance = periodicDelta(
+            positions.element(otherIndex).sub(sourcePosition),
+            domain,
+          ).length();
+          If(distance.lessThan(nearestDistance), () => {
+            nearestDistance.assign(distance);
+            nearestTarget.assign(otherIndex);
+          });
+        });
+      });
+
+      relationTargets.element(instanceIndex).assign(nearestTarget);
+      relationStrengths
+        .element(instanceIndex)
+        .assign(
+          float(1)
+            .sub(nearestDistance.div(interactionRadius))
+            .max(0)
+            .mul(sourceAttractivity.mul(attractivity.element(nearestTarget)).sqrt()),
+        );
+    })().compute(count);
 
   return {
     attractivityA,
@@ -567,39 +441,31 @@ function createParticleNodes(
     attractionGain,
     directionsA,
     directionsB,
-    drawCommandAttribute,
     domain,
-    drawCommands,
-    edgeSources,
-    edgeTargets,
-    finalizeRelations: finalizeRelations({
-      drawCommands,
-      edgeCount,
-      index: instanceIndex,
-    }).compute(1),
-    initialization: initializeParticles({
-      attractivityA,
-      attractivityB,
-      directionsA,
-      directionsB,
-      domain,
-      index: instanceIndex,
-      positionsA,
-      positionsB,
-    }).compute(count),
+    initialization,
     interactionRadius,
     noise,
     particleCount: count,
     pixelSize,
     positionsA,
     positionsB,
-    rebuildRelationsA: createRelationCompaction(positionsA, attractivityA),
-    rebuildRelationsB: createRelationCompaction(positionsB, attractivityB),
-    resetRelations: resetRelations({
-      drawCommands,
-      edgeCount,
-      index: instanceIndex,
-    }).compute(1),
+    relationStrengthsA,
+    relationStrengthsB,
+    relationTargetsA,
+    relationTargetsB,
+    relationInitialization,
+    rebuildRelationsA: createRelationDetection(
+      positionsA,
+      attractivityA,
+      relationTargetsA,
+      relationStrengthsA,
+    ),
+    rebuildRelationsB: createRelationDetection(
+      positionsB,
+      attractivityB,
+      relationTargetsB,
+      relationStrengthsB,
+    ),
     tick,
     updateAToB: createUpdate(
       positionsA,
@@ -627,7 +493,6 @@ export async function createVoidParticleField(
   initialHeight: number,
 ): Promise<VoidParticleField> {
   const particleCount = particleCountForViewport(initialWidth, initialHeight);
-  const pairCount = (particleCount * (particleCount - 1)) / 2;
   const renderer = new THREE.WebGPURenderer({
     alpha: false,
     antialias: true,
@@ -644,9 +509,16 @@ export async function createVoidParticleField(
   }
 
   const scene = new THREE.Scene();
-  const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 1);
-  camera.position.z = 1;
-  const nodes = createParticleNodes(particleCount, pairCount, initialParameters);
+  const camera = new THREE.PerspectiveCamera(32, 1, 0.01, 10);
+  const controls = new OrbitControls(camera, canvas);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  controls.minDistance = 0.45;
+  controls.maxDistance = 2.6;
+  controls.screenSpacePanning = true;
+  controls.target.set(0, 0, 0);
+
+  const nodes = createParticleNodes(particleCount, initialParameters);
   const marksA = createDirectionalMarks(
     nodes.positionsA,
     nodes.directionsA,
@@ -663,15 +535,17 @@ export async function createVoidParticleField(
   );
   const relationsA = createRelations(
     nodes.positionsA,
-    nodes.attractivityA,
+    nodes.relationTargetsA,
+    nodes.relationStrengthsA,
     nodes,
-    pairCount,
+    particleCount,
   );
   const relationsB = createRelations(
     nodes.positionsB,
-    nodes.attractivityB,
+    nodes.relationTargetsB,
+    nodes.relationStrengthsB,
     nodes,
-    pairCount,
+    particleCount,
   );
   marksA.marks.forEach((mark) => scene.add(mark));
   marksB.marks.forEach((mark) => {
@@ -701,19 +575,23 @@ export async function createVoidParticleField(
     relationsB.mesh.visible = !showA;
   };
 
-  const render = () => {
+  const renderScene = () => {
     if (!disposed) renderer.render(scene, camera);
   };
 
+  const render = () => {
+    if (disposed) return;
+    controls.update();
+    renderScene();
+  };
+
   const rebuildRelations = (state = activeState) => {
-    renderer.compute(nodes.resetRelations);
     renderer.compute(
       state === "a" ? nodes.rebuildRelationsA : nodes.rebuildRelationsB,
     );
-    renderer.compute(nodes.finalizeRelations);
   };
 
-  const step = () => {
+  const runStep = () => {
     if (disposed) return;
     renderer.compute(
       activeState === "a" ? nodes.updateAToB : nodes.updateBToA,
@@ -722,20 +600,17 @@ export async function createVoidParticleField(
     const nextState = activeState === "a" ? "b" : "a";
     rebuildRelations(nextState);
     setActiveState(nextState);
-    render();
   };
 
   const animate = (time: number) => {
     accumulator += Math.min(66, Math.max(0, time - previousFrame));
     previousFrame = time;
-    let stepCount = 0;
 
-    while (accumulator >= STEP_INTERVAL_MS && stepCount < 1) {
-      step();
-      accumulator -= STEP_INTERVAL_MS;
-      stepCount += 1;
+    if (accumulator >= STEP_INTERVAL_MS) {
+      runStep();
+      accumulator = 0;
     }
-    if (stepCount === 1) accumulator = 0;
+    render();
     frameId = requestAnimationFrame(animate);
   };
 
@@ -756,8 +631,6 @@ export async function createVoidParticleField(
     const safeWidth = Math.max(1, width);
     const safeHeight = Math.max(1, height);
     const scale = Math.max(1, Math.min(safeWidth, safeHeight));
-    const domainWidth = safeWidth / scale;
-    const domainHeight = safeHeight / scale;
     const pixelRatio = Math.min(
       MAX_PIXEL_RATIO,
       window.devicePixelRatio || 1,
@@ -765,15 +638,16 @@ export async function createVoidParticleField(
     );
     renderer.setPixelRatio(pixelRatio);
     renderer.setSize(safeWidth, safeHeight, false);
-    camera.left = -domainWidth / (FIELD_ZOOM * 2);
-    camera.right = domainWidth / (FIELD_ZOOM * 2);
-    camera.top = domainHeight / (FIELD_ZOOM * 2);
-    camera.bottom = -domainHeight / (FIELD_ZOOM * 2);
+    camera.aspect = safeWidth / safeHeight;
+    camera.position.set(0.2, -0.12, 1.35 / FIELD_ZOOM);
+    controls.target.set(0, 0, 0);
+    controls.update();
     camera.updateProjectionMatrix();
-    nodes.domain.value.set(domainWidth, domainHeight);
+    nodes.domain.value.set(safeWidth / scale, safeHeight / scale, FIELD_DEPTH);
     nodes.pixelSize.value = 1 / scale;
     nodes.tick.value = 0;
     renderer.compute(nodes.initialization);
+    renderer.compute(nodes.relationInitialization);
     setActiveState("a");
     rebuildRelations("a");
     previousFrame = performance.now();
@@ -783,11 +657,15 @@ export async function createVoidParticleField(
 
   resize(initialWidth, initialHeight);
 
+  controls.addEventListener("change", renderScene);
+
   return {
     dispose: () => {
       if (disposed) return;
       disposed = true;
       stop();
+      controls.removeEventListener("change", renderScene);
+      controls.dispose();
       scene.remove(
         ...marksA.marks,
         ...marksB.marks,
@@ -799,10 +677,9 @@ export async function createVoidParticleField(
       relationsA.dispose();
       relationsB.dispose();
       nodes.initialization.dispose();
-      nodes.resetRelations.dispose();
+      nodes.relationInitialization.dispose();
       nodes.rebuildRelationsA.dispose();
       nodes.rebuildRelationsB.dispose();
-      nodes.finalizeRelations.dispose();
       nodes.updateAToB.dispose();
       nodes.updateBToA.dispose();
       renderer.dispose();
@@ -825,6 +702,9 @@ export async function createVoidParticleField(
       rebuildRelations();
       render();
     },
-    step,
+    step: () => {
+      runStep();
+      render();
+    },
   };
 }

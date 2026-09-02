@@ -25,7 +25,7 @@ export async function generateMetadata({
   return {
     title: `void/${experiment}`,
     description: isThreeDimensionalParticleField
-      ? "A GPU-computed three-dimensional continuation of void/1's attractive particle field, with live metric-neighbour relations and direct orbiting."
+      ? "A GPU-computed three-dimensional continuation of void/1's attractive particle field, where live 3D metric neighbours make weighted relation ribbons."
       : isTerritoryField
         ? "A sparse field of curved concentric territories, continuously negotiated between circular influence and Voronoi boundaries."
         : "A high-density weighted Vicsek field where local coupling visibly makes and unmakes voids.",

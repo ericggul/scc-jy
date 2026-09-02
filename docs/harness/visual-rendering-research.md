@@ -80,7 +80,9 @@ question is already answerable with the local implementation.
 - Do not add React Three Fiber, a renderer replacement, GPU compute, a new
   dependency, or a general post-processing stack merely because a source uses
   one. SCC's imperative Three.js renderers and Goldfishes' independent,
-  preserved renderers are valid local constraints.
+  preserved renderers are valid local constraints. The exception is an explicit
+  request to clone supplied source code: then preserve its runtime path and
+  follow the [WebGPU/TSL particle source-clone protocol](./webgpu-tsl-particles.md).
 - A GPU simulation must retain the repository's model/presentation separation:
   server or model state does not contain colours, geometry, opacity, layout, or
   animation phase merely to make the render convenient.

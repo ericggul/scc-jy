@@ -29,6 +29,7 @@ get a dedicated document.
 - [SCC relay deployment](./harness/scc-relay-deployment.md)
 - [Local image collections](./harness/local-image-collections.md)
 - [Visual rendering research](./harness/visual-rendering-research.md)
+- [WebGPU/TSL particle source-clone protocol](./harness/webgpu-tsl-particles.md)
 - [Tinkering as the SCC working method](./foundations/tinkering.md)
 - [Common visual design guidelines](./foundations/design-guidelines.md)
 - [Multi-Device Web Artwork](./foundations/mdwa.md)

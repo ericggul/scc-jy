@@ -11,14 +11,14 @@ import {
 
 const MIN_NOISE = 0;
 const MAX_NOISE = Math.PI;
-const MIN_INTERACTION_RADIUS = 0.024;
-const MAX_INTERACTION_RADIUS = 0.06;
+const MIN_INTERACTION_RADIUS = 0.045;
+const MAX_INTERACTION_RADIUS = 0.115;
 const MIN_ATTRACTION_GAIN = 0.25;
 const MAX_ATTRACTION_GAIN = 2.4;
 
 const INITIAL_PARAMETERS: VoidParticleParameters = {
   attractionGain: 1,
-  interactionRadius: 0.037,
+  interactionRadius: 0.075,
   noise: 0.42,
 };
 
