@@ -28,6 +28,7 @@ get a dedicated document.
 - [반포자이즘 EC2와 SCC socket 공동 운영 결정](./harness/banpo-ec2-scc-cohosting.md)
 - [SCC relay deployment](./harness/scc-relay-deployment.md)
 - [Local image collections](./harness/local-image-collections.md)
+- [Visual rendering research](./harness/visual-rendering-research.md)
 - [Tinkering as the SCC working method](./foundations/tinkering.md)
 - [Common visual design guidelines](./foundations/design-guidelines.md)
 - [Multi-Device Web Artwork](./foundations/mdwa.md)

@@ -209,8 +209,15 @@ function broadcastPresence(io) {
   io.to(cValRoom).emit(events.presence, getPresence(io));
 }
 
+function snapshotState() {
+  return snapshotCValRuntime(runtime, {
+    inactiveAt: disengagedAt,
+    closingAt: closingAuctionAt,
+  });
+}
+
 function broadcastState(io) {
-  const state = snapshotCValRuntime(runtime);
+  const state = snapshotState();
   io.to(cValRoom).emit(events.stateOut, state);
   return state;
 }
@@ -248,14 +255,14 @@ setInterval(() => {
     if (beginCValRuntimeClosingAuction(runtime, now)) {
       enteredClosingAuction = true;
       clearCValDiagnostics(diagnostics, now);
-      console.info("[c-val:v2] inactive for 5s; market stopped in closing auction");
+      console.info("[c-val:v2] inactive for 10s; market stopped in closing auction");
     }
   } else if (lifecycle.transition === "reset") {
     humanControls.clear();
     resetCValRuntime(runtime, now);
     clearCValDiagnostics(diagnostics, now);
     resetAfterClosingAuction = true;
-    console.info("[c-val:v2] closing auction reached 120s; market reset to 100");
+    console.info("[c-val:v2] inactive for 60m; market reset to 100");
   }
   stepCValRuntime(runtime, now, cValModelTiming.broadcastIntervalMs / 1000);
   const activeClientCount =
@@ -301,7 +308,7 @@ function register({ io, socket }) {
     clients.set(socket.id, { connectedAt: Date.now() });
     socket.join(cValRoom);
     socket.emit(events.hello, {
-      state: snapshotCValRuntime(runtime),
+      state: snapshotState(),
       presence: getPresence(io),
     });
     broadcastPresence(io);

@@ -21,11 +21,11 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { experiment } = await params;
   const isTerritoryField = experiment === "2";
-  const isCouzinTorus = experiment === "3";
+  const isThreeDimensionalParticleField = experiment === "3";
   return {
     title: `void/${experiment}`,
-    description: isCouzinTorus
-      ? "A 2D Couzin zonal-interaction flock whose local repulsion, orientation, and attraction open a moving low-density core."
+    description: isThreeDimensionalParticleField
+      ? "A GPU-computed three-dimensional continuation of void/1's attractive particle field, with live metric-neighbour relations and direct orbiting."
       : isTerritoryField
         ? "A sparse field of curved concentric territories, continuously negotiated between circular influence and Voronoi boundaries."
         : "A high-density weighted Vicsek field where local coupling visibly makes and unmakes voids.",

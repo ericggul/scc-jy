@@ -1,9 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import styled from "styled-components";
 import type { CValSnapshot } from "@/components/model";
-import { cValMediaCellOrder, presentCValMedia } from "./presenter";
+import {
+  cValMediaCellOrder,
+  cValMediaShouldShowEntry,
+  presentCValMedia,
+} from "./presenter";
 import CValEntryQr from "../entry-qr";
 import CValMediaCommentReaction from "./comment-reaction";
 
@@ -77,11 +81,34 @@ function drawCover(
   context.drawImage(video, sourceX, sourceY, cropWidth, cropHeight, 0, 0, width, height);
 }
 
+function useCValMediaEntry(snapshot: CValSnapshot) {
+  const [now, setNow] = useState(() => Date.now());
+  const inactiveAt = snapshot.idle?.inactiveAt;
+  const deadline =
+    snapshot.phase === "closing-auction" && Number.isFinite(inactiveAt)
+      ? (inactiveAt as number) + 120_000
+      : null;
+
+  useEffect(() => {
+    const current = Date.now();
+    setNow(current);
+    if (deadline === null) return;
+    const timer = window.setTimeout(
+      () => setNow(Date.now()),
+      Math.max(0, deadline - current),
+    );
+    return () => window.clearTimeout(timer);
+  }, [deadline]);
+
+  return cValMediaShouldShowEntry(snapshot, now);
+}
+
 export default function CValMediaScreen({ snapshot }: { snapshot: CValSnapshot }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const layout = presentCValMedia(snapshot);
-  const segment = layout.direction === "quiet" ? null : media[layout.direction];
+  const showEntry = useCValMediaEntry(snapshot);
+  const segment = showEntry || layout.direction === "quiet" ? null : media[layout.direction];
   const cellOrder = useMemo(() => cValMediaCellOrder(layout.dimension), [layout.dimension]);
   const drawStateRef = useRef({
     activeCount: layout.activeCount,
@@ -196,11 +223,11 @@ export default function CValMediaScreen({ snapshot }: { snapshot: CValSnapshot }
   }, [segment]);
 
   return (
-    <Stage aria-label={layout.direction === "gain" ? `${layout.activeCount} beef dinner scenes` : layout.direction === "loss" ? `${layout.activeCount} falling scenes` : "No market movement yet"}>
+      <Stage aria-label={showEntry ? "C-VAL mobile entry QR" : layout.direction === "gain" ? `${layout.activeCount} beef dinner scenes` : layout.direction === "loss" ? `${layout.activeCount} falling scenes` : "No market movement yet"}>
       <Canvas ref={canvasRef} role="img" />
       {segment ? <SourceVideo key={segment.src} ref={videoRef} src={segment.src} preload="auto" playsInline loop autoPlay /> : null}
       {ENABLE_MEDIA_COMMENT_REACTION ? <CValMediaCommentReaction snapshot={snapshot} /> : null}
-      {snapshot.phase === "waiting" ? <EntryPoint><CValEntryQr /></EntryPoint> : null}
+      {showEntry ? <EntryPoint><CValEntryQr /></EntryPoint> : null}
     </Stage>
   );
 }

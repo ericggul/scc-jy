@@ -170,6 +170,10 @@ export type CValSnapshot = {
   activatedAt: number | null;
   revision: number;
   serverTime: number;
+  idle: {
+    inactiveAt: number | null;
+    closingAt: number | null;
+  };
   calibration: {
     id: string;
     referenceClass: string;
@@ -257,6 +261,10 @@ export function createInitialCValSnapshot(): CValSnapshot {
     activatedAt: null,
     revision: 0,
     serverTime: 0,
+    idle: {
+      inactiveAt: null,
+      closingAt: null,
+    },
     calibration: {
       id: "c-val-compressed-market-day-double-auction",
       referenceClass: "compressed market-day continuous double auction",

@@ -1107,7 +1107,7 @@ function participantSummary(runtime) {
   });
 }
 
-export function snapshotCValRuntime(runtime) {
+export function snapshotCValRuntime(runtime, { inactiveAt = null, closingAt = null } = {}) {
   return {
     version: cValVersion,
     runId: runtime.runId,
@@ -1115,6 +1115,10 @@ export function snapshotCValRuntime(runtime) {
     activatedAt: runtime.activatedAt,
     revision: runtime.revision,
     serverTime: runtime.serverTime,
+    idle: {
+      inactiveAt: Number.isFinite(inactiveAt) ? inactiveAt : null,
+      closingAt: Number.isFinite(closingAt) ? closingAt : null,
+    },
     calibration: {
       id: cValCalibration.id,
       referenceClass: cValCalibration.referenceClass,

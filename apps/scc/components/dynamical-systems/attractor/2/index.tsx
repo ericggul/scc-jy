@@ -1,17 +1,32 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import * as THREE from "three";
+import * as THREE from "three/webgpu";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { bloom } from "three/addons/tsl/display/BloomNode.js";
+import { vignette } from "three/addons/tsl/display/CRT.js";
+import {
+  color,
+  float,
+  normalView,
+  pass,
+  positionViewDirection,
+  vec4,
+} from "three/tsl";
 import styles from "./attractor-atlas.module.css";
+import { createDdongGeometry } from "./rendering/ddong-geometry";
 import {
   ATTRACTOR_DEFINITIONS,
   MAX_PARTICLE_COUNT,
-  createAttractorParticleStates,
+  createAttractorTangentParticleStates,
   createAttractorTraces,
-  stepAttractorParticleStates,
+  finiteTimeTangentDivergence,
+  reReleaseAttractorTangentCompanions,
+  renormalizeAttractorTangentParticleStates,
+  stepAttractorTangentParticleStates,
+  tangentEpsilonFor,
   type AttractorId,
-  type AttractorParticleState,
+  type AttractorTangentParticleState,
   type AttractorTrace,
   type PhasePoint,
 } from "./model";
@@ -21,50 +36,102 @@ type FieldSize = {
   height: number;
 };
 
-type ParticleTrailVisual = {
-  geometry: THREE.BufferGeometry;
-  positions: Float32Array;
+type ParticleForm = "sphere" | "ddong";
+
+type NodePhysicalMaterial = THREE.MeshPhysicalNodeMaterial;
+
+type PairVisual = {
+  companion: THREE.Mesh;
+  companionMaterial: NodePhysicalMaterial;
   line: THREE.Line;
+  lineGeometry: THREE.BufferGeometry;
+  lineMaterial: THREE.LineBasicMaterial;
+  linePositions: Float32Array;
+  primary: THREE.Mesh;
+  primaryMaterial: NodePhysicalMaterial;
 };
 
 type AttractorVisual = {
+  ddongCompanion: THREE.InstancedMesh;
+  ddongCompanionMaterial: NodePhysicalMaterial;
+  ddongPrimary: THREE.InstancedMesh;
+  ddongPrimaryMaterial: NodePhysicalMaterial;
   group: THREE.Group;
-  particleTrails: readonly ParticleTrailVisual[];
-  particles: readonly THREE.Mesh[];
+  pairVisuals: readonly PairVisual[];
+  proximityColours: Float32Array;
+  proximityGeometry: THREE.BufferGeometry;
+  proximityLine: THREE.LineSegments;
+  proximityPositions: Float32Array;
   dispose: () => void;
 };
 
 const DISPLAY_ORDER = ATTRACTOR_DEFINITIONS.map((definition) => definition.id);
-const MAX_TRAIL_POINTS = 360;
-const TRAIL_CAPTURE_INTERVAL = 3;
 const SIMULATION_SECONDS_PER_SECOND = 2.4;
 const MAX_INTEGRATION_STEPS_PER_FRAME = 32;
 const MAX_CANVAS_PIXELS = 8_000_000;
-const PARTICLE_COLOURS = [
-  "#d65f54",
-  "#dd9448",
-  "#d4bd4c",
-  "#84af67",
-  "#4fa891",
-  "#4c9fc1",
-  "#5f88ce",
-  "#776fc5",
-  "#a271b7",
-  "#c56c9c",
-  "#bd6965",
-  "#c88962",
-  "#a9a85e",
-  "#70a27a",
-  "#5b9e97",
-  "#5c91b9",
-  "#6e79b1",
-  "#966fa5",
-  "#b07085",
-  "#aa7d71",
-] as const;
+const TANGENT_RENORMALIZATION_SECONDS = 0.36;
+const COMPANION_RELEASE_SECONDS = 12;
+const COMPANION_MAX_SEPARATION_FRACTION = 0.12;
+const NEARBY_CONNECTION_DISTANCE_FRACTION = 0.7;
+const MAX_VISIBLE_BEAD_COUNT = MAX_PARTICLE_COUNT * 2;
+const MAX_NEARBY_CONNECTION_COUNT = MAX_VISIBLE_BEAD_COUNT *
+  (MAX_VISIBLE_BEAD_COUNT - 1) / 2;
+const DDONG_PRIMARY_SCALE = 0.032;
+const DDONG_COMPANION_SCALE = 0.02;
+const NEUTRAL_COLOUR = new THREE.Color("#f1dfba");
+const CONTRACTING_COLOUR = new THREE.Color("#5d7ee8");
+const DIVERGING_COLOUR = new THREE.Color("#ff7d66");
 
-function particleColour(index: number) {
-  return PARTICLE_COLOURS[index] ?? PARTICLE_COLOURS[0];
+function createEdgeEmission(tint: number, strength: number) {
+  const facing = normalView.dot(positionViewDirection).clamp();
+  const edge = float(1).sub(facing).pow(3.2);
+  return color(tint).mul(edge.mul(strength));
+}
+
+function createParticleMaterial(
+  opacity = 1,
+  side = THREE.FrontSide,
+) {
+  const material = new THREE.MeshPhysicalNodeMaterial({
+    clearcoat: 1,
+    clearcoatRoughness: 0.045,
+    color: NEUTRAL_COLOUR,
+    iridescence: 0.22,
+    iridescenceIOR: 1.32,
+    iridescenceThicknessRange: [120, 340],
+    ior: 1.45,
+    metalness: 0,
+    opacity,
+    roughness: 0.09,
+    side,
+    specularIntensity: 1,
+    specularColor: "#ffffff",
+    transparent: opacity < 1,
+  });
+  material.emissiveNode = createEdgeEmission(0xdaf7ee, 0.58);
+  return material;
+}
+
+function createDdongMaterial(opacity = 1) {
+  const material = new THREE.MeshPhysicalNodeMaterial({
+    clearcoat: 0.92,
+    clearcoatRoughness: 0.08,
+    color: "#ffffff",
+    iridescence: 0.16,
+    iridescenceIOR: 1.28,
+    iridescenceThicknessRange: [150, 310],
+    ior: 1.42,
+    metalness: 0,
+    opacity,
+    roughness: 0.13,
+    side: THREE.DoubleSide,
+    specularIntensity: 1,
+    specularColor: "#fff3df",
+    transparent: opacity < 1,
+    vertexColors: true,
+  });
+  material.emissiveNode = createEdgeEmission(0xffdbad, 0.7);
+  return material;
 }
 
 function writeNormalizedPosition(
@@ -91,12 +158,50 @@ function setParticlePosition(
   );
 }
 
+function setDdongTransform(
+  mesh: THREE.InstancedMesh,
+  index: number,
+  point: PhasePoint,
+  trace: AttractorTrace,
+  scale: number,
+  matrix: THREE.Matrix4,
+) {
+  matrix.makeScale(scale, scale, scale);
+  matrix.setPosition(
+    (point.x - trace.center.x) / trace.radius,
+    (point.y - trace.center.y) / trace.radius,
+    (point.z - trace.center.z) / trace.radius,
+  );
+  mesh.setMatrixAt(index, matrix);
+}
+
+function writeColour(target: Float32Array, index: number, colour: THREE.Color) {
+  const offset = index * 3;
+  target[offset] = colour.r;
+  target[offset + 1] = colour.g;
+  target[offset + 2] = colour.b;
+}
+
+function setDivergenceColour(
+  divergence: number,
+  material: NodePhysicalMaterial,
+) {
+  const strength = 1 - Math.exp(-Math.abs(divergence));
+  material.color.lerpColors(
+    NEUTRAL_COLOUR,
+    divergence < 0 ? CONTRACTING_COLOUR : DIVERGING_COLOUR,
+    strength,
+  );
+  material.emissive.copy(material.color).multiplyScalar(0.06);
+}
+
 function createAttractorVisual(
   trace: AttractorTrace,
-  sphereGeometry: THREE.SphereGeometry,
+  primarySphereGeometry: THREE.SphereGeometry,
+  companionSphereGeometry: THREE.SphereGeometry,
+  ddongGeometry: THREE.BufferGeometry,
 ): AttractorVisual {
   const group = new THREE.Group();
-
   const referencePositions = new Float32Array(trace.points.length * 3);
   for (let index = 0; index < trace.points.length; index += 1) {
     const point = trace.points[index];
@@ -108,7 +213,7 @@ function createAttractorVisual(
     new THREE.BufferAttribute(referencePositions, 3),
   );
   const referenceMaterial = new THREE.LineBasicMaterial({
-    color: "#e7dfd2",
+    color: "#d7e5da",
     transparent: true,
     opacity: 0.075,
     depthWrite: false,
@@ -117,95 +222,254 @@ function createAttractorVisual(
   referenceLine.renderOrder = 0;
   group.add(referenceLine);
 
-  const particleTrails: ParticleTrailVisual[] = [];
-  const particles: THREE.Mesh[] = [];
+  const proximityPositions = new Float32Array(MAX_NEARBY_CONNECTION_COUNT * 6);
+  const proximityColours = new Float32Array(MAX_NEARBY_CONNECTION_COUNT * 6);
+  const proximityGeometry = new THREE.BufferGeometry();
+  const proximityPosition = new THREE.BufferAttribute(proximityPositions, 3);
+  proximityPosition.setUsage(THREE.DynamicDrawUsage);
+  proximityGeometry.setAttribute("position", proximityPosition);
+  const proximityColour = new THREE.BufferAttribute(proximityColours, 3);
+  proximityColour.setUsage(THREE.DynamicDrawUsage);
+  proximityGeometry.setAttribute("color", proximityColour);
+  proximityGeometry.setDrawRange(0, 0);
+  const proximityMaterial = new THREE.LineBasicMaterial({
+    vertexColors: true,
+    transparent: true,
+    opacity: 0.3,
+    depthWrite: false,
+  });
+  const proximityLine = new THREE.LineSegments(
+    proximityGeometry,
+    proximityMaterial,
+  );
+  proximityLine.frustumCulled = false;
+  proximityLine.renderOrder = 1;
+  group.add(proximityLine);
+
+  const ddongPrimaryMaterial = createDdongMaterial();
+  const ddongPrimary = new THREE.InstancedMesh(
+    ddongGeometry,
+    ddongPrimaryMaterial,
+    MAX_PARTICLE_COUNT,
+  );
+  ddongPrimary.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  ddongPrimary.count = 0;
+  ddongPrimary.frustumCulled = false;
+  ddongPrimary.renderOrder = 3;
+  group.add(ddongPrimary);
+
+  const ddongCompanionMaterial = createDdongMaterial(0.84);
+  const ddongCompanion = new THREE.InstancedMesh(
+    ddongGeometry,
+    ddongCompanionMaterial,
+    MAX_PARTICLE_COUNT,
+  );
+  ddongCompanion.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  ddongCompanion.count = 0;
+  ddongCompanion.frustumCulled = false;
+  ddongCompanion.renderOrder = 4;
+  group.add(ddongCompanion);
+
+  const pairVisuals: PairVisual[] = [];
   for (let index = 0; index < MAX_PARTICLE_COUNT; index += 1) {
-    const trailPositions = new Float32Array(MAX_TRAIL_POINTS * 3);
-    const trailGeometry = new THREE.BufferGeometry();
-    const trailAttribute = new THREE.BufferAttribute(trailPositions, 3);
-    trailAttribute.setUsage(THREE.DynamicDrawUsage);
-    trailGeometry.setAttribute("position", trailAttribute);
-    trailGeometry.setDrawRange(0, 0);
-    const trailMaterial = new THREE.LineBasicMaterial({
-      color: particleColour(index),
+    const primaryMaterial = createParticleMaterial();
+    const primary = new THREE.Mesh(primarySphereGeometry, primaryMaterial);
+    primary.renderOrder = 3;
+    group.add(primary);
+
+    const companionMaterial = createParticleMaterial(0.84);
+    const companion = new THREE.Mesh(companionSphereGeometry, companionMaterial);
+    companion.renderOrder = 4;
+    group.add(companion);
+
+    const linePositions = new Float32Array(6);
+    const lineGeometry = new THREE.BufferGeometry();
+    const position = new THREE.BufferAttribute(linePositions, 3);
+    position.setUsage(THREE.DynamicDrawUsage);
+    lineGeometry.setAttribute("position", position);
+    const lineMaterial = new THREE.LineBasicMaterial({
+      color: NEUTRAL_COLOUR,
       transparent: true,
-      opacity: 0.42,
+      opacity: 0.8,
       depthWrite: false,
     });
-    const trailLine = new THREE.Line(trailGeometry, trailMaterial);
-    trailLine.renderOrder = 1;
-    group.add(trailLine);
-    particleTrails.push({
-      geometry: trailGeometry,
-      positions: trailPositions,
-      line: trailLine,
+    const line = new THREE.Line(lineGeometry, lineMaterial);
+    line.frustumCulled = false;
+    line.renderOrder = 2;
+    group.add(line);
+    pairVisuals.push({
+      companion,
+      companionMaterial,
+      line,
+      lineGeometry,
+      lineMaterial,
+      linePositions,
+      primary,
+      primaryMaterial,
     });
-
-    const particleMaterial = new THREE.MeshStandardMaterial({
-      color: particleColour(index),
-      roughness: 0.34,
-      metalness: 0.04,
-    });
-    const particle = new THREE.Mesh(sphereGeometry, particleMaterial);
-    particle.renderOrder = 2;
-    group.add(particle);
-    particles.push(particle);
   }
 
   return {
+    ddongCompanion,
+    ddongCompanionMaterial,
+    ddongPrimary,
+    ddongPrimaryMaterial,
     group,
-    particleTrails,
-    particles,
+    pairVisuals,
+    proximityColours,
+    proximityGeometry,
+    proximityLine,
+    proximityPositions,
     dispose: () => {
       referenceGeometry.dispose();
       referenceMaterial.dispose();
-      for (const { geometry, line } of particleTrails) {
-        geometry.dispose();
-        const material = line.material;
-        if (Array.isArray(material)) material.forEach((entry) => entry.dispose());
-        else material.dispose();
-      }
-      for (const particle of particles) {
-        const material = particle.material;
-        if (Array.isArray(material)) material.forEach((entry) => entry.dispose());
-        else material.dispose();
+      proximityGeometry.dispose();
+      proximityMaterial.dispose();
+      ddongPrimaryMaterial.dispose();
+      ddongCompanionMaterial.dispose();
+      for (const pair of pairVisuals) {
+        pair.primaryMaterial.dispose();
+        pair.companionMaterial.dispose();
+        pair.lineGeometry.dispose();
+        pair.lineMaterial.dispose();
       }
     },
   };
 }
 
-function updateParticleVisuals(
+function updatePairVisuals(
   visual: AttractorVisual,
   trace: AttractorTrace,
-  particles: readonly AttractorParticleState[],
-  trails: readonly (readonly PhasePoint[])[],
-  particleCount: number,
+  pairs: readonly AttractorTangentParticleState[],
+  pairCount: number,
+  epsilon: number,
+  particleForm: ParticleForm,
 ) {
+  const isDdong = particleForm === "ddong";
+  const matrix = isDdong ? new THREE.Matrix4() : null;
+  visual.ddongPrimary.count = isDdong ? pairCount : 0;
+  visual.ddongCompanion.count = isDdong ? pairCount : 0;
+  visual.ddongPrimary.visible = isDdong;
+  visual.ddongCompanion.visible = isDdong;
+
   for (let index = 0; index < MAX_PARTICLE_COUNT; index += 1) {
-    const particle = particles[index];
-    const particleTrail = trails[index];
-    const trailVisual = visual.particleTrails[index];
-    const mesh = visual.particles[index];
-    const isVisible = index < particleCount && Boolean(particle && particleTrail);
-    if (!trailVisual || !mesh) continue;
+    const pair = pairs[index];
+    const pairVisual = visual.pairVisuals[index];
+    if (!pairVisual) continue;
+    const isVisible = index < pairCount && Boolean(pair);
+    pairVisual.primary.visible = isVisible && !isDdong;
+    pairVisual.companion.visible = isVisible && !isDdong;
+    pairVisual.line.visible = isVisible;
+    if (!isVisible || !pair) continue;
 
-    mesh.visible = isVisible;
-    trailVisual.line.visible = isVisible;
-    if (!isVisible || !particle || !particleTrail) continue;
+    setParticlePosition(pairVisual.primary, pair.state, trace);
+    setParticlePosition(pairVisual.companion, pair.companion, trace);
+    writeNormalizedPosition(pairVisual.linePositions, 0, pair.state, trace);
+    writeNormalizedPosition(pairVisual.linePositions, 1, pair.companion, trace);
+    pairVisual.lineGeometry.getAttribute("position").needsUpdate = true;
 
-    const count = Math.min(MAX_TRAIL_POINTS, particleTrail.length);
-    const start = Math.max(0, particleTrail.length - count);
-    for (let pointIndex = 0; pointIndex < count; pointIndex += 1) {
-      const point = particleTrail[start + pointIndex];
-      if (point) {
-        writeNormalizedPosition(trailVisual.positions, pointIndex, point, trace);
+    const divergence = finiteTimeTangentDivergence(pair, epsilon);
+    setDivergenceColour(divergence, pairVisual.primaryMaterial);
+    pairVisual.companionMaterial.color.copy(pairVisual.primaryMaterial.color);
+    pairVisual.companionMaterial.emissive.copy(pairVisual.primaryMaterial.emissive);
+    pairVisual.lineMaterial.color.copy(pairVisual.primaryMaterial.color);
+    if (!isDdong || !matrix) continue;
+
+    setDdongTransform(
+      visual.ddongPrimary,
+      index,
+      pair.state,
+      trace,
+      DDONG_PRIMARY_SCALE,
+      matrix,
+    );
+    setDdongTransform(
+      visual.ddongCompanion,
+      index,
+      pair.companion,
+      trace,
+      DDONG_COMPANION_SCALE,
+      matrix,
+    );
+    visual.ddongPrimary.setColorAt(index, pairVisual.primaryMaterial.color);
+    visual.ddongCompanion.setColorAt(index, pairVisual.primaryMaterial.color);
+  }
+
+  if (isDdong) {
+    visual.ddongPrimary.instanceMatrix.needsUpdate = true;
+    visual.ddongCompanion.instanceMatrix.needsUpdate = true;
+    if (visual.ddongPrimary.instanceColor) {
+      visual.ddongPrimary.instanceColor.needsUpdate = true;
+    }
+    if (visual.ddongCompanion.instanceColor) {
+      visual.ddongCompanion.instanceColor.needsUpdate = true;
+    }
+  }
+}
+
+function updateNearbyConnections(
+  visual: AttractorVisual,
+  trace: AttractorTrace,
+  pairs: readonly AttractorTangentParticleState[],
+  pairCount: number,
+) {
+  const connectionDistance = NEARBY_CONNECTION_DISTANCE_FRACTION * trace.radius;
+  const maximumDistanceSquared = connectionDistance ** 2;
+  let connectionCount = 0;
+
+  for (let sourcePairIndex = 0; sourcePairIndex < pairCount; sourcePairIndex += 1) {
+    const sourcePair = pairs[sourcePairIndex];
+    const sourceVisual = visual.pairVisuals[sourcePairIndex];
+    if (!sourcePair || !sourceVisual) continue;
+    const sourcePoints = [sourcePair.state, sourcePair.companion] as const;
+
+    for (let targetPairIndex = sourcePairIndex + 1; targetPairIndex < pairCount; targetPairIndex += 1) {
+      const targetPair = pairs[targetPairIndex];
+      const targetVisual = visual.pairVisuals[targetPairIndex];
+      if (!targetPair || !targetVisual) continue;
+      const targetPoints = [targetPair.state, targetPair.companion] as const;
+
+      for (const sourcePoint of sourcePoints) {
+        for (const targetPoint of targetPoints) {
+          const distanceSquared = (sourcePoint.x - targetPoint.x) ** 2 +
+            (sourcePoint.y - targetPoint.y) ** 2 +
+            (sourcePoint.z - targetPoint.z) ** 2;
+          if (distanceSquared > maximumDistanceSquared) continue;
+          if (connectionCount >= MAX_NEARBY_CONNECTION_COUNT) break;
+
+          const vertexIndex = connectionCount * 2;
+          writeNormalizedPosition(
+            visual.proximityPositions,
+            vertexIndex,
+            sourcePoint,
+            trace,
+          );
+          writeNormalizedPosition(
+            visual.proximityPositions,
+            vertexIndex + 1,
+            targetPoint,
+            trace,
+          );
+          writeColour(
+            visual.proximityColours,
+            vertexIndex,
+            sourceVisual.primaryMaterial.color,
+          );
+          writeColour(
+            visual.proximityColours,
+            vertexIndex + 1,
+            targetVisual.primaryMaterial.color,
+          );
+          connectionCount += 1;
+        }
       }
     }
-    trailVisual.geometry.setDrawRange(0, count);
-    const position = trailVisual.geometry.getAttribute("position");
-    position.needsUpdate = true;
-    setParticlePosition(mesh, particle.state, trace);
   }
+
+  visual.proximityGeometry.setDrawRange(0, connectionCount * 2);
+  visual.proximityGeometry.getAttribute("position").needsUpdate = true;
+  visual.proximityGeometry.getAttribute("color").needsUpdate = true;
+  visual.proximityLine.visible = connectionCount > 0;
 }
 
 export default function AttractorSequenceTwo() {
@@ -213,9 +477,11 @@ export default function AttractorSequenceTwo() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const repaintRef = useRef<(() => void) | null>(null);
   const activeAttractorRef = useRef<AttractorId>("finance");
-  const particleCountRef = useRef(1);
+  const pairCountRef = useRef(1);
+  const particleFormRef = useRef<ParticleForm>("sphere");
   const [activeAttractor, setActiveAttractor] = useState<AttractorId>("finance");
-  const [particleCount, setParticleCount] = useState(1);
+  const [pairCount, setPairCount] = useState(1);
+  const [particleForm, setParticleForm] = useState<ParticleForm>("sphere");
 
   useEffect(() => {
     activeAttractorRef.current = activeAttractor;
@@ -223,24 +489,32 @@ export default function AttractorSequenceTwo() {
   }, [activeAttractor]);
 
   useEffect(() => {
-    particleCountRef.current = particleCount;
+    pairCountRef.current = pairCount;
     repaintRef.current?.();
-  }, [particleCount]);
+  }, [pairCount]);
+
+  useEffect(() => {
+    particleFormRef.current = particleForm;
+    repaintRef.current?.();
+  }, [particleForm]);
 
   useEffect(() => {
     const field = fieldRef.current;
     const canvas = canvasRef.current;
     if (!field || !canvas) return;
 
-    const renderer = new THREE.WebGLRenderer({
+    const renderer = new THREE.WebGPURenderer({
       antialias: true,
       canvas,
       powerPreference: "high-performance",
     });
     renderer.outputColorSpace = THREE.SRGBColorSpace;
-    renderer.setClearColor("#1c1d1b", 1);
+    renderer.toneMapping = THREE.AgXToneMapping;
+    renderer.toneMappingExposure = 1.08;
+    renderer.setClearColor("#101921", 1);
 
     const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2("#101921", 0.16);
     const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 100);
     camera.position.set(0, 0, 3.5);
     const controls = new OrbitControls(camera, renderer.domElement);
@@ -254,22 +528,30 @@ export default function AttractorSequenceTwo() {
     controls.zoomSpeed = 0.75;
     controls.cursorStyle = "grab";
     controls.update();
-    scene.add(new THREE.HemisphereLight("#f0eadf", "#1c1d1b", 1.55));
-    const keyLight = new THREE.DirectionalLight("#fff0d8", 2.2);
-    keyLight.position.set(2.5, 3, 4);
-    scene.add(keyLight);
-    const fillLight = new THREE.DirectionalLight("#b3c8e6", 0.65);
-    fillLight.position.set(-3, -1, 2);
-    scene.add(fillLight);
+    scene.add(new THREE.HemisphereLight("#c9e6dc", "#101921", 1.35));
+    const keyLight = new THREE.DirectionalLight("#ffe7bf", 2.8);
+    keyLight.position.set(2.4, 2.8, 4.2);
+    const coolRimLight = new THREE.DirectionalLight("#8db5ff", 1.45);
+    coolRimLight.position.set(-3.4, 0.8, -2.5);
+    const warmCoreLight = new THREE.PointLight("#ffbf80", 9, 6.5, 2);
+    warmCoreLight.position.set(0.15, 1.5, 2.6);
+    scene.add(keyLight, coolRimLight, warmCoreLight);
 
     const traces = createAttractorTraces();
     const tracesByAttractor = new Map(
       traces.map((trace) => [trace.definition.id, trace]),
     );
-    const sphereGeometry = new THREE.SphereGeometry(0.04, 18, 14);
+    const primarySphereGeometry = new THREE.SphereGeometry(0.041, 32, 24);
+    const companionSphereGeometry = new THREE.SphereGeometry(0.022, 24, 18);
+    const ddongGeometry = createDdongGeometry();
     const visualsByAttractor = new Map<AttractorId, AttractorVisual>();
     for (const trace of traces) {
-      const visual = createAttractorVisual(trace, sphereGeometry);
+      const visual = createAttractorVisual(
+        trace,
+        primarySphereGeometry,
+        companionSphereGeometry,
+        ddongGeometry,
+      );
       visual.group.visible = trace.definition.id === activeAttractorRef.current;
       visualsByAttractor.set(trace.definition.id, visual);
       scene.add(visual.group);
@@ -277,19 +559,18 @@ export default function AttractorSequenceTwo() {
 
     const particleStatesByAttractor = new Map<
       AttractorId,
-      readonly AttractorParticleState[]
+      readonly AttractorTangentParticleState[]
     >();
-    const particleTrailsByAttractor = new Map<AttractorId, PhasePoint[][]>();
-    const captureRemainderByAttractor = new Map<AttractorId, number>();
+    const epsilonByAttractor = new Map<AttractorId, number>();
+    const renormalizationRemainderByAttractor = new Map<AttractorId, number>();
     const simulationRemainderByAttractor = new Map<AttractorId, number>();
     for (const trace of traces) {
-      const particles = createAttractorParticleStates(trace);
-      particleStatesByAttractor.set(trace.definition.id, particles);
-      particleTrailsByAttractor.set(
+      particleStatesByAttractor.set(
         trace.definition.id,
-        particles.map((particle) => [particle.state]),
+        createAttractorTangentParticleStates(trace),
       );
-      captureRemainderByAttractor.set(trace.definition.id, 0);
+      epsilonByAttractor.set(trace.definition.id, tangentEpsilonFor(trace));
+      renormalizationRemainderByAttractor.set(trace.definition.id, 0);
       simulationRemainderByAttractor.set(trace.definition.id, 0);
     }
 
@@ -297,13 +578,17 @@ export default function AttractorSequenceTwo() {
     let size: FieldSize = { width: 0, height: 0 };
     let frameId: number | null = null;
     let previousFrameTime: number | null = null;
+    let renderPipeline: THREE.RenderPipeline | null = null;
+    let disposePostProcessing: (() => void) | null = null;
+    let observer: ResizeObserver | null = null;
+    let disposed = false;
 
-    const advanceParticles = (elapsedSeconds: number) => {
+    const advancePairs = (elapsedSeconds: number) => {
       const id = activeAttractorRef.current;
       const trace = tracesByAttractor.get(id);
       const particles = particleStatesByAttractor.get(id);
-      const trails = particleTrailsByAttractor.get(id);
-      if (!trace || !particles || !trails) return;
+      const epsilon = epsilonByAttractor.get(id);
+      if (!trace || !particles || !epsilon) return;
 
       const simulatedSeconds = (simulationRemainderByAttractor.get(id) ?? 0) +
         Math.min(elapsedSeconds, 0.05) * SIMULATION_SECONDS_PER_SECOND;
@@ -316,46 +601,57 @@ export default function AttractorSequenceTwo() {
       if (steps === 0) return;
 
       let nextParticles = particles;
+      let renormalizationRemainder = renormalizationRemainderByAttractor.get(id) ?? 0;
       for (let step = 0; step < steps; step += 1) {
-        nextParticles = stepAttractorParticleStates(trace.definition, nextParticles);
+        nextParticles = stepAttractorTangentParticleStates(
+          trace.definition,
+          nextParticles,
+        );
+        renormalizationRemainder += trace.definition.step;
+        if (renormalizationRemainder >= TANGENT_RENORMALIZATION_SECONDS) {
+          nextParticles = renormalizeAttractorTangentParticleStates(
+            nextParticles,
+            epsilon,
+          );
+          renormalizationRemainder %= TANGENT_RENORMALIZATION_SECONDS;
+        }
+        nextParticles = reReleaseAttractorTangentCompanions(
+          nextParticles,
+          COMPANION_RELEASE_SECONDS,
+          trace.radius * COMPANION_MAX_SEPARATION_FRACTION,
+        );
       }
       particleStatesByAttractor.set(id, nextParticles);
-
-      const captureRemainder = (captureRemainderByAttractor.get(id) ?? 0) + steps;
-      if (captureRemainder < TRAIL_CAPTURE_INTERVAL) {
-        captureRemainderByAttractor.set(id, captureRemainder);
-        return;
-      }
-      captureRemainderByAttractor.set(id, captureRemainder % TRAIL_CAPTURE_INTERVAL);
-      for (let index = 0; index < nextParticles.length; index += 1) {
-        const trail = trails[index];
-        const particle = nextParticles[index];
-        if (!trail || !particle) continue;
-        if (trail.length >= MAX_TRAIL_POINTS) trail.shift();
-        trail.push(particle.state);
-      }
+      renormalizationRemainderByAttractor.set(id, renormalizationRemainder);
     };
 
     const paint = () => {
-      if (size.width <= 0 || size.height <= 0) return;
+      if (size.width <= 0 || size.height <= 0 || !renderPipeline) return;
       const id = activeAttractorRef.current;
       const trace = tracesByAttractor.get(id);
       const visual = visualsByAttractor.get(id);
       const particles = particleStatesByAttractor.get(id);
-      const trails = particleTrailsByAttractor.get(id);
-      if (!trace || !visual || !particles || !trails) return;
+      const epsilon = epsilonByAttractor.get(id);
+      if (!trace || !visual || !particles || !epsilon) return;
 
       for (const [visualId, candidate] of visualsByAttractor) {
         candidate.group.visible = visualId === id;
       }
-      updateParticleVisuals(
+      updatePairVisuals(
         visual,
         trace,
         particles,
-        trails,
-        particleCountRef.current,
+        pairCountRef.current,
+        epsilon,
+        particleFormRef.current,
       );
-      renderer.render(scene, camera);
+      updateNearbyConnections(
+        visual,
+        trace,
+        particles,
+        pairCountRef.current,
+      );
+      renderPipeline.render();
     };
 
     const animate = (time: number) => {
@@ -363,7 +659,7 @@ export default function AttractorSequenceTwo() {
         ? 0
         : (time - previousFrameTime) / 1_000;
       previousFrameTime = time;
-      advanceParticles(elapsedSeconds);
+      advancePairs(elapsedSeconds);
       controls.update();
       paint();
       if (!reducedMotion.matches) frameId = requestAnimationFrame(animate);
@@ -397,30 +693,61 @@ export default function AttractorSequenceTwo() {
       if (!reducedMotion.matches) frameId = requestAnimationFrame(animate);
     };
 
-    repaintRef.current = paint;
     const handleControlChange = () => {
       if (reducedMotion.matches) paint();
     };
-    const observer = new ResizeObserver(resize);
-    observer.observe(field);
-    controls.enableDamping = !reducedMotion.matches;
-    controls.dampingFactor = 0.07;
-    controls.addEventListener("change", handleControlChange);
-    reducedMotion.addEventListener("change", handleMotionPreference);
-    resize();
-    if (!reducedMotion.matches) frameId = requestAnimationFrame(animate);
+
+    const initializeRenderer = async () => {
+      try {
+        await renderer.init();
+        if (disposed) return;
+
+        const scenePass = pass(scene, camera);
+        const sceneTexture = scenePass.getTextureNode("output");
+        const bloomTexture = bloom(sceneTexture, 0.14, 0.28, 0.76);
+        const composite = sceneTexture.add(bloomTexture);
+        renderPipeline = new THREE.RenderPipeline(renderer);
+        renderPipeline.outputNode = vec4(
+          vignette(composite.rgb, float(0.16), float(0.5)),
+          composite.a,
+        );
+        disposePostProcessing = () => {
+          bloomTexture.dispose();
+          scenePass.dispose();
+          renderPipeline?.dispose();
+          renderPipeline = null;
+        };
+
+        repaintRef.current = paint;
+        observer = new ResizeObserver(resize);
+        observer.observe(field);
+        controls.enableDamping = !reducedMotion.matches;
+        controls.dampingFactor = 0.07;
+        controls.addEventListener("change", handleControlChange);
+        reducedMotion.addEventListener("change", handleMotionPreference);
+        resize();
+        if (!reducedMotion.matches) frameId = requestAnimationFrame(animate);
+      } catch (error) {
+        if (!disposed) console.error("Unable to initialize the WebGPU renderer.", error);
+      }
+    };
+
+    void initializeRenderer();
 
     return () => {
-      observer.disconnect();
+      disposed = true;
+      observer?.disconnect();
       reducedMotion.removeEventListener("change", handleMotionPreference);
       controls.removeEventListener("change", handleControlChange);
       controls.dispose();
       if (frameId !== null) cancelAnimationFrame(frameId);
-      repaintRef.current = null;
+      if (repaintRef.current === paint) repaintRef.current = null;
       for (const visual of visualsByAttractor.values()) visual.dispose();
-      sphereGeometry.dispose();
+      primarySphereGeometry.dispose();
+      companionSphereGeometry.dispose();
+      ddongGeometry.dispose();
+      disposePostProcessing?.();
       renderer.dispose();
-      renderer.forceContextLoss();
     };
   }, []);
 
@@ -446,7 +773,7 @@ export default function AttractorSequenceTwo() {
         ref={canvasRef}
         className={styles.canvas}
         tabIndex={0}
-        aria-label={`${activeLabel} numerical strange-attractor trajectory in WebGL phase space. Drag to orbit and use the mouse wheel or pinch to zoom.`}
+        aria-label={`${activeLabel} tangent divergence field in WebGPU phase space. Each matched particle pair shows a nearby nonlinear trajectory; indigo is contracting, sand is near neutral, and coral is diverging. Thin lines connect beads from different pairs that are nearby in phase space. The lower particle control changes between spheres and the ddong model. Drag to orbit and use the mouse wheel or pinch to zoom.`}
         onKeyDown={(event) => {
           if (event.key === "ArrowLeft") {
             event.preventDefault();
@@ -489,19 +816,36 @@ export default function AttractorSequenceTwo() {
               </button>
             ))}
           </div>
-          <label className={styles.particleControl} htmlFor="attractor-particle-count">
-            <span>particles</span>
+          <label className={styles.particleControl} htmlFor="attractor-pair-count">
+            <span>pairs</span>
             <input
-              id="attractor-particle-count"
+              id="attractor-pair-count"
               type="range"
               min="1"
               max={MAX_PARTICLE_COUNT}
               step="1"
-              value={particleCount}
-              onChange={(event) => setParticleCount(Number(event.currentTarget.value))}
+              value={pairCount}
+              onChange={(event) => setPairCount(Number(event.currentTarget.value))}
             />
-            <output>{particleCount}</output>
+            <output>{pairCount}</output>
           </label>
+          <div className={styles.particleFormControl} role="group" aria-label="Particle form">
+            <span>particle</span>
+            <button
+              type="button"
+              aria-pressed={particleForm === "sphere"}
+              onClick={() => setParticleForm("sphere")}
+            >
+              sphere
+            </button>
+            <button
+              type="button"
+              aria-pressed={particleForm === "ddong"}
+              onClick={() => setParticleForm("ddong")}
+            >
+              ddong
+            </button>
+          </div>
         </div>
         <button
           className={styles.stepButton}

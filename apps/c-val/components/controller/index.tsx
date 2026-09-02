@@ -83,7 +83,7 @@ function ProcessRibbon({ snapshot }: { snapshot: CValSnapshot }) {
         snapshot.phase === "waiting"
           ? "market held at 100"
           : closingAuction
-            ? "20s without active phone input · resumes on movement"
+            ? "10s without active phone input · resumes on movement"
             : "direct phone input · 0–100",
     },
     {

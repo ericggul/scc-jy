@@ -1,0 +1,127 @@
+.field {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #fff;
+}
+
+.canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.controlDock {
+  position: absolute;
+  bottom: clamp(1rem, 2.8vw, 2rem);
+  left: clamp(1rem, 2.8vw, 2rem);
+  z-index: 1;
+  display: grid;
+  justify-items: start;
+  gap: 0.72rem;
+}
+
+.controlPanel {
+  display: grid;
+  gap: 0.72rem;
+  min-width: min(20rem, calc(100vw - 2rem));
+  padding: 0.72rem 0.78rem;
+  background: rgb(255 255 255 / 0.94);
+  color: rgb(18 18 18 / 0.82);
+  font: 0.67rem var(--font-geist-mono), monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.parameter {
+  display: grid;
+  grid-template-columns: 4.3rem minmax(5.5rem, 12vw) 2.6rem;
+  align-items: center;
+  gap: 0.66rem;
+}
+
+.parameter output {
+  color: rgb(18 18 18 / 0.5);
+  text-align: right;
+}
+
+.slider {
+  width: 100%;
+  height: 1rem;
+  margin: 0;
+  appearance: none;
+  background: transparent;
+  cursor: ew-resize;
+}
+
+.slider::-webkit-slider-runnable-track {
+  height: 1px;
+  background: rgb(18 18 18 / 0.46);
+}
+
+.slider::-webkit-slider-thumb {
+  width: 8px;
+  height: 8px;
+  margin-top: -3.5px;
+  appearance: none;
+  border: 0;
+  border-radius: 50%;
+  background: #121212;
+}
+
+.slider::-moz-range-track {
+  height: 1px;
+  background: rgb(18 18 18 / 0.46);
+}
+
+.slider::-moz-range-thumb {
+  width: 8px;
+  height: 8px;
+  border: 0;
+  border-radius: 50%;
+  background: #121212;
+}
+
+.reading {
+  margin: 0;
+  color: rgb(18 18 18 / 0.48);
+  font: inherit;
+}
+
+.expandButton,
+.stepButton {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: rgb(18 18 18 / 0.82);
+  cursor: pointer;
+  font: 0.67rem var(--font-geist-mono), monospace;
+}
+
+.stepButton {
+  justify-self: start;
+}
+
+.slider:focus-visible,
+.expandButton:focus-visible,
+.stepButton:focus-visible {
+  outline: 1px solid #121212;
+  outline-offset: 5px;
+}
+
+@media (max-width: 390px) {
+  .parameter {
+    grid-template-columns: 4.1rem minmax(4.3rem, 1fr) 2.4rem;
+    gap: 0.48rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slider,
+  .expandButton,
+  .stepButton {
+    cursor: default;
+  }
+}

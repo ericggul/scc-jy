@@ -16,6 +16,9 @@ export type CValMediaLayout = {
   dimension: number;
 };
 
+/** The media field alone becomes the entry point two minutes after inactivity. */
+export const C_VAL_MEDIA_ENTRY_AFTER_INACTIVE_MS = 120_000;
+
 export function cValMediaLayoutFromChange(change: number): CValMediaLayout {
   const safeChange = Number.isFinite(change) ? change : 0;
   const activeCount = Math.min(
@@ -36,6 +39,19 @@ export function cValMediaLayoutFromChange(change: number): CValMediaLayout {
 
 export function presentCValMedia(snapshot: CValSnapshot) {
   return cValMediaLayoutFromChange(cValPriceChange(snapshot));
+}
+
+export function cValMediaShouldShowEntry(
+  snapshot: CValSnapshot,
+  now = Date.now(),
+) {
+  if (snapshot.phase === "waiting") return true;
+  if (snapshot.phase !== "closing-auction") return false;
+  const inactiveAt = snapshot.idle?.inactiveAt;
+  return (
+    Number.isFinite(inactiveAt) &&
+    now - (inactiveAt as number) >= C_VAL_MEDIA_ENTRY_AFTER_INACTIVE_MS
+  );
 }
 
 export function cValMediaCellOrder(dimension: number) {

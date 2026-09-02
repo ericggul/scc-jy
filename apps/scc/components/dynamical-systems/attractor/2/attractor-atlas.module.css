@@ -2,7 +2,7 @@
   position: fixed;
   inset: 0;
   overflow: hidden;
-  background: #1c1d1b;
+  background: #101921;
 }
 
 .canvas {
@@ -17,7 +17,7 @@
 }
 
 .canvas:focus-visible {
-  outline: 1px solid #f0eadf;
+  outline: 1px solid #f4e6cc;
   outline-offset: -0.5rem;
 }
 
@@ -30,7 +30,7 @@
   top: clamp(1.2rem, 2.5vmin, 2rem);
   left: clamp(1.2rem, 2.5vmin, 2rem);
   z-index: 1;
-  color: rgba(231, 223, 210, 0.74);
+  color: rgba(225, 241, 232, 0.76);
   font: clamp(0.75rem, 2.3vmin, 1.5rem) var(--font-geist-mono), monospace;
   pointer-events: none;
 }
@@ -45,7 +45,7 @@
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 1.15rem;
-  color: rgba(240, 234, 223, 0.76);
+  color: rgba(225, 241, 232, 0.78);
   font: 0.68rem var(--font-geist-mono), monospace;
 }
 
@@ -68,24 +68,24 @@
   border: 0;
   padding: 0;
   background: transparent;
-  color: rgba(240, 234, 223, 0.76);
+  color: rgba(225, 241, 232, 0.78);
   cursor: pointer;
   font: inherit;
   text-align: left;
 }
 
 .modelList button[aria-current="true"] {
-  color: #d2a64c;
+  color: #f0c885;
 }
 
 .modelList button:hover,
 .stepButton:hover {
-  color: #f0eadf;
+  color: #f7ead0;
 }
 
 .modelList button:focus-visible,
 .stepButton:focus-visible {
-  outline: 1px solid #f0eadf;
+  outline: 1px solid #f4e6cc;
   outline-offset: 5px;
 }
 
@@ -95,29 +95,59 @@
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  color: rgba(240, 234, 223, 0.48);
+  color: rgba(225, 241, 232, 0.5);
 }
 
 .particleControl input {
   width: min(13rem, 34vw);
-  accent-color: #c96a58;
+  accent-color: #ff7d66;
   cursor: ew-resize;
 }
 
 .particleControl output {
-  color: #c96a58;
+  color: #ff7d66;
   font: inherit;
   text-align: right;
 }
 
+.particleFormControl {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.46rem;
+  color: rgba(225, 241, 232, 0.5);
+}
+
+.particleFormControl button {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: rgba(225, 241, 232, 0.58);
+  cursor: pointer;
+  font: inherit;
+}
+
+.particleFormControl button[aria-pressed="true"] {
+  color: #f0c885;
+}
+
+.particleFormControl button:hover {
+  color: #f7ead0;
+}
+
+.particleFormControl button:focus-visible {
+  outline: 1px solid #f4e6cc;
+  outline-offset: 5px;
+}
+
 .particleControl input:focus-visible {
-  outline: 1px solid #f0eadf;
+  outline: 1px solid #f4e6cc;
   outline-offset: 5px;
 }
 
 .currentModel {
   display: none;
-  color: #d2a64c;
+  color: #f0c885;
   font: inherit;
   text-align: center;
 }
@@ -144,11 +174,16 @@
   .particleControl input {
     width: 100%;
   }
+
+  .particleFormControl {
+    font-size: 0.62rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .modelList button,
   .particleControl input,
+  .particleFormControl button,
   .stepButton {
     cursor: default;
   }

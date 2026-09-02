@@ -1,6 +1,8 @@
 export const cValIdleLifecycleTiming = Object.freeze({
   inactiveToClosingMs: 10_000,
-  closingToResetMs: 60_000,
+  // Together with the 10-second close interval, this makes the full reset
+  // occur one hour after the last engaged phone contribution becomes inactive.
+  closingToResetMs: 3_590_000,
 });
 
 /**
@@ -33,7 +35,9 @@ export function advanceCValIdleLifecycle({
   if (phase === "closing-auction") {
     const nextClosingAt = closingAt ?? now;
     if (now - nextClosingAt < cValIdleLifecycleTiming.closingToResetMs) {
-      return { inactiveAt: null, closingAt: nextClosingAt, transition: null };
+      // Keep the original inactivity timestamp available to screen clients.
+      // It is abstract lifecycle time; each screen derives its own response.
+      return { inactiveAt, closingAt: nextClosingAt, transition: null };
     }
     return { inactiveAt: null, closingAt: null, transition: "reset" };
   }

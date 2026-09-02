@@ -1,299 +1,217 @@
 # Attractor sequence experiment
 
-Routes: `/attractor/1`, `/attractor/2`, and `/attractor/3`, owned by the
-filesystem-only `dynamical-systems` group.
+Active routes: `/attractor/1`, `/attractor/2`, and `/attractor/3`, owned by
+the filesystem-only `dynamical-systems` group.
 
-Date: 2026-08-28.
+## Current sequence
 
-## Interface premise
+| Route | Observation | Numerical model | Renderer |
+| --- | --- | --- | --- |
+| `/attractor/1` | One independently integrated phase state and its short trail. | Six fixed ODEs, RK4, 1–20 deterministic states. | Raw Three.js WebGL, OrbitControls, lit spheres. |
+| `/attractor/2` | A reference state and genuinely integrated nearby companion repeatedly separate. | `/1`'s six ODEs plus a Qi four-wing field, analytic Jacobians, tangent RK4, periodic normalization, and finite-time local divergence. | Three.js WebGPU/TSL with WebGL fallback; glossy physical terminals. |
+| `/attractor/3` | A full three-dimensional volume of one Thomas regime, observed as density rather than individual traces. | 30,000 independently seeded Thomas states, forward Euler, `b = .19`, `dt = .015`. | Three.js WebGPU compute + TSL sprite field; CPU/WebGL points fallback. |
 
-1. **Participant situation:** a person encounters one trajectory at a time,
-   without a comparison grid competing with its structure. Moving the pointer
-   changes the viewpoint; the lower navigation advances through the six systems
-   or selects one by name.
-2. **Primary parameter:** the phase-space trajectory produced by each selected
-   system of three coupled autonomous differential equations after its transient
-   has been discarded.
-3. **Perceptual job:** distinguish the six forms through their occupied volume,
-   symmetry, folding, and recurrent path, without turning the systems into a
-   fake scientific dashboard.
-4. **Interaction job:** alter the viewpoint to test whether an apparent loop,
-   wing, or crossing is a projection effect, then use the lower previous/next
-   sequence or named selector to move to another system. The lower `particles`
-   slider reveals one through twenty independent states of the selected equation.
-   It never alters an equation while claiming to expose a physical parameter.
-5. **Wrapper justification:** one full field gives a phase-space form enough
-   room to be seen as a body rather than a thumbnail. The visible name and lower
-   navigation identify the current equation; they do not divide the field into
-   cards. Ivory is the complete sampled orbit, while individually muted coloured
-   trails and points identify separate phase states rather than model category.
-   The charcoal field and concise lower control
-   adopt the quiet, trace-oriented tone requested from `clock/1`
-   without borrowing its recursive-clock geometry or its visual system as an
-   archive-wide default.
-6. **System family:** the experiment is a dark phase-space field with no title,
-   legend, metrics, equations, status labels, cards, or background ornament.
-   In reduced-motion mode it becomes a static phase-space view, while pointer
-   orbit remains available for depth inspection.
-7. **Removal test:** the sampled trajectory, its moving phase states, the
-   necessary name, pointer orbit, and sequential lower navigation remain. A
-   glossary, numerical readout, parameter controls, pause/reset actions,
-   viewport grid, and explanatory panels do not sharpen the observation.
+The sequence moves from the shape of an orbit to a limited visible observation
+of local sensitivity, then to a dense field of a single system. It does not
+claim a converged global Lyapunov exponent, a calibrated finance model, or a
+general proof of chaos.
 
-## Model card — attractor/1
+## Shared phase-space object
 
-- **System object and boundary:** a mathematical demonstrator of six separate
-  three-dimensional continuous-time ODE systems. It is neither an empirical
-  finance model nor a molecular-dynamics implementation. The `finance` label
-  identifies the published model’s variables, not live market data. The browser
-  does not compute Lyapunov exponents, basin boundaries, invariant measures, or
-  a proof that every selected initial condition is chaotic.
-- **Entity state and local action:** each system has one phase point
-  `(x, y, z)`. Its local derivative is determined solely by its own current
-  point and fixed documented coefficients. A classical fourth-order Runge–Kutta
-  step advances that state; no random number, camera position, or renderer
-  output feeds back into the ODE.
-- **Shared state:** there is none between the six systems. Each trace receives
-  its own initial condition, transient warm-up, sample history, bounding volume,
-  and stable model identifier. The twenty available particle states are seeded
-  from deterministically spaced, post-transient points on that system’s sampled
-  orbit, then evolve as independent RK4 integrations. The slider merely reveals
-  the first one through twenty of those states; it does not regenerate or alter
-  an equation. Muted hues identify particle identity only. The shared orbit is
-  only a viewer transform.
-- **Macro observable:** the occupied phase-space path is the accumulated
-  consequence of the local ODE. The warm-up removes the selected numerical
-  transient; the full pale trace records the finite sampled orbit and each
-  coloured short trail records a current, separately integrated phase state.
-- **Participant intervention and contrast:** lower navigation changes which
-  fixed system is visible; pointer motion alters only that system’s 3-D
-  projection; particle count reveals independent trajectories of that unchanged
-  system. The exact numerical system remains fixed, so a participant can
-  distinguish a genuine projection change or divergent path from a changed
-  equation.
+Each selected system is a three-variable autonomous ODE. A post-transient RK4
+trace contains 12,000 sampled states; a renderer normalizes that trace around
+its own center and radius. The first six systems are shared by the first two variants;
+Qi four-wing belongs only to `/attractor/2`. Camera, colour, material, terminal
+form, and lines cannot modify an ODE or its coefficients. `/attractor/3` is
+a separate Thomas regime and therefore does not share the post-transient trace
+or the `b = .208186` coefficient used by the first two variants.
 
-### Implemented equations and regimes
-
-The model source holds coefficients as code rather than rendering equations on
-the canvas. Each browser trace discards its configured transient, then retains
-12,000 evenly sampled RK4 states.
-
-| ID | Differential system and selected fixed regime |
+| ID | Fixed regime |
 | --- | --- |
 | `finance` | `ẋ = z + (y − 0.9)x`, `ẏ = 1 − 0.2y − x²`, `ż = −x − 1.2z`; initial `(1, 3, 2)`. |
 | `dadras` | `ẋ = y − 3x + 2.7yz`, `ẏ = 1.7y − xz + z`, `ż = 2xy − 9z`; initial `(1, 1, 1)`. |
 | `bouali` | `ẋ = x(4 − y) + 0.3z`, `ẏ = −y(1 − x²)`, `ż = −x(1.5 − z) − 0.05z`; initial `(1, 0.1, 0.1)`. |
-| `aizawa` | Standard six-coefficient form with `(a, b, c, d, e, f) = (0.95, 0.7, 0.6, 3.5, 0.25, 0.1)`; initial `(0.1, 0, 0)`. |
-| `nose-hoover` | `q̇ = p`, `ṗ = −q + pζ`, `ζ̇ = 1 − p²`, rendered as `(x, y, z)`; initial `(0.2, 0, 0)`. This is the sign-transformed thermostat form of the usual `−ζp`, `p² − T` presentation at `T = 1`. |
+| `aizawa` | Standard form with `(a, b, c, d, e, f) = (0.95, 0.7, 0.6, 3.5, 0.25, 0.1)`; initial `(0.1, 0, 0)`. |
+| `nose-hoover` | `q̇ = p`, `ṗ = −q + pζ`, `ζ̇ = 1 − p²`, represented as `(x, y, z)`; initial `(0.2, 0, 0)`. |
 | `thomas` | `ẋ = sin(y) − bx`, `ẏ = sin(z) − by`, `ż = sin(x) − bz`, with `b = 0.208186`; initial `(1.1, 1.1, −0.01)`. |
+| `qi-four-wing` | `/2` only. `ẋ = 14(y − x) + 4yz`, `ẏ = −x + 16y − xz`, `ż = −43z + xy`; initial `(0.001, 0.001, 0.001)`. |
+| `thomas-particles` | `/3` only. The same cyclic Thomas form with `b = 0.19`; 30,000 deterministic seeds begin within radius 2 and advance by forward Euler with `dt = 0.015`. |
 
 ### Research ledger
 
-- The user-provided video’s source post names its twelve featured systems,
-  including Finance, Dadras, Bouali, Aizawa, Nosé–Hoover, and Thomas, and links
-  to its implementation reference: [source post](https://www.reddit.com/r/Simulated/comments/1q3wbon/i_visualised_12_charming_chaotic_attractors/).
-- Yu et al. state the three-variable finance system, its variables, initial
-  point `(1, 3, 2)`, and the selected `a = 0.9`, `b = 0.2`, `c = 1.2` chaotic
-  regime: [*Dynamic analysis and control of a new hyperchaotic finance
+- The user-provided source post names Finance, Dadras, Bouali, Aizawa,
+  Nosé–Hoover, and Thomas in its attractor selection: [source
+  post](https://www.reddit.com/r/Simulated/comments/1q3wbon/i_visualised_12_charming_chaotic_attractors/).
+- Yu et al. give the finance system and the selected `(0.9, 0.2, 1.2)` regime:
+  [*Dynamic analysis and control of a new hyperchaotic finance
   system*](https://www.samos.aegean.gr/math/karan/Finance_Chaotic_System.pdf).
-- The exact Dadras and Bouali equations and the selected conventional
-  coefficients are cross-checked in the synthetic-system table of
-  [Zhang et al.’s supplementary methods](https://chaos1.la.asu.edu/~ylai1/papers/PNAS_2025_ZGHHL.pdf).
-  Dadras and Momeni’s original multi-scroll work establishes the related family
-  and its parameter-dependent one- through four-scroll behaviour:
-  [*Chinese Physics B* 19, 060506 (2010)](https://cpb.iphy.ac.cn/EN/10.1088/1674-1056/19/6/060506).
-- The Nosé formulation and Hoover simplification are linked from the original
-  articles in this concise technical account:
-  [Nosé–Hoover equations and references](https://codingbobby.xyz/projects/chaotic-shapes/nos%C3%A9-hoover/).
-  The canonical three-variable thermostat is non-ergodic in general; this
-  visual sample is not a claim of thermostat validity.
-- The Aizawa convention and coefficients are independently listed in a recent
-  methods paper: [*Mathematics* 12, 1835 (2024)](https://www.mdpi.com/2227-7390/12/12/1835).
-  The conventional label’s historical attribution is not asserted here.
-- Thomas’s cyclic equations and the `b ≈ 0.208186` chaotic threshold are
-  described by the accessible primary-adjacent reference
-  [*Cyclically Symmetric Thomas Oscillators as Swarmalators*](https://arxiv.org/abs/2211.00336).
+- Dadras and Bouali equations are cross-checked against [Zhang et al.'s
+  supplementary methods](https://chaos1.la.asu.edu/~ylai1/papers/PNAS_2025_ZGHHL.pdf).
+- The Nosé and Hoover lineage is linked in [this technical
+  account](https://codingbobby.xyz/projects/chaotic-shapes/nos%C3%A9-hoover/);
+  its canonical thermostat is not generally ergodic.
+- Aizawa's convention is listed in [*Mathematics* 12, 1835
+  (2024)](https://www.mdpi.com/2227-7390/12/12/1835), and the Thomas threshold
+  in [*Cyclically Symmetric Thomas Oscillators as
+  Swarmalators*](https://arxiv.org/abs/2211.00336).
+- Qi et al.'s 3D quadratic system is a documented four-wing attractor with a
+  compound topological structure. `/2` uses its reported
+  `(a, b, c, d, e) = (14, 43, −1, 16, 4)` regime, with a smaller browser RK4
+  step selected for finite integration: [*Chaos, Solitons &
+  Fractals* 38 (2008), 705–721](https://www.sciencedirect.com/science/article/pii/S0960077907000239).
+- Maxime Heckel's [*Field Guide to TSL and
+  WebGPU*](https://blog.maximeheckel.com/posts/field-guide-to-tsl-and-webgpu/)
+  supplies the particle-field adaptation: storage-backed positions are
+  initialized once, updated by compute, then read by a node material. Its
+  Thomas example supplies the selected `b = .19` and `dt = .015` regime.
+- The official Three.js [compute-attractors particle
+  example](https://threejs.org/examples/webgpu_tsl_compute_attractors_particles.html)
+  is the API reference for `instancedArray`, compute dispatch, and a
+  `SpriteNodeMaterial` applied to an `InstancedMesh`.
 
-## Bounded trial
+## attractor/1 — phase-space body
 
-- **Baseline:** a new, field-first phase-space study. `clock/1` is a requested
-  tonal reference for restraint, full-viewport canvas rendering, dynamic pixel
-  ratio sizing, reduced-motion support, and an expandable lower control—not a
-  visual baseline to reproduce. Its relocation into `dynamical-systems` changes
-  ownership and catalogue membership only; `/attractor/1` retains its route,
-  model, interaction, and visual contract.
-- **Changed variable:** a simultaneous six-up comparison becomes a one-at-a-time
-  encounter. The lower sequential selector makes model order explicit without
-  shrinking or dividing the current trajectory. The added one-through-twenty
-  slider exposes deterministic initial-condition variation through coloured,
-  bounded trails. Each selected system retains twenty actual RK4 states and at
-  most 360 recent points for each state, so particle memory does not scale with
-  the full 12,000-point reference trace.
-- **Retained invariants:** one client-only canvas field, direct phase-space
-  observation, no external runtime dependency, responsive bounded content,
-  stable model identifiers, and all presentation mapping outside the model.
-- **Verification target:** pure tests assert the exact system set, the finance
-  derivative at its documented initial point, finite deterministic RK4 samples,
-  twenty finite deterministic particle states, particle-count clamping to
-  one-through-twenty, and positive normalization radius. Type checking covers
-  the App Router selector and canvas interaction layer.
-- **Observed result:** Node 26.5.1 completed a deliberately worst-case model
-  pass (six systems × 600 frames × 32 RK4 steps × 20 particles = 2,304,000
-  particle steps) in 188.56 ms with finite states. Canvas work is bounded to
-  roughly 4,000 reference samples plus at most 7,200 particle-trail samples per
-  frame; the backing canvas is capped at 8,000,000 pixels. This is a numerical
-  and allocation check, not a browser-frame-rate claim; browser verification
-  remains pending an explicit request.
-- **Unresolved question:** a later variant could compare fixed orthographic
-  projections against participant-controlled orbit while keeping this sequential
-  six-system navigator and its numerical coefficient set intact.
+Promoted on 2026-09-02 from the former `/attractor/2` renderer study.
 
-## attractor/2
+- **Participant situation:** a person directly rotates one selected phase
+  volume; wheel or pinch changes bounded zoom, while pan remains disabled.
+- **Primary parameter:** one through twenty independently integrated states of
+  the unchanged selected ODE. Each state has a deterministic seed and a short
+  accumulated trail.
+- **Perceptual job:** distinguish volume, folding, symmetry, and recurrent path
+  of the six systems. Lit spheres and depth occlusion replace an approximate
+  Canvas projection, but do not introduce another scientific claim.
+- **Visible mapping:** ivory is the complete sampled orbit. A muted fixed colour
+  belongs to each independent state and its trail; it is identity, not chaos.
+- **Interaction invariant:** direct OrbitControls orbit alters the view only;
+  lower navigation and particle count select a system or reveal existing
+  states. Neither changes numerical coefficients.
+- **Removal test:** without the orbit, moving states, direct camera inspection,
+  and lower selection, the observation fails. A grid, legend, metrics, or
+  parameter dashboard would not improve it.
 
-Date: 2026-09-01.
+The model test asserts the six-system set, finance derivative, finite
+deterministic traces and states, 1–20 clamping, and positive normalization
+radius. Rendering is capped at 8,000,000 backing pixels.
 
-1. **Participant situation:** a person encounters one selected trajectory in a
-   full field. Direct OrbitControls camera manipulation rotates the actual
-   WebGL phase volume, while the lower navigator and particle-count control retain the actions of
-   `/attractor/1`.
-2. **Primary parameter:** the same finite, normalized three-dimensional ODE
-   path and its separately integrated phase states from `/attractor/1`.
-3. **Perceptual job:** test whether physically shaded, depth-occluding sphere
-   states make the local position of each independent trajectory easier to
-   perceive than the flat endpoint discs in `/attractor/1`, while leaving the
-   underlying orbit and interaction legible as the same experiment.
-4. **Interaction job:** drag directly orbits the camera around the fixed phase
-   volume; wheel or pinch performs a bounded zoom, and panning is disabled so
-   the phase-space centre remains stable. Previous/next, named selection, and
-   the one-through-twenty slider retain their original system-selection and
-   state-revelation roles. No control changes the ODE.
-5. **Wrapper justification:** Three.js gives the existing full phase-space
-   field a perspective camera, depth test, and directional light needed for a
-   small object to read as a sphere. The pale reference orbit and muted
-   identity-coloured trails remain trajectory encodings rather than interface
-   ornament.
-6. **System family:** this is a renderer fork, not a new system. It preserves
-   the charcoal field, sparse lower control, responsive canvas limit,
-   reduced-motion static view, and absence of charts, equations, badges, or
-   scene decoration.
-7. **Removal test:** removing the sphere geometry would erase the only changed
-   relation. Lights exist only to disclose sphere curvature; labels, grids,
-   legends, shadows, and extra controls remain unnecessary.
+## attractor/2 — local separation field
 
-### Bounded trial
+Promoted on 2026-09-02 from the former `/attractor/4`, which already contained
+the full former `/attractor/3` tangent model.
 
-- **Baseline:** `/attractor/1`, copied into `components/dynamical-systems/attractor/2/`
-  so this renderer can be adjusted or rejected without changing the baseline.
-- **Changed variable:** the Canvas 2D projected reference/trails/endpoints are
-  replaced with Three.js WebGL geometry. The 12,000-sample reference and each
-  short trail are `Line` geometry; current particle states are actual lit
-  `SphereGeometry` meshes. Camera rotation replaces the prior manual
-  projection math, but reads the same phase points.
-- **Retained invariants:** all six fixed definitions, warm-up and RK4 method,
-  deterministic particle seeds, one-through-twenty particle limit, stable
-   identifiers, responsive full viewport, navigation, keyboard operation, and
-   reduced-motion behavior. Each state keeps one stable elementary palette
-   colour shared by its trail and lit sphere. Rendering cannot feed back into
-   the ODE.
-- **Verification target:** the copied pure model tests continue to check the
-  numerical contract. Type checking must resolve the route selector and the
-  raw Three.js renderer without introducing React Three Fiber.
-- **Unresolved question:** browser observation should compare whether the
-  sphere radius remains locally readable at one particle and twenty particles
-  before considering camera or material changes.
+The later Qi addition makes this route's seventh system visually distinct: four
+separated folding regions form through the field's actual quadratic cross-terms.
+It is not a renderer-generated ornament and its finite-time divergence is still
+read under the same local, non-global boundary as the other systems.
 
-## attractor/3
+- **Pair state:** every observation has reference state `x`, independently
+  integrated companion `x'`, tangent `δx`, elapsed `T`, and accumulated
+  logarithmic growth `L`. The tangent follows `δẋ = J_f(x)δx` using each
+  system's analytic Jacobian and coupled RK4 stages.
+- **Finite-time boundary:** `|δx|` starts at `0.002R`; every `0.36` simulated
+  seconds it is normalized and contributes `log(|δx| / ε)` to `L`. The shown
+  quantity `λ_T = L / T` is a finite-time local observation, not a converged
+  global Lyapunov exponent. The nonlinear companion is re-released after 12
+  simulated seconds or separation `0.12R`.
+- **Visible relation:** two same-colour terminals and their short segment show
+  actual nonlinear separation. Indigo encodes contraction, sand near-neutral
+  growth, and coral expansion. Inter-pair lines exist only when distinct beads
+  are within `0.7R`; this relation permits at most 3,120 segments for 40 pairs.
+- **Terminal form:** `sphere` is default. `ddong` replaces only terminal
+  geometry using GPU instances at the same states; it cannot affect tangent
+  state, separation, or proximity tests.
+- **Renderer trial:** `WebGPURenderer` initializes asynchronously, retains its
+  WebGL fallback, and renders through a TSL `RenderPipeline` with restrained
+  bloom and vignette. `MeshPhysicalNodeMaterial` uses a clearcoat, moderate
+  roughness, restrained iridescence, and a TSL view-angle edge. It deliberately
+  omits transmission, static room reflection, custom scene captures, geometry
+  displacement, and an art-directed refractive pass so the terminals remain
+  materially consistent with `/attractor/1`'s opaque spheres.
+- **Removal test:** removing the companion, true separation segment, or
+  divergence colour removes the observed sensitivity relation. Backend labels,
+  shader controls, charts, and numerical counters remain excluded.
 
-Date: 2026-09-01.
+The model test asserts the Qi field and analytic Jacobian as well as finite
+reference/companion/tangent states for every system, the finance Jacobian, exact
+post-normalization tangent magnitude, and finite divergence values. Browser
+comparison of the WebGPU and fallback output remains an explicit future
+observation rather than a claimed result.
 
-1. **Participant situation:** a person rotates one phase volume directly and
-   watches matched nearby trajectories repeatedly separate from each other.
-   The lower selector chooses one fixed ODE; the `pairs` control reveals one
-   through forty independently released local samples of that same ODE.
-2. **Primary parameter:** each pair's finite-time tangent divergence
-   `λ_T = L / T`, where `L` accumulates logarithmic tangent growth after
-   periodic normalization. It is a local finite-time observation, not a
-   claimed converged largest Lyapunov exponent.
-3. **Perceptual job:** distinguish contraction, near-neutral evolution, and
-   local divergence as actual nearby trajectories leave a common orbit. A
-   large sphere is the reference state, a smaller same-colour sphere is its
-   separately integrated companion, and their connecting segment is their
-   current nonlinear separation.
-4. **Interaction job:** drag orbits the camera; wheel or pinch performs a
-   bounded zoom. The system selector and pair count alter which fixed field or
-   how many independently seeded observations are visible; neither changes an
-   equation, a coefficient, or a hidden random seed.
-5. **Wrapper justification:** one uncarded phase field lets the separation
-   between two states remain a spatial event. Indigo means a negative finite-time
-   tangent divergence, sand approaches zero, and coral means a positive value;
-   every pair's two spheres and segment share that computed colour. Thin links
-   connect beads from different pairs only when their current phase-space
-   distance is below `0.7R`; their endpoint colours retain the two computed
-   pair states. Colour is therefore a state encoding, not a category palette.
-6. **System family:** this fork retains `/2`'s charcoal WebGL field,
-   OrbitControls, sparse lower navigation, responsive canvas cap, and
-   reduced-motion static view. It removes decorative particle trails because
-   the relevant relation is pair separation, not a second accumulated trace.
-7. **Removal test:** removing the companion, its segment, or the divergence
-   colour would remove the experiment's observable. A legend, chart, faux
-   precision counter, automatic camera motion, or extra control would not make
-   the tangent relation more legible.
+## attractor/3 — Thomas particle field
 
-### Model card — attractor/3
+1. **Participant situation:** one person directly orbits a single phase-space
+   volume. Drag rotates it; wheel or pinch performs bounded zoom. There are no
+   coefficient controls because this is a fixed-regime observation.
+2. **Primary parameter:** the position of 30,000 deterministically seeded
+   Thomas states under `b = .19` and `dt = .015`.
+3. **Perceptual job:** see the three-dimensional accumulation, symmetry, and
+   folded density of one coupled flow. The field is not a history texture or a
+   cloud driven by depth sorting; every visible point is one evolving state.
+4. **Interaction job:** camera orbit changes the participant's view of the
+   same state volume only. Pan is disabled, and no interaction can alter the
+   numerical regime or particle count.
+5. **Wrapper justification:** the field occupies the viewport because density,
+   overlap, and changing volumetric form are the entire observation. The dark
+   ground creates only the contrast required for additive points; blue-to-warm
+   tint depends on phase-space distance, not a category or an invented metric.
+6. **System family:** thin route, local deterministic model, direct camera
+   inspection, pure numerical checks, backing-pixel cap, and no simulated
+   instrumentation remain shared with this family. The particle field takes no
+   wrapper, palette, or control grammar from `complex-systems`.
+7. **Removal test:** removing direct rotation, particle density, or the
+   phase-space update removes the observation. Labels, legends, sliders,
+   post-processing, a grid, and numerical counters do not clarify it and are
+   absent.
 
-- **System boundary:** the six ODEs and their coefficients remain exactly those
-  of `/attractor/1`. This is still a mathematical dynamical-systems study, not
-  a calibrated finance model or a multi-agent complex system. The fork does not
-  assert that every displayed fixed regime has a positive asymptotic largest
-  Lyapunov exponent.
-- **Pair state and update:** every released sample holds reference state `x`,
-  independently integrated companion state `x'`, tangent vector `δx`, elapsed
-  model time `T`, and accumulated logarithmic growth `L`. Reference and
-  companion use the existing RK4 integrator. In parallel, the tangent uses
-  `δẋ = J_f(x)δx`, with an analytic Jacobian `J_f` specified for each ODE and
-  integrated by coupled RK4 stages.
-- **Normalization and uncertainty boundary:** each pair begins with
-  `|δx| = 0.002R`, where `R` is that attractor's normalization radius. Every
-  `0.36` simulated seconds, its tangent is normalized back to that magnitude
-  and `L` receives `log(|δx| / ε)`. The separately integrated companion stays
-  visible until it reaches `0.12R` from the reference or has evolved for `12`
-  simulated seconds; it is then released again from the normalized tangent
-  direction. This is deterministic epistemic initial-condition uncertainty,
-  not stochastic forcing or random visual jitter.
-- **Visible relation:** the matched-pair line endpoint is the actual companion
-  state during the current release interval; it is not a renderer-scaled tangent
-  arrow. Separate thin segments connect every bead belonging to different pairs
-  when the actual phase-space distance is at most `0.7R`; the same-pair line is
-  retained as the distinct perturbation relation. The colour is a continuous
-  indigo–sand–coral mapping of accumulated finite-time tangent divergence. It
-  should be read as an observation of local stretching, not as a binary chaos
-  verdict.
+- **Model boundary:** the route implements the supplied Thomas system
+  `ẋ = −.19x + sin(y)`, `ẏ = −.19y + sin(z)`,
+  `ż = −.19z + sin(x)`. Each path begins from one fixed sphere-distributed
+  seed and advances with a fixed forward Euler step. This is an intentionally
+  different coefficient and integrator from `/1` and `/2`, not a claim
+  that all Thomas parameterizations have the same attractor.
+- **Rendering boundary:** native WebGPU uses a TSL `instancedArray` for
+  immutable seeds and another for evolving offsets. A compute dispatch advances
+  the offsets once each rendered frame, while the sprite material reads the
+  same buffers. Compute is WebGPU-only; when the renderer falls back to WebGL,
+  the route uses the same seeded-sphere distribution and Euler equations in a
+  CPU typed array rendered as `THREE.Points`. It preserves the 3D object
+  rather than claiming performance, individual sample, or pixel equivalence
+  across backends.
+- **Bounded trial:** the changed relation is from sparse, individually legible
+  trajectories and tangent pairs to a dense evolving state field. It retains
+  direct phase-space view, deterministic local computation, no presentation
+  state in the model, and an 8,000,000-pixel cap. No bloom, vignette, shader
+  control surface, R3F dependency, or decorative label was
+  transferred from the source references.
+- **Evidence:** model-level tests confirm the exact damping coefficient,
+  derivative, finite Euler advancement, deterministic 30,000-point seed
+  buffer, and seed radius. Browser observation is pending an explicit browser
+  test request.
+- **Unresolved question:** whether a later preserved trial should change only
+  the numerical integrator so the visible differences between Euler and RK4
+  become inspectable without changing this field's particle count or wrapper.
 
-### Bounded trial
+## Consolidation record
 
-- **Baseline:** `/attractor/2`, copied into
-  `components/dynamical-systems/attractor/3/` so its WebGL renderer remains a
-  preserved spatial baseline.
-- **Changed variable:** independent endpoint particles become deterministic
-  nearby nonlinear companion pairs, while a second tangent integration computes
-  their finite-time local divergence. The changed indigo–sand–coral palette is
-  derived from that result. A proximity relation additionally draws a segment
-  between every two beads from distinct pairs at or below `0.7R`.
-- **Retained invariants:** fixed equation definitions, numerical warm-up,
-  RK4 reference integration, stable IDs, full phase-space field, direct camera
-  orbit, lower sequential selector, a forty-pair (eighty-bead) ceiling, and no
-  presentation-to-model feedback.
-- **Verification target:** pure tests assert the finance Jacobian, finite
-  reference/companion/tangent states for every ODE, exact post-normalization
-  tangent magnitude, and finite divergence values. A later numerical audit must
-  compare step sizes, normalization intervals, and epsilon scales before any
-  regime is described as having a converged Lyapunov exponent.
-- **Observed result:** Node 26.5.1 completed a deliberately worst-case model
-  pass of six systems × 600 frames × 32 RK4 steps × 40 pairs (4,608,000 pair
-  updates) in 1,422.83 ms with finite states. Forty pairs yield at most 80
-  visible beads and 3,120 inter-pair proximity segments; those segments are
-  submitted through one dynamic `LineSegments` geometry. This is a numerical
-  and allocation check, not a browser-frame-rate claim.
-- **Unresolved question:** do repeated local release intervals make sensitivity
-  perceptible without a numeric readout, or does a later dedicated return-map
-  or parameter-sweep variant supply the necessary second observation?
+Date: 2026-09-02.
+
+- **Retired Canvas projection baseline:** the former public `/attractor/1`
+  manually projected the same 20-state model to Canvas 2D. Its only distinct
+  variable was approximate pointer-driven projection; the promoted WebGL body
+  now supplies the clearer default observation. The old URL cannot redirect
+  because `/attractor/1` is the new canonical route.
+- **Retired WebGL tangent baseline:** the former `/attractor/3` introduced
+  tangent dynamics, true companions, divergence colour, proximity lines, and
+  the optional ddong geometry. Its full numerical model is retained in the
+  promoted `/attractor/2`; its raw WebGL material/rendering baseline is not a
+  separate active experiment. The new `/attractor/3` is an independent
+  Thomas-particle trial, not a restoration of that tangent renderer.
+- **Redirects:** former `/attractor/4` permanently redirects to
+  `/attractor/2`. The former tangent `/attractor/3` remains recoverable in
+  version control but cannot redirect because the route now owns this separate
+  particle experiment. The former `/attractor/2` is deliberately replaced by
+  the new tangent route, so it has no compatible redirect target.
+- **Retained evidence:** this record names the removed variables, baseline,
+  current successor, and route collision rather than presenting the two-route
+  sequence as if it had always been linear. The prior source remains recoverable
+  from version control; no retired renderer code remains in the active family.

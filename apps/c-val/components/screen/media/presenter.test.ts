@@ -1,10 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import type { CValSnapshot } from "@/components/model";
 import {
+  C_VAL_MEDIA_ENTRY_AFTER_INACTIVE_MS,
   C_VAL_MEDIA_CELLS_PER_PERCENT,
   C_VAL_MEDIA_MAX_CELLS,
   cValMediaCellOrder,
   cValMediaLayoutFromChange,
+  cValMediaShouldShowEntry,
 } from "./presenter.ts";
 
 test("executed-price direction selects exactly one social video state", () => {
@@ -38,4 +41,35 @@ test("media cells use stable row-major positions", () => {
     { column: 0, row: 1 },
     { column: 1, row: 1 },
   ]);
+});
+
+test("only a two-minute inactive closing auction replaces media with its QR entry", () => {
+  const snapshot = {
+    phase: "closing-auction",
+    idle: { inactiveAt: 1_000, closingAt: 11_000 },
+  } as CValSnapshot;
+
+  assert.equal(
+    cValMediaShouldShowEntry(
+      snapshot,
+      1_000 + C_VAL_MEDIA_ENTRY_AFTER_INACTIVE_MS - 1,
+    ),
+    false,
+  );
+  assert.equal(
+    cValMediaShouldShowEntry(
+      snapshot,
+      1_000 + C_VAL_MEDIA_ENTRY_AFTER_INACTIVE_MS,
+    ),
+    true,
+  );
+
+  snapshot.phase = "active";
+  assert.equal(
+    cValMediaShouldShowEntry(
+      snapshot,
+      1_000 + C_VAL_MEDIA_ENTRY_AFTER_INACTIVE_MS,
+    ),
+    false,
+  );
 });

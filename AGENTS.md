@@ -79,6 +79,20 @@ This version has breaking changes — APIs, conventions, and file structure may 
   patch, keep shared-file edits surgical, and never delete, revert, rename, or
   finish another task's work unless explicitly assigned.
 
+## Visual rendering research
+
+- Before a new or substantial rendering decision involving current visual
+  references, WebGPU/TSL, GPU compute, custom materials, or shader/
+  post-processing pipelines, read and follow
+  `docs/harness/visual-rendering-research.md`.
+- Reference research is selective, not decorative. Inspect the target's local
+  visual contract first, consult current official Three.js sources before
+  secondary sources for implementation questions, and transfer an operative
+  rule rather than a reference's surface.
+- When a reference affects an experiment, record the source, adaptation,
+  retained invariants, direct result, and rejection or unresolved question in
+  the owning experiment document.
+
 ## Runtime
 
 - Local development is pinned to Node.js `26.5.1` with its npm `11.17.0` in
