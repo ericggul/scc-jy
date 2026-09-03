@@ -1,6 +1,7 @@
 export const normalDistributionExperiments = [
   { slug: "1", label: "normal distribution / 1" },
   { slug: "2", label: "normal distribution / 2" },
+  { slug: "3", label: "normal distribution / 3" },
 ] as const;
 
 export type NormalDistributionExperimentSlug =

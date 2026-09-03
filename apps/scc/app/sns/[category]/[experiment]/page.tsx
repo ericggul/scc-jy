@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import type { ComponentType } from "react";
 import SnsFeedOne from "@/components/sns/feed/1";
+import SnsInstagramOne from "@/components/sns/instagram/1";
+import SnsInstagramTwo from "@/components/sns/instagram/2";
 import SnsNavigationOne from "@/components/sns/navigation/1";
 import SnsNavigationTwo from "@/components/sns/navigation/2";
 import SnsNavigationDefault from "@/components/sns/navigation/default";
@@ -20,6 +22,8 @@ import {
 
 const components: Record<SnsExperimentKey, ComponentType> = {
   "feed/1": SnsFeedOne,
+  "instagram/1": SnsInstagramOne,
+  "instagram/2": SnsInstagramTwo,
   "navigation/default": SnsNavigationDefault,
   "navigation/1": SnsNavigationOne,
   "navigation/2": SnsNavigationTwo,

@@ -40,6 +40,7 @@ get a dedicated document.
 | Code family | Registered variants | Documentation |
 | --- | --- | --- |
 | `apps/ddong-meong/components` | `default` | [ddong-meong](../apps/ddong-meong/docs/README.md) · [콘텐츠 확장 매뉴얼](../apps/ddong-meong/docs/content-manual.md) |
+| `apps/scc/components/dashboard/github` | `1`, `2` | [github/1](../apps/scc/docs/experiments/dashboard/github/1.md) · [github/2](../apps/scc/docs/experiments/dashboard/github/2.md) |
 | `apps/scc/components/dashboard/palantir` | `1` | [palantir/1](../apps/scc/docs/experiments/dashboard/palantir/1.md) |
 | `apps/scc/components/dashboard/stock` | `default`, `1`, `2`, `3`, `4` | [stock index](../apps/scc/docs/experiments/dashboard/stock/README.md) |
 | `apps/scc/components/realtime/calendar` | `default`, `1` | [calendar](../apps/scc/docs/experiments/realtime/calendar/README.md) |
@@ -47,8 +48,9 @@ get a dedicated document.
 | `apps/scc/components/dynamical-systems/attractor` | `1`–`3` | [attractor sequence](../apps/scc/docs/experiments/dynamical-systems/attractor/README.md) |
 | `apps/scc/components/dynamical-systems/three-body` | `1` | [three body](../apps/scc/docs/experiments/dynamical-systems/three-body/README.md) |
 | `apps/scc/components/dynamical-systems/duffing` | `1` | [Duffing oscillator](../apps/scc/docs/experiments/dynamical-systems/duffing/README.md) |
-| `apps/scc/components/dynamical-systems/hopf` | `1` | [Hopf bifurcation](../apps/scc/docs/experiments/dynamical-systems/hopf/README.md) |
-| `apps/scc/components/statistical-modelling/normal-distribution` | `1`–`2` | [normal-distribution particle field](../apps/scc/docs/experiments/statistical-modelling/normal-distribution/README.md) |
+| `apps/scc/components/dynamical-systems/bifurcation` | `1` | [bifurcation field](../apps/scc/docs/experiments/dynamical-systems/bifurcation/README.md) |
+| `apps/scc/components/dynamical-systems/potential-field` | `1` | [potential field](../apps/scc/docs/experiments/dynamical-systems/potential-field/README.md) |
+| `apps/scc/components/statistical-modelling/normal-distribution` | `1`–`3` | [normal-distribution particle field](../apps/scc/docs/experiments/statistical-modelling/normal-distribution/README.md) |
 | `apps/scc/components/complex-systems/void` | `1`–`3` | [void field](../apps/scc/docs/experiments/complex-systems/void/README.md) |
 | `apps/scc/components/complex-systems/face-voronoi` | `1`–`3` | [face voronoi](../apps/scc/docs/experiments/complex-systems/face-voronoi/README.md) |
 | `apps/scc/components/complex-systems/page-rank` | `1` | [page rank](../apps/scc/docs/experiments/complex-systems/page-rank/README.md) |

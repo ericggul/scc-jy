@@ -34,5 +34,8 @@ permission to inherit that family’s routes, visual language, or model claims.
   initial-value problem, integrated as a single field-first orbit study.
 - [duffing](./duffing/README.md): a driven, damped nonlinear oscillator with
   an editable coefficient surface and stroboscopic phase observations.
-- [hopf](./hopf/README.md): a supercritical normal-form study whose single
-  control unfolds an attracting point into a stable cycle.
+- [bifurcation](./bifurcation/README.md): a supercritical Hopf normal-form
+  particle field whose parameter-state geometry reveals an attracting point
+  becoming a stable cycle.
+- [potential-field](./potential-field/README.md): WebGPU portrait spheres move
+  and collide inside one closed, analytically deformed field container.

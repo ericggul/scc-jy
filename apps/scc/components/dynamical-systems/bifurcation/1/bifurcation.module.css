@@ -1,0 +1,46 @@
+.field {
+  --ink: #e7edf9;
+  --muted-ink: #91a0bb;
+  --paper: #05070d;
+  --signal: #ff9b42;
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: var(--paper);
+}
+
+.canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  outline: 0;
+  touch-action: none;
+}
+
+.canvas:active {
+  cursor: grabbing;
+}
+
+.canvas:focus-visible {
+  outline: 1px solid var(--ink);
+  outline-offset: -0.55rem;
+}
+
+.parameter {
+  position: absolute;
+  bottom: clamp(1rem, 2.5vmin, 2rem);
+  left: clamp(1rem, 2.5vmin, 2rem);
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  color: color-mix(in srgb, var(--ink) 76%, transparent);
+  font: 0.68rem var(--font-geist-mono), monospace;
+  letter-spacing: 0.01em;
+  color: var(--signal);
+  font-variant-numeric: tabular-nums;
+}

@@ -1,0 +1,180 @@
+.screen {
+  --unit: clamp(0.814px, 0.25445vw, 1.17px);
+  position: relative;
+  min-height: 100dvh;
+  height: 100dvh;
+  overflow: hidden;
+  background: #0c1115;
+  color: #f6f7f8;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  touch-action: auto;
+}
+
+.screen *, .screen *::before, .screen *::after { box-sizing: border-box; }
+
+.screen button { margin: 0; border: 0; padding: 0; color: inherit; font: inherit; }
+
+.storyTray {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.storyLayer {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  grid-template-rows: repeat(6, minmax(0, 1fr));
+  gap: calc(8 * var(--unit));
+  padding: calc(12 * var(--unit)) 0 calc(24 * var(--unit));
+}
+
+.storyRail {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  align-items: center;
+  gap: calc(12 * var(--unit));
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-right: calc(6 * var(--unit));
+  padding-left: calc(6 * var(--unit));
+  overscroll-behavior-x: contain;
+  overscroll-behavior-y: none;
+  scroll-behavior: auto;
+  scrollbar-width: none;
+  touch-action: pan-x;
+  -webkit-overflow-scrolling: touch;
+}
+
+.storyRail::-webkit-scrollbar { display: none; }
+
+.story {
+  width: calc(92 * var(--unit));
+  height: calc(116 * var(--unit));
+  flex: 0 0 calc(92 * var(--unit));
+  background: transparent;
+  cursor: pointer;
+  text-align: center;
+  touch-action: pan-x;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.storyRing {
+  position: relative;
+  display: grid;
+  width: calc(93 * var(--unit));
+  height: calc(93 * var(--unit));
+  place-items: center;
+  border-radius: 50%;
+  padding: calc(4 * var(--unit));
+  background: conic-gradient(from 205deg, #fed044, #ff264f 30%, #ed0e9b 58%, #ff5e29 80%, #fed044);
+}
+
+.storyRing .referencePhoto {
+  display: block;
+  border: calc(2 * var(--unit)) solid #0c1115;
+}
+
+.referencePhoto {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+}
+
+.storyLabel {
+  display: block;
+  overflow: hidden;
+  margin-top: calc(4 * var(--unit));
+  font-size: calc(15 * var(--unit));
+  font-weight: 400;
+  letter-spacing: calc(-0.32 * var(--unit));
+  line-height: calc(19 * var(--unit));
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.storyLabel { color: #f4f4f5; }
+
+.storyViewer, .sheetBackdrop { position: fixed; z-index: 4; inset: 0; }
+
+.storyViewer {
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  padding: calc(12 * var(--unit)) calc(13 * var(--unit)) calc(20 * var(--unit));
+  background: #07090b;
+}
+
+.viewerProgress { height: calc(3 * var(--unit)); overflow: hidden; border-radius: calc(3 * var(--unit)); background: rgb(255 255 255 / .28); }
+.viewerProgress span { display: block; width: 100%; height: 100%; transform-origin: left; background: #fff; animation: story-progress 5s linear forwards; }
+
+.viewerHeader {
+  display: flex;
+  height: calc(52 * var(--unit));
+  align-items: center;
+  gap: calc(9 * var(--unit));
+  font-size: calc(15 * var(--unit));
+  font-weight: 650;
+}
+
+.viewerAvatar { width: calc(30 * var(--unit)); height: calc(30 * var(--unit)); overflow: hidden; border-radius: 50%; }
+.viewerAvatar .referencePhoto { background-position: center; background-size: cover; }
+
+.viewerClose {
+  width: calc(40 * var(--unit));
+  height: calc(40 * var(--unit));
+  margin-left: auto;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  font-size: calc(35 * var(--unit));
+  font-weight: 250;
+  line-height: 1;
+}
+
+.viewerPortrait {
+  display: grid;
+  width: min(calc(258 * var(--unit)), 74vw);
+  aspect-ratio: 1;
+  align-self: center;
+  justify-self: center;
+  place-items: center;
+  border-radius: 50%;
+  background: #15191c;
+}
+
+.viewerPortrait .referencePhoto { width: 84%; height: 84%; background-position: center; background-size: cover; }
+
+.viewerDismissArea {
+  justify-self: center;
+  padding: calc(12 * var(--unit)) calc(22 * var(--unit));
+  border-radius: calc(24 * var(--unit));
+  background: rgb(255 255 255 / .12);
+  color: #fff;
+  cursor: pointer;
+  font-size: calc(15 * var(--unit));
+}
+
+.story:focus-visible, .viewerClose:focus-visible, .viewerDismissArea:focus-visible {
+  outline: calc(2 * var(--unit)) solid #fff;
+  outline-offset: calc(2 * var(--unit));
+}
+
+@keyframes story-progress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+@media (min-width: 480px) {
+  .screen { --unit: 1px; }
+
+  .storyLayer { padding-right: 18px; padding-left: 18px; }
+  .storyRail { padding-right: 6px; padding-left: 6px; }
+}
+
+@media (max-height: 700px) {
+  .storyLayer { grid-template-rows: repeat(5, minmax(0, 1fr)); }
+}
+
+@media (prefers-reduced-motion: reduce) { .viewerProgress span { animation: none; } }

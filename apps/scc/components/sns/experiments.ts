@@ -1,6 +1,18 @@
 export const snsExperiments = [
   { key: "feed/1", category: "feed", slug: "1", label: "sns/feed/1" },
   {
+    key: "instagram/1",
+    category: "instagram",
+    slug: "1",
+    label: "sns/instagram/1",
+  },
+  {
+    key: "instagram/2",
+    category: "instagram",
+    slug: "2",
+    label: "sns/instagram/2",
+  },
+  {
     key: "navigation/default",
     category: "navigation",
     slug: "default",

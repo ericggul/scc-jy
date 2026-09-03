@@ -4,6 +4,7 @@ Routes:
 
 - `/sns`
 - `/sns/feed/1`
+- `/sns/instagram/1`
 - `/sns/navigation/default`
 - `/sns/navigation/1`
 - `/sns/navigation/2`
@@ -22,6 +23,7 @@ Files:
 - `components/sns/experiments.ts`
 - `components/sns/feed/1/index.tsx`
 - `components/sns/feed/1/data.ts`
+- `components/sns/instagram/1/`
 - `components/sns/navigation/default/index.tsx`
 - `components/sns/navigation/1/index.tsx`
 - `components/sns/navigation/2/index.tsx`
@@ -36,6 +38,11 @@ Intent:
 deterministic predefined posts and wraps through them as the vertical feed
 extends, giving the interaction model of an infinite feed without fetching live
 content.
+
+`/sns/instagram/1` reconstructs the supplied mobile home frame as one continuous
+local interface: its header, visible story profiles, shown post, and floating
+navigation. It excludes device status chrome and makes only local interaction
+states; it does not connect to real accounts or replay private Instagram data.
 
 `/sns/navigation/default` preserves the iPhone Instagram bottom
 navigation test: Home, Reels, Messages, Search, and Profile. It intentionally

@@ -1,0 +1,81 @@
+.experiment {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100svh;
+  min-height: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: none;
+  background: #000;
+}
+
+.stickyField {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #000;
+}
+
+.canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: auto;
+}
+
+.screenReaderOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.experiment:focus-visible {
+  outline: 1px solid rgb(245 247 255 / 88%);
+  outline-offset: -6px;
+}
+
+.controls {
+  position: absolute;
+  right: clamp(1.1rem, 2.6vw, 2.4rem);
+  bottom: clamp(1.1rem, 2.6vw, 2.4rem);
+  left: clamp(1.1rem, 2.6vw, 2.4rem);
+  z-index: 2;
+  display: flex;
+  justify-content: flex-end;
+  color: #f5f7ff;
+  font: 0.64rem ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  text-shadow: 0 1px 3px #000, 0 0 8px #000;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.15rem;
+}
+
+.actions button {
+  border: 0;
+  border-bottom: 1px solid transparent;
+  padding: 0.35rem 0;
+  background: transparent;
+  color: rgb(245 247 255 / 70%);
+  cursor: pointer;
+  font: inherit;
+}
+
+.actions button:hover,
+.actions button[aria-pressed="true"] {
+  border-bottom-color: currentColor;
+  color: #fff;
+}
+
+.actions button:focus-visible {
+  position: relative;
+  z-index: 1;
+  outline: 1px solid #fff;
+  outline-offset: 4px;
+}

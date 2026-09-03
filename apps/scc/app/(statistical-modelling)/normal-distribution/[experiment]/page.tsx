@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import NormalDistributionOne from "@/components/statistical-modelling/normal-distribution/1";
 import NormalDistributionTwo from "@/components/statistical-modelling/normal-distribution/2";
+import NormalDistributionThree from "@/components/statistical-modelling/normal-distribution/3";
 import {
   isNormalDistributionExperimentSlug,
   normalDistributionExperiments,
@@ -20,6 +21,7 @@ export async function generateMetadata({
   const descriptions = {
     "1": "A static, directly orbitable bivariate normal-density surface made from particles.",
     "2": "A finite central-limit sampling trial that gathers into a stochastic particle field.",
+    "3": "Independent three-dimensional random walks whose endpoint cloud approaches a trivariate normal distribution.",
   } as const;
 
   return {
@@ -37,5 +39,7 @@ export default async function NormalDistributionExperimentPage({
 }>) {
   const { experiment } = await params;
   if (!isNormalDistributionExperimentSlug(experiment)) notFound();
-  return experiment === "1" ? <NormalDistributionOne /> : <NormalDistributionTwo />;
+  if (experiment === "1") return <NormalDistributionOne />;
+  if (experiment === "2") return <NormalDistributionTwo />;
+  return <NormalDistributionThree />;
 }

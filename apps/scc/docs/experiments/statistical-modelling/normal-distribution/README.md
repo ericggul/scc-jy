@@ -1,7 +1,7 @@
 # Normal-distribution particle field
 
 Active routes: `/statistical-modelling`, `/normal-distribution`, and
-`/normal-distribution/1`–`/normal-distribution/2`.
+`/normal-distribution/1`–`/normal-distribution/3`.
 
 ## normal-distribution/1
 
@@ -90,3 +90,82 @@ rejected:    rolling kernel-density animation, decorative rotation, morphing
 next:        compare whether twelve increments make the central-limit relation
              immediately perceptible, or whether the trial needs fewer points
              rather than more explanatory chrome.
+
+## normal-distribution/3
+
+1. **Participant situation:** one person starts a finite collection of
+   random walks, watches the same sample accumulate through all three spatial
+   coordinates, and then orbits the resulting endpoint cloud.
+2. **Primary parameter:** `μ`, `σ`, and `ρ` define the mean vector
+   `(μ, μ, μ)`, shared marginal standard deviation, and actual `x`–`y`
+   correlation of a trivariate random walk. The `z` coordinate remains
+   independent.
+3. **Perceptual job:** see individual three-dimensional displacement histories
+   before their actual endpoints constitute the empirical volume. A sparse
+   subset of the actual sample retains its 3D paths, so the cloud is visibly
+   produced by finite sums rather than positioned into a density sculpture.
+4. **Interaction job:** `draw walk` runs a fresh seeded finite trial. Changing
+   a parameter or `reset` starts a new trial with the selected generator.
+5. **Wrapper justification:** the uninterrupted 3D viewport makes the paths,
+   their shared origin, and their actual endpoint volume cohabit one
+   inspectable space. The lower controls state only the parameters and actions
+   a person can genuinely change.
+6. **Removal test:** removing the traces loses the finite-sum mechanism;
+   replacing the cloud's real `y` coordinate with a density-derived height
+   would no longer be a three-dimensional sample; adding axes, a legend, a
+   time chart, or decorative effects would describe the process instead of
+   letting the field show it.
+
+All 16,000 walkers begin at the translated mean. On every one of 24 steps,
+independent `U`, `V`, and `W` are drawn from `Uniform[-1, 1]`. With
+`s = sqrt(3 / 24)`, the implemented increment is
+`σs(U, ρU + sqrt(1 - ρ²)V, W)`. Because each source variable has variance
+`1/3`, the completed sum has covariance
+`σ²[[1, ρ, 0], [ρ, 1, 0], [0, 0, 1]]`. Thus every displayed coordinate is a
+coordinate of the stochastic sample. At finite step count the endpoint cloud
+is bounded and only approximates the corresponding trivariate normal law via
+the central limit theorem; it is not represented as an exact Gaussian or a
+KDE-derived surface. The selected 320 trails are sampled from the exact same
+endpoint population. Motion stops after the finite walk completes.
+
+### Rendering record
+
+question:    Can a genuinely three-dimensional central-limit sample remain
+             readable without turning density into a fake vertical coordinate?
+
+source:      [Albert & Carl Friedrich — Random Walks & Diffusion](https://www.complexity-explorables.org/explorables/albert-and-carl-friedrich/),
+             Dirk Brockmann, accessed 2026-09-03; and
+             [Three.js PointsMaterial](https://threejs.org/docs/pages/PointsMaterial.html)
+             and [WebGPURenderer](https://threejs.org/docs/pages/WebGPURenderer.html),
+             accessed 2026-09-03.
+
+transfer:    Make the sum of independent displacements and a deliberately
+             retained subset of actual paths visible before treating the
+             endpoint cloud as an aggregate. The source explicitly notes that
+             the random-walk argument is not limited to two dimensions. Use
+             perspective-attenuated point primitives while retaining the
+             existing WebGPU/WebGL2 backend selection.
+
+adaptation:  `/3` uses twenty-four scaled, bounded 3D increments, not a copied
+             walk taxonomy or an explorable's interface. Every one of 16,000
+             points moves along its stored `(x, y, z)` history; 320 of those
+             histories remain as 3D line segments; the final point cloud is
+             their actual 3D endpoint sample.
+
+invariants:  one unboxed viewport, direct orbit, no axes or grid, fixed
+             background, `μ`/`σ`/`ρ` controls, and no density-derived spatial
+             coordinate; the finite run stops once the endpoint cloud forms.
+
+evidence:    Model tests assert deterministic 3D histories, a shared
+             translated origin, finite values, the observed `x`–`y` endpoint
+             correlation while `z` remains independent. Browser observation
+             remains pending explicit browser-test authorization.
+
+rejected:    any density-to-height lift, a KDE-derived surface, copied visual
+             styling or walk-type controls, a continuous procedural drift, a
+             formula mesh, per-path explanatory labels, glow, a grid, a legend,
+             or a dashboard shell.
+
+next:        compare whether the retained 320 paths make the common origin and
+             finite summation legible at the default camera distance, or whether
+             their count should be reduced without altering the sample model.
