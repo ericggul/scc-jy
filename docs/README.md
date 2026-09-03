@@ -48,6 +48,7 @@ get a dedicated document.
 | `apps/scc/components/dynamical-systems/three-body` | `1` | [three body](../apps/scc/docs/experiments/dynamical-systems/three-body/README.md) |
 | `apps/scc/components/dynamical-systems/duffing` | `1` | [Duffing oscillator](../apps/scc/docs/experiments/dynamical-systems/duffing/README.md) |
 | `apps/scc/components/dynamical-systems/hopf` | `1` | [Hopf bifurcation](../apps/scc/docs/experiments/dynamical-systems/hopf/README.md) |
+| `apps/scc/components/statistical-modelling/normal-distribution` | `1`–`2` | [normal-distribution particle field](../apps/scc/docs/experiments/statistical-modelling/normal-distribution/README.md) |
 | `apps/scc/components/complex-systems/void` | `1`–`3` | [void field](../apps/scc/docs/experiments/complex-systems/void/README.md) |
 | `apps/scc/components/complex-systems/face-voronoi` | `1`–`3` | [face voronoi](../apps/scc/docs/experiments/complex-systems/face-voronoi/README.md) |
 | `apps/scc/components/complex-systems/page-rank` | `1` | [page rank](../apps/scc/docs/experiments/complex-systems/page-rank/README.md) |
