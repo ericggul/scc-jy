@@ -1,0 +1,14 @@
+.screen {
+  width: 100%;
+  min-height: 100svh;
+  height: 100dvh;
+  overflow: hidden;
+  background: #fff;
+  color: #171717;
+}
+
+.field {
+  display: block;
+  width: 100%;
+  height: 100%;
+}

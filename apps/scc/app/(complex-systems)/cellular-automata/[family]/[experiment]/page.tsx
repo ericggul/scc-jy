@@ -8,6 +8,7 @@ import CellularAutomataFive from "@/components/complex-systems/cellular-automata
 import CellularAutomataSix from "@/components/complex-systems/cellular-automata/colour/6";
 import GridNetworkOne from "@/components/complex-systems/cellular-automata/grid-network/1";
 import GridNetworkTwo from "@/components/complex-systems/cellular-automata/grid-network/2";
+import GridNetworkThree from "@/components/complex-systems/cellular-automata/grid-network/3";
 import {
   cellularAutomataExperiments,
   getCellularAutomataExperiment,
@@ -30,10 +31,12 @@ export async function generateMetadata({
 
   return {
     title: "complex-systems",
-    description: currentExperiment?.family === "grid-network" && currentExperiment.slug === "2"
-      ? "A 48 by 48 red, green, and blue grid with independent cardinal and diagonal cellular automata."
-      : currentExperiment?.family === "grid-network"
-        ? "A 24 by 24 cellular grid with cardinal background and diagonal border automata."
+    description: currentExperiment?.family === "grid-network"
+      ? currentExperiment.slug === "3"
+        ? "An 8 by 8 by 8 black and white cellular volume with independent face-adjacent and edge-diagonal automata."
+        : currentExperiment.slug === "2"
+          ? "A 48 by 48 red, green, and blue grid with independent cardinal and diagonal cellular automata."
+          : "A 24 by 24 cellular grid with cardinal background and diagonal border automata."
       : currentExperiment
         ? "A cellular automata colour experiment."
         : undefined,
@@ -50,6 +53,7 @@ export default async function CellularAutomataExperimentPage({
   if (!currentExperiment) notFound();
 
   if (currentExperiment.family === "grid-network") {
+    if (currentExperiment.slug === "3") return <GridNetworkThree />;
     if (currentExperiment.slug === "2") return <GridNetworkTwo />;
     return <GridNetworkOne />;
   }

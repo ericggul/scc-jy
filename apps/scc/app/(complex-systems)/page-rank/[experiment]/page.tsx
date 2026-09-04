@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import PageRankOne from "@/components/complex-systems/page-rank/1";
 import PageRankTwo from "@/components/complex-systems/page-rank/2";
+import PageRankThree from "@/components/complex-systems/page-rank/3";
+import PageRankFour from "@/components/complex-systems/page-rank/4";
 import {
   isPageRankExperimentSlug,
   pageRankExperiments,
@@ -25,5 +27,8 @@ export default async function PageRankExperimentPage({
 }) {
   const { experiment } = await params;
   if (!isPageRankExperimentSlug(experiment)) notFound();
-  return experiment === "1" ? <PageRankOne /> : <PageRankTwo />;
+  if (experiment === "1") return <PageRankOne />;
+  if (experiment === "2") return <PageRankTwo />;
+  if (experiment === "3") return <PageRankThree />;
+  return <PageRankFour />;
 }

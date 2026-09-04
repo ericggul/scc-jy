@@ -12,6 +12,9 @@ export type StoryCellState = Readonly<{
   viewingUntil: number | null;
   leavingUntil: number | null;
   availableAt: number;
+  transmitAt: number | null;
+  transmissionsRemaining: number;
+  transmittedAt: number | null;
 }>;
 
 export type StoryTie = Readonly<{

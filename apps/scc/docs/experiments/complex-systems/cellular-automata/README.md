@@ -1,7 +1,7 @@
 # Cellular automata experiment families
 
 Routes: `/cellular-automata/colour/1` through `/cellular-automata/colour/6`
-and `/cellular-automata/grid-network/1` through `/cellular-automata/grid-network/2`, owned by the filesystem-only
+and `/cellular-automata/grid-network/1` through `/cellular-automata/grid-network/3`, owned by the filesystem-only
 `complex-systems` group. The former `/cellular-automata/1` through `/6` routes
 permanently redirect to their preserved `colour` counterparts.
 
@@ -162,5 +162,62 @@ Route: `/cellular-automata/grid-network/2`. Date: 2026-09-04.
 - **Unresolved question:** whether a later branch should vary only the successor
   threshold while preserving the independent cardinal and diagonal fields.
 - **Current rendering trial:** all network connection strokes are doubled from
-  the initial Canvas stroke width; cell geometry and inset-border width remain
+  the initial Canvas stroke width. The 48 by 48 layout and cell anchors remain
+  fixed, while every visible cell rectangle is reduced to 50% of its prior
+  area, evenly increasing the space around it; inset-border stroke width is
   unchanged.
+
+## Grid network — route 3
+
+Route: `/cellular-automata/grid-network/3`. Date: 2026-09-04.
+
+- **Baseline:** route 1's separate black-and-white background and border CA
+  layers, state-difference-only connections, direct state intervention, and
+  field-only interface.
+- **Participant situation:** an observer rotates a compact volume to judge
+  whether locally separated state changes remain legible through depth.
+- **Primary parameter / perceptual job:** a cell's binary state is visible as
+  its filled cube; the independent border layer and only those connections
+  bridging unequal states reveal the two separate propagation fields.
+- **Interaction / wrapper:** drag rotates and wheel zooms the volume; clicking
+  a cube toggles only its background state. The bare spatial field is retained
+  because the participant's task is to inspect connections through depth, not
+  operate a dashboard. Text, controls, metrics, and decorative effects remain
+  absent.
+- **Changed variable:** the planar field becomes an 8 by 8 by 8 volume (512
+  cells). The background CA uses the six face-adjacent cells, while the border
+  CA uses the 12 cells sharing an edge diagonally; cube-corner-only neighbours
+  are excluded. The corresponding cardinal and diagonal connections remain
+  visually and causally independent. Whenever a layer's local rule changes
+  fewer than 6% of cells in a step, it immediately receives three deterministic
+  3 by 3 by 3 binary patches. Each patch force-toggles its centre, so the layer
+  cannot remain visually static; this bounded anti-absorption intervention does
+  not alter either local rule.
+- **Performance implementation:** one `InstancedMesh` carries all 512 filled
+  cubes; one fixed line buffer carries all cube outlines; and one fixed line
+  buffer per CA layer compacts only currently visible connections. Each state
+  step updates typed colour/position buffers rather than creating React nodes
+  or Three objects. Rendering is demand-driven between CA steps, device pixel
+  ratio is capped by a four-million-pixel canvas budget, and hidden or
+  reduced-motion views suspend the automatic steps.
+- **Rendering reference:**
+  - question: can a 512-cell volume preserve route 1's causal-line distinction
+    without per-cell draw calls?
+  - source: [Three.js `InstancedMesh` documentation](https://threejs.org/docs/pages/InstancedMesh.html), accessed 2026-09-04; [Three.js `WebGLRenderer` documentation](https://threejs.org/docs/pages/WebGLRenderer.html), accessed 2026-09-04.
+  - transfer: share geometry/materials and mark a completed instance or buffer
+    update once, after batched mutations.
+  - adaptation: no new renderer, dependency, post-process, or GPU simulation;
+    only a WebGL2 Three.js scene with instanced cubes and dynamic line buffers.
+  - invariants: binary layers, local causal lines, field-only composition, and
+    direct background intervention.
+  - evidence: the pure model test fixes 512 cells, 1,344 cardinal edges, and
+    2,352 diagonal edges. Across 48 paired model generations, every background
+    layer step changed at least 32 cells and every border layer step at least
+    31; neither layer had a zero-change step. On the local Node model harness,
+    8,000 combined layer steps took 276.81ms (0.0346ms per layer step); browser
+    observation is pending explicit request.
+  - rejected: fog, shadows, bloom, transparency sorting, and a generic 3D
+    control panel do not improve the connection-reading task.
+- **Unresolved question:** whether the excluded eight corner-neighbour links
+  should become a separate future trial, rather than silently expanding either
+  existing layer.

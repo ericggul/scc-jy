@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import SmileOne from "@/components/ui/smile/1";
+import SmileTwo from "@/components/ui/smile/2";
 import {
   isSmileExperimentSlug,
   smileExperiments,
@@ -34,5 +35,10 @@ export default async function SmileExperimentPage({
     notFound();
   }
 
-  return <SmileOne />;
+  switch (experiment) {
+    case "1":
+      return <SmileOne />;
+    case "2":
+      return <SmileTwo />;
+  }
 }

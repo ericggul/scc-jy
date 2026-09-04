@@ -16,10 +16,14 @@ import {
   type PageRankNetwork,
   type PageRankState,
   type RankMethod,
-  type RankTerritory,
   type RankTerritoryDiagram,
   type TerritoryPoint,
 } from "./model";
+import {
+  createPageRankGpuRenderer,
+  type LinkActivity,
+  type PageRankGpuRenderer,
+} from "./rendering";
 
 const INITIAL_SEED = 0x1d872b41;
 const BASE_NODE_COUNT = 150;
@@ -27,12 +31,7 @@ const BASE_LINKS_PER_PAGE = 2;
 const EXPANDED_NODE_COUNT = 160;
 const EXPANDED_LINKS_PER_PAGE = 3;
 const DIAGRAM_INTERVAL = 1000 / 30;
-const MAX_VISIBLE_LINK_ACTIVITY = 44;
-
-const SURFER_COLOURS = [
-  "#d7bf9b", "#c69d9b", "#aab8ba", "#b8a497", "#e1d2bb", "#b7a4c2",
-  "#cab38d", "#bd9794", "#a6b5b6", "#c4af9d", "#dbc8ad", "#b39dbb",
-] as const;
+const MAX_VISIBLE_LINK_ACTIVITY = 36;
 
 type DiagramCache = {
   diagram: RankTerritoryDiagram | null;
@@ -43,30 +42,8 @@ type DiagramCache = {
   calculatedAt: number;
 };
 
-type LinkActivity = {
-  colour: number;
-  seenAt: number;
-};
-
-type CurvePoint = {
-  x: number;
-  y: number;
-};
-
 function clamp(value: number, minimum: number, maximum: number) {
   return Math.max(minimum, Math.min(maximum, value));
-}
-
-function territoryTone(rank: number, averageRank: number) {
-  const relative = clamp(Math.log(Math.max(rank, averageRank * 0.04) / averageRank), -1.35, 1.65);
-  const progress = (relative + 1.35) / 3;
-  const hue = 246 + progress * 75;
-  return {
-    core: `hsl(${hue} ${31 + progress * 23}% ${49 + progress * 18}%)`,
-    fill: `hsl(${hue} ${27 + progress * 26}% ${22 + progress * 23}%)`,
-    rim: `hsl(${hue + 8} ${24 + progress * 24}% ${10 + progress * 15}%)`,
-    edge: `hsla(${hue + 8} 48% 7% / 0.52)`,
-  };
 }
 
 function pointInPolygon(point: TerritoryPoint, polygon: readonly TerritoryPoint[]) {
@@ -92,202 +69,7 @@ function normalizedPointer(event: React.PointerEvent<HTMLCanvasElement>) {
   };
 }
 
-function tracePolygon(context: CanvasRenderingContext2D, polygon: readonly TerritoryPoint[]) {
-  if (polygon.length === 0) return;
-  context.beginPath();
-  context.moveTo(polygon[0]!.x, polygon[0]!.y);
-  for (let index = 1; index < polygon.length; index += 1) {
-    const point = polygon[index]!;
-    context.lineTo(point.x, point.y);
-  }
-  context.closePath();
-}
-
-function traceOrganicPolygon(
-  context: CanvasRenderingContext2D,
-  polygon: readonly TerritoryPoint[],
-) {
-  if (polygon.length < 3) return;
-  const pointBefore = (index: number) => {
-    const vertex = polygon[index]!;
-    const previous = polygon[(index - 1 + polygon.length) % polygon.length]!;
-    return {
-      x: vertex.x + (previous.x - vertex.x) * 0.115,
-      y: vertex.y + (previous.y - vertex.y) * 0.115,
-    };
-  };
-  const pointAfter = (index: number) => {
-    const vertex = polygon[index]!;
-    const next = polygon[(index + 1) % polygon.length]!;
-    return {
-      x: vertex.x + (next.x - vertex.x) * 0.115,
-      y: vertex.y + (next.y - vertex.y) * 0.115,
-    };
-  };
-
-  const first = pointAfter(0);
-  context.beginPath();
-  context.moveTo(first.x, first.y);
-  for (let index = 1; index <= polygon.length; index += 1) {
-    const vertexIndex = index % polygon.length;
-    const before = pointBefore(vertexIndex);
-    const vertex = polygon[vertexIndex]!;
-    const after = pointAfter(vertexIndex);
-    context.lineTo(before.x, before.y);
-    context.quadraticCurveTo(vertex.x, vertex.y, after.x, after.y);
-  }
-  context.closePath();
-}
-
-function linkGeometry(
-  link: PageLink,
-  territories: ReadonlyMap<number, RankTerritory>,
-  reciprocalIds: ReadonlySet<string>,
-) {
-  const source = territories.get(link.source);
-  const target = territories.get(link.target);
-  if (!source || !target || source.area === 0 || target.area === 0) return null;
-  const start = source.centroid;
-  const end = target.centroid;
-  const distance = Math.hypot(end.x - start.x, end.y - start.y);
-  if (distance < 8) return null;
-  const reciprocal = reciprocalIds.has(`${link.target}-${link.source}`);
-  const direction = reciprocal
-    ? link.source < link.target ? 1 : -1
-    : (link.source * 31 + link.target * 17) % 2 === 0 ? 1 : -1;
-  const bend = Math.min(17, distance * 0.075) * direction;
-  return {
-    start,
-    end,
-    control: {
-      x: (start.x + end.x) / 2 - ((end.y - start.y) / distance) * bend,
-      y: (start.y + end.y) / 2 + ((end.x - start.x) / distance) * bend,
-    },
-  };
-}
-
-function drawArrow(
-  context: CanvasRenderingContext2D,
-  geometry: NonNullable<ReturnType<typeof linkGeometry>>,
-  colour: string,
-  lineWidth: number,
-) {
-  context.strokeStyle = colour;
-  context.lineWidth = lineWidth;
-  context.beginPath();
-  context.moveTo(geometry.start.x, geometry.start.y);
-  context.quadraticCurveTo(geometry.control.x, geometry.control.y, geometry.end.x, geometry.end.y);
-  context.stroke();
-
-  const tangentX = geometry.end.x - geometry.control.x;
-  const tangentY = geometry.end.y - geometry.control.y;
-  const angle = Math.atan2(tangentY, tangentX);
-  const arrowSize = 5.2 + lineWidth * 1.4;
-  context.save();
-  context.translate(geometry.end.x, geometry.end.y);
-  context.rotate(angle);
-  context.fillStyle = colour;
-  context.beginPath();
-  context.moveTo(0, 0);
-  context.lineTo(-arrowSize, arrowSize * 0.52);
-  context.lineTo(-arrowSize, -arrowSize * 0.52);
-  context.closePath();
-  context.fill();
-  context.restore();
-}
-
-function drawEndpointArrow(
-  context: CanvasRenderingContext2D,
-  geometry: NonNullable<ReturnType<typeof linkGeometry>>,
-) {
-  const tangentX = geometry.end.x - geometry.control.x;
-  const tangentY = geometry.end.y - geometry.control.y;
-  const angle = Math.atan2(tangentY, tangentX);
-  const size = 5.1;
-  context.save();
-  context.translate(geometry.end.x, geometry.end.y);
-  context.rotate(angle);
-  context.strokeStyle = "rgba(248, 237, 223, 0.46)";
-  context.lineWidth = 0.82;
-  context.beginPath();
-  context.moveTo(-size, -size * 0.5);
-  context.lineTo(0, 0);
-  context.lineTo(-size, size * 0.5);
-  context.stroke();
-  context.restore();
-}
-
-function quadraticPoint(
-  start: CurvePoint,
-  control: CurvePoint,
-  end: CurvePoint,
-  t: number,
-) {
-  const inverse = 1 - t;
-  return {
-    x: inverse * inverse * start.x + 2 * inverse * t * control.x + t * t * end.x,
-    y: inverse * inverse * start.y + 2 * inverse * t * control.y + t * t * end.y,
-  };
-}
-
-function quadraticTangent(
-  start: CurvePoint,
-  control: CurvePoint,
-  end: CurvePoint,
-  t: number,
-) {
-  return {
-    x: 2 * (1 - t) * (control.x - start.x) + 2 * t * (end.x - control.x),
-    y: 2 * (1 - t) * (control.y - start.y) + 2 * t * (end.y - control.y),
-  };
-}
-
-function drawLinkActivity(
-  context: CanvasRenderingContext2D,
-  geometry: NonNullable<ReturnType<typeof linkGeometry>>,
-  colour: string,
-  age: number,
-) {
-  const fade = clamp(1 - age / 680, 0, 1);
-  context.save();
-  const head = clamp(age / 410, 0, 1);
-  const tail = Math.max(0, head - 0.24);
-  const signal = context.createLinearGradient(
-    geometry.start.x,
-    geometry.start.y,
-    geometry.end.x,
-    geometry.end.y,
-  );
-  signal.addColorStop(0, "rgba(239, 224, 208, 0.16)");
-  signal.addColorStop(0.58, colour);
-  signal.addColorStop(1, "#f8eee2");
-  context.globalAlpha = 0.16 + fade * 0.78;
-  context.strokeStyle = signal;
-  context.lineWidth = 1.15 + fade * 0.72;
-  context.beginPath();
-  for (let step = 0; step <= 14; step += 1) {
-    const progress = tail + ((head - tail) * step) / 14;
-    const point = quadraticPoint(geometry.start, geometry.control, geometry.end, progress);
-    if (step === 0) context.moveTo(point.x, point.y);
-    else context.lineTo(point.x, point.y);
-  }
-  context.stroke();
-
-  const cursor = quadraticPoint(geometry.start, geometry.control, geometry.end, head);
-  const tangent = quadraticTangent(geometry.start, geometry.control, geometry.end, head);
-  context.translate(cursor.x, cursor.y);
-  context.rotate(Math.atan2(tangent.y, tangent.x));
-  context.fillStyle = "#f8eee2";
-  context.beginPath();
-  context.moveTo(4.6, 0);
-  context.lineTo(-3.1, 2.7);
-  context.lineTo(-3.1, -2.7);
-  context.closePath();
-  context.fill();
-  context.restore();
-}
-
-export default function PageRankThree() {
+export default function PageRankFour() {
   const [nodeCount, setNodeCount] = useState(BASE_NODE_COUNT);
   const [linksPerNewPage, setLinksPerNewPage] = useState(BASE_LINKS_PER_PAGE);
   const [method, setMethod] = useState<RankMethod>("random-surfer");
@@ -295,9 +77,11 @@ export default function PageRankThree() {
   const [stepsPerSecond, setStepsPerSecond] = useState(24);
   const [walkerCount, setWalkerCount] = useState(96);
   const [isRunning, setIsRunning] = useState(true);
-  const [watchSurfers, setWatchSurfers] = useState(true);
+  const [showTraffic, setShowTraffic] = useState(true);
+  const [webglReady, setWebglReady] = useState(true);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const rendererRef = useRef<PageRankGpuRenderer | null>(null);
   const [initialNetwork] = useState(() => createNetwork({
     nodeCount: BASE_NODE_COUNT,
     linksPerNewPage: BASE_LINKS_PER_PAGE,
@@ -311,7 +95,7 @@ export default function PageRankThree() {
   const speedRef = useRef(stepsPerSecond);
   const walkerCountRef = useRef(walkerCount);
   const runningRef = useRef(isRunning);
-  const watchSurfersRef = useRef(watchSurfers);
+  const showTrafficRef = useRef(showTraffic);
   const expandedModeRef = useRef(false);
   const seedRef = useRef(INITIAL_SEED);
   const draggingRef = useRef<number | null>(null);
@@ -323,11 +107,7 @@ export default function PageRankThree() {
     height: 0,
     calculatedAt: 0,
   });
-  const reciprocalIdsRef = useRef<{ links: PageLink[] | null; ids: ReadonlySet<string> }>({
-    links: null,
-    ids: new Set(),
-  });
-  const linkActivityRef = useRef(new Map<string, LinkActivity>());
+  const activityRef = useRef(new Map<string, LinkActivity>());
 
   const territoryDiagram = useCallback((width: number, height: number, force = false) => {
     const network = networkRef.current;
@@ -346,9 +126,8 @@ export default function PageRankThree() {
       layoutChanged ||
       (rankChanged && now - cache.calculatedAt >= DIAGRAM_INTERVAL)
     ) {
-      const diagram = createRankTerritoryDiagram(network, state.ranks, width, height);
       diagramCacheRef.current = {
-        diagram,
+        diagram: createRankTerritoryDiagram(network, state.ranks, width, height),
         nodes: network.nodes,
         iteration: state.iteration,
         width,
@@ -361,92 +140,21 @@ export default function PageRankThree() {
 
   const renderGraph = useCallback((forceDiagram = false) => {
     const canvas = canvasRef.current;
-    const network = networkRef.current;
-    if (!canvas || !network) return;
+    const renderer = rendererRef.current;
+    if (!canvas || !renderer) return;
     const bounds = canvas.getBoundingClientRect();
     if (bounds.width <= 0 || bounds.height <= 0) return;
-
-    const pixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);
-    const pixelWidth = Math.round(bounds.width * pixelRatio);
-    const pixelHeight = Math.round(bounds.height * pixelRatio);
-    if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
-      canvas.width = pixelWidth;
-      canvas.height = pixelHeight;
-    }
-    const context = canvas.getContext("2d", { alpha: false });
-    if (!context) return;
-    const state = rankStateRef.current;
-    const diagram = territoryDiagram(bounds.width, bounds.height, forceDiagram);
-    const territoriesByPage = new Map(diagram.territories.map((territory) => [territory.pageId, territory]));
-
-    if (reciprocalIdsRef.current.links !== network.links) {
-      reciprocalIdsRef.current = {
-        links: network.links,
-        ids: new Set(network.links.map((link) => link.id)),
-      };
-    }
-
-    context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
-    context.clearRect(0, 0, bounds.width, bounds.height);
-    context.fillStyle = "#070812";
-    context.fillRect(0, 0, bounds.width, bounds.height);
-    context.lineCap = "round";
-    context.lineJoin = "round";
-
-    const averageRank = 1 / network.nodes.length;
-    for (const territory of diagram.territories) {
-      if (territory.area === 0) continue;
-      const rank = state.ranks[territory.pageId] ?? averageRank;
-      const tone = territoryTone(rank, averageRank);
-      const radius = Math.max(26, Math.sqrt(territory.area) * 1.32);
-      const gradient = context.createRadialGradient(
-        territory.centroid.x - radius * 0.27,
-        territory.centroid.y - radius * 0.3,
-        radius * 0.02,
-        territory.centroid.x,
-        territory.centroid.y,
-        radius,
-      );
-      gradient.addColorStop(0, tone.core);
-      gradient.addColorStop(0.46, tone.fill);
-      gradient.addColorStop(1, tone.rim);
-      tracePolygon(context, territory.polygon);
-      context.fillStyle = tone.rim;
-      context.fill();
-      traceOrganicPolygon(context, territory.polygon);
-      context.fillStyle = gradient;
-      context.fill();
-    }
-
     const now = performance.now();
-    for (const [linkId, activity] of linkActivityRef.current) {
-      if (now - activity.seenAt > 680) linkActivityRef.current.delete(linkId);
+    for (const [linkId, activity] of activityRef.current) {
+      if (now - activity.startedAt > 760) activityRef.current.delete(linkId);
     }
-    for (const link of network.links) {
-      const geometry = linkGeometry(link, territoriesByPage, reciprocalIdsRef.current.ids);
-      if (!geometry) continue;
-      drawArrow(context, geometry, "rgba(242, 228, 211, 0.075)", 0.46);
-      drawEndpointArrow(context, geometry);
-      const activity = watchSurfersRef.current ? linkActivityRef.current.get(link.id) : undefined;
-      if (activity) {
-        drawLinkActivity(
-          context,
-          geometry,
-          SURFER_COLOURS[activity.colour] ?? SURFER_COLOURS[0],
-          now - activity.seenAt,
-        );
-      }
-    }
-
-    for (const territory of diagram.territories) {
-      if (territory.area === 0) continue;
-      const rank = state.ranks[territory.pageId] ?? averageRank;
-      const tone = territoryTone(rank, averageRank);
-      traceOrganicPolygon(context, territory.polygon);
-      context.strokeStyle = tone.edge;
-      context.lineWidth = 0.6;
-      context.stroke();
-    }
+    renderer.render({
+      diagram: territoryDiagram(bounds.width, bounds.height, forceDiagram),
+      network: networkRef.current,
+      ranks: rankStateRef.current.ranks,
+      activities: showTrafficRef.current ? activityRef.current : new Map(),
+      now,
+    });
   }, [territoryDiagram]);
 
   const replaceRankState = useCallback((next: PageRankState, publish = true) => {
@@ -458,7 +166,7 @@ export default function PageRankThree() {
     seedRef.current = (seedRef.current + 0x6d2b79f5) >>> 0;
     replaceRankState(createPageRankState(networkRef.current, walkerCountRef.current, seedRef.current));
     diagramCacheRef.current.diagram = null;
-    linkActivityRef.current.clear();
+    activityRef.current.clear();
     renderGraph(true);
   }, [renderGraph, replaceRankState]);
 
@@ -470,7 +178,7 @@ export default function PageRankThree() {
     networkRef.current = nextNetwork;
     replaceRankState(createPageRankState(nextNetwork, walkerCountRef.current, seedRef.current));
     diagramCacheRef.current.diagram = null;
-    linkActivityRef.current.clear();
+    activityRef.current.clear();
     renderGraph(true);
   }, [linksPerNewPage, nodeCount, renderGraph, replaceRankState]);
 
@@ -486,18 +194,14 @@ export default function PageRankThree() {
           resizeWalkerEnsemble(network, next, walkerCountRef.current),
           dampingRef.current,
         );
-        const seenAt = performance.now();
+        const startedAt = performance.now();
         for (const [linkId, colour] of Object.entries(next.linkColours)) {
-          const current = linkActivityRef.current.get(linkId);
-          if (current) {
-            current.colour = colour;
-            continue;
-          }
-          linkActivityRef.current.set(linkId, { colour, seenAt });
-          while (linkActivityRef.current.size > MAX_VISIBLE_LINK_ACTIVITY) {
-            const oldest = linkActivityRef.current.keys().next().value;
+          if (activityRef.current.has(linkId)) continue;
+          activityRef.current.set(linkId, { colour, startedAt });
+          while (activityRef.current.size > MAX_VISIBLE_LINK_ACTIVITY) {
+            const oldest = activityRef.current.keys().next().value;
             if (oldest === undefined) break;
-            linkActivityRef.current.delete(oldest);
+            activityRef.current.delete(oldest);
           }
         }
       }
@@ -513,6 +217,53 @@ export default function PageRankThree() {
   }, []);
 
   useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const gl = canvas.getContext("webgl2", {
+      alpha: false,
+      antialias: true,
+      powerPreference: "high-performance",
+    });
+    if (!gl) {
+      setWebglReady(false);
+      return;
+    }
+
+    let renderer: PageRankGpuRenderer;
+    try {
+      renderer = createPageRankGpuRenderer(gl);
+    } catch {
+      setWebglReady(false);
+      return;
+    }
+    rendererRef.current = renderer;
+    setWebglReady(true);
+    const resize = () => {
+      const bounds = canvas.getBoundingClientRect();
+      renderer.resize(
+        Math.max(1, bounds.width),
+        Math.max(1, bounds.height),
+        Math.min(window.devicePixelRatio || 1, 1.5),
+      );
+      diagramCacheRef.current.diagram = null;
+      renderGraph(true);
+    };
+    const observer = new ResizeObserver(resize);
+    observer.observe(canvas);
+    resize();
+    return () => {
+      observer.disconnect();
+      renderer.destroy();
+      if (rendererRef.current === renderer) rendererRef.current = null;
+    };
+  }, [renderGraph]);
+
+  useEffect(() => {
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    if (reducedMotion.matches) {
+      renderGraph(true);
+      return;
+    }
     let frameId = 0;
     let previous = performance.now();
     let pendingSteps = 0;
@@ -522,7 +273,7 @@ export default function PageRankThree() {
       const elapsed = Math.min(250, now - previous);
       previous = now;
       let hasAdvanced = false;
-      if (runningRef.current) {
+      if (runningRef.current && document.visibilityState !== "hidden") {
         pendingSteps += (elapsed * speedRef.current) / 1_000;
         const count = Math.min(10, Math.floor(pendingSteps));
         if (count > 0) {
@@ -537,7 +288,7 @@ export default function PageRankThree() {
         setRankState(rankStateRef.current);
         lastPublished = now;
       }
-      if ((hasAdvanced || linkActivityRef.current.size > 0) && now - lastDrawn >= 1000 / 30) {
+      if ((hasAdvanced || activityRef.current.size > 0) && now - lastDrawn >= 1000 / 30) {
         renderGraph();
         lastDrawn = now;
       }
@@ -547,14 +298,6 @@ export default function PageRankThree() {
     frameId = window.requestAnimationFrame(frame);
     return () => window.cancelAnimationFrame(frameId);
   }, [advance, renderGraph]);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const observer = new ResizeObserver(() => renderGraph(true));
-    observer.observe(canvas);
-    return () => observer.disconnect();
-  }, [renderGraph]);
 
   useEffect(() => {
     const handleKeydown = (event: KeyboardEvent) => {
@@ -580,8 +323,10 @@ export default function PageRankThree() {
   const beginDragging = (event: React.PointerEvent<HTMLCanvasElement>) => {
     const pointer = normalizedPointer(event);
     const diagram = territoryDiagram(pointer.width, pointer.height, true);
-    const position = { x: pointer.x * pointer.width, y: pointer.y * pointer.height };
-    const selected = diagram.territories.find((territory) => pointInPolygon(position, territory.polygon));
+    const selected = diagram.territories.find((territory) => pointInPolygon(
+      { x: pointer.x * pointer.width, y: pointer.y * pointer.height },
+      territory.polygon,
+    ));
     if (!selected) return;
     event.currentTarget.setPointerCapture(event.pointerId);
     draggingRef.current = selected.pageId;
@@ -601,9 +346,11 @@ export default function PageRankThree() {
 
   const totalVisits = rankState.visits.reduce((total, visits) => total + visits, 0);
   const network = networkRef.current;
-  const readout = method === "diffusion"
-    ? `${network.nodes.length} territories · ${network.links.length} directed links · change ${rankState.residual.toExponential(1)}`
-    : `${network.nodes.length} territories · ${network.links.length} directed links · ${totalVisits.toLocaleString()} visits`;
+  const readout = !webglReady
+    ? "WebGL2 unavailable"
+    : method === "diffusion"
+      ? network.nodes.length + " territories · " + network.links.length + " directed links · change " + rankState.residual.toExponential(1)
+      : network.nodes.length + " territories · " + network.links.length + " directed links · " + totalVisits.toLocaleString() + " visits";
 
   return (
     <main className={styles.field}>
@@ -613,7 +360,7 @@ export default function PageRankThree() {
         role="application"
         tabIndex={0}
         aria-keyshortcuts="Space R ."
-        aria-label="PageRank territory field. Each territory fills the screen according to its rank. Drag a territory to rearrange the network. Space pauses or resumes, R restarts rank, and period advances one step."
+        aria-label="WebGL PageRank territory field. Each directed edge starts and ends at its territory centroid. Drag a territory to rearrange the network. Space pauses or resumes, R restarts rank, and period advances one step."
         onPointerDown={beginDragging}
         onPointerMove={dragPage}
         onPointerUp={finishDragging}
@@ -626,7 +373,7 @@ export default function PageRankThree() {
           <p className={styles.runState}>{isRunning ? "running" : "paused"}</p>
         </div>
         <div className={styles.controlGroups}>
-          <fieldset className={`${styles.controlGroup} ${styles.rankGroup}`}>
+          <fieldset className={[styles.controlGroup, styles.rankGroup].join(" ")}>
             <legend>rank flow</legend>
             <div className={styles.methodControls} aria-label="Rank calculation method">
               <button type="button" aria-pressed={method === "random-surfer"} onClick={() => { setMethod("random-surfer"); methodRef.current = "random-surfer"; restartRanks(); }}>surfer visits</button>
@@ -659,7 +406,7 @@ export default function PageRankThree() {
             </div>
           </fieldset>
 
-          <fieldset className={`${styles.controlGroup} ${styles.graphGroup}`}>
+          <fieldset className={[styles.controlGroup, styles.graphGroup].join(" ")}>
             <legend>new network</legend>
             <div className={styles.graphParameters}>
               <label className={styles.control}>
@@ -681,7 +428,7 @@ export default function PageRankThree() {
           <fieldset className={styles.controlGroup}>
             <legend>field</legend>
             <div className={styles.actionControls}>
-              {method === "random-surfer" ? <button type="button" aria-pressed={watchSurfers} onClick={() => { setWatchSurfers((value) => !value); watchSurfersRef.current = !watchSurfersRef.current; renderGraph(); }}>{watchSurfers ? "hide traffic" : "show traffic"}</button> : null}
+              {method === "random-surfer" ? <button type="button" aria-pressed={showTraffic} onClick={() => { setShowTraffic((value) => !value); showTrafficRef.current = !showTrafficRef.current; renderGraph(); }}>{showTraffic ? "hide traffic" : "show traffic"}</button> : null}
             </div>
           </fieldset>
         </div>

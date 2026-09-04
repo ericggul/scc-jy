@@ -1,6 +1,6 @@
 # page-rank
 
-Routes: `/page-rank/1`, `/page-rank/2`. `/page-rank/1` date: 2026-08-20.
+Routes: `/page-rank/1`, `/page-rank/2`, `/page-rank/3`, `/page-rank/4`. `/page-rank/1` date: 2026-08-20.
 
 ## page-rank/1
 
@@ -36,3 +36,40 @@ Routes: `/page-rank/1`, `/page-rank/2`. `/page-rank/1` date: 2026-08-20.
 - **Invariants:** no self-link or duplicate directed link is created; total link count and each source page's outgoing-link count stay unchanged by a replacement; rank remains normalized in diffusion mode; random-surfers retain identity and colour; `/1` is not imported or changed by this trial.
 - **Verification target:** deterministic tests exercise a 150-page baseline and verify that an adaptive update is reproducible, changes the requested number of endpoints, and preserves directed-link and outgoing-budget constraints.
 - **Unresolved question:** compare this traffic-reinforced rule against a version where edge strength enters the transition probability itself; that would be a weighted PageRank experiment, not a visual variation of this one.
+
+## page-rank/3
+
+1. **Participant situation:** the whole viewport is a PageRank field. Every page owns one contiguous territory and the territories have no gaps; rank is read through territory area and material rather than printed values.
+2. **Changed relation:** `/3` preserves `/1`'s directed preferential network, diffusion calculation, random-surfer calculation, damping, and draggable page positions. It changes only the visual mapping: rank becomes an additive weight in a power diagram, so a higher rank claims more screen area rather than becoming a larger circle.
+3. **Reading the field:** a curved arrow starts at the source territory's centroid and terminates at the target territory's centroid. It remains a directed link, never a score. A small open arrowhead remains at every target centre, so direction does not depend on a transient highlight. The territory material moves from ink violet to muted mulberry as rank rises; each territory's light source remains tied to its actual centroid. In random-surfer mode, at most 44 recent links trace briefly as a pearl-to-rose/silver gradient with a travelling pale arrowhead, adapting the draw-on and arrival relation from `sns/instagram/3` to canvas. Traffic is visible by default; printed ranks and individual surfer markers are omitted so area, material, and directed flow remain legible.
+4. **Performance decision:** the field is an exact clipped power diagram, refreshed at most 30 times per second while rank is changing and drawn at most 30 fps. It uses a capped 1.5 device-pixel ratio and cached geometry between rank updates. A WebGL fragment field was considered after inspecting `face-voronoi/3`, but its per-pixel loop would not provide the exact 150-cell boundaries, areas, and centroids required for the arrows and labels; clipped canvas polygons do.
+
+### Bounded trial
+
+- **Baseline:** `/page-rank/1` remains untouched as the source model and circle-node graph.
+- **Changed variable:** rank-to-size is replaced by rank-to-territory area. The power metric is `distance² − rank weight`; because every territory clips the same viewport against every other territory, all visible areas add to the viewport area.
+- **Retained invariants:** `/1`'s 150-page / 296-link default, directed links, PageRank transition logic, rank normalization, controls, and browser-side drag layout are retained. Arrow endpoints and numerical labels use the actual territory centroid, not the original seed point.
+- **Reference:** `face-voronoi/1` supplied the operative exact-polygon clipping rule; `face-voronoi/3` supplied the direct-renderer, full-field material, and restrained control treatment. The adapted visual rule is a continuous-looking pressure material inside exact, rank-weighted cells; no portrait content or shader code was transferred.
+- **Verification target:** model coverage confirms complete area partitioning and that a larger rank produces a larger territory in a controlled three-page case. The 150-page default remains the performance target.
+
+## page-rank/4
+
+1. **Participant situation:** the participant reads rank as territory area and material, and reads directed transmission as a curved path whose literal endpoints are the two territory centroids. There are no printed cell values.
+2. **Changed relation:** `/4` preserves `/3`'s PageRank model, exact rank-weighted power cells, controls, 150-page default, and browser-local dragging. It replaces only the rendering path: raw WebGL2 draws the territory mesh, territory seams, every directed edge, endpoint arrows, and transient traffic.
+3. **GPU representation:** each convex power cell is triangulated as a small fan around its actual centroid and uploaded with local coordinates plus normalized rank. The cell fragment shader creates the restrained inflated membrane material. Every curved directed link is tessellated into GPU ribbon triangles; its source and target are the exact diagram centroids. Base arrows remain at target centroids, while a recent surfer transition draws on from source to target and carries a stronger arrowhead along the same curve.
+4. **Performance decision:** this is not a fragment shader which loops through 150 sites for every screen pixel. The CPU performs the existing bounded power-diagram calculation; GPU work is proportional to the small territory and edge meshes. The canvas is WebGL2 with antialiasing, a 1.5 DPR cap, dynamic buffers, and at most a 30 fps render schedule. At most 36 current traces are live at once.
+
+### Bounded trial
+
+- **Baseline:** `/3`, preserved unchanged.
+- **Changed variable:** Canvas 2D presentation is replaced by a two-program raw WebGL2 pipeline: opaque territory material first, alpha-blended seams and directed ribbons second.
+- **Invariants:** territory area still comes only from rank; curvature does not alter an edge's source or target; dragging changes only site positions; PageRank and the random-surfer process remain model-layer calculations.
+- **Reference note:**
+  - question: can an exact PageRank territory field retain legible directed connections at 150 pages without a CPU pixel renderer?
+  - source: local `face-voronoi/3`, raw WebGL2 renderer and resize lifecycle, inspected 2026-09-04.
+  - transfer: use direct WebGL2 program/buffer ownership, capped DPR, and one full-frame canvas rather than a DOM layer stack.
+  - adaptation: territory fans and ribbon triangles replace the face field's fullscreen procedural shader because `/4` requires exact per-cell centres and paths.
+  - invariants: no portrait, face shader, palette, or control surface was copied.
+  - evidence: the HTTPS `/page-rank/4` route rendered the WebGL field at its 150 territory / 296 directed-link default.
+  - rejected: per-pixel 150-site power-distance loop; it would make centroid-exact cells needlessly expensive.
+- **Next:** compare the current ribbon trace against a GPU texture-based traffic-history field without changing the PageRank calculation.

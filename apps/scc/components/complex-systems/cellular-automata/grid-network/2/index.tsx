@@ -18,6 +18,8 @@ const BORDER_STEP_MILLISECONDS = 113;
 const BACKGROUND_COLOURS = ["#d94646", "#35a765", "#3578d4"] as const;
 const EDGE_COLOUR = "#20201c";
 const QUIET_EDGE_COLOUR = "rgba(32, 32, 28, 0.5)";
+const CELL_AREA_SCALE = 0.5;
+const CELL_LENGTH_SCALE = Math.sqrt(CELL_AREA_SCALE);
 
 type CanvasGeometry = Readonly<{
   width: number;
@@ -25,9 +27,10 @@ type CanvasGeometry = Readonly<{
   columns: number;
   rows: number;
   gap: number;
-  inset: number;
   columnWidth: number;
   rowHeight: number;
+  cellWidth: number;
+  cellHeight: number;
   columnPitch: number;
   rowPitch: number;
 }>;
@@ -47,6 +50,8 @@ function canvasGeometry(
   const inset = clamp(smallestViewportEdge * 0.004375, 2, 6.4);
   const columnWidth = (width - gap * (columns - 1)) / columns;
   const rowHeight = (height - gap * (rows - 1)) / rows;
+  const cellWidth = Math.max(0, columnWidth - inset * 2) * CELL_LENGTH_SCALE;
+  const cellHeight = Math.max(0, rowHeight - inset * 2) * CELL_LENGTH_SCALE;
 
   return {
     width,
@@ -54,22 +59,25 @@ function canvasGeometry(
     columns,
     rows,
     gap,
-    inset,
     columnWidth,
     rowHeight,
+    cellWidth,
+    cellHeight,
     columnPitch: columnWidth + gap,
     rowPitch: rowHeight + gap,
   };
 }
 
 function cellBox(cell: GridNetworkCell, geometry: CanvasGeometry) {
-  const x = cell.column * geometry.columnPitch + geometry.inset;
-  const y = cell.row * geometry.rowPitch + geometry.inset;
+  const x = cell.column * geometry.columnPitch
+    + (geometry.columnWidth - geometry.cellWidth) / 2;
+  const y = cell.row * geometry.rowPitch
+    + (geometry.rowHeight - geometry.cellHeight) / 2;
   return {
     x,
     y,
-    width: Math.max(0, geometry.columnWidth - geometry.inset * 2),
-    height: Math.max(0, geometry.rowHeight - geometry.inset * 2),
+    width: geometry.cellWidth,
+    height: geometry.cellHeight,
   };
 }
 

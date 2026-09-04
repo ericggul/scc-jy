@@ -7,6 +7,7 @@ export const cellularAutomataExperiments = [
   { family: "colour", slug: "6", label: "colour / 6" },
   { family: "grid-network", slug: "1", label: "grid network / 1" },
   { family: "grid-network", slug: "2", label: "grid network / 2" },
+  { family: "grid-network", slug: "3", label: "grid network / 3" },
 ] as const;
 
 export type CellularAutomataExperiment =

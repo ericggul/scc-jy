@@ -65,10 +65,8 @@
 .influencePath {
   fill: none;
   stroke-linecap: round;
-  stroke-width: 1.7;
+  stroke-width: 2.15;
   vector-effect: non-scaling-stroke;
-  stroke-dasharray: 1;
-  stroke-dashoffset: 1;
   animation: influence-trace 1200ms cubic-bezier(0.25, 0.7, 0.35, 1) both;
 }
 
@@ -177,7 +175,7 @@
 .storyEmpty,
 .storyLeaving {
   opacity: 0;
-  transform: scale(0.9);
+  transform: scale(0.78);
 }
 
 .storyLabel {
@@ -273,10 +271,10 @@
 }
 
 @keyframes influence-trace {
-  0% { opacity: 0; stroke-dashoffset: 1; }
-  14% { opacity: 0.9; }
-  72% { opacity: 0.52; stroke-dashoffset: 0; }
-  100% { opacity: 0; stroke-dashoffset: 0; }
+  0% { opacity: 0; }
+  12% { opacity: 0.98; }
+  78% { opacity: 0.58; }
+  100% { opacity: 0; }
 }
 
 @keyframes story-ring-viewed {

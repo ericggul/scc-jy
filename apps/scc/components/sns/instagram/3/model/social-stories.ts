@@ -13,15 +13,17 @@ const HANDLES = [
   "do__not", "aeri.lee", "june.after", "nari.zip", "seoyeon.k", "sori.cho",
 ] as const;
 
-const BASE_DIRECT_TRANSMISSION_CHANCE = 0.34;
-const SOCIAL_PROPAGATION_GAIN = 2;
+const DIRECT_TRANSMISSION_CHANCE = 0.985;
+const MAX_VISIBLE_INFLUENCES = 120;
 const VIEW_EVENT_RATE = 0.24;
 const INFLUENCE_LIFETIME = 1200;
 const VIEWING_TRANSITION_MILLISECONDS = 760;
 const LEAVING_TRANSITION_MILLISECONDS = 300;
 const EMPTY_COOLDOWN_MILLISECONDS = 1000;
-const MINIMUM_NEW_SHARE = 0.54;
+const INITIAL_NEW_SHARE = 0.54;
 const MAXIMUM_NEW_SHARE = 0.74;
+const TRANSMISSIONS_PER_STORY = 2;
+const MAX_PROPAGATIONS_PER_STEP_SHARE = 0.045;
 
 const LOCAL_OFFSETS = [
   [-1, -1], [0, -1], [1, -1],
@@ -47,19 +49,57 @@ function pointFor(index: number, columns: number) {
   return { column: index % columns, row: Math.floor(index / columns) };
 }
 
-function newStoryState(now: number, seed: number): { state: StoryCellState; seed: number } {
+function firstTransmissionAt(now: number, seed: number): { time: number; seed: number } {
   const random = nextRandom(seed);
-  const poissonDelay = -Math.log(Math.max(0.00001, 1 - random.value)) / VIEW_EVENT_RATE;
+  return {
+    time: now + 180 + Math.round(random.value * 420),
+    seed: random.seed,
+  };
+}
+
+function nextTransmissionAt(now: number, seed: number): { time: number; seed: number } {
+  const random = nextRandom(seed);
+  return {
+    time: now + 190 + Math.round(random.value * 310),
+    seed: random.seed,
+  };
+}
+
+function newStoryState(now: number, seed: number): { state: StoryCellState; seed: number } {
+  const viewRandom = nextRandom(seed);
+  const poissonDelay = -Math.log(Math.max(0.00001, 1 - viewRandom.value)) / VIEW_EVENT_RATE;
   const viewDelay = Math.round(Math.min(10000, Math.max(1400, poissonDelay * 1000)));
+  const transmission = firstTransmissionAt(now, viewRandom.seed);
 
   return {
-    seed: random.seed,
+    seed: transmission.seed,
     state: {
       status: "new",
       viewAt: now + viewDelay,
       viewingUntil: null,
       leavingUntil: null,
       availableAt: now,
+      transmitAt: transmission.time,
+      transmissionsRemaining: TRANSMISSIONS_PER_STORY,
+      transmittedAt: null,
+    },
+  };
+}
+
+function propagatedStoryState(now: number, seed: number): { state: StoryCellState; seed: number } {
+  const transmission = firstTransmissionAt(now, seed);
+
+  return {
+    seed: transmission.seed,
+    state: {
+      status: "new",
+      viewAt: now + INFLUENCE_LIFETIME,
+      viewingUntil: null,
+      leavingUntil: null,
+      availableAt: now,
+      transmitAt: transmission.time,
+      transmissionsRemaining: TRANSMISSIONS_PER_STORY,
+      transmittedAt: null,
     },
   };
 }
@@ -71,6 +111,9 @@ function viewingStoryState(now: number): StoryCellState {
     viewingUntil: now + VIEWING_TRANSITION_MILLISECONDS,
     leavingUntil: null,
     availableAt: now,
+    transmitAt: null,
+    transmissionsRemaining: 0,
+    transmittedAt: null,
   };
 }
 
@@ -81,6 +124,9 @@ function leavingStoryState(now: number): StoryCellState {
     viewingUntil: null,
     leavingUntil: now + LEAVING_TRANSITION_MILLISECONDS,
     availableAt: now,
+    transmitAt: null,
+    transmissionsRemaining: 0,
+    transmittedAt: null,
   };
 }
 
@@ -91,6 +137,9 @@ function emptyStoryState(availableAt = 0): StoryCellState {
     viewingUntil: null,
     leavingUntil: null,
     availableAt,
+    transmitAt: null,
+    transmissionsRemaining: 0,
+    transmittedAt: null,
   };
 }
 
@@ -125,7 +174,7 @@ function buildIncomingTies(columns: number, rows: number): readonly (readonly St
       && (socialColumn !== column || socialRow !== row)
     ) {
       const source = indexAt(socialColumn, socialRow, columns);
-      tiesBySource.set(source, Math.max(tiesBySource.get(source) ?? 0, 0.28 + unit(target * 67) * 0.18));
+      tiesBySource.set(source, Math.max(tiesBySource.get(source) ?? 0, 1.1 + unit(target * 67) * 0.35));
     }
 
     return [...tiesBySource.entries()].map(([source, weight]) => ({ source, target, weight }));
@@ -159,6 +208,20 @@ function chooseTie(
   return { tie: ties[ties.length - 1]!, seed: random.seed };
 }
 
+function shuffleSources(sources: readonly number[], seed: number): { sources: number[]; seed: number } {
+  const shuffled = [...sources];
+  let nextSeed = seed;
+
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const random = nextRandom(nextSeed);
+    nextSeed = random.seed;
+    const swapIndex = Math.floor(random.value * (index + 1));
+    [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex]!, shuffled[index]!];
+  }
+
+  return { sources: shuffled, seed: nextSeed };
+}
+
 export function createSocialStorySystem(
   columns: number,
   rows: number,
@@ -175,7 +238,7 @@ export function createSocialStorySystem(
   for (let index = 0; index < nodes.length; index += 1) {
     const random = nextRandom(randomSeed);
     randomSeed = random.seed;
-    if (random.value < 0.62) {
+    if (random.value < INITIAL_NEW_SHARE) {
       const next = newStoryState(now, randomSeed);
       randomSeed = next.seed;
       states.push(next.state);
@@ -191,7 +254,7 @@ export function createSocialStorySystem(
     randomSeed = random.seed;
     return emptyCells[Math.floor(random.value * emptyCells.length)]!;
   };
-  const minimumNewStories = Math.max(1, Math.ceil(nodes.length * MINIMUM_NEW_SHARE));
+  const minimumNewStories = Math.max(1, Math.ceil(nodes.length * INITIAL_NEW_SHARE));
   let initialNewStories = states.filter((state) => state.status === "new").length;
 
   while (initialNewStories < minimumNewStories) {
@@ -246,52 +309,54 @@ export function stepSocialStorySystem(
   const nextStates = [...resolvedStates];
   const nextInfluences: StoryInfluence[] = system.influences.filter((edge) => edge.expiresAt > now);
   let newCount = activeSources.size;
-  const minimumNewStories = Math.max(3, Math.ceil(system.nodes.length * MINIMUM_NEW_SHARE));
-  const maximumNewStories = Math.max(minimumNewStories, Math.ceil(system.nodes.length * MAXIMUM_NEW_SHARE));
+  const maximumNewStories = Math.ceil(system.nodes.length * MAXIMUM_NEW_SHARE);
+  const propagationLimit = Math.max(1, Math.ceil(system.nodes.length * MAX_PROPAGATIONS_PER_STEP_SHARE));
+  const shuffled = shuffleSources([...activeSources], randomSeed);
+  randomSeed = shuffled.seed;
+  let propagations = 0;
 
-  const chooseEmptyCell = (): number | null => {
-    const emptyCells = system.nodes.filter((node) => {
-      const state = nextStates[node.index];
-      return state?.status === "empty" && state.availableAt <= now;
-    });
-    if (emptyCells.length === 0) return null;
-    const random = nextRandom(randomSeed);
-    randomSeed = random.seed;
-    return emptyCells[Math.floor(random.value * emptyCells.length)]!.index;
-  };
-
-  while (newCount < minimumNewStories) {
-    const target = chooseEmptyCell();
-    if (target === null) break;
-    const nextStory = newStoryState(now, randomSeed);
-    randomSeed = nextStory.seed;
-    nextStates[target] = nextStory.state;
-    activeSources.add(target);
-    newCount += 1;
-  }
-
-  const transmissionChance = Math.min(
-    0.96,
-    BASE_DIRECT_TRANSMISSION_CHANCE * SOCIAL_PROPAGATION_GAIN,
-  );
-  for (const source of activeSources) {
-    if (newCount >= maximumNewStories) break;
+  for (const source of shuffled.sources) {
+    if (newCount >= maximumNewStories || propagations >= propagationLimit) break;
+    const sourceState = nextStates[source];
+    if (
+      !sourceState
+      || sourceState.transmissionsRemaining <= 0
+      || sourceState.transmitAt === null
+      || sourceState.transmitAt > now
+    ) continue;
     const availableTies = system.outgoingTies[source]!.filter((tie) => {
       const targetState = nextStates[tie.target];
       return targetState?.status === "empty" && targetState.availableAt <= now;
     });
-    if (availableTies.length === 0) continue;
-
+    if (availableTies.length === 0) {
+      const retry = nextTransmissionAt(now, randomSeed);
+      randomSeed = retry.seed;
+      nextStates[source] = { ...sourceState, transmitAt: retry.time };
+      continue;
+    }
     const attempt = nextRandom(randomSeed);
     randomSeed = attempt.seed;
-    if (attempt.value >= transmissionChance) continue;
+    const transmissionsRemaining = sourceState.transmissionsRemaining - 1;
+    const followingTransmission = transmissionsRemaining > 0
+      ? nextTransmissionAt(now, randomSeed)
+      : null;
+    if (followingTransmission) randomSeed = followingTransmission.seed;
+    const sourceAfterAttempt: StoryCellState = {
+      ...sourceState,
+      transmitAt: followingTransmission?.time ?? null,
+      transmissionsRemaining,
+      transmittedAt: now,
+    };
+    nextStates[source] = sourceAfterAttempt;
+    if (attempt.value >= DIRECT_TRANSMISSION_CHANCE) continue;
 
     const selected = chooseTie(availableTies, randomSeed);
     randomSeed = selected.seed;
-    const nextStory = newStoryState(now, randomSeed);
-    randomSeed = nextStory.seed;
-    nextStates[selected.tie.target] = nextStory.state;
+    const propagated = propagatedStoryState(now, randomSeed);
+    randomSeed = propagated.seed;
+    nextStates[selected.tie.target] = propagated.state;
     newCount += 1;
+    propagations += 1;
     nextInfluences.push({
       id: `${source}-${selected.tie.target}-${now}-${randomSeed}`,
       source,
@@ -305,7 +370,7 @@ export function stepSocialStorySystem(
     ...system,
     time: now,
     states: nextStates,
-    influences: nextInfluences.slice(-72),
+    influences: nextInfluences.slice(-MAX_VISIBLE_INFLUENCES),
     randomSeed,
   };
 }

@@ -1,0 +1,19 @@
+.page {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #dfdcd4;
+}
+
+.canvas {
+  display: block;
+  inline-size: 100%;
+  block-size: 100dvh;
+  outline: 0;
+  touch-action: none;
+}
+
+.canvas:focus-visible {
+  outline: 2px solid #e4501e;
+  outline-offset: -2px;
+}
