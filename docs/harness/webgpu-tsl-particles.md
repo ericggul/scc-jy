@@ -55,4 +55,34 @@ contract, not visual inspiration.
 - If the exact source runs, stop. Do not continue with speculative fallbacks or
   performance rewrites.
 
+## Performance safety
+
+This applies to every particle experiment, including original work that is not
+a source clone. Protecting the user's browser, GPU, battery, and unsaved work
+comes before particle density or visual novelty.
+
+1. **Start within the unobserved budget.** Until the exact HTTPS route has been
+   observed on the user's device, use at most 8,192 visible particles/sprites,
+   a 1.0 maximum DPR, and at most 24 Hz for autonomous animation. Count the
+   whole active route, not each individual particle system.
+2. **Earn compute.** Use writable storage buffers and per-frame compute only
+   when the experiment's actual model cannot be expressed as static attributes
+   or a vertex/material-time relation. Never add a compute pass merely to make
+   particles move.
+3. **Bound the loop.** Begin from a static, reduced-motion-safe frame; cap and
+   clean up any autonomous scheduler. Reduced-motion must stop autonomous
+   updates, not merely alter a cursor or CSS transition.
+4. **Treat fallback separately.** WebGPURenderer's WebGL2 fallback is not proof
+   that a WebGPU count, memory profile, or compute schedule is safe. Use the
+   shared lower budget until both backend paths have been observed.
+5. **Escalate only with evidence.** Higher particle count, DPR, multiple compute
+   passes, post-processing, or an uncapped loop require a documented budget for
+   count, memory, draw calls, DPR, and update rate; explicit user authorization
+   for HTTPS browser observation; and a 30-second observation with console,
+   GPU-error, and device-loss results recorded.
+6. **Fail safe after harm.** If a route is reported to freeze, crash, or
+   materially degrade a browser or computer, replace it with the static safe
+   path or remove it from the route registry before further visual iteration.
+   Do not ask the user to reopen an unsafe route for diagnosis.
+
 Reference: [Field Guide to TSL and WebGPU](https://blog.maximeheckel.com/posts/field-guide-to-tsl-and-webgpu/); [Three.js WebGPURenderer](https://threejs.org/docs/pages/WebGPURenderer.html).

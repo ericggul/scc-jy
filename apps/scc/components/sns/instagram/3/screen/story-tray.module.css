@@ -1,0 +1,304 @@
+@property --instagram-story-view-progress {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.screen {
+  --grid-inset: 32px;
+  --control-inset: 32px;
+  --story-size: 93px;
+  --story-row-height: 93px;
+  --story-gap: 12px;
+  --story-ring-padding: 3.5px;
+  --story-separator: 3.5px;
+  box-sizing: border-box;
+  position: relative;
+  width: 100%;
+  min-height: 100svh;
+  height: 100dvh;
+  overflow: hidden;
+  padding: var(--grid-inset);
+  background: #0c1115;
+  color: #f6f7f8;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+}
+
+.screen *,
+.screen *::before,
+.screen *::after {
+  box-sizing: border-box;
+}
+
+.gridStage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.storyGrid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  width: 100%;
+  height: 100%;
+  grid-template-columns: repeat(var(--grid-columns), var(--story-size));
+  grid-template-rows: repeat(var(--grid-rows), var(--story-row-height));
+  align-content: center;
+  justify-content: center;
+  gap: var(--story-gap);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.influenceLayer {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.influencePath {
+  fill: none;
+  stroke-linecap: round;
+  stroke-width: 1.7;
+  vector-effect: non-scaling-stroke;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: influence-trace 1200ms cubic-bezier(0.25, 0.7, 0.35, 1) both;
+}
+
+.influenceTarget {
+  fill: #ffd06a;
+  opacity: 0;
+  animation: influence-arrival 1200ms ease-out both;
+}
+
+.controls {
+  position: absolute;
+  z-index: 2;
+  right: var(--control-inset);
+  bottom: var(--control-inset);
+  left: var(--control-inset);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin: 0;
+  color: #f6f6f6;
+  font: 0.64rem var(--font-geist-mono), monospace;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 1.15rem;
+}
+
+.controlActions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 1.15rem;
+}
+
+.sizeControl {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: rgb(246 246 246 / 70%);
+}
+
+.sizeControl input {
+  width: clamp(5.5rem, 10vw, 9rem);
+  margin: 0;
+  accent-color: #f6f6f6;
+  cursor: ew-resize;
+}
+
+.sizeControl output {
+  min-width: 2.55rem;
+  color: #fff;
+  text-align: right;
+}
+
+.actions button {
+  border: 0;
+  border-bottom: 1px solid transparent;
+  padding: 0.35rem 0;
+  background: transparent;
+  color: rgb(246 246 246 / 70%);
+  cursor: pointer;
+  font: inherit;
+}
+
+.actions button:hover,
+.actions button[aria-pressed="true"] {
+  border-bottom-color: currentColor;
+  color: #fff;
+}
+
+.actions button:focus-visible {
+  outline: 1px solid #fff;
+  outline-offset: 4px;
+}
+
+.gridItem {
+  width: var(--story-size);
+  height: var(--story-row-height);
+}
+
+.story {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  grid-template-rows: var(--story-size) auto;
+  align-content: start;
+  justify-items: center;
+  margin: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: center;
+  opacity: 1;
+  transform: scale(1);
+  transform-origin: center;
+  transition: opacity 180ms ease-out, transform 260ms cubic-bezier(0.2, 0.85, 0.3, 1);
+}
+
+.storyEmpty,
+.storyLeaving {
+  opacity: 0;
+  transform: scale(0.9);
+}
+
+.storyLabel {
+  display: block;
+  overflow: hidden;
+  width: 100%;
+  margin-top: 4px;
+  color: #f4f4f5;
+  font-size: clamp(10px, calc(var(--story-size) * 0.16), 15px);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: opacity 150ms ease-out, transform 200ms ease-out;
+}
+
+.storyEmpty .storyLabel,
+.storyLeaving .storyLabel {
+  opacity: 0;
+  transform: translateY(-2px);
+}
+
+.storyRing,
+.viewerRing {
+  display: grid;
+  position: relative;
+  place-items: center;
+  border-radius: 50%;
+}
+
+.storyRing {
+  width: var(--story-size);
+  height: var(--story-size);
+  padding: var(--story-ring-padding);
+  transition: padding 260ms cubic-bezier(0.2, 0.85, 0.3, 1);
+}
+
+.storyRing::before {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  border-radius: inherit;
+  background: conic-gradient(from 205deg, #fed044, #ff264f 30%, #ed0e9b 58%, #ff5e29 80%, #fed044);
+  content: "";
+  opacity: 0;
+  -webkit-mask-image: conic-gradient(
+    from 0deg,
+    transparent 0deg var(--instagram-story-view-progress),
+    #000 calc(var(--instagram-story-view-progress) + 0.5deg) 360deg
+  );
+  mask-image: conic-gradient(
+    from 0deg,
+    transparent 0deg var(--instagram-story-view-progress),
+    #000 calc(var(--instagram-story-view-progress) + 0.5deg) 360deg
+  );
+  transition: opacity 240ms ease-out;
+}
+
+.storyRingNew::before {
+  opacity: 1;
+}
+
+.storyRingViewing::before {
+  opacity: 1;
+  animation: story-ring-viewed 760ms linear forwards;
+}
+
+.storyRing.storyRingPlain {
+  padding: 0;
+}
+
+.storyRingPlain::before {
+  --instagram-story-view-progress: 360deg;
+}
+
+.storyRingPlain .logoSurface {
+  border-width: 0;
+}
+
+.logoSurface {
+  display: block;
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  border: var(--story-separator) solid #0c1115;
+  border-radius: 50%;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 68% auto;
+  transition: border-width 260ms cubic-bezier(0.2, 0.85, 0.3, 1);
+}
+
+@keyframes influence-trace {
+  0% { opacity: 0; stroke-dashoffset: 1; }
+  14% { opacity: 0.9; }
+  72% { opacity: 0.52; stroke-dashoffset: 0; }
+  100% { opacity: 0; stroke-dashoffset: 0; }
+}
+
+@keyframes story-ring-viewed {
+  from { --instagram-story-view-progress: 0deg; }
+  to { --instagram-story-view-progress: 360deg; }
+}
+
+@keyframes influence-arrival {
+  0%, 58% { opacity: 0; transform: scale(0.4); transform-origin: center; }
+  70% { opacity: 0.92; transform: scale(1.5); }
+  100% { opacity: 0; transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .story,
+  .storyLabel,
+  .storyRing,
+  .storyRing::before,
+  .logoSurface,
+  .influencePath,
+  .influenceTarget {
+    animation-duration: 0.01ms;
+    transition-duration: 0.01ms;
+  }
+}

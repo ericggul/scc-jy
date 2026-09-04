@@ -4,6 +4,7 @@ import type { ComponentType } from "react";
 import SnsFeedOne from "@/components/sns/feed/1";
 import SnsInstagramOne from "@/components/sns/instagram/1";
 import SnsInstagramTwo from "@/components/sns/instagram/2";
+import SnsInstagramThree from "@/components/sns/instagram/3";
 import SnsNavigationOne from "@/components/sns/navigation/1";
 import SnsNavigationTwo from "@/components/sns/navigation/2";
 import SnsNavigationDefault from "@/components/sns/navigation/default";
@@ -24,6 +25,7 @@ const components: Record<SnsExperimentKey, ComponentType> = {
   "feed/1": SnsFeedOne,
   "instagram/1": SnsInstagramOne,
   "instagram/2": SnsInstagramTwo,
+  "instagram/3": SnsInstagramThree,
   "navigation/default": SnsNavigationDefault,
   "navigation/1": SnsNavigationOne,
   "navigation/2": SnsNavigationTwo,

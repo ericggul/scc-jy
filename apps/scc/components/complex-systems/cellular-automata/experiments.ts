@@ -1,19 +1,33 @@
 export const cellularAutomataExperiments = [
-  { slug: "1", label: "cellular-automata/1" },
-  { slug: "2", label: "cellular-automata/2" },
-  { slug: "3", label: "cellular-automata/3" },
-  { slug: "4", label: "cellular-automata/4" },
-  { slug: "5", label: "cellular-automata/5" },
-  { slug: "6", label: "cellular-automata/6" },
+  { family: "colour", slug: "1", label: "colour / 1" },
+  { family: "colour", slug: "2", label: "colour / 2" },
+  { family: "colour", slug: "3", label: "colour / 3" },
+  { family: "colour", slug: "4", label: "colour / 4" },
+  { family: "colour", slug: "5", label: "colour / 5" },
+  { family: "colour", slug: "6", label: "colour / 6" },
+  { family: "grid-network", slug: "1", label: "grid network / 1" },
+  { family: "grid-network", slug: "2", label: "grid network / 2" },
 ] as const;
 
-export type CellularAutomataExperimentSlug =
-  (typeof cellularAutomataExperiments)[number]["slug"];
+export type CellularAutomataExperiment =
+  (typeof cellularAutomataExperiments)[number];
 
-export function isCellularAutomataExperimentSlug(
+export type CellularAutomataExperimentFamily =
+  CellularAutomataExperiment["family"];
+
+export function getCellularAutomataExperiment(
+  family: string,
+  slug: string,
+) {
+  return cellularAutomataExperiments.find(
+    (experiment) => experiment.family === family && experiment.slug === slug,
+  );
+}
+
+export function isColourExperimentSlug(
   value: string,
-): value is CellularAutomataExperimentSlug {
+): value is Extract<CellularAutomataExperiment, { family: "colour" }>["slug"] {
   return cellularAutomataExperiments.some(
-    (experiment) => experiment.slug === value,
+    (experiment) => experiment.family === "colour" && experiment.slug === value,
   );
 }

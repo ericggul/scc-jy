@@ -1,0 +1,32 @@
+.field {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #070a10;
+}
+
+.canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  outline: 0;
+  touch-action: none;
+}
+
+.canvas:active {
+  cursor: grabbing;
+}
+
+.canvas:focus-visible {
+  outline: 1px solid #fff3e7;
+  outline-offset: -0.55rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .canvas {
+    cursor: default;
+  }
+}

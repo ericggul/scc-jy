@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import PageRankOne from "@/components/complex-systems/page-rank/1";
+import PageRankTwo from "@/components/complex-systems/page-rank/2";
 import {
   isPageRankExperimentSlug,
   pageRankExperiments,
@@ -13,7 +14,7 @@ export function generateStaticParams() {
 }
 
 export const metadata: Metadata = {
-  title: "page-rank/1",
+  title: "page-rank",
   description: "An interactive directed graph for observing PageRank diffusion and random-surfer estimates.",
 };
 
@@ -24,5 +25,5 @@ export default async function PageRankExperimentPage({
 }) {
   const { experiment } = await params;
   if (!isPageRankExperimentSlug(experiment)) notFound();
-  return <PageRankOne />;
+  return experiment === "1" ? <PageRankOne /> : <PageRankTwo />;
 }

@@ -1,0 +1,181 @@
+.field {
+  position: relative;
+  width: 100%;
+  height: 100svh;
+  min-height: 26rem;
+  overflow: hidden;
+  background: #f6f6f6;
+}
+
+.canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  touch-action: none;
+  cursor: grab;
+  outline: none;
+}
+
+.canvas:focus-visible { box-shadow: inset 0 0 0 1px #101010; }
+.canvas:active { cursor: grabbing; }
+
+.links path {
+  fill: none;
+  stroke: #8c8c8c;
+  stroke-width: 1;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.surfers path { stroke: rgba(0, 0, 0, 0.14); stroke-width: 0.75; }
+
+.pageNode { cursor: grab; outline: none; }
+.pageNode:active { cursor: grabbing; }
+.pageNode circle { stroke: rgba(0, 0, 0, 0.28); stroke-width: 1; }
+.pageNode:focus-visible circle { stroke: #000; stroke-width: 2.2; }
+
+.rankLabel {
+  fill: #111;
+  font: 13px Arial, Helvetica, sans-serif;
+  pointer-events: none;
+  user-select: none;
+}
+
+.controls {
+  position: absolute;
+  right: clamp(1.1rem, 2.6vw, 2.4rem);
+  bottom: clamp(1.1rem, 2.6vw, 2.4rem);
+  left: clamp(1.1rem, 2.6vw, 2.4rem);
+  z-index: 2;
+  display: grid;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  color: #f6f6f6;
+  font: 0.6rem var(--font-geist-mono), monospace;
+  text-shadow: 0 1px 3px #000, 0 0 7px #000;
+  mix-blend-mode: difference;
+}
+
+.statusLine {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.readout,
+.runState { margin: 0; }
+
+.readout { color: rgba(246, 246, 246, 0.76); }
+.runState { color: rgba(246, 246, 246, 0.62); }
+
+.controlGroups {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.4rem 1rem;
+}
+
+.controlGroup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.controlGroup legend {
+  float: left;
+  margin-right: 0.1rem;
+  padding: 0;
+  color: rgba(246, 246, 246, 0.66);
+  font-size: 0.54rem;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+.methodControls,
+.actionControls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.methodControls button,
+.actionControls button {
+  border: 0;
+  border-bottom: 1px solid transparent;
+  border-radius: 0;
+  padding: 0.2rem 0;
+  background: transparent;
+  color: rgba(246, 246, 246, 0.76);
+  cursor: pointer;
+  font: inherit;
+  text-shadow: inherit;
+}
+
+.methodControls button:hover,
+.actionControls button:hover { border-bottom-color: currentColor; color: #f6f6f6; }
+
+.methodControls button[aria-pressed="true"],
+.actionControls button[aria-pressed="true"] {
+  border-bottom-color: currentColor;
+  background: transparent;
+  color: #f6f6f6;
+}
+
+.methodControls button:focus-visible,
+.actionControls button:focus-visible,
+.control input:focus-visible {
+  outline: 1px solid #111;
+  outline-offset: 3px;
+}
+
+.parameterControls,
+.graphParameters { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+
+.control {
+  display: grid;
+  grid-template-columns: auto minmax(3.4rem, 5.2rem) auto;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.controlHeader {
+  display: contents;
+  color: rgba(246, 246, 246, 0.8);
+}
+
+.control input { order: 2; width: 100%; margin: 0; accent-color: currentColor; }
+.control output { order: 3; color: #f6f6f6; font-variant-numeric: tabular-nums; text-align: right; }
+
+.rankGroup,
+.graphGroup { min-width: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .canvas, .pageNode { cursor: default; }
+}
+
+@media (max-width: 42rem) {
+  .controls { font-size: 0.56rem; }
+  .controlGroups { gap: 0.3rem 0.7rem; }
+  .methodControls,
+  .actionControls { gap: 0.45rem; }
+}
+
+@media (max-width: 31rem) {
+  .statusLine { align-items: flex-start; flex-direction: column; gap: 0.2rem; }
+  .control { grid-template-columns: auto minmax(2.8rem, 4rem) auto; }
+}
+

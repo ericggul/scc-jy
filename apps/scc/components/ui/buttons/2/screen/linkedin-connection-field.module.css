@@ -1,0 +1,366 @@
+.screen {
+  --connection-button-width: 36px;
+  --connection-button-height: 13px;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 100svh;
+  height: 100dvh;
+  overflow: hidden;
+  margin: 0;
+  position: relative;
+  background: #f3f2ef;
+}
+
+.screen *,
+.screen *::before,
+.screen *::after {
+  box-sizing: border-box;
+}
+
+.buttonGrid {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  contain: layout paint;
+  grid-template-columns: repeat(var(--button-columns), var(--connection-button-width));
+  grid-template-rows: repeat(var(--button-rows), var(--connection-button-height));
+  align-content: center;
+  justify-content: center;
+  gap: 0;
+}
+
+.buttonCanvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  contain: layout paint;
+  cursor: pointer;
+}
+
+.connect,
+.pending,
+.connected {
+  width: var(--connection-button-width);
+  height: var(--connection-button-height);
+  border: 0.5px solid #0a66c2;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-family: Arial, sans-serif;
+  font-size: 5.5px;
+  font-weight: 600;
+  line-height: 9px;
+  transition: background-color 100ms ease, border-color 100ms ease, color 100ms ease, box-shadow 100ms ease;
+}
+
+.connect {
+  background: #fff;
+  color: #0a66c2;
+}
+
+.pending {
+  border-color: #666;
+  background: #fff;
+  color: #666;
+}
+
+.connected {
+  background: #0a66c2;
+  color: #fff;
+}
+
+.connect:hover {
+  background: #e8f3ff;
+}
+
+.pending:hover {
+  background: #e8e8e8;
+}
+
+.connected:hover {
+  background: #004182;
+}
+
+.screen[data-palette-mode="ten"] .connect,
+.screen[data-palette-mode="ten"] .pending,
+.screen[data-palette-mode="ten"] .connected {
+  border-color: var(--tone);
+}
+
+.screen[data-palette-mode="ten"] .connect {
+  background: #fff;
+  color: var(--tone);
+}
+
+.screen[data-palette-mode="ten"] .pending {
+  background: var(--tone-soft);
+  color: var(--tone-deep);
+}
+
+.screen[data-palette-mode="ten"] .connected {
+  border-color: var(--tone-deep);
+  background: var(--tone-deep);
+  color: #fff;
+}
+
+.screen[data-palette-mode="ten"] .connect[data-treatment="solid"] {
+  background: var(--tone);
+  color: #fff;
+}
+
+.screen[data-palette-mode="ten"] .pending[data-treatment="solid"] {
+  background: #fff;
+  color: var(--tone);
+}
+
+.screen[data-palette-mode="ten"] [data-tone="0"] {
+  --tone: #0a66c2;
+  --tone-soft: #e8f3ff;
+  --tone-deep: #004182;
+}
+
+.screen[data-palette-mode="ten"] [data-tone="1"] {
+  --tone: #d04932;
+  --tone-soft: #fff0ed;
+  --tone-deep: #a42e1e;
+}
+
+.screen[data-palette-mode="ten"] [data-tone="2"] {
+  --tone: #9b6700;
+  --tone-soft: #fff6d9;
+  --tone-deep: #725000;
+}
+
+.screen[data-palette-mode="ten"] [data-tone="3"] {
+  --tone: #087a54;
+  --tone-soft: #e9f7ef;
+  --tone-deep: #05613f;
+}
+
+.screen[data-palette-mode="ten"] [data-tone="4"] {
+  --tone: #6947b5;
+  --tone-soft: #f0ebff;
+  --tone-deep: #4c2d92;
+}
+
+.screen[data-palette-mode="ten"] [data-tone="5"] {
+  --tone: #0075b5;
+  --tone-soft: #e5f5ff;
+  --tone-deep: #005789;
+}
+
+.screen[data-palette-mode="ten"] [data-tone="6"] {
+  --tone: #b12b70;
+  --tone-soft: #fbeaf3;
+  --tone-deep: #83204f;
+}
+
+.screen[data-palette-mode="ten"] [data-tone="7"] {
+  --tone: #b83b32;
+  --tone-soft: #fcebea;
+  --tone-deep: #8d2b25;
+}
+
+.screen[data-palette-mode="ten"] [data-tone="8"] {
+  --tone: #007c79;
+  --tone-soft: #e7f8f7;
+  --tone-deep: #005d5b;
+}
+
+.screen[data-palette-mode="ten"] [data-tone="9"] {
+  --tone: #2f3136;
+  --tone-soft: #eeeeef;
+  --tone-deep: #17181b;
+}
+
+.screen[data-render-mode="pointillist"] .connect,
+.screen[data-render-mode="pointillist"] .pending,
+.screen[data-render-mode="pointillist"] .connected {
+  border-color: var(--point-fill);
+  background: var(--point-fill);
+  color: transparent;
+}
+
+.screen[data-render-mode="pointillist"] .pending {
+  box-shadow: inset 0 0 0 0.5px rgb(255 255 255 / 78%);
+}
+
+.screen[data-render-mode="pointillist"] .connected {
+  box-shadow: inset 0 0 0 0.5px rgb(0 0 0 / 72%);
+}
+
+.paletteControl {
+  position: absolute;
+  z-index: 1;
+  left: 50%;
+  bottom: 12px;
+  display: inline-flex;
+  gap: 2px;
+  transform: translateX(-50%);
+  padding: 2px;
+  border: 1px solid rgb(10 102 194 / 18%);
+  border-radius: 999px;
+  background: rgb(243 242 239 / 94%);
+  box-shadow: 0 1px 5px rgb(0 0 0 / 12%);
+  backdrop-filter: blur(10px);
+}
+
+.paletteModes,
+.pointillistSources {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.pointillistSources {
+  gap: 3px;
+}
+
+.paletteMode {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 22px;
+  padding: 0 7px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #5f5f5f;
+  cursor: pointer;
+  font-family: Arial, sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.paletteMode[aria-pressed="true"] {
+  background: #fff;
+  color: #242424;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 12%);
+}
+
+.paletteMode:focus-visible {
+  outline: 1px solid #0a66c2;
+  outline-offset: 1px;
+}
+
+.pointillistSource {
+  display: grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  padding: 2px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+
+.pointillistSource[aria-pressed="true"] {
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 12%);
+}
+
+.pointillistSource:focus-visible {
+  outline: 1px solid #0a66c2;
+  outline-offset: 1px;
+}
+
+.sourceThumbnail {
+  display: block;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background-color: #f3f2ef;
+  background-position: center;
+  background-size: cover;
+}
+
+.threePreview,
+.tenPreview {
+  align-items: center;
+}
+
+.threePreview {
+  display: inline-flex;
+  gap: 1px;
+}
+
+.tenPreview {
+  display: grid;
+  grid-template-columns: repeat(5, 3px);
+  gap: 1px;
+}
+
+.swatch {
+  display: block;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+}
+
+.swatchBlue {
+  background: #0a66c2;
+}
+
+.swatchGray {
+  background: #666;
+}
+
+.swatchDeepBlue {
+  background: #004182;
+}
+
+.swatchCoral {
+  background: #d04932;
+}
+
+.swatchOchre {
+  background: #9b6700;
+}
+
+.swatchGreen {
+  background: #087a54;
+}
+
+.swatchViolet {
+  background: #6947b5;
+}
+
+.swatchSky {
+  background: #0075b5;
+}
+
+.swatchMagenta {
+  background: #b12b70;
+}
+
+.swatchBrick {
+  background: #b83b32;
+}
+
+.swatchTeal {
+  background: #007c79;
+}
+
+.swatchInk {
+  background: #2f3136;
+}
+
+.connect:focus-visible,
+.pending:focus-visible,
+.connected:focus-visible {
+  outline: 1px solid #0a66c2;
+  outline-offset: 1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .connect,
+  .pending,
+  .connected {
+    transition: none;
+  }
+}

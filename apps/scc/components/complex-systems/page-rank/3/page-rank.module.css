@@ -1,0 +1,163 @@
+.field {
+  position: relative;
+  width: 100%;
+  height: 100svh;
+  min-height: 26rem;
+  overflow: hidden;
+  background: #e9efea;
+}
+
+.canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  touch-action: none;
+  cursor: grab;
+  outline: none;
+}
+
+.canvas:active { cursor: grabbing; }
+.canvas:focus-visible { box-shadow: inset 0 0 0 1px rgba(12, 62, 62, 0.8); }
+
+.controls {
+  position: absolute;
+  right: clamp(0.9rem, 2vw, 1.7rem);
+  bottom: clamp(0.85rem, 2vw, 1.5rem);
+  left: clamp(0.9rem, 2vw, 1.7rem);
+  z-index: 1;
+  display: grid;
+  gap: 0.22rem;
+  margin: 0;
+  padding: 0;
+  color: rgba(10, 48, 47, 0.82);
+  font: 0.57rem/1.2 var(--font-geist-mono), ui-monospace, monospace;
+  letter-spacing: -0.02em;
+  text-shadow: 0 1px 2px rgba(245, 251, 245, 0.72);
+}
+
+.statusLine {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.readout,
+.runState { margin: 0; }
+
+.readout { color: rgba(10, 48, 47, 0.69); }
+.runState { color: rgba(10, 48, 47, 0.52); font-variant-numeric: tabular-nums; }
+
+.controlGroups {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.32rem 0.86rem;
+}
+
+.controlGroup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.28rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.controlGroup legend {
+  float: left;
+  margin-right: 0.14rem;
+  padding: 0;
+  color: rgba(10, 48, 47, 0.55);
+  font-size: 0.5rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.methodControls,
+.actionControls,
+.parameterControls,
+.graphParameters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.44rem;
+}
+
+.methodControls button,
+.actionControls button {
+  border: 0;
+  border-bottom: 1px solid transparent;
+  border-radius: 0;
+  padding: 0.15rem 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+}
+
+.methodControls button:hover,
+.actionControls button:hover,
+.methodControls button[aria-pressed="true"],
+.actionControls button[aria-pressed="true"] {
+  border-bottom-color: currentColor;
+  color: rgba(3, 34, 35, 0.96);
+}
+
+.methodControls button:focus-visible,
+.actionControls button:focus-visible,
+.control input:focus-visible {
+  outline: 1px solid rgba(3, 34, 35, 0.85);
+  outline-offset: 3px;
+}
+
+.control {
+  display: grid;
+  grid-template-columns: auto minmax(2.8rem, 4.55rem) auto;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.controlHeader {
+  display: contents;
+  color: rgba(10, 48, 47, 0.69);
+}
+
+.control input {
+  order: 2;
+  width: 100%;
+  height: 0.65rem;
+  margin: 0;
+  accent-color: #115b58;
+}
+
+.control output {
+  order: 3;
+  color: rgba(3, 34, 35, 0.86);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+@media (max-width: 44rem) {
+  .controls { font-size: 0.53rem; }
+  .controlGroups { gap: 0.28rem 0.62rem; }
+  .methodControls,
+  .actionControls,
+  .parameterControls,
+  .graphParameters { gap: 0.34rem; }
+}
+
+@media (max-width: 31rem) {
+  .statusLine { align-items: flex-start; flex-direction: column; gap: 0.14rem; }
+  .control { grid-template-columns: auto minmax(2.3rem, 3.4rem) auto; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .canvas { cursor: default; }
+}

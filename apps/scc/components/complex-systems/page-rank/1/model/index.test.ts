@@ -30,6 +30,12 @@ test("diffusion keeps rank normalized, including dangling pages", () => {
   assert.ok(state.ranks[1]! > state.ranks[0]!);
 });
 
+test("the default 150-page graph retains the expected sparse link budget", () => {
+  const network = createNetwork();
+  assert.equal(network.nodes.length, 150);
+  assert.equal(network.links.length, 296);
+});
+
 test("the seeded random-surfer ensemble is deterministic and its visit rank is normalized", () => {
   const network = createNetwork({ nodeCount: 64, linksPerNewPage: 3, seed: 441 });
   let first = createPageRankState(network, 320, 837);

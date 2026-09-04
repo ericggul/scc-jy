@@ -33,7 +33,6 @@ export type PageRankState = {
   visits: number[];
   walkers: number[];
   surfers: RandomSurfer[];
-  flux: Record<string, number>;
   linkColours: Record<string, number>;
   iteration: number;
   residual: number;
@@ -252,7 +251,7 @@ export function createNetwork(
   options: { nodeCount?: number; linksPerNewPage?: number; seed?: number } = {},
 ): PageRankNetwork {
   return createPreferentialNetwork(
-    options.nodeCount ?? 100,
+    options.nodeCount ?? 150,
     options.linksPerNewPage ?? 2,
     options.seed,
   );
@@ -270,10 +269,15 @@ function pageIds(network: PageRankNetwork) {
   return network.nodes.map((node) => node.id);
 }
 
+const outgoingByLinks = new WeakMap<PageLink[], Map<number, PageLink[]>>();
+
 function outgoingByPage(network: PageRankNetwork) {
+  const cached = outgoingByLinks.get(network.links);
+  if (cached) return cached;
   const outgoing = new Map<number, PageLink[]>();
   for (const node of network.nodes) outgoing.set(node.id, []);
   for (const current of network.links) outgoing.get(current.source)?.push(current);
+  outgoingByLinks.set(network.links, outgoing);
   return outgoing;
 }
 
@@ -301,7 +305,6 @@ export function createPageRankState(
     visits,
     walkers,
     surfers,
-    flux: {},
     linkColours: {},
     iteration: 0,
     residual: 1,
@@ -313,10 +316,6 @@ function totalVariation(first: readonly number[], second: readonly number[]) {
   return first.reduce((total, value, index) => total + Math.abs(value - (second[index] ?? 0)), 0) / 2;
 }
 
-function emptyFlux(network: PageRankNetwork) {
-  return Object.fromEntries(network.links.map((current) => [current.id, 0])) as Record<string, number>;
-}
-
 export function stepDiffusion(
   network: PageRankNetwork,
   state: PageRankState,
@@ -324,7 +323,6 @@ export function stepDiffusion(
 ): PageRankState {
   const nodeCount = network.nodes.length;
   const outgoing = outgoingByPage(network);
-  const flux = emptyFlux(network);
   const nextRanks = Array.from({ length: nodeCount }, () => 0);
   let danglingRank = 0;
 
@@ -338,7 +336,6 @@ export function stepDiffusion(
     const increment = (dampingFactor * currentRank) / links.length;
     for (const currentLink of links) {
       nextRanks[currentLink.target] = (nextRanks[currentLink.target] ?? 0) + increment;
-      flux[currentLink.id] = increment;
     }
   }
 
@@ -350,7 +347,6 @@ export function stepDiffusion(
   return {
     ...state,
     ranks: nextRanks,
-    flux,
     linkColours: {},
     iteration: state.iteration + 1,
     residual: totalVariation(state.ranks, nextRanks),
@@ -389,7 +385,6 @@ export function stepRandomSurfer(
   dampingFactor: number,
 ): PageRankState {
   const visits = [...state.visits];
-  const flux = emptyFlux(network);
   const linkColours: Record<string, number> = {};
   const walkers: number[] = [];
   const surfers: RandomSurfer[] = [];
@@ -412,7 +407,6 @@ export function stepRandomSurfer(
       const [nextLink, nextState] = randomChoice(possibleLinks, randomState);
       randomState = nextState;
       walkers.push(nextLink.target);
-      flux[nextLink.id] = (flux[nextLink.id] ?? 0) + 1 / state.walkers.length;
       linkColours[nextLink.id] = surfer.colour;
       surfers.push({ ...surfer, previousPage: currentPage, currentPage: nextLink.target });
     } else {
@@ -430,7 +424,6 @@ export function stepRandomSurfer(
     visits,
     walkers,
     surfers,
-    flux,
     linkColours,
     iteration: state.iteration + 1,
     residual: totalVariation(state.ranks, ranks),

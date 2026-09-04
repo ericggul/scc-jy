@@ -13,6 +13,12 @@ export const snsExperiments = [
     label: "sns/instagram/2",
   },
   {
+    key: "instagram/3",
+    category: "instagram",
+    slug: "3",
+    label: "sns/instagram/3",
+  },
+  {
     key: "navigation/default",
     category: "navigation",
     slug: "default",

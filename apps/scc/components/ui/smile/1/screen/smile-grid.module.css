@@ -1,0 +1,72 @@
+.screen {
+  --vote-size: clamp(44px, 12.5vw, 52px);
+  --vote-gap: 8px;
+  box-sizing: border-box;
+  position: relative;
+  width: 100%;
+  min-height: 100svh;
+  height: 100dvh;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  background: #fff;
+  color: #171717;
+}
+
+.screen *,
+.screen *::before,
+.screen *::after {
+  box-sizing: border-box;
+}
+
+.voteGrid {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  contain: layout paint;
+  grid-template-columns: repeat(var(--vote-columns), var(--vote-size));
+  grid-template-rows: repeat(var(--vote-rows), var(--vote-size));
+  align-content: center;
+  justify-content: center;
+  gap: var(--vote-gap);
+}
+
+.vote {
+  width: var(--vote-size);
+  height: var(--vote-size);
+  border: 0;
+  border-radius: 50%;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  transition: transform 60ms ease;
+}
+
+.vote:active {
+  transform: scale(0.94);
+}
+
+.vote:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.face {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.mouth {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 3.2;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vote {
+    transition: none;
+  }
+}

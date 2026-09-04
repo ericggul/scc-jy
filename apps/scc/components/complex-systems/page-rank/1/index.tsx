@@ -20,7 +20,7 @@ import {
 const VIEW_WIDTH = 1000;
 const VIEW_HEIGHT = 700;
 const INITIAL_SEED = 0x1d872b41;
-const BASE_NODE_COUNT = 100;
+const BASE_NODE_COUNT = 150;
 const BASE_LINKS_PER_PAGE = 2;
 const EXPANDED_NODE_COUNT = 160;
 const EXPANDED_LINKS_PER_PAGE = 3;
@@ -187,6 +187,14 @@ export default function PageRankOne() {
   const expandedModeRef = useRef(false);
   const seedRef = useRef(INITIAL_SEED);
   const draggingRef = useRef<number | null>(null);
+  const pagesByIdRef = useRef<{ nodes: PageNode[] | null; pagesById: ReadonlyMap<number, PageNode> }>({
+    nodes: null,
+    pagesById: new Map(),
+  });
+  const reciprocalIdsRef = useRef<{ links: PageLink[] | null; reciprocalIds: ReadonlySet<string> }>({
+    links: null,
+    reciprocalIds: new Set(),
+  });
 
   const renderGraph = useCallback(() => {
     const canvas = canvasRef.current;
@@ -208,8 +216,20 @@ export default function PageRankOne() {
     const offsetY = (bounds.height - VIEW_HEIGHT * scale) / 2;
     const inverseScale = 1 / scale;
     const state = rankStateRef.current;
-    const pagesById = new Map(network.nodes.map((page) => [page.id, page]));
-    const reciprocalIds = new Set(network.links.map((current) => current.id));
+    if (pagesByIdRef.current.nodes !== network.nodes) {
+      pagesByIdRef.current = {
+        nodes: network.nodes,
+        pagesById: new Map(network.nodes.map((page) => [page.id, page])),
+      };
+    }
+    if (reciprocalIdsRef.current.links !== network.links) {
+      reciprocalIdsRef.current = {
+        links: network.links,
+        reciprocalIds: new Set(network.links.map((current) => current.id)),
+      };
+    }
+    const { pagesById } = pagesByIdRef.current;
+    const { reciprocalIds } = reciprocalIdsRef.current;
 
     context.setTransform(1, 0, 0, 1, 0, 0);
     context.fillStyle = "#f6f6f6";
@@ -372,7 +392,8 @@ export default function PageRankOne() {
         setRankState(rankStateRef.current);
         lastPublished = now;
       }
-      const drawInterval = networkRef.current.links.length > 800 ? 1000 / 24 : 1000 / 36;
+      const linkCount = networkRef.current.links.length;
+      const drawInterval = linkCount > 800 ? 1000 / 24 : linkCount >= 250 ? 1000 / 30 : 1000 / 36;
       if (hasAdvanced && now - lastDrawn >= drawInterval) {
         renderGraph();
         lastDrawn = now;
@@ -435,11 +456,11 @@ export default function PageRankOne() {
     draggingRef.current = null;
   };
 
-  const totalRank = rankState.ranks.reduce((total, rank) => total + rank, 0);
   const totalVisits = rankState.visits.reduce((total, visits) => total + visits, 0);
+  const currentNetwork = networkRef.current;
   const readout = method === "diffusion"
-    ? `rank ${totalRank.toFixed(4)} · Δ ${rankState.residual.toExponential(2)}`
-    : `visits ${totalVisits.toLocaleString()} · rank ${totalRank.toFixed(4)}`;
+    ? `${currentNetwork.nodes.length} pages · ${currentNetwork.links.length} links · change ${rankState.residual.toExponential(2)}`
+    : `${currentNetwork.nodes.length} pages · ${currentNetwork.links.length} links · ${totalVisits.toLocaleString()} visits`;
 
   return (
     <main className={styles.field}>
@@ -457,49 +478,70 @@ export default function PageRankOne() {
       />
 
       <section className={styles.controls} aria-label="PageRank controls">
-        <p className={styles.readout}>{readout}</p>
-        <div className={styles.modeControls}>
-          <div className={styles.parameterControls}>
-            <label className={styles.gradientControl}>
-              <span>damping</span>
-              <input type="range" min="0.5" max="0.99" step="0.01" value={dampingFactor} onChange={(event) => { const value = Number(event.target.value); dampingRef.current = value; setDampingFactor(value); }} />
-              <output>{dampingFactor.toFixed(2)}</output>
-            </label>
-            <label className={styles.gradientControl}>
-              <span>steps</span>
-              <input type="range" min="1" max="30" step="1" value={stepsPerSecond} onChange={(event) => { const value = Number(event.target.value); speedRef.current = value; setStepsPerSecond(value); }} />
-              <output>{stepsPerSecond}</output>
-            </label>
-            {method === "random-surfer" ? (
-              <label className={styles.gradientControl}>
-                <span>surfers</span>
-                <input type="range" min="24" max="480" step="8" value={walkerCount} onChange={(event) => changeWalkerCount(Number(event.target.value))} />
-                <output>{walkerCount}</output>
+        <div className={styles.statusLine}>
+          <p className={styles.readout}>{readout}</p>
+          <p className={styles.runState}>{isRunning ? "running" : "paused"}</p>
+        </div>
+        <div className={styles.controlGroups}>
+          <fieldset className={`${styles.controlGroup} ${styles.rankGroup}`}>
+            <legend>rank calculation</legend>
+            <div className={styles.methodControls} aria-label="Rank calculation method">
+              <button type="button" aria-pressed={method === "random-surfer"} onClick={() => { setMethod("random-surfer"); methodRef.current = "random-surfer"; restartRanks(); }}>surfer visits</button>
+              <button type="button" aria-pressed={method === "diffusion"} onClick={() => { setMethod("diffusion"); methodRef.current = "diffusion"; restartRanks(); }}>direct flow</button>
+            </div>
+            <div className={styles.parameterControls}>
+              <label className={styles.control}>
+                <span className={styles.controlHeader}><span>follow links</span><output>{Math.round(dampingFactor * 100)}%</output></span>
+                <input aria-label="Chance of following a link" type="range" min="0.5" max="0.99" step="0.01" value={dampingFactor} onChange={(event) => { const value = Number(event.target.value); dampingRef.current = value; setDampingFactor(value); }} />
               </label>
-            ) : null}
-            <label className={styles.gradientControl}>
-              <span>pages</span>
-              <input type="range" min="40" max="180" step="1" value={nodeCount} onChange={(event) => setNodeCount(Number(event.target.value))} />
-              <output>{nodeCount}</output>
-            </label>
-            <label className={styles.gradientControl}>
-              <span>links</span>
-              <input type="range" min="1" max="5" step="1" value={linksPerNewPage} onChange={(event) => setLinksPerNewPage(Number(event.target.value))} />
-              <output>{linksPerNewPage}</output>
-            </label>
-          </div>
-          <div className={styles.actions}>
-            <button type="button" aria-pressed={method === "diffusion"} onClick={() => { setMethod("diffusion"); methodRef.current = "diffusion"; restartRanks(); }}>diffusion</button>
-            <button type="button" aria-pressed={method === "random-surfer"} onClick={() => { setMethod("random-surfer"); methodRef.current = "random-surfer"; restartRanks(); }}>random-surfer</button>
-            <button type="button" onClick={() => { expandedModeRef.current = false; setNodeCount(BASE_NODE_COUNT); setLinksPerNewPage(BASE_LINKS_PER_PAGE); rebuildNetwork(BASE_NODE_COUNT, BASE_LINKS_PER_PAGE); }}>original graph</button>
-            <button type="button" onClick={() => { expandedModeRef.current = true; setNodeCount(EXPANDED_NODE_COUNT); setLinksPerNewPage(EXPANDED_LINKS_PER_PAGE); rebuildNetwork(EXPANDED_NODE_COUNT, EXPANDED_LINKS_PER_PAGE); }}>expanded graph</button>
-            <button type="button" onClick={() => rebuildNetwork()}>rebuild</button>
-            <button type="button" aria-pressed={showRanks} onClick={() => { setShowRanks((value) => !value); showRanksRef.current = !showRanksRef.current; renderGraph(); }}>ranks</button>
-            {method === "random-surfer" ? <button type="button" aria-pressed={watchSurfers} onClick={() => { setWatchSurfers((value) => !value); watchSurfersRef.current = !watchSurfersRef.current; renderGraph(); }}>watch surfers</button> : null}
-            <button type="button" onClick={toggleRunning}>{isRunning ? "pause" : "resume"}</button>
-            <button type="button" onClick={() => advance()}>step</button>
-            <button type="button" onClick={restartRanks}>restart</button>
-          </div>
+              <label className={styles.control}>
+                <span className={styles.controlHeader}><span>calculation rate</span><output>{stepsPerSecond}/s</output></span>
+                <input aria-label="Calculation rate" type="range" min="1" max="30" step="1" value={stepsPerSecond} onChange={(event) => { const value = Number(event.target.value); speedRef.current = value; setStepsPerSecond(value); }} />
+              </label>
+              {method === "random-surfer" ? (
+                <label className={styles.control}>
+                  <span className={styles.controlHeader}><span>surfers</span><output>{walkerCount}</output></span>
+                  <input aria-label="Number of surfers" type="range" min="24" max="480" step="8" value={walkerCount} onChange={(event) => changeWalkerCount(Number(event.target.value))} />
+                </label>
+              ) : null}
+            </div>
+          </fieldset>
+
+          <fieldset className={styles.controlGroup}>
+            <legend>run</legend>
+            <div className={styles.actionControls}>
+              <button type="button" onClick={toggleRunning}>{isRunning ? "pause" : "resume"}</button>
+              <button type="button" onClick={() => advance()}>one step</button>
+              <button type="button" onClick={restartRanks}>reset rank</button>
+            </div>
+          </fieldset>
+
+          <fieldset className={`${styles.controlGroup} ${styles.graphGroup}`}>
+            <legend>new graph</legend>
+            <div className={styles.graphParameters}>
+              <label className={styles.control}>
+                <span className={styles.controlHeader}><span>pages</span><output>{nodeCount}</output></span>
+                <input aria-label="Number of pages in a new graph" type="range" min="40" max="180" step="1" value={nodeCount} onChange={(event) => setNodeCount(Number(event.target.value))} />
+              </label>
+              <label className={styles.control}>
+                <span className={styles.controlHeader}><span>links / new page</span><output>{linksPerNewPage}</output></span>
+                <input aria-label="Links per new page in a new graph" type="range" min="1" max="5" step="1" value={linksPerNewPage} onChange={(event) => setLinksPerNewPage(Number(event.target.value))} />
+              </label>
+            </div>
+            <div className={styles.actionControls}>
+              <button type="button" onClick={() => { expandedModeRef.current = false; setNodeCount(BASE_NODE_COUNT); setLinksPerNewPage(BASE_LINKS_PER_PAGE); rebuildNetwork(BASE_NODE_COUNT, BASE_LINKS_PER_PAGE); }}>default: 150 pages</button>
+              <button type="button" onClick={() => { expandedModeRef.current = true; setNodeCount(EXPANDED_NODE_COUNT); setLinksPerNewPage(EXPANDED_LINKS_PER_PAGE); rebuildNetwork(EXPANDED_NODE_COUNT, EXPANDED_LINKS_PER_PAGE); }}>expanded: 160 pages</button>
+              <button type="button" onClick={() => rebuildNetwork()}>build from settings</button>
+            </div>
+          </fieldset>
+
+          <fieldset className={styles.controlGroup}>
+            <legend>display</legend>
+            <div className={styles.actionControls}>
+              <button type="button" aria-pressed={showRanks} onClick={() => { setShowRanks((value) => !value); showRanksRef.current = !showRanksRef.current; renderGraph(); }}>{showRanks ? "hide rank values" : "show rank values"}</button>
+              {method === "random-surfer" ? <button type="button" aria-pressed={watchSurfers} onClick={() => { setWatchSurfers((value) => !value); watchSurfersRef.current = !watchSurfersRef.current; renderGraph(); }}>{watchSurfers ? "hide surfers" : "show surfers"}</button> : null}
+            </div>
+          </fieldset>
         </div>
       </section>
     </main>

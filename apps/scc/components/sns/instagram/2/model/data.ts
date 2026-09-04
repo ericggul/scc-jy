@@ -1,48 +1,77 @@
-import type { InstagramStory } from "./types";
+import type { InstagramStory, InstagramStoryCycle, InstagramStoryState } from "./types";
 
-const profiles = [
-  ["han.jiwon", "001"], ["miso.archive", "002"], ["yumi__o", "003"],
-  ["haeun.k", "004"], ["siwoo.film", "005"], ["eunchae.jpg", "006"],
-  ["leena.seo", "007"], ["noah.kim", "008"], ["yeoreum", "009"],
-  ["dohee.cho", "010"], ["jinseoul", "011"], ["sora__lee", "012"],
-  ["maeul.diary", "013"], ["haneulpark", "014"], ["riaonfilm", "015"],
-  ["jaeonfilm", "016"], ["mina.park", "017"], ["bora.archive", "018"],
-  ["do__not", "019"], ["aeri.lee", "020"], ["june.after", "021"],
-  ["nari.zip", "022"], ["seoyeon.k", "023"], ["sori.cho", "024"],
-  ["hyeon.zip", "025"], ["heejin.oh", "026"], ["nara.seo", "027"],
-  ["mori.day", "028"], ["jisu.log", "029"], ["yoonsung", "030"],
-  ["daniel.cho", "031"], ["hyunwoo.k", "032"], ["runa.park", "033"],
-  ["sean.moon", "034"], ["sangmin.k", "035"], ["haru.park", "036"],
-  ["soyoung.jpg", "037"], ["taehoon.choi", "038"], ["dami.works", "039"],
-  ["juno.oh", "040"], ["solsol.day", "041"], ["eunwoo.zip", "042"],
-  ["chaerin.seo", "043"], ["woon.archive", "044"], ["minji.jung", "045"],
-  ["nolan.kim", "046"], ["doyeon.jpg", "047"], ["chae._.in", "048"],
-  ["hoya.film", "049"], ["yoonah.day", "050"], ["momo.seoul", "051"],
-  ["jimin.park", "052"], ["yeji.zip", "053"], ["sunny.cho", "054"],
-  ["rua.archive", "055"], ["yoonji.lee", "056"],
+const handles = [
+  "han.jiwon", "miso.archive", "yumi__o", "haeun.k", "siwoo.film", "eunchae.jpg",
+  "leena.seo", "noah.kim", "yeoreum", "dohee.cho", "jinseoul", "sora__lee",
+  "maeul.diary", "haneulpark", "riaonfilm", "jaeonfilm", "mina.park", "bora.archive",
+  "do__not", "aeri.lee", "june.after", "nari.zip", "seoyeon.k", "sori.cho",
 ] as const;
 
-export const instagramStories: readonly InstagramStory[] = profiles.map(
-  ([handle, portrait], index) => ({
+export const instagramStories: readonly InstagramStory[] = handles.map(
+  (handle, index) => ({
     id: `profile-${String(index + 1).padStart(3, "0")}`,
     handle,
-    profileImage: `/images/face-voronoi/portraits/${portrait}.jpg`,
+    cycle: getStoryCycle(index),
   }),
 );
 
-/**
- * Returns exactly one stable record per visible grid position. Repeated
- * portraits retain a deterministic model-layer ID instead of using a label as
- * a React key.
- */
+function getRandomFraction(index: number, salt: number): number {
+  const value = Math.sin((index + 1) * 12.9898 + salt * 78.233) * 43758.5453;
+  return value - Math.floor(value);
+}
+
+function getStoryCycle(index: number): InstagramStoryCycle {
+  const emptyDuration = 1800 + Math.round(getRandomFraction(index, 1) * 3200);
+  const newDuration = 2200 + Math.round(getRandomFraction(index, 2) * 3600);
+  const plainDuration = 2400 + Math.round(getRandomFraction(index, 3) * 4000);
+  const totalDuration = emptyDuration + newDuration + plainDuration;
+
+  return {
+    emptyDuration,
+    newDuration,
+    plainDuration,
+    phaseOffset: Math.round(getRandomFraction(index, 4) * totalDuration),
+  };
+}
+
+function getElapsedCycleTime(story: InstagramStory, time: number): number {
+  const { emptyDuration, newDuration, plainDuration, phaseOffset } = story.cycle;
+  const totalDuration = emptyDuration + newDuration + plainDuration;
+  const elapsed = (time + phaseOffset) % totalDuration;
+
+  return elapsed < 0 ? elapsed + totalDuration : elapsed;
+}
+
+export function getStoryState(story: InstagramStory, time: number): InstagramStoryState {
+  const elapsed = getElapsedCycleTime(story, time);
+  const { emptyDuration, newDuration } = story.cycle;
+
+  if (elapsed < emptyDuration) return "empty";
+  if (elapsed < emptyDuration + newDuration) return "new";
+  return "plain";
+}
+
+export function getNextStoryStateChangeAt(story: InstagramStory, time: number): number {
+  const elapsed = getElapsedCycleTime(story, time);
+  const { emptyDuration, newDuration, plainDuration } = story.cycle;
+  const boundary = elapsed < emptyDuration
+    ? emptyDuration
+    : elapsed < emptyDuration + newDuration
+      ? emptyDuration + newDuration
+      : emptyDuration + newDuration + plainDuration;
+
+  return time + Math.max(1, Math.ceil(boundary - elapsed));
+}
+
 export function getInstagramGridStories(count: number): readonly InstagramStory[] {
   return Array.from({ length: count }, (_, index) => {
-    const profile = instagramStories[index % instagramStories.length];
+    const company = instagramStories[index % instagramStories.length];
     const repeat = Math.floor(index / instagramStories.length) + 1;
 
     return {
-      ...profile,
-      id: `${profile.id}-grid-${repeat}`,
+      ...company,
+      id: `${company.id}-grid-${repeat}`,
+      cycle: getStoryCycle(index),
     };
   });
 }

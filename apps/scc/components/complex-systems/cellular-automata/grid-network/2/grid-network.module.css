@@ -1,0 +1,28 @@
+.page {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #dfdcd4;
+}
+
+.canvas {
+  display: block;
+  inline-size: 100%;
+  block-size: 100dvh;
+  background: #dfdcd4;
+  touch-action: none;
+  user-select: none;
+  cursor: crosshair;
+}
+
+.canvas:focus-visible {
+  z-index: 4;
+  outline: 2px solid #e4501e;
+  outline-offset: -2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .canvas {
+    cursor: default;
+  }
+}

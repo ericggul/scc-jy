@@ -1,0 +1,78 @@
+.screen {
+  position: relative;
+  width: 100dvw;
+  height: 100dvh;
+  overflow: hidden;
+  background: #fff;
+}
+
+.buttonCanvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  contain: layout paint;
+  cursor: pointer;
+}
+
+.fieldControl {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 3px;
+  border: 1px solid #000;
+  border-radius: 999px;
+  background: #fff;
+}
+
+.sourceModes {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+}
+
+.fieldMode,
+.pointillistSource {
+  display: inline-grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+  color: #000;
+  cursor: pointer;
+  font-family: Arial, sans-serif;
+}
+
+.fieldMode {
+  margin-right: 3px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.fieldMode[aria-pressed="true"],
+.pointillistSource[aria-pressed="true"] {
+  background: #000;
+  color: #fff;
+}
+
+.fieldMode:focus-visible,
+.pointillistSource:focus-visible {
+  outline: 2px solid #000;
+  outline-offset: 2px;
+}
+
+.sourceThumbnail {
+  display: block;
+  width: 16px;
+  height: 16px;
+  border: 1px solid currentcolor;
+  border-radius: 50%;
+  background-position: center;
+  background-size: cover;
+  filter: grayscale(1) contrast(1.8);
+}

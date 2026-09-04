@@ -93,6 +93,13 @@ This version has breaking changes — APIs, conventions, and file structure may 
   retained invariants, direct result, and rejection or unresolved question in
   the owning experiment document.
 
+## GPU particle performance safety
+
+- Never add an unmeasured particle, GPU-compute, DPR, or autonomous-frame cost
+  that could freeze the user's browser or computer; safety outranks the effect.
+- Follow [`docs/harness/webgpu-tsl-particles.md`](./docs/harness/webgpu-tsl-particles.md)
+  for the required particle performance budget and failure response.
+
 ## Runtime
 
 - Local development is pinned to Node.js `26.5.1` with its npm `11.17.0` in

@@ -2,52 +2,63 @@
 
 import type { CSSProperties } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { getInstagramGridStories } from "../model/data";
-import type { InstagramStory } from "../model/types";
+import { getInstagramGridStories, getNextStoryStateChangeAt, getStoryState } from "../model/data";
 import styles from "./story-tray.module.css";
 
-const STORY_SIZE = 93;
-const STORY_ROW_HEIGHT = 116;
-const MINIMUM_GAP = 12;
+const REFERENCE_STORY_SIZE = 93;
+const DEFAULT_ICON_SIZE = 50;
+const MIN_ICON_SIZE = 28;
+const MAX_ICON_SIZE = REFERENCE_STORY_SIZE;
+const DEFAULT_STORY_GAP = 32;
+const MAX_STORY_GAP = 80;
+const STORY_LABEL_HEIGHT = 20;
 
 type GridSize = {
   columns: number;
   rows: number;
 };
 
-function getGridSize(width: number, height: number): GridSize {
+type StorySurface = "empty" | "white";
+
+const surfaceOptions: readonly { label: string; value: StorySurface }[] = [
+  { label: "empty", value: "empty" },
+  { label: "white", value: "white" },
+];
+
+function getGridSize(
+  width: number,
+  height: number,
+  storySize: number,
+  storyRowHeight: number,
+  storyGap: number,
+): GridSize {
   return {
-    columns: Math.max(1, Math.floor((width + MINIMUM_GAP) / (STORY_SIZE + MINIMUM_GAP))),
-    rows: Math.max(1, Math.floor((height + MINIMUM_GAP) / (STORY_ROW_HEIGHT + MINIMUM_GAP))),
+    columns: Math.max(1, Math.floor((width + storyGap) / (storySize + storyGap))),
+    rows: Math.max(1, Math.floor((height + storyGap) / (storyRowHeight + storyGap))),
   };
 }
 
-function StoryViewer({ onClose, story }: { onClose: () => void; story: InstagramStory }) {
-  return (
-    <section aria-label={`${story.handle} story`} aria-modal="true" className={styles.storyViewer} role="dialog">
-      <button aria-label="Close story" className={styles.viewerDismissArea} onClick={onClose} type="button" />
-      <div className={styles.viewerContent}>
-        <button aria-label="Close story" className={styles.viewerClose} onClick={onClose} type="button">×</button>
-        <div className={styles.viewerRing}>
-          <span aria-hidden="true" className={styles.viewerPortrait} style={{ backgroundImage: `url("${story.profileImage}")` }} />
-        </div>
-        <span className={styles.viewerHandle}>{story.handle}</span>
-      </div>
-    </section>
-  );
+function getSurfaceStyle(surface: StorySurface): CSSProperties {
+  if (surface === "empty") return { backgroundColor: "#242a2f" };
+  return { backgroundColor: "#fff" };
 }
 
 export function InstagramStoryTray() {
   const gridRef = useRef<HTMLUListElement>(null);
   const [gridSize, setGridSize] = useState<GridSize>({ columns: 1, rows: 1 });
-  const [selectedStory, setSelectedStory] = useState<InstagramStory | null>(null);
+  const [testSurface, setTestSurface] = useState<StorySurface>("empty");
+  const [iconSize, setIconSize] = useState(DEFAULT_ICON_SIZE);
+  const [storyGap, setStoryGap] = useState(DEFAULT_STORY_GAP);
+  const [showLabels, setShowLabels] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const storyRowHeight = iconSize + (showLabels ? STORY_LABEL_HEIGHT : 0);
 
   useEffect(() => {
     const grid = gridRef.current;
     if (!grid) return;
 
     const updateGridSize = () => {
-      const next = getGridSize(grid.clientWidth, grid.clientHeight);
+      const next = getGridSize(grid.clientWidth, grid.clientHeight, iconSize, storyRowHeight, storyGap);
       setGridSize((current) => (
         current.columns === next.columns && current.rows === next.rows ? current : next
       ));
@@ -58,33 +69,85 @@ export function InstagramStoryTray() {
     observer.observe(grid);
 
     return () => observer.disconnect();
-  }, []);
+  }, [iconSize, storyGap, storyRowHeight]);
 
   const stories = useMemo(
     () => getInstagramGridStories(gridSize.columns * gridSize.rows),
     [gridSize],
   );
+
+  useEffect(() => {
+    let timeout: number;
+
+    const updateStoryStates = () => {
+      const now = Date.now();
+      setCurrentTime(now);
+      const nextChange = stories.reduce(
+        (earliest, story) => Math.min(earliest, getNextStoryStateChangeAt(story, now)),
+        Number.POSITIVE_INFINITY,
+      );
+
+      timeout = window.setTimeout(updateStoryStates, Math.max(100, nextChange - now + 20));
+    };
+
+    updateStoryStates();
+    return () => window.clearTimeout(timeout);
+  }, [stories]);
+
   const gridStyle = {
     "--grid-columns": gridSize.columns,
     "--grid-rows": gridSize.rows,
+    "--story-size": `${iconSize}px`,
+    "--story-row-height": `${storyRowHeight}px`,
+    "--story-gap": `${storyGap}px`,
+    "--story-ring-padding": `${(iconSize / REFERENCE_STORY_SIZE) * 3.5}px`,
+    "--story-separator": `${(iconSize / REFERENCE_STORY_SIZE) * 3.5}px`,
   } as CSSProperties;
 
   return (
     <main aria-label="Instagram stories" className={styles.screen}>
       <ul className={styles.storyGrid} ref={gridRef} style={gridStyle}>
-        {stories.map((story) => (
-          <li className={styles.gridItem} key={story.id}>
-            <button aria-label={`Open ${story.handle}'s story`} className={styles.story} onClick={() => setSelectedStory(story)} type="button">
-              <span className={styles.storyRing}>
-                <span aria-hidden="true" className={styles.profilePhoto} style={{ backgroundImage: `url("${story.profileImage}")` }} />
+        {stories.map((story) => {
+          const storyState = getStoryState(story, currentTime);
+          const isEmpty = storyState === "empty";
+
+          return (
+            <li className={styles.gridItem} key={story.id}>
+              <span className={`${styles.story} ${isEmpty ? styles.storyEmpty : ""}`}>
+                <span className={`${styles.storyRing} ${storyState === "new" ? styles.storyRingNew : styles.storyRingPlain}`}>
+                  <span aria-hidden="true" className={styles.logoSurface} style={getSurfaceStyle(testSurface)} />
+                </span>
+                {showLabels ? <span className={styles.storyLabel}>{story.handle}</span> : null}
               </span>
-              <span className={styles.storyLabel}>{story.handle}</span>
-            </button>
-          </li>
-        ))}
+            </li>
+          );
+        })}
       </ul>
 
-      {selectedStory ? <StoryViewer onClose={() => setSelectedStory(null)} story={selectedStory} /> : null}
+      <section aria-label="Story surface test" className={styles.controls}>
+        <div className={styles.controlActions}>
+          <div className={styles.actions}>
+            {surfaceOptions.map((option) => (
+              <button aria-pressed={testSurface === option.value} key={option.value} onClick={() => setTestSurface(option.value)} type="button">
+                {option.label}
+              </button>
+            ))}
+            <button aria-pressed={showLabels} onClick={() => setShowLabels((current) => !current)} type="button">
+              text {showLabels ? "active" : "inactive"}
+            </button>
+          </div>
+          <label className={styles.sizeControl}>
+            <span>size</span>
+            <input aria-label="Story icon size" max={MAX_ICON_SIZE} min={MIN_ICON_SIZE} onChange={(event) => setIconSize(Number(event.currentTarget.value))} step="1" type="range" value={iconSize} />
+            <output>{iconSize}px</output>
+          </label>
+          <label className={styles.sizeControl}>
+            <span>margin</span>
+            <input aria-label="Space between story icons" max={MAX_STORY_GAP} min="0" onChange={(event) => setStoryGap(Number(event.currentTarget.value))} step="1" type="range" value={storyGap} />
+            <output>{storyGap}px</output>
+          </label>
+        </div>
+      </section>
     </main>
   );
 }

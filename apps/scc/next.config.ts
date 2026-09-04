@@ -26,6 +26,11 @@ const nextConfig: NextConfig = {
         destination: "/finger-skating/default/2/screen",
         permanent: true,
       },
+      {
+        source: "/cellular-automata/:experiment(1|2|3|4|5|6)",
+        destination: "/cellular-automata/colour/:experiment",
+        permanent: true,
+      },
     ];
   },
   allowedDevOrigins: ["macbook-air-5.local"],
