@@ -4,6 +4,14 @@
   initial-value: 0deg;
 }
 
+@font-face {
+  font-family: "IDF Voyageur";
+  src: url("/fonts/sns/instagram/3/IDFVoyageur-Bold.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+}
+
 .screen {
   --grid-inset: 32px;
   --control-inset: 32px;
@@ -71,6 +79,7 @@
 }
 
 .influenceTarget {
+  display: none;
   fill: #ffd06a;
   opacity: 0;
   animation: influence-arrival 1200ms ease-out both;
@@ -124,6 +133,72 @@
   min-width: 2.55rem;
   color: #fff;
   text-align: right;
+}
+
+.paletteControl {
+  display: grid;
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.paletteTrigger,
+.paletteOption {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.paletteTrigger {
+  display: grid;
+  width: 1.3rem;
+  height: 1.3rem;
+  place-items: center;
+  border: 1px solid rgb(246 246 246 / 42%);
+  border-radius: 50%;
+  padding: 2px;
+}
+
+.paletteTrigger[aria-expanded="true"] {
+  border-color: #fff;
+}
+
+.palettePreview {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
+
+.palettePopover {
+  display: grid;
+  position: absolute;
+  z-index: 3;
+  right: -0.35rem;
+  bottom: calc(100% + 0.75rem);
+  grid-template-columns: repeat(5, 1.25rem);
+  gap: 0.35rem;
+  padding: 0.45rem;
+  border: 1px solid rgb(246 246 246 / 18%);
+  background: rgb(12 17 21 / 94%);
+}
+
+.paletteOption {
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  padding: 2px;
+}
+
+.paletteOption[aria-pressed="true"] {
+  border-color: #fff;
+}
+
+.paletteTrigger:focus-visible,
+.paletteOption:focus-visible {
+  outline: 1px solid #fff;
+  outline-offset: 3px;
 }
 
 .actions button {
@@ -219,7 +294,7 @@
   z-index: 0;
   inset: 0;
   border-radius: inherit;
-  background: conic-gradient(from 205deg, #fed044, #ff264f 30%, #ed0e9b 58%, #ff5e29 80%, #fed044);
+  background: var(--story-ring-gradient);
   content: "";
   opacity: 0;
   -webkit-mask-image: conic-gradient(
@@ -264,10 +339,112 @@
   height: 100%;
   border: var(--story-separator) solid #0c1115;
   border-radius: 50%;
+  overflow: hidden;
   background-position: center;
   background-repeat: no-repeat;
   background-size: 68% auto;
   transition: border-width 260ms cubic-bezier(0.2, 0.85, 0.3, 1);
+}
+
+.monochromeFace {
+  filter: grayscale(1) contrast(0.94) brightness(1.06);
+}
+
+.centeredSurface {
+  display: grid;
+  place-items: center;
+}
+
+.characterGlyph {
+  display: grid;
+  width: 1em;
+  height: 1em;
+  place-items: center;
+  color: rgb(237 239 240 / 72%);
+  font-family: "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", "Hiragino Sans", "Yu Gothic", "Noto Sans KR", sans-serif;
+  font-size: clamp(12px, calc(var(--story-size) * 0.46), 39px);
+  font-weight: 450;
+  letter-spacing: -0.08em;
+  line-height: 1;
+  text-align: center;
+}
+
+.hanjaGlyph {
+  color: rgb(244 245 246 / 88%);
+  font-family: "Noto Sans CJK KR", "Apple SD Gothic Neo", "Pretendard Variable", Pretendard, sans-serif;
+  font-weight: 800;
+  -webkit-text-stroke: clamp(0.18px, calc(var(--story-size) * 0.008), 0.7px) currentColor;
+}
+
+.hieroglyphMark {
+  display: block;
+  width: 62%;
+  height: 62%;
+  overflow: visible;
+}
+
+.hieroglyphMark text {
+  fill: rgb(237 239 240 / 72%);
+  font-family: "Noto Sans Egyptian Hieroglyphs", "Noto Sans EgyptHiero", serif;
+  font-size: 74px;
+  font-weight: 400;
+}
+
+.numberMark {
+  display: block;
+  width: 58%;
+  height: 58%;
+  overflow: visible;
+}
+
+.numberMark text {
+  fill: rgb(237 239 240 / 72%);
+  font-family: "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", "Helvetica Neue", sans-serif;
+  font-size: 82px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 450;
+}
+
+.parisLineMark {
+  display: block;
+  width: 62%;
+  height: 62%;
+  overflow: visible;
+}
+
+.parisLineMark text {
+  font-family: "IDF Voyageur", Arial, Helvetica, sans-serif;
+  font-size: 84px;
+  font-weight: 700;
+}
+
+.parisLineMark .parisDoubleDigit {
+  font-size: 66px;
+  letter-spacing: -2.2px;
+}
+
+.techMark {
+  display: block;
+  width: 66%;
+  height: 66%;
+  overflow: visible;
+}
+
+.techMark text {
+  fill: rgb(237 239 240 / 86%);
+  font-family: var(--font-geist-mono), "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
+  font-size: 56px;
+  font-weight: 600;
+  letter-spacing: -3px;
+  paint-order: stroke;
+  stroke: rgb(12 17 21 / 28%);
+  stroke-width: 1.35px;
+}
+
+.generatedLogo {
+  display: block;
+  width: 64%;
+  height: 64%;
 }
 
 @keyframes influence-trace {
