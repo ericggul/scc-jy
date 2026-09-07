@@ -30,6 +30,7 @@ type StageSize = {
 };
 
 type StorySurface = "empty" | "white" | "face" | "hangul" | "hanja" | "numbers" | "hieroglyph" | "logo" | "colour" | "paris" | "techMono" | "tech";
+type EdgePresentation = "line" | "directed";
 
 type ParisLine = Readonly<{
   label: string;
@@ -63,16 +64,6 @@ type InfluenceGeometry = {
 };
 
 const surfaceOptions: readonly { label: string; value: StorySurface }[] = [
-  { label: "empty", value: "empty" },
-  { label: "white", value: "white" },
-  { label: "face", value: "face" },
-  { label: "hangul", value: "hangul" },
-  { label: "hanja", value: "hanja" },
-  { label: "numbers", value: "numbers" },
-  { label: "hieroglyph", value: "hieroglyph" },
-  { label: "logo", value: "logo" },
-  { label: "colour", value: "colour" },
-  { label: "paris", value: "paris" },
   { label: "tech mono", value: "techMono" },
   { label: "tech", value: "tech" },
 ];
@@ -335,7 +326,8 @@ export function InstagramSocialStoryTray() {
   const gridRef = useRef<HTMLUListElement>(null);
   const [gridSize, setGridSize] = useState<GridSize>({ columns: 1, rows: 1 });
   const [stageSize, setStageSize] = useState<StageSize>({ width: 0, height: 0 });
-  const [testSurface, setTestSurface] = useState<StorySurface>("empty");
+  const [testSurface, setTestSurface] = useState<StorySurface>("techMono");
+  const [edgePresentation, setEdgePresentation] = useState<EdgePresentation>("line");
   const [iconSize, setIconSize] = useState(DEFAULT_ICON_SIZE);
   const [storyGap, setStoryGap] = useState(DEFAULT_STORY_GAP);
   const [showLabels, setShowLabels] = useState(false);
@@ -440,10 +432,19 @@ export function InstagramSocialStoryTray() {
                   </linearGradient>
                 );
               })}
+              {edgePresentation === "directed" ? influenceGeometry.map((influence) => {
+                const targetPalette = testSurface === "tech" ? techPaletteForIndex(influence.target) : selectedRingPalette;
+
+                return (
+                  <marker id={`influence-arrow-${influence.id}`} key={`influence-arrow-${influence.id}`} markerHeight="8" markerUnits="userSpaceOnUse" markerWidth="8" orient="auto" refX="7" refY="4" viewBox="0 0 8 8">
+                    <path d="M 0 0 L 8 4 L 0 8 z" fill={targetPalette.edgeMiddle} />
+                  </marker>
+                );
+              }) : null}
             </defs>
             {influenceGeometry.map((influence) => (
               <g className={styles.influence} key={influence.id}>
-                <path className={styles.influencePath} d={influence.path} pathLength="1" stroke={`url(#influence-${influence.id})`} />
+                <path className={`${styles.influencePath} ${edgePresentation === "directed" ? styles.influencePathDirected : ""}`} d={influence.path} markerEnd={edgePresentation === "directed" ? `url(#influence-arrow-${influence.id})` : undefined} pathLength="1" stroke={`url(#influence-${influence.id})`} />
                 <circle className={styles.influenceTarget} cx={influence.endX} cy={influence.endY} r="2.25" />
               </g>
             ))}
@@ -490,6 +491,12 @@ export function InstagramSocialStoryTray() {
                 {option.label}
               </button>
             ))}
+            <button aria-pressed={edgePresentation === "line"} onClick={() => setEdgePresentation("line")} type="button">
+              edge
+            </button>
+            <button aria-pressed={edgePresentation === "directed"} onClick={() => setEdgePresentation("directed")} type="button">
+              directed edge
+            </button>
             <button aria-pressed={showLabels} onClick={() => setShowLabels((current) => !current)} type="button">
               text {showLabels ? "active" : "inactive"}
             </button>
