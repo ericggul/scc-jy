@@ -41,8 +41,8 @@ multi-user aggregation, idle lifecycle, and outbound publishers live under
 
 ## Verification
 
-Do not start a server, run browser checks, `pnpm build`, `pnpm dev`, or
-`pnpm dev:http`. The relevant non-runtime checks are `pnpm lint`,
+Execution restrictions and browser-testing authorization follow
+[AGENTS.md](../../../AGENTS.md). Relevant static/pure checks are `pnpm lint`,
 `pnpm --filter @scc/c-val typecheck`, and targeted `node --test` files beside
 the changed socket capability.
 

@@ -1,5 +1,11 @@
 # 똥멍 / ddong-meong
 
+완성된 프로젝트의 유지보수 문서다. 요청한 변경 범위에서 기존 경험을 보존한다.
+콘텐츠 변경은 [콘텐츠 매뉴얼](./content-manual.md), 공유는 [share](./share.md),
+QR은 [캠페인](./qr-poster-campaign.md), 화면 사건장은
+[연구 기록](./screen-event-field-research.md)만 추가로 읽는다.
+실행·검증 정책은 [AGENTS.md](../../../AGENTS.md)를 따른다.
+
 ## 한 문장 정의
 
 **똥멍은 똥 싸는 동안의 몇 분을 4분 33초짜리 명상 형식으로 다루는, 최정윤

@@ -46,7 +46,8 @@ pnpm dev:ddong-meong
 pnpm dev:goldfishes
 ```
 
-C-VAL's canonical routes are `/1/...` and `/2/...`; ddong-meong's are `/`,
+C-VAL's canonical routes include `/mobile`, `/controller`, `/screen/[screen]`,
+`/whole`, and `/reset`; ddong-meong's are `/`,
 `/main`, `/<content-slug>`, and `/screen`; Goldfishes uses `/default`,
 `/2d/1`, and its dated archive paths. SCC's former `/c-val/...`,
 `/ddong-meong/...`, and `/goldfishes/...` URLs remain compatibility redirects.

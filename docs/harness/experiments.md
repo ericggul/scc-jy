@@ -1,90 +1,39 @@
 # Experiment and component structure
 
-Each app's `app/`, `components/`, and `docs/` trees use the same family
-assignment. Public URLs do not include route-group names.
+Read when changing routes, registries, or component organization. Preserve each
+app's independent route, asset, component, socket, and documentation ownership;
+filesystem route groups never change public URLs.
 
-The SCC archive owns its established families under `apps/scc`. C-VAL,
-ddong-meong, and Goldfishes own complete route, component, public-asset, and
-future socket trees under `apps/c-val`, `apps/ddong-meong`, and
-`apps/goldfishes`; they are not SCC route groups.
+| SCC family | Route root | Component root |
+| --- | --- | --- |
+| Single-device | `app/(standalone)/[group]` | `components/standalone/[group]` |
+| Small socket experiments | `app/(realtime)/[group]` | `components/realtime/[group]` |
+| Workstations | `app/(dashboard)/[group]` | `components/dashboard/[group]` |
+| `dj`, `finger-skating`, `network-system`, `sns` | `app/[group]` | `components/[group]` |
 
-## Runtime families
+Within a family, a minimal `page.tsx` index links registered variants;
+`[experiment]/page.tsx` selects the variant from the matching
+`components/.../experiments.ts`. Use dynamic variants, not literal numbered
+route directories. Keep implementation in `components/.../[experiment]/`.
 
-Standalone experiment groups use:
+Multi-device variants add `[experiment]/mobile/page.tsx` and
+`[experiment]/screen/page.tsx`; controller/multi-screen variants use
+`controller/page.tsx` and `screen/[screen]/page.tsx`. Role components belong
+under their variant. Existing finished-app routes follow their app docs, not
+this experimental template.
 
-```txt
-apps/scc/app/(standalone)/[group]/page.tsx
-apps/scc/app/(standalone)/[group]/[experiment]/page.tsx
-apps/scc/components/standalone/[group]/experiments.ts
-apps/scc/components/standalone/[group]/[experiment]/index.tsx
-apps/scc/docs/experiments/standalone/[group]/README.md
-```
+Layer component families by responsibility: `model/` for domain state,
+`transport/` for browser/device boundaries, `screen/` and `mobile/` for
+composition, and named capabilities such as `news/`, `media/`, or
+`controller/`. Expose folder `index.ts(x)` entrypoints; co-locate pure tests.
+Avoid generic `utils/` for feature logic. Apply this organization to new or
+materially changed families, not incidental fixes; no compulsory unrelated moves.
+`apps/scc/components/network-system/cycle/` is an example.
 
-Smaller socket-backed SCC experiments use matching
-`apps/scc/app/(realtime)` and `apps/scc/components/realtime` families.
-Dashboard-style workstations use matching `apps/scc/app/(dashboard)` and
-`apps/scc/components/dashboard` families. Complex SCC systems such as `dj`,
-`finger-skating`, `network-system`, and `sns` remain directly under both SCC
-trees.
+App socket modules live in `apps/<owner>/socket/experiments/`; root `socket/`
+owns only shared registry/server infrastructure. Clients map domain state into
+presentation. See [HTTPS/sockets](https-and-sockets.md).
 
-Multi-device experiments use this shape within their assigned family:
-
-```txt
-apps/<owner>/app/[group]/page.tsx
-apps/<owner>/app/[group]/[experiment]/mobile/page.tsx
-apps/<owner>/app/[group]/[experiment]/screen/page.tsx
-apps/<owner>/components/[group]/experiments.ts
-apps/<owner>/components/[group]/[experiment]/mobile.tsx
-apps/<owner>/components/[group]/[experiment]/screen.tsx
-apps/<owner>/socket/experiments/[experiment]/index.mjs
-```
-
-Controller/multi-screen systems replace the mobile role with
-`controller/page.tsx` and use `screen/[screen]/page.tsx`.
-
-## Component ownership
-
-Experiment code is organized by the responsibility it owns, not by whether it
-is TypeScript, React, data, or styling:
-
-```txt
-apps/<owner>/components/[family]/[group]/[experiment]/
-  model/       abstract domain state, types, deterministic state helpers
-  transport/   browser socket or device-input boundary
-  controller/  interaction UI and graph/layout helpers
-  screen/      screen route composition
-  mobile/      mobile route composition, when applicable
-  [feature]/   named capabilities such as news/, media/, or timeline/
-```
-
-- Each role folder exposes an `index.ts` or `index.tsx` entry point.
-- Internal names state their responsibility: `presenter`, `headlines`,
-  `config`, `grid`, `order`, or `graph`.
-- Pure tests sit beside the pure module they verify.
-- Route files select a registered role and validate parameters; they do not
-  own domain calculations or media configuration.
-- Socket code owns abstract state only. Screen-specific mappings belong in a
-  presenter inside the component family.
-- Do not rewrite unrelated experiments solely to make the tree uniform. Apply
-  this structure when creating or materially editing a family.
-
-`apps/scc/components/network-system/cycle/` is the current layered example, with
-`controller/`, `media/`, `model/`, `news/`, `screen/`, and `transport/`.
-
-## Documentation ownership
-
-- Small variants may share their group `README.md`.
-- A variant with a distinct visual contract, research ledger, or postmortem
-  gets its own file or subfolder under the matching experiment family.
-- `docs/README.md` indexes every registry family.
-- Do not put experiment notes in `AGENTS.md`.
-
-Rules:
-
-- Implementation and data belong under the owning app's `components/`.
-- The `app`, `components`, and documentation family assignments must match.
-- Route groups organize the filesystem only and must not change public URLs.
-- Each owning app's `app/` should mostly route/import.
-- Group index routes link to registered variants and stay minimal.
-- Non-scrollable pages must fit all required visible content inside the viewport.
-- Avoid decorative AI-looking labels, badges, footers, subtitles, or explanatory UI not requested by the user.
+Small variants can share a group README; distinct contracts/evidence need a
+matching app document. Update the relevant app index and [map](../README.md)
+when adding a family. Registries are authoritative for executable variants.

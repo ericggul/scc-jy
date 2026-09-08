@@ -93,7 +93,7 @@ customizable linked workspaces; it supports the workstation premise but does
 not prescribe our individual pixels or data model.
 
 - [Stock 3 preservation contract](../../scc/docs/experiments/dashboard/stock/3.md)
-- [C-VAL 1 controller visual contract](./1.md#bloomberg-informed-visual-decisions)
+- C-VAL 1 controller visual contract: retired `1.md` (not in current tree).
 - [Controller scale trial](./2-controller-responsive-bloomberg-grammar-2026-08-10.md)
 - [Bloomberg Terminal](https://professional.bloomberg.com/products/bloomberg-terminal/)
 

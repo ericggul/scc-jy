@@ -1,88 +1,57 @@
-# WebGPU/TSL particle source-clone protocol
+# GPU particle safety and source clones
 
-Use this for a supplied React Three Fiber (R3F), Three.js TSL, or WebGPU
-particle source that must be reproduced in SCC. A source clone is a runtime
-contract, not visual inspiration.
+Read before particle, GPU-compute, or supplied R3F/TSL/WebGPU clone work.
+Safety takes precedence when exact source reproduction exceeds an unverified
+device budget; report that limitation instead of silently claiming fidelity.
 
-## Incident record: `attractor/3`, 2026-09-02
+## Performance budget
 
-- **Request:** copy the supplied R3F Thomas-attractor particle source.
-- **Failure:** a prior implementation replaced it with an imperative renderer,
-  a different draw object, and a CPU/WebGL fallback without installing R3F or
-  Drei. It was not a clone.
-- **Cause of the reported Mac crash:** unconfirmed. The previous route was not
-  observed with a browser console or GPU error trace before replacement; do not
-  turn that missing evidence into a claimed driver or shader cause.
-- **Resolution:** install the source dependencies, retain its `Canvas` → async
-  `WebGPURenderer` → `sprite` → compute lifecycle, then test the actual HTTPS
-  route. On the reported Mac, `/attractor/3` rendered for 30 seconds with no
-  WebGPU, shader, or runtime errors. A `THREE.Clock` deprecation warning was
-  non-fatal.
+- Until the exact HTTPS route is observed on the user's device: at most
+  **8,192 visible particles/sprites, DPR 1.0, and 24 Hz autonomous animation**,
+  summed across the whole route.
+- Begin with a static frame. Reduced motion stops autonomous updates. Bound and
+  clean up schedulers. Use writable buffers/per-frame compute only when static
+  attributes or material-time relations cannot express the actual model.
+- Treat WebGL2 fallback separately; retain the lower budget until both paths
+  are observed. Fallback alone does not establish safety.
+- Higher count, DPR, multiple compute passes, post-processing, or uncapped loops
+  require documented count/memory/draw-call/DPR/rate budgets, explicit permission
+  for HTTPS browser observation, and a 30-second record of console, GPU-error,
+  and device-loss results. Without permission, retain the safe budget and report
+  the unverified requirement.
+- After a reported freeze, crash, or material degradation, replace the route
+  with its static safe path or remove its registration before further iteration.
+  Do not ask the user to reopen an unsafe route for diagnosis.
 
-## Required procedure
+## Supplied-source fidelity
 
-1. **Classify the request.** If the user asks to clone supplied code, preserve
-   its renderer, framework, draw primitive, compute schedule, dependencies,
-   camera, and controls. Do not substitute an imperative renderer, custom mesh,
-   CPU fallback, particle cap, or visual redesign unless requested.
-2. **Preflight dependencies.** Read the owning app's `package.json` before
-   coding. Install every imported runtime package first; for an R3F source this
-   normally includes `@react-three/fiber`, `@react-three/drei`, and any source
-   import such as `uuid`. A missing import means it is not cloned.
-3. **Preserve the GPU data path.** For the source pattern, retain one
-   `instancedArray` for seeds, one for evolving offsets, `computeAsync` once for
-   initialization, and one `compute` dispatch per frame. The material must read
-   those same buffers. Do not move simulation state to CPU just to satisfy a
-   local typing discomfort.
-4. **Treat typing as typing.** R3F currently types its renderer as WebGL while
-   an async `Canvas` factory can return `WebGPURenderer`; `three/webgpu` also
-   exposes constructors beyond R3F's default JSX catalogue. After checking the
-   installed versions, add only narrow type assertions and JSX augmentation.
-   They must not change runtime construction or the compute path.
-5. **Verify in order.** Run the owning app's typecheck and lint the changed
-   file. If the user authorizes browser testing and an HTTPS server already
-   exists, open the exact route in Chrome, inspect console errors, and leave it
-   running for at least 30 seconds. Record canvas visibility and GPU/shader or
-   runtime errors separately from harmless warnings.
+Preserve the source's framework, renderer, primitive, camera, controls,
+dependencies, and compute lifecycle unless requested otherwise or safety requires
+a disclosed deviation. Check the app package and install required imports
+(e.g. Fiber, Drei, uuid) before claiming a complete clone.
 
-## Failure discipline
+For the recorded particle pattern: seeds/offsets use `instancedArray`;
+initialization uses `computeAsync` once; frames dispatch `compute` and the
+material reads the same buffers. Resolve WebGPU/R3F typing with narrow,
+version-checked assertions and JSX augmentation, not a different runtime or
+CPU simulation.
 
-- Never claim a clone while a source import or its package is absent.
-- Never diagnose a GPU crash as a browser/driver/shader fault without the old
-  route's observed error or device-loss evidence.
-- Never promise that WebGPU can never crash; report the tested browser, route,
-  duration, canvas state, and console result instead.
-- If the exact source runs, stop. Do not continue with speculative fallbacks or
-  performance rewrites.
+Typecheck the app and lint changed files. Only with explicit browser-testing
+authorization and an existing HTTPS server, observe the exact route for at
+least 30 seconds; record canvas visibility, GPU/shader/runtime errors, device
+loss, and warnings separately. If it runs, stop; do not add speculative fallbacks.
 
-## Performance safety
+## Historical incident: attractor/3, 2026-09-02
 
-This applies to every particle experiment, including original work that is not
-a source clone. Protecting the user's browser, GPU, battery, and unsaved work
-comes before particle density or visual novelty.
+A requested R3F Thomas-attractor clone was replaced with an imperative renderer,
+different draw object, and CPU/WebGL fallback while Fiber/Drei were absent.
+That was not a clone. The reported Mac crash cause remains **unconfirmed**:
+no old-route console/GPU trace was observed.
 
-1. **Start within the unobserved budget.** Until the exact HTTPS route has been
-   observed on the user's device, use at most 8,192 visible particles/sprites,
-   a 1.0 maximum DPR, and at most 24 Hz for autonomous animation. Count the
-   whole active route, not each individual particle system.
-2. **Earn compute.** Use writable storage buffers and per-frame compute only
-   when the experiment's actual model cannot be expressed as static attributes
-   or a vertex/material-time relation. Never add a compute pass merely to make
-   particles move.
-3. **Bound the loop.** Begin from a static, reduced-motion-safe frame; cap and
-   clean up any autonomous scheduler. Reduced-motion must stop autonomous
-   updates, not merely alter a cursor or CSS transition.
-4. **Treat fallback separately.** WebGPURenderer's WebGL2 fallback is not proof
-   that a WebGPU count, memory profile, or compute schedule is safe. Use the
-   shared lower budget until both backend paths have been observed.
-5. **Escalate only with evidence.** Higher particle count, DPR, multiple compute
-   passes, post-processing, or an uncapped loop require a documented budget for
-   count, memory, draw calls, DPR, and update rate; explicit user authorization
-   for HTTPS browser observation; and a 30-second observation with console,
-   GPU-error, and device-loss results recorded.
-6. **Fail safe after harm.** If a route is reported to freeze, crash, or
-   materially degrade a browser or computer, replace it with the static safe
-   path or remove it from the route registry before further visual iteration.
-   Do not ask the user to reopen an unsafe route for diagnosis.
+The correction retained `Canvas → async WebGPURenderer → sprite → compute`
+and source dependencies. The reported Mac rendered `/attractor/3` for 30 seconds
+without WebGPU/shader/runtime errors; a `THREE.Clock` deprecation warning was
+non-fatal. This historical observation is not a universal safety guarantee.
 
-Reference: [Field Guide to TSL and WebGPU](https://blog.maximeheckel.com/posts/field-guide-to-tsl-and-webgpu/); [Three.js WebGPURenderer](https://threejs.org/docs/pages/WebGPURenderer.html).
+References: [Field Guide to TSL and WebGPU](https://blog.maximeheckel.com/posts/field-guide-to-tsl-and-webgpu/),
+[WebGPURenderer](https://threejs.org/docs/pages/WebGPURenderer.html).

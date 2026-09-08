@@ -1,0 +1,7 @@
+# Normal-distribution fields
+
+Routes `/normal-distribution/1`–`/5` use direct orbit and sparse lower controls, never axes, grids, fake live motion, or dashboard shell. `/1` is a static bivariate normal density at fixed particle positions (`μ,σ,ρ`) with demand rendering. `/2` makes 26,000 particles from twelve bounded 2D increments, then stops at an empirical KDE envelope: it is a finite-sum/CLT study, not Gaussian-number theatre. `/3` has 16,000 walkers, 24 increments `σ√(3/24)(U,ρU+√(1-ρ²)V,W)`, real 3D endpoints and 320 actual paths; x/y correlation is `ρ`, z independent.
+
+`/4` is a static 20×20 terrain: 130,321 vertices, 259,200 triangles, fourth-power union of nearest 3×3 normal densities, double-sided material, DPR 1, demand render. `/5` keeps that static mesh but uses seeded variable-radius packing under a global Gaussian envelope; the current seed produces 332 peaks. These routes have no storage buffer, compute loop, timer, or per-frame geometry update.
+
+Model checks cover deterministic finite samples/paths, centre/width response, valid geometry and 400 addressed summits. `/4` generation measured 26ms on project Node 26.5.1; HTTPS browser observation is still the performance gate. Sources: official [Three.js WebGPURenderer](https://threejs.org/docs/pages/WebGPURenderer.html), [PointsMaterial](https://threejs.org/docs/pages/PointsMaterial.html), and [BufferGeometry](https://threejs.org/docs/pages/BufferGeometry.html).

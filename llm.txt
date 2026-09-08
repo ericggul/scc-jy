@@ -1,29 +1,5 @@
-# llm.txt
-
-This file is the LLM/harness index for the SCC repo.
-
-Active coding rules:
-- `AGENTS.md`
-
-Complete documentation map:
-- `docs/README.md`
-
-Repository-wide engineering documentation:
-- `docs/harness/overview.md`
-- `docs/harness/monorepo.md`
-- `docs/harness/nextjs.md`
-- `docs/harness/experiments.md`
-- `docs/harness/https-and-sockets.md`
-- `docs/harness/local-image-collections.md`
-
-Shared foundations:
-- `docs/foundations/tinkering.md`
-- `docs/foundations/design-guidelines.md`
-- `docs/foundations/mdwa.md`
-- `docs/foundations/parametric-detournement.md`
-
-Per-experiment documentation:
-- `apps/scc/docs/experiments/`
-- `apps/c-val/docs/`
-- `apps/ddong-meong/docs/`
-- `apps/goldfishes/docs/`
+# Agent documentation
+- Active policy: AGENTS.md
+- Task/app map: docs/README.md
+- Documentation writing: docs/harness/documentation.md
+Load only the references needed for the current task.

@@ -43,7 +43,7 @@ does not mistake an unimplemented suggestion for a former working version.
 
 | Order | State | Implemented? | Result | Full record |
 | ---: | --- | --- | --- | --- |
-| 0 | C-VAL 1 independent alpha→V, beta→A, gamma→L | yes | expressive baseline, but bodily price causality was hard to learn | [`1.md`](./1.md) and the exact comparison spec below |
+| 0 | C-VAL 1 independent alpha→V, beta→A, gamma→L | yes | expressive baseline, but bodily price causality was hard to learn | Retired `1.md` (not in current tree); exact comparison spec below |
 | 1 | learned classifier: RMS, cadence, dwell, learned axis, pressure and privileged operator | yes | rejected; weak, latent and irreproducible | [`2-interaction-failure-review.md`](./2-interaction-failure-review.md) |
 | 2 | tap one of V/A/L, then use one tilt to set it | proposal and partial interface work | rejected; made intermediate parameters the participant's GUI task | [`2-interaction-failure-review.md`](./2-interaction-failure-review.md) |
 | 3 | weak multi-axis angle sum and small market direction | yes | rejected; preserved V1 ambiguity with less dramatic price | Iteration 1 below and the failure review |

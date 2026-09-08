@@ -1,0 +1,7 @@
+# Cellular automata
+
+All routes are editable edge-to-edge synchronous, toroidal fields with pause/step/seed and direct paint; do not add dashboard chrome. Route 1 is binary Conway Life (`B3/S23`, Moore neighbourhood). Route 2 is three-state RGB successor transmission at ≥3 successor neighbours. Route 3 uses seven colours, locally proportionate stochastic transmission and `.004` mutation, with a comparable one-way cycle. Route 4 independently evolves background forward (`R→G→B`) and text reverse (`R→B→G`), including independent binary Life in its R/B branch; LeWitt supplies the language/field problem, not a visual template.
+
+Routes 5–6 give each nested shape its own field: square/circle or flat-top hexagon/circle. R/B retains independent `B3/S23`; cyclic palettes include RGB, seven-colour, and white/black/red/blue taegeuk. Square depth is 1/5/9; hex depth is 1/5/9/13—17 is deliberately excluded because canvas path redraw cannot stay responsive. Route 5 reseeds a deterministic 3×3 spark only after a layer has <5% change for 80 generations. Hex Life uses six neighbours.
+
+Grid-network routes are distinct: 1 has independent background/border binary fields over 24×24 cells; 2 uses independent RGB fields at 48×48 with equal-state disconnection; 3 is a directly manipulated rotating/zoomable compact 3D volume. Preserve stable IDs, model/presentation separation, actual direct interaction, and pending-browser-observation status.

@@ -1,168 +1,63 @@
-# SCC Common Visual Design Guidelines
+# Visual design
 
-This document applies repository-wide. Read it before creating a new interface or materially redesigning an existing one.
+Read for new interfaces or material redesigns. Existing UI contracts remain
+invariants when only data, behavior, math, or transport changes.
 
-## Core principle: a wrapper is not a costume
+## Form follows the participant's task
 
-A visual wrapper is the perceptual and interactive form through which a participant encounters parameters, state, and relations. It is not a themed illustration of a subject.
+Identify who acts, what parameter/relation they must notice or change, and why
+the proposed interface makes that action legible. A subject name such as bank,
+AI, or news does not justify a themed dashboard. Record the rationale briefly
+in working notes or the experiment document; no separate proposal is required.
 
-If a node is called “Central Bank,” “Treasury,” “AI,” “Quantum,” “News,” or “Social Media,” those names do not by themselves authorize a terminal, dashboard, control room, neon grid, institutional seal, feed, or other stereotyped surface. First determine:
+If the interaction is not yet proven, begin with a neutral surface, clear
+typographic hierarchy, the primary parameter, necessary secondary information,
+and whitespace. Add a visualization only when it makes temporal or relational
+change legible. Functional separators need an actual information boundary;
+decorative dividers and image captions are not defaults. Images use accurate alt text.
 
-- Who is looking or acting?
-- Which parameter can they observe or change?
-- Which relation must become perceptible?
-- What expectation should the interface let them form?
-- Why does this visual form make that task clearer than a neutral wrapper?
+Do not substitute faux technical chrome for an interface concept: arbitrary
+dark/neon palettes, glow, gradients, giant numbers with tiny labels, ornamental
+charts/gauges, fake LIVE states, revision codes, badges, and process footers.
+These are not a universal ban on domain conventions; each element needs an
+informational, interactive, or perceptual job. Remove elements whose deletion
+does not weaken that job. Do not imply precision, liveness, or functionality
+that the system lacks.
 
-Without answers, styling the subject is decoration rather than interface design.
+## Preserve operational grammar
 
-## Prohibited default: the AI concept dashboard
+References contribute hierarchy, density, alignment, semantic color, controls,
+and expectations. Copying their palette alone is insufficient. `stock/2`'s
+terminal grammar belongs to its task, not every experiment with data.
 
-Never respond to an abstract system, institution, agent, process, or dataset by automatically producing a collection of faux dashboards.
+Parametric interfaces change a value within the reference's active semantic
+slot. Keep spreadsheet lyric tokens in ordinary unmerged cells in the intended
+row; never replace them with overlays, titles, badges, or floating lines.
+Edge-aligned references meet the viewport's top/left edges without outer padding.
+Hyper-real spreadsheet work retains chrome, formula bar, headers, selection,
+tabs, and grid. Détournement requires a recognizable original coupling and a
+legible transformation, not arbitrary data in a familiar-looking shell.
 
-The recognizable formula includes:
+For complex-systems experiments, derive form from the exact phenomenon.
+Existing routes are history, not a palette/layout template. Begin perceptual
+simulations with the field alone; add controls/text only when the participant
+needs them. Direct-field or keyboard actions must remain discoverable and
+accessible. Do not default to serif titles, corner counters, graph notation,
+pause/reset controls, or distributed metrics.
 
-- near-black backgrounds with one neon cyan, green, orange, or red accent;
-- glow, gradients, luminous grid lines, glass panels, or radar-like decoration;
-- one enormous number surrounded by tiny uppercase labels;
-- obligatory sparklines, gauges, progress bars, heat cells, or status dots;
-- dense borders and cards whose subdivisions do not encode real structure;
-- fake `LIVE` states, revision numbers, timestamps, system codes, mode badges, or connection indicators;
-- ornamental arrows, pipelines, footer chains, or process captions;
-- different color themes and visual identities assigned to nodes solely because their names differ;
-- technical-sounding copy that simulates specificity without helping a participant understand or act.
+## Typography and multi-device work
 
-These elements are not universally forbidden in every context. They are forbidden as an automatic formula or as a substitute for a grounded interface concept. An element may appear only when the interaction, domain convention, or information structure actually requires it.
+Texts with the same role share exact family, size, weight, tracking, line height,
+casing, and responsive behavior through a common class/token/selector. If color
+is the intended difference, change only color. Compare paired labels when
+editing their styles; do not invent hierarchy for visual balance.
 
-## The surface-level failure
+Across devices, preserve a coherent grammar while allowing differences justified
+by actual roles, parameters, or observation tasks. Make propagation, transitions,
+and mutual influence perceptible; individual screen spectacle must not obscure
+the relation. System-node names alone do not warrant separate visual identities.
 
-The formula is aesthetically weak because it is overdetermined and generic at the same time.
-
-- Every element asks for attention, so no hierarchy remains.
-- Excessive borders, accents, and micro-components destroy whitespace and pacing.
-- “Technical” decoration makes unrelated projects look interchangeable.
-- A collection of separately themed screens reads as a mood board rather than one system.
-- The design announces an atmosphere before it communicates a parameter.
-- It looks specific only because it is visually busy; remove the labels and it could represent finance, climate, logistics, AI, healthcare, or a spaceship without changing.
-
-This is not minimalism. Reducing the color palette while keeping badges, grids, charts, codes, and ornamental hierarchy is still maximal decoration.
-
-## The deeper conceptual failure
-
-The more serious error is not the palette. It is a misunderstanding of what an interface is.
-
-### 1. It confuses representation with operation
-
-A dashboard-looking image represents “a complex system.” An interface should let a participant perceive or operate a particular relation inside that system. Looking technical is not the same as making a system legible.
-
-### 2. It confuses the subject with the user situation
-
-“Central bank” is an institution, not a user, task, or interface requirement. Designing from the noun produces costume. Designing from the observation or action produces an interface.
-
-### 3. It confuses density with rigor
-
-More metrics, panels, and labels do not make a model more precise. When the underlying experiment is intentionally bounded, simulated precision actively misrepresents it.
-
-### 4. It confuses difference with differentiation
-
-Giving every node a different theme makes them visually distinct but may destroy their shared system grammar. Meaningful differentiation must come from different parameters, controls, temporal behavior, or observation roles.
-
-### 5. It confuses a Parametric Interface with a dashboard
-
-A Parametric Interface is defined by the coupling between parameters and a visual wrapper: `W(x1, x2, …)`. It is not defined by displaying many values. The design task is to expose, transform, or question that coupling—not to decorate variables with charts.
-
-### 6. It treats the wrapper as the artwork’s subject
-
-In relational and multi-device work, the important experience may exist across screens and edges. A spectacular autonomous wrapper can obscure that relation and reduce the work to several independent screen designs.
-
-### 7. It copies a surface instead of an interface grammar
-
-References such as financial terminals, calendars, feeds, maps, or control panels should be studied for their hierarchy, interaction grammar, parameter conventions, and user expectations. Copying their colors and visual density without those functions is pastiche.
-
-## Required design procedure
-
-Before implementation, state the following in the experiment document or working notes:
-
-1. **Participant situation:** who encounters the interface and under what condition.
-2. **Primary parameter:** the single most important value, state, or relation.
-3. **Perceptual job:** what change the participant must be able to notice.
-4. **Interaction job:** what action is possible and what expectation it should create.
-5. **Wrapper justification:** why this form is appropriate beyond matching the subject’s visual stereotype.
-6. **System family:** which visual and interaction rules must remain shared across related screens.
-7. **Removal test:** which elements can be deleted without reducing parameter or interaction legibility.
-
-Reject the proposal if its palette, badges, charts, and labels could be transferred unchanged to a different subject by replacing nouns.
-
-## Minimal wrapper baseline
-
-When a distinct interface concept has not yet been earned, use a minimal wrapper:
-
-- one neutral surface;
-- one clear typographic hierarchy;
-- one primary parameter;
-- only necessary secondary parameters;
-- thin functional rules rather than cards and chrome;
-- no decorative status, captions, badges, footers, or fake metadata;
-- a single restrained visualization only when temporal or relational change requires it;
-- a coherent family across screens;
-- whitespace as active structure.
-
-Minimal is the baseline for inquiry, not a claim that every final work must remain visually neutral. Expressive design may be added later, but every addition must be justified by perception, interaction, domain convention, or conceptual operation.
-
-## Typography is a contract
-
-Typography is not an opportunity to invent visual difference after the fact.
-It states which text belongs to the same role, which text is subordinate, and
-which distinction carries meaning.
-
-- When two texts are specified, or clearly function, as the same typographic
-  role, they must share the exact type contract: family, size, weight, letter
-  spacing, line height, casing, and responsive behavior. If colour is the only
-  intended distinction, colour must be the only difference.
-- Implement a shared class, token, or grouped selector for that contract. Do
-  not write near-duplicate declarations and call them aligned; separate
-  `clamp()`, weight, tracking, or line-height values silently create hierarchy.
-- Do not fabricate hierarchy from position, convenience, or a guess that one
-  phrase should feel more “balanced.” A hierarchy needs a different semantic,
-  interactive, or perceptual job.
-- Before approval, compare every repeated or paired label across the relevant
-  screen family. State which pairs are intentionally identical and which
-  property gives any intentional difference its meaning.
-
-If a proposed type variation cannot name its job, remove the variation rather
-than adding another almost-the-same text style. This check is mandatory for
-mobile overlays, onboarding states, controls, captions, and multi-screen
-families alike.
-
-## Reference use
-
-Do not imitate a reference’s outward style. Extract the rule that makes it work.
-
-For example, `stock/2` is not permission to use terminal styling everywhere. Its relevant lessons are compact information hierarchy, stable tabular alignment, semantic color, domain-specific command grammar, and a clear relationship between functions. If those functions are absent, its surface is irrelevant.
-
-Likewise, détournement requires a recognizable original coupling between wrapper and parameter. Randomly placing unfamiliar data into a familiar-looking shell is not automatically détournement; the original convention and the transformed relation must both remain legible.
-
-## Multi-device rule
-
-For a multi-device work, evaluate the whole system before polishing individual screens.
-
-- The relation between screens must remain more important than autonomous screen spectacle.
-- Screens should share enough visual grammar to be perceived as one system.
-- Differences must reveal different parameter roles or observations.
-- A wrapper must not become so self-sufficient that the work no longer needs multiple devices.
-- The controller and screens should make edges, propagation, state transition, or mutual influence perceptible without explanatory decoration.
-
-## Rejection checklist
-
-Stop and simplify if any answer is “yes”:
-
-- Would this still look plausible if every subject noun were replaced?
-- Did the design begin with a color theme rather than a participant task?
-- Are there labels or indicators that describe fiction rather than usable state?
-- Does every screen have a separate visual theme without a parameter-level reason?
-- Are charts present because data “should have charts” rather than because change must be perceived?
-- Is visual complexity compensating for an unclear interaction?
-- Is the wrapper more memorable than the relation the experiment is meant to expose?
-- Is the interface pretending the model is more accurate, live, or operational than it is?
-
-If so, return to the minimal wrapper baseline and re-establish the parameter, relation, and user situation before styling again.
+Fixed-format artifacts scale internal typography, spacing, and controls
+with the outer container at a usable visual size. Non-scrollable pages fit their
+required content inside the viewport. Reuse established primitives and present
+values in the experiment's domain language, not simulation/debug terminology.
