@@ -1,0 +1,63 @@
+import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+import test from "node:test";
+import { Script } from "node:vm";
+import { installRunnerCompatibility } from "./compatibility.mjs";
+
+const original = readFileSync(new URL("./dino.html", import.meta.url), "utf8");
+const packaged = JSON.parse(readFileSync(new URL("./document.json", import.meta.url), "utf8"));
+
+test("vendored HTML matches the pinned upstream bytes", () => {
+  const hash = createHash("sha256").update(original).digest("hex");
+  assert.equal(hash, "942ee61b111ddd7778cd8204bf9a4a60802d3a63549ec6e9d2353edd6eb5198a");
+  assert.equal(packaged.sha256, hash);
+});
+
+test("packaging preserves the upstream document outside its explicit integration additions", () => {
+  assert.ok(packaged.html.includes(`(${installRunnerCompatibility.toString()})(window.Runner, window);`));
+  assert.match(packaged.html, /data-spoon-class-module-style/);
+  assert.match(packaged.html, /data-spoon-class-module-presentation/);
+  const restored = packaged.html
+    .replace(/\n<meta http-equiv="Content-Security-Policy"[^>]+>/, "")
+    .replace(/<style data-spoon-class-module-style>[\s\S]*?<\/style>\n/, "")
+    .replace(/<script data-spoon-class-compatibility>[\s\S]*?<\/script>\n/, "");
+  const sourceRestored = restored.replace(
+    /<script data-spoon-class-module-presentation>[\s\S]*?<\/script>\n/,
+    "",
+  );
+  assert.equal(sourceRestored, original);
+});
+
+test("the module document removes standalone text and forwards only player keys", () => {
+  assert.match(packaged.html, /querySelectorAll\("\.onlyforchrome"\)/);
+  assert.match(packaged.html, /getElementById\("main-frame-notchrome"\)/);
+  assert.match(packaged.html, /channel: "spoon-class-input"/);
+  assert.match(packaged.html, /!event\.isTrusted/);
+  assert.match(packaged.html, /\}, "\*"\);/);
+});
+
+test("all upstream inline scripts parse without executing a browser", () => {
+  const scripts = [...original.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)];
+  assert.ok(scripts.length >= 5);
+  for (const [index, match] of scripts.entries()) {
+    assert.doesNotThrow(() => new Script(match[1], { filename: `upstream-script-${index}.js` }));
+  }
+});
+
+test("both sprite densities and all three original Ogg sounds are intact", () => {
+  const sprites = [...original.matchAll(/<img id="([12])x-([^"]+)" src="data:image\/png;base64,([^"]+)"/g)];
+  assert.equal(sprites.length, 14);
+  for (const [, , , data] of sprites) {
+    const png = Buffer.from(data, "base64");
+    assert.equal(png.subarray(1, 4).toString(), "PNG");
+    assert.ok(png.readUInt32BE(16) > 0);
+    assert.ok(png.readUInt32BE(20) > 0);
+  }
+  const sounds = [...original.matchAll(/<audio id="offline-sound-([^"]+)" src="data:audio\/mpeg;base64,([^"]+)"/g)];
+  assert.deepEqual(sounds.map((sound) => sound[1]), ["press", "hit", "reached"]);
+  for (const [, , data] of sounds) {
+    // The source labels these MPEG, but the bytes contain Ogg/Vorbis audio.
+    assert.equal(Buffer.from(data, "base64").subarray(0, 4).toString(), "OggS");
+  }
+});

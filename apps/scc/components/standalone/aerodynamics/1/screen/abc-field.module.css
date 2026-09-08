@@ -1,0 +1,59 @@
+.field {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #060712;
+  color: #d3dcff;
+}
+
+.field canvas {
+  display: block;
+  touch-action: none;
+  cursor: grab;
+}
+
+.field canvas:active { cursor: grabbing; }
+
+.hint {
+  position: absolute;
+  top: 22px;
+  left: 24px;
+  margin: 0;
+  color: rgba(185, 199, 245, 0.62);
+  font: 11px var(--font-geist-mono), monospace;
+  letter-spacing: 0.015em;
+  pointer-events: none;
+}
+
+.controls {
+  position: absolute;
+  right: 20px;
+  bottom: max(23px, env(safe-area-inset-bottom));
+  left: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 9px 20px;
+  font: 11px var(--font-geist-mono), monospace;
+}
+
+.controls button {
+  min-height: 36px;
+  border: 0;
+  padding: 0 2px;
+  background: transparent;
+  color: rgba(188, 203, 249, 0.48);
+  cursor: pointer;
+  font: inherit;
+}
+
+.controls button[aria-pressed="true"] { color: #ffc58a; }
+.controls button:hover { color: #e3ebff; }
+.controls button:focus-visible { outline: 1px solid #ffc58a; outline-offset: 5px; }
+
+@media (max-width: 600px) {
+  .hint { top: 16px; left: 16px; font-size: 10px; }
+  .controls { right: 12px; bottom: max(13px, env(safe-area-inset-bottom)); left: 12px; gap: 5px 15px; }
+  .controls button { min-height: 30px; }
+}

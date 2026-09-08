@@ -1,0 +1,75 @@
+// Mechanical packaging only: never rewrite the upstream Runner or its assets.
+import { readFileSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { installRunnerCompatibility } from "./compatibility.mjs";
+import { installLifeAgeMeter } from "./life-age.mjs";
+import { installLifeGamePresentation } from "./life-game.mjs";
+
+const original = readFileSync(new URL("./dino.html", import.meta.url), "utf8");
+const policy = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; media-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'">`;
+// /1 is the presentation fork. It uses the upstream Runner unchanged inside
+// each tile, with only non-game page chrome removed.
+const moduleStyles = `<style data-spoon-class-module-style>
+html, body {
+  background: #f7f7f7;
+  height: 150px;
+  margin: 0;
+  overflow: hidden;
+  width: 100%;
+}
+
+.interstitial-wrapper {
+  height: 150px;
+  margin: 0 !important;
+  max-width: none;
+  padding: 0 !important;
+  width: 100%;
+}
+</style>`;
+// Install before the original bootstrap. Preserve the upstream file separately
+// so the small integration correction is reviewable without rewriting its code.
+const adapter = `<script data-spoon-class-compatibility>(${installRunnerCompatibility.toString()})(window.Runner, window);</script>`;
+const lifeAdapter = `<script data-spoon-class-life-presentation>(${installLifeGamePresentation.toString()})(document);</script>`;
+const ageAdapter = `<script data-spoon-class-life-age>(${installLifeAgeMeter.toString()})(window);</script>`;
+const runnerBootstrap = `<script type="text/javascript">
+    if (navigator.userAgent.toLowerCase().indexOf('chrome') > -1) {`;
+const runnerBootstrapEnd = `  </script>
+
+  <div class="onlyforchrome">`;
+const modulePresentation = `<script data-spoon-class-module-presentation>
+(function(window, document) {
+  var chromeOnly = document.querySelectorAll(".onlyforchrome");
+  for (var index = 0; index < chromeOnly.length; index++) {
+    chromeOnly[index].remove();
+  }
+  var nonChromeNotice = document.getElementById("main-frame-notchrome");
+  if (nonChromeNotice) nonChromeNotice.remove();
+
+  function syncInput(event) {
+    if (!event.isTrusted || window.parent === window) return;
+    var keyCode = Number(event.keyCode || event.which);
+    if (keyCode !== 32 && keyCode !== 38 && keyCode !== 40 && keyCode !== 13) return;
+    window.parent.postMessage({
+      channel: "spoon-class-input",
+      type: event.type,
+      keyCode: keyCode
+    }, "*");
+  }
+
+  document.addEventListener("keydown", syncInput);
+  document.addEventListener("keyup", syncInput);
+})(window, document);
+</script>`;
+const html = original
+  .replace("<head>", `<head>\n${policy}`)
+  .replace("</head>", `${moduleStyles}\n${adapter}\n</head>`)
+  .replace(runnerBootstrap, `${lifeAdapter}\n${runnerBootstrap}`)
+  .replace(runnerBootstrapEnd, `  </script>\n${ageAdapter}\n\n  <div class="onlyforchrome">`)
+  .replace("</body>", `${modulePresentation}\n</body>`);
+const packaged = {
+  repository: "https://github.com/alexelzx/chrome-dino",
+  revision: "6e472666cfd94e95056b7e747f46badf00e1226d",
+  sha256: createHash("sha256").update(original).digest("hex"),
+  html,
+};
+writeFileSync(new URL("./document.json", import.meta.url), `${JSON.stringify(packaged, null, 2)}\n`);

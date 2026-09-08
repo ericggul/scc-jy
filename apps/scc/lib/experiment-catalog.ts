@@ -1,5 +1,25 @@
 export const experimentCatalog = [
   {
+    href: "/chess",
+    label: "chess",
+    description: "A minimal 2D chess simulation with automatic and local two-player play.",
+  },
+  {
+    href: "/aerodynamics",
+    label: "aerodynamics",
+    description: "A three-dimensional ABC Euler flow rendered as moving velocity arrows.",
+  },
+  {
+    href: "/barrier",
+    label: "barrier",
+    description: "장벽을 생각한다면 세라마이드 하나만으로 끝내면 안 됩니다. 화장품 인터랙티브 광고.",
+  },
+  {
+    href: "/spoon-class",
+    label: "spoon-class",
+    description: "Chrome Dino baseline, synchronized module field and a pixel human-life fork.",
+  },
+  {
     href: "/ddong-meong",
     label: "ddong-meong",
     description:

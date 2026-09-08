@@ -1,0 +1,83 @@
+.page {
+  position: relative;
+  width: 100%;
+  height: 100dvh;
+  overflow: hidden;
+  background: #fff;
+  color: #222;
+  font-family: var(--font-geist-sans);
+  color-scheme: light;
+}
+.surface {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(var(--board-size), calc(100vw - 64px), calc(100dvh - 176px));
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+}
+.board { width: 100%; aspect-ratio: 1; position: relative; }
+.squares { width: 100%; height: 100%; display: grid; grid-template: repeat(8, 1fr) / repeat(8, 1fr); }
+.page button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.square { display: grid; place-items: center; position: relative; border: 0; padding: 0; min-width: 0; background: #f1f1f1; }
+.dark { background: #bcbcbc; }
+.square[data-last="true"] { box-shadow: inset 0 0 0 2px #888; }
+.square[data-selected="true"] { box-shadow: inset 0 0 0 3px #222; }
+.square[data-check="true"] { box-shadow: inset 0 0 0 3px #222; }
+.square svg { width: 78%; height: 78%; position: relative; z-index: 1; pointer-events: none; }
+.square[data-legal="true"]::after { content: ""; position: absolute; width: 15%; height: 15%; border-radius: 50%; background: #2226; }
+.square[data-legal="true"][data-occupied="true"]::after { width: 86%; height: 86%; border: 2px solid #2228; background: transparent; }
+.page :is(button, summary, select, [tabindex="0"]):focus-visible { outline: 2px solid #111; outline-offset: 2px; }
+.square:focus-visible { outline-offset: -3px !important; z-index: 2; }
+.controls {
+  position: absolute;
+  z-index: 6;
+  right: 32px;
+  bottom: 32px;
+  left: 32px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  color: #222;
+  font: 0.64rem var(--font-geist-mono), monospace;
+}
+.controlActions { display: flex; align-items: center; flex-wrap: wrap; gap: 1.15rem; }
+.actions { display: flex; align-items: center; flex-wrap: wrap; gap: 1.15rem; }
+.actions button, .history summary {
+  border: 0;
+  border-bottom: 1px solid transparent;
+  padding: 0.35rem 0;
+  background: transparent;
+  color: #666;
+  cursor: pointer;
+  font: inherit;
+}
+.actions button:hover, .actions button[aria-pressed="true"], .history[open] summary {
+  border-bottom-color: currentColor;
+  color: #111;
+}
+.actions button:disabled { opacity: 0.3; cursor: default; border-bottom-color: transparent; }
+.parameter { display: flex; align-items: center; gap: 0.55rem; color: #666; }
+.parameter input { width: clamp(5.5rem, 10vw, 9rem); margin: 0; accent-color: #222; cursor: ew-resize; }
+.parameter output { min-width: 2.55rem; color: #111; text-align: right; }
+.history { position: relative; }
+.history summary { list-style: none; }
+.history summary::-webkit-details-marker { display: none; }
+.moves { position: absolute; bottom: calc(100% + 12px); right: 0; width: 190px; max-height: 180px; padding: 12px; overflow: auto; background: #fff; outline: 1px solid #ddd; }
+.moveRow { display: grid; grid-template-columns: 32px 1fr 1fr; padding-block: 5px; }
+.result { position: absolute; top: calc(100% + 16px); width: 100%; text-align: center; font: 0.64rem var(--font-geist-mono), monospace; }
+.promotion { position: absolute; z-index: 5; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #fffffff2; gap: 16px; }
+.promotionChoices { display: flex; }
+.promotionChoices button { width: clamp(40px, 8vw, 72px); height: clamp(40px, 8vw, 72px); }
+.promotionChoices button:hover { background: #eee; }
+.promotionChoices svg { width: 100%; height: 100%; }
+.textButton { min-height: 44px; font-size: 12px; }
+.srOnly { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+
+@media (max-width: 640px) {
+  .controls { inset-inline: 16px; bottom: 16px; }
+  .controlActions { column-gap: 1.15rem; row-gap: 0.5rem; }
+  .surface { width: min(var(--board-size), calc(100vw - 32px), calc(100dvh - 216px)); }
+}

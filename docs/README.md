@@ -35,6 +35,8 @@ history when their subject affects the task, not for every code change.
 
 ## Experiment map
 
+- [Aerodynamics](../apps/scc/docs/experiments/standalone/aerodynamics/README.md): standalone 3D ABC Euler flow, variants `1`–`2`.
+
 | Code family | Registered variants | Documentation |
 | --- | --- | --- |
 | `apps/ddong-meong/components` | Unversioned finished app | [ddong-meong](../apps/ddong-meong/docs/README.md) · [콘텐츠 확장 매뉴얼](../apps/ddong-meong/docs/content-manual.md) |
@@ -55,11 +57,14 @@ history when their subject affects the task, not for every code change.
 | `apps/scc/components/complex-systems/cellular-automata` | `colour/1`–`6`, `grid-network/1` | [cellular automata](../apps/scc/docs/experiments/complex-systems/cellular-automata/README.md) |
 | `apps/scc/components/complex-systems/adaptive-coevolving-network` | `polling-ecology` | [polling ecology](../apps/scc/docs/experiments/complex-systems/adaptive-coevolving-network/README.md) |
 | Complex-systems acceptance standard | — | [removals and simulation standard](../apps/scc/docs/experiments/complex-systems/rejected-examples.md) |
+| `apps/scc/components/standalone/barrier` | `default`, `1`, `2` | [barrier](../apps/scc/docs/experiments/standalone/barrier/README.md) |
+| `apps/scc/components/standalone/chess` | `1` | [chess](../apps/scc/docs/experiments/standalone/chess/README.md) |
 | `apps/scc/components/standalone/bastille-day` | `1`, `2` | [bastille-day](../apps/scc/docs/experiments/standalone/bastille-day/README.md) |
 | `apps/scc/components/standalone/cv` | `1`, `2`, `3` | [cv](../apps/scc/docs/experiments/standalone/cv/README.md) |
 | `apps/scc/components/standalone/macos` | `1` | [macos](../apps/scc/docs/experiments/standalone/macos/README.md) |
 | `apps/scc/components/standalone/moma` | `1`, `2` | [moma](../apps/scc/docs/experiments/standalone/moma/README.md) |
 | `apps/scc/components/standalone/swarm` | `1`–`3` | [swarm](../apps/scc/docs/experiments/standalone/swarm/README.md) |
+| `apps/scc/components/standalone/spoon-class` | `default`, `1`, `2`, `3` | [spoon-class baseline, module field, human-life fork and dense scaled wall](../apps/scc/docs/experiments/standalone/spoon-class/README.md) |
 | `apps/scc/components/standalone/table` | `1`, `2` | [table](../apps/scc/docs/experiments/standalone/table/README.md) |
 | `apps/scc/components/standalone/translate` | `1` | [translate](../apps/scc/docs/experiments/standalone/translate/README.md) |
 | `apps/scc/components/standalone/grid` | `1`, `2`, `3`, `4`, `5` | [grid](../apps/scc/docs/experiments/standalone/grid/README.md) |

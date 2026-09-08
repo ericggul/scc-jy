@@ -1,0 +1,15 @@
+.wall {
+  display: grid;
+  grid-template-columns: repeat(var(--spoon-class-columns), minmax(0, 1fr));
+  grid-template-rows: repeat(var(--spoon-class-rows), 150px);
+  height: 100svh;
+  overflow: hidden;
+  width: 100%;
+  background: #f7f7f7;
+}
+
+.module {
+  min-width: 0;
+  overflow: hidden;
+  background: #f7f7f7;
+}
