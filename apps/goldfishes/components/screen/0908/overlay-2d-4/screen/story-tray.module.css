@@ -418,7 +418,7 @@
 }
 
 .monochromeFace {
-  filter: grayscale(1) contrast(0.94) brightness(1.06);
+  filter: none;
 }
 
 .centeredSurface {

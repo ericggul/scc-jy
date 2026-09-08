@@ -78,9 +78,28 @@ const surfaceOptions: readonly { label: string; value: StorySurface }[] = [
   { label: "tech", value: "tech" },
 ];
 const humanFaceImages = Array.from(
-  { length: 48 },
-  (_, index) => `/images/bastille-day/${String(index + 1).padStart(2, "0")}.jpg`,
+  { length: 60 },
+  (_, index) => `/images/grid-2/politicians/${String(index + 1).padStart(3, "0")}.jpg`,
 );
+// Editorial left/right placement for this visual experiment, in the exact order
+// of the local 0806 politician collection. -1 = left, 0 = indeterminate/centre,
+// 1 = right. It is not an empirical political-position score.
+const politicianLean = [
+  1, -0.65, -0.45, -0.2, 0, -0.9, -0.75, -0.45, -0.75, -0.8,
+  -0.2, 0.6, 0.25, -0.55, 0.6, 0.35, 0, -0.55, 0.1, 0.35,
+  -0.45, -0.9, -0.75, 0.9, 0, -0.45, 0.95, 0.45, 0.45, -0.75,
+  0.4, -0.65, 0.4, -0.55, -0.35, 0, -0.2, 0.15, -0.45, 0.35,
+  0, 0.1, 0.35, -0.75, -0.55, -0.55, -0.65, -0.85, 0, -0.2,
+  -0.15, 0.65, 0.85, 0, -0.35, -0.45, -0.9, 0.55, -0.85, 0.25,
+] as const;
+
+function politicianTint(index: number) {
+  const lean = politicianLean[index % politicianLean.length]!;
+  const from = lean < 0 ? [42, 105, 255] : [139, 94, 164];
+  const to = lean < 0 ? [139, 94, 164] : [244, 61, 74];
+  const amount = Math.abs(lean);
+  return `rgb(${from.map((channel, channelIndex) => Math.round(channel + (to[channelIndex]! - channel) * amount)).join(" ")})`;
+}
 const hangulGlyphs = [
   "한", "병", "책", "밤", "봄", "숲", "빛", "달", "별", "물", "집", "길",
   "꿈", "눈", "말", "손", "방", "문", "창", "틈", "섬", "꽃", "잔", "술",
@@ -176,7 +195,15 @@ function colourFor(index: number, seed: number) {
 
 function getSurfaceStyle(surface: StorySurface, index: number, colourSeed: number): CSSProperties {
   if (surface === "empty" || surface === "hangul" || surface === "hanja" || surface === "numbers" || surface === "hieroglyph" || surface === "techMono" || surface === "tech") return { backgroundColor: "#242a2f" };
-  if (surface === "face") return { backgroundColor: "#d7cec2", backgroundImage: `url("${humanFaceImages[index % humanFaceImages.length]}")`, backgroundSize: "cover" };
+  if (surface === "face") {
+    const tint = politicianTint(index);
+    return {
+      // `color` keeps only the photograph's luminance, then reapplies the tint's hue/saturation.
+      backgroundImage: `linear-gradient(${tint}, ${tint}), url("${humanFaceImages[index % humanFaceImages.length]}")`,
+      backgroundBlendMode: "color, normal",
+      backgroundSize: "cover",
+    };
+  }
   if (surface === "logo") return { backgroundColor: "#f7f5ef" };
   if (surface === "colour") return { backgroundColor: colourFor(index, colourSeed) };
   if (surface === "paris") return { backgroundColor: parisLines[index % parisLines.length]!.color };
