@@ -2,12 +2,13 @@ import {
   defaultSettings,
   fieldConfig,
   monochromeColours,
+  techKeywords,
   type FieldSettings,
 } from "./config";
 
 export type FishPhone = {
   id: string;
-  colourIndex: number;
+  surfaceIndex: number;
   activeColour: string | null;
   cadenceMs: number;
   nextUpdateAt: number;
@@ -16,7 +17,7 @@ export type FishPhone = {
 export function createField(count: number = fieldConfig.phoneCount): FishPhone[] {
   return Array.from({ length: Math.max(0, Math.min(192, Math.floor(count))) }, (_, index) => ({
     id: `goldfish-${String(index + 1).padStart(3, "0")}`,
-    colourIndex: index % monochromeColours.length,
+    surfaceIndex: index,
     activeColour: monochromeColours[index % monochromeColours.length],
     cadenceMs: fieldConfig.cadenceMs[index % fieldConfig.cadenceMs.length],
     nextUpdateAt: 0,
@@ -34,13 +35,18 @@ export function advanceField(
     if (elapsed < phone.nextUpdateAt) return phone;
     changed = true;
     const sample = samples[index]!;
-    const colourIndex = (phone.colourIndex + 1) % monochromeColours.length;
+    const wasPresent = phone.activeColour !== null;
+    // Advance the surface only while it is already invisible. This prevents a
+    // visible keyword-to-keyword swap during a phone's entrance or exit.
+    const surfaceIndex = !wasPresent && sample.presence < settings.presenceProbability
+      ? (phone.surfaceIndex + 1) % (monochromeColours.length * techKeywords.length)
+      : phone.surfaceIndex;
     const activeColour = sample.presence < settings.presenceProbability
-      ? monochromeColours[colourIndex]
+      ? monochromeColours[surfaceIndex % monochromeColours.length]
       : null;
     const duration = phone.cadenceMs * (1 + (sample.dwell * 2 - 1) * fieldConfig.cadenceJitter) / settings.speed;
     const remaining = phone.nextUpdateAt === 0 ? 1 - sample.phase : 1;
-    return { ...phone, colourIndex, activeColour, nextUpdateAt: elapsed + duration * remaining };
+    return { ...phone, surfaceIndex, activeColour, nextUpdateAt: elapsed + duration * remaining };
   });
   return changed ? next : phones;
 }

@@ -3,6 +3,18 @@ export const monochromeColours = [
   "#1e88e5", "#3949ab", "#8e24aa", "#d81b60", "#6d4c41",
 ] as const;
 
+export const techKeywords = [
+  "Artificial Intelligence", "Augmented Reality", "Business Intelligence",
+  "Cloud Native Computing", "Computer Vision", "Continuous Delivery",
+  "Data Center", "Deep Learning", "Digital Twin", "Distributed Systems",
+  "Edge Computing", "Human Computer Interaction", "Machine Learning",
+  "Natural Language", "Neural Networks", "Prompt Engineering",
+  "Quantum Computing", "Robotic Process Automation", "Virtual Reality",
+  "Zero Trust Security", "Autonomous Decision Systems",
+] as const;
+
+export type SurfaceVariant = "colours" | "keywords" | "keyword-sentence";
+
 export const fieldConfig = {
   phoneCount: 90,
   minimumRows: 5,

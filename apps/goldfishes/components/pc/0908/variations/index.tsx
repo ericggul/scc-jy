@@ -1,18 +1,19 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { defaultSettings, fieldConfig, type FieldSettings } from "./model/config";
+import { defaultSettings, fieldConfig, type FieldSettings, type SurfaceVariant } from "./model/config";
 import { advanceField, createField } from "./model/field";
 import { fitPhoneGrid } from "./model/layout";
 import FieldControls from "./controls";
 import Phone from "./phone";
 import styles from "./phone-field.module.css";
 
-export default function MonochromeColours() {
+export default function PhoneVariations() {
   const stage = useRef<HTMLElement>(null);
   const elapsed = useRef(0);
   const [phones, setPhones] = useState(() => createField());
   const [settings, setSettings] = useState(defaultSettings);
+  const [surface, setSurface] = useState<SurfaceVariant>("colours");
   const [viewport, setViewport] = useState({ width: 0, height: 0 });
   const layout = fitPhoneGrid(viewport.width, viewport.height, phones.length, settings);
 
@@ -56,13 +57,13 @@ export default function MonochromeColours() {
   }
 
   return (
-    <main className={styles.field} aria-label="Monochrome colours">
+    <main className={styles.field} aria-label="Phone variations">
       <section className={styles.stage} ref={stage}>
         <div className={styles.grid} style={{ visibility: layout.width > 0 ? "visible" : "hidden", gridTemplateColumns: `repeat(${layout.columns}, ${layout.width}px)`, gridAutoRows: `${layout.height}px`, gap: layout.gap }}>
-          {phones.map((phone) => <Phone key={phone.id} phone={phone} width={layout.width} />)}
+          {phones.map((phone) => <Phone key={phone.id} phone={phone} surface={surface} width={layout.width} />)}
         </div>
       </section>
-      <FieldControls columns={layout.columns} onChange={onSetting} rows={Math.ceil(phones.length / layout.columns)} settings={settings} />
+      <FieldControls columns={layout.columns} onChange={onSetting} onSurfaceChange={setSurface} rows={Math.ceil(phones.length / layout.columns)} settings={settings} surface={surface} />
     </main>
   );
 }

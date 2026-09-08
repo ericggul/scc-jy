@@ -18,4 +18,3 @@ export function fitPhoneGrid(width: number, height: number, count: number, setti
   }
   return { ...best, width: best.width * settings.phoneScale, height: best.height * settings.phoneScale };
 }
-
