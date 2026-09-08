@@ -1,24 +1,31 @@
 # Goldfishes archive
 
-Code: `apps/goldfishes/components`; registry: `components/experiments.ts`. The registry is authoritative for routable experiments and archive navigation. `default` is the promoted baseline; dated routes are archival and must not be repurposed.
+Code: `apps/goldfishes/components/screen` and `apps/goldfishes/components/pc`; registry: `components/experiments.ts`. The registry is authoritative for routable experiments and archive navigation. `screen/default` is the promoted baseline; dated routes are archival and must not be repurposed.
 
 For a route change, read its document, the specific modules being changed, and the registry. Read [onboarding](./agent-onboarding.md) when creating or substantially changing a Goldfishes experiment; consult [history](./research-and-rendering-history.md) only for a relevant rendering, measurement, or historical-decision question.
 
 | Route | Date | Proposition |
 | --- | --- | --- |
-| `/default` | current | Orthographic 3D attention field. [doc](./default.md) |
-| `/2d/1` | retained | Glyph swarm and media cells. [doc](./2d/1.md) |
-| `/0804/tube` | 2026-08-04 | Stations are fixed attraction targets. [doc](./0804/tube.md) |
-| `/0804/html` | 2026-08-04 | Live HTML forms enter the attention loop. [doc](./0804/html.md) |
-| `/0804/node-edge` | 2026-08-04 | A revealed 3D topology is the field. [doc](./0804/node-edge.md) |
-| `/0804/pillars` | 2026-08-04 | Selected cells become symmetric pillars. [doc](./0804/pillars.md) |
-| `/0806/side-view` | 2026-08-06 | Pillars begin side-on. [doc](./0806/side-view.md) |
-| `/0806/compositional-grid` | 2026-08-06 | Selections seed local 2×2 media structures. [doc](./0806/compositional-grid.md) |
-| `/0806/duration` | 2026-08-06 | Clicks accumulate downward duration. [doc](./0806/duration.md) |
-| `/0806/temporal-decay` | 2026-08-06 | Traces freeze after a lifetime. [doc](./0806/temporal-decay.md) |
+| `/screen/default` | current | Orthographic 3D attention field. [doc](./default.md) |
+| `/screen/2d/1` | retained | Glyph swarm and media cells. [doc](./2d/1.md) |
+| `/screen/0804/tube` | 2026-08-04 | Stations are fixed attraction targets. [doc](./0804/tube.md) |
+| `/screen/0804/html` | 2026-08-04 | Live HTML forms enter the attention loop. [doc](./0804/html.md) |
+| `/screen/0804/node-edge` | 2026-08-04 | A revealed 3D topology is the field. [doc](./0804/node-edge.md) |
+| `/screen/0804/pillars` | 2026-08-04 | Selected cells become symmetric pillars. [doc](./0804/pillars.md) |
+| `/screen/0806/side-view` | 2026-08-06 | Pillars begin side-on. [doc](./0806/side-view.md) |
+| `/screen/0806/compositional-grid` | 2026-08-06 | Selections seed local 2×2 media structures. [doc](./0806/compositional-grid.md) |
+| `/screen/0806/duration` | 2026-08-06 | Clicks accumulate downward duration. [doc](./0806/duration.md) |
+| `/screen/0806/temporal-decay` | 2026-08-06 | Traces freeze after a lifetime. [doc](./0806/temporal-decay.md) |
+| `/screen/0908/aggregated` | 2026-09-08 | A 3D school attends the spreading Instagram/4 keyword field. [doc](./0908/aggregated.md) |
+| `/screen/0908/dots` | 2026-09-08 | Instagram/4 copied unchanged as an independent experiment. [doc](./0908/dots.md) |
+| `/screen/0908/overlay` | 2026-09-08 | Original DOM/SVG field with a transparent 3D school. [doc](./0908/overlay.md) |
+| `/screen/0908/overlay-2d` | 2026-09-08 | Original field with the Canvas2D goldfish glyph from 2d/1. [doc](./0908/overlay-2d.md) |
+| `/screen/0908/overlay-2d-2` | 2026-09-08 | Persistent individual goldfish trails replace influence edges. [doc](./0908/overlay-2d-2.md) |
+| `/pc/0908/default` | 2026-09-08 | Independent keyword-driven news phones, one per goldfish. [doc](./pc/0908/default.md) |
+| `/pc/0908/colours` | 2026-09-08 | Mobile phones displaying monochrome colours. [doc](./pc/0908/colours.md) |
 
 Each experiment is a complete local copy: no cross-experiment implementation or ledger imports. Existing public images may be addressed by URL; only immutable company logos are a shared collection (`public/assets/goldfishes/assets/company-logos`). Asset URLs must exist inside this independently deployed app; after changing a collection, run `pnpm audit:goldfishes-assets`.
 
-To add a trial, copy the nearest complete directory into `components/MMDD/short-name`, mutate only that copy, register its ISO date and concise proposition, and add a document recording question, mutation, invariants, result, and uncertainty. Re-open the registry and this index immediately before a surgical patch: parallel work is expected.
+To add a trial, copy the nearest complete directory into `components/{screen,pc}/MMDD/short-name`, mutate only that copy, register its ISO date and concise proposition, and record the essential decision and open question. Re-open the registry and this index immediately before a surgical patch: parallel work is expected.
 
-Legacy redirects remain: `/3d/1` → `/default`; `/3d/2`, `/0804/1` → `/0804/tube`; `/3d/3`, `/0804/2` → `/0804/pillars`. Goldfishes has no client Socket.IO protocol; add one only for a concrete experiment under `socket/experiments/<experiment>/` with its own prefix and room.
+Legacy URLs remain available as aliases: `/default`, `/2d/1`, and dated routes resolve to their `/screen/...` counterparts; `/3d/1` → `/screen/default`; `/3d/2`, `/0804/1` → `/screen/0804/tube`; `/3d/3`, `/0804/2` → `/screen/0804/pillars`. Goldfishes has no client Socket.IO protocol; add one only for a concrete experiment under `socket/experiments/<experiment>/` with its own prefix and room.

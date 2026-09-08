@@ -8,16 +8,20 @@ import {
   goldfishExperiments,
 } from "@/components/experiments";
 
-export const dynamicParams = false;
+// Newly registered experiments can arrive after the dev server cached static paths.
+// The registry lookup below remains the authority for unknown-path 404s.
+export const dynamicParams = true;
 
 export function generateStaticParams() {
   return [
     ...goldfishExperimentDateKeys.map((dateKey) => ({
       experiment: [dateKey],
     })),
-    ...goldfishExperiments.map((experiment) => ({
-      experiment: experiment.key.split("/"),
-    })),
+    ...goldfishExperiments.flatMap((experiment) =>
+      (experiment.legacyKeys ?? []).map((key) => ({
+        experiment: key.split("/"),
+      })),
+    ),
   ];
 }
 
@@ -58,7 +62,13 @@ export default async function GoldfishesExperimentPage({
 
   if (dateExperiments.length > 0) {
     const experiments = dateExperiments.map(
-      ({ key, section, date, phrase }) => ({ key, section, date, phrase }),
+      ({ key, area, section, date, phrase }) => ({
+        key,
+        area,
+        section,
+        date,
+        phrase,
+      }),
     );
 
     return (

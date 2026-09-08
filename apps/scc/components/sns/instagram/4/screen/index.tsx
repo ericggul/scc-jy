@@ -4,8 +4,11 @@ import type { CSSProperties } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   createSocialStorySystem,
+  maintainSocialStoryActivity,
+  resizeSocialStorySystem,
   stepSocialStorySystem,
 } from "../model/social-stories";
+import { loadSocialStorySystem, saveSocialStorySystem } from "../model/session";
 import { techKeywordAt } from "../model/tech-keywords";
 import type { StoryInfluence } from "../model/types";
 import styles from "./story-tray.module.css";
@@ -18,6 +21,7 @@ const DEFAULT_STORY_GAP = 26;
 const MAX_STORY_GAP = 80;
 const STORY_LABEL_HEIGHT = 28;
 const SIMULATION_STEP_MILLISECONDS = 210;
+const SESSION_STORAGE_KEY = "scc:instagram:4:stories:v1";
 
 type GridSize = {
   columns: number;
@@ -191,6 +195,9 @@ export function InstagramSocialStoryTray() {
   const [ringPaletteId, setRingPaletteId] = useState<StoryRingPalette["id"]>("instagram");
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
   const [system, setSystem] = useState(() => createSocialStorySystem(1, 1));
+  const systemRef = useRef(system);
+  const simulationTimeRef = useRef(0);
+  const [gridReady, setGridReady] = useState(false);
   const storyRowHeight = iconSize + (showLabels ? STORY_LABEL_HEIGHT : 0);
   const selectedRingPalette = storyRingPalettes.find((palette) => palette.id === ringPaletteId) ?? storyRingPalettes[0]!;
 
@@ -213,6 +220,7 @@ export function InstagramSocialStoryTray() {
       setGridSize((current) => (
         current.columns === nextGrid.columns && current.rows === nextGrid.rows ? current : nextGrid
       ));
+      setGridReady(true);
     };
 
     updateGridSize();
@@ -223,31 +231,72 @@ export function InstagramSocialStoryTray() {
   }, [iconSize, storyGap, storyRowHeight]);
 
   useEffect(() => {
-    let nextSystem = createSocialStorySystem(gridSize.columns, gridSize.rows, Date.now());
+    const stored = loadSocialStorySystem(SESSION_STORAGE_KEY);
+    if (!stored) return;
+    systemRef.current = stored.system;
+    simulationTimeRef.current = stored.time;
+    setSystem(stored.system);
+  }, []);
+
+  useEffect(() => {
+    if (!gridReady) return;
+    const nextSystem = resizeSocialStorySystem(
+      systemRef.current,
+      gridSize.columns,
+      gridSize.rows,
+      simulationTimeRef.current,
+    );
+    if (nextSystem === systemRef.current) return;
+    systemRef.current = nextSystem;
+    setSystem(nextSystem);
+    saveSocialStorySystem(SESSION_STORAGE_KEY, simulationTimeRef.current, nextSystem);
+  }, [gridReady, gridSize]);
+
+  useEffect(() => {
     let timer: number;
     let active = true;
+    let previous = performance.now();
+    let lastSaved = previous;
+
+    const persist = () => {
+      saveSocialStorySystem(SESSION_STORAGE_KEY, simulationTimeRef.current, systemRef.current);
+    };
+    const resetClock = () => { previous = performance.now(); };
 
     const scheduleStep = () => {
       timer = window.setTimeout(() => {
         if (!active) return;
+        const current = performance.now();
         if (document.visibilityState !== "hidden") {
-          nextSystem = stepSocialStorySystem(nextSystem, Date.now());
+          simulationTimeRef.current += Math.min(
+            SIMULATION_STEP_MILLISECONDS,
+            Math.max(0, current - previous),
+          );
+          let nextSystem = stepSocialStorySystem(systemRef.current, simulationTimeRef.current);
+          nextSystem = maintainSocialStoryActivity(nextSystem, simulationTimeRef.current);
+          systemRef.current = nextSystem;
           setSystem(nextSystem);
+          if (current - lastSaved >= 1000) {
+            persist();
+            lastSaved = current;
+          }
         }
+        previous = current;
         scheduleStep();
       }, SIMULATION_STEP_MILLISECONDS);
     };
 
-    timer = window.setTimeout(() => {
-      if (!active) return;
-      setSystem(nextSystem);
-      scheduleStep();
-    }, 0);
+    document.addEventListener("visibilitychange", resetClock);
+    window.addEventListener("pagehide", persist);
+    scheduleStep();
     return () => {
       active = false;
       window.clearTimeout(timer);
+      document.removeEventListener("visibilitychange", resetClock);
+      window.removeEventListener("pagehide", persist);
+      persist();
     };
-  }, [gridSize]);
+  }, []);
 
   const gridStyle = {
     "--grid-columns": gridSize.columns,

@@ -1,0 +1,22 @@
+import type { Metadata } from "next";
+import GoldfishesNavigation from "@/components/navigation";
+import { goldfishExperiments } from "@/components/experiments";
+
+export const metadata: Metadata = {
+  title: "goldfishes screen",
+  description: "Goldfishes screen experiments.",
+};
+
+export default function GoldfishesScreenIndexPage() {
+  const experiments = goldfishExperiments
+    .filter((experiment) => experiment.area === "screen")
+    .map(({ key, area, section, date, phrase }) => ({
+      key,
+      area,
+      section,
+      date,
+      phrase,
+    }));
+
+  return <GoldfishesNavigation experiments={experiments} scope="screen" />;
+}

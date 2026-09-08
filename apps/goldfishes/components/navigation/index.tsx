@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 export type NavigationExperiment = {
   key: string;
+  area: "screen" | "pc";
   section: "default" | "2d" | "dated";
   date: string | null;
   phrase: string;
@@ -18,9 +19,10 @@ type ExperimentGroup = {
 };
 
 function getExperimentName(key: string) {
-  if (key === "default") return "default";
-  if (key === "2d/1") return "2d";
-  return key.split("/").at(-1) ?? key;
+  const path = key.split("/");
+  if (path[1] === "default") return "default";
+  if (path[1] === "2d" && path[2] === "1") return "2d";
+  return path.at(-1) ?? key;
 }
 
 function getDateLabel(date: string) {
@@ -43,25 +45,42 @@ function groupExperiments(experiments: NavigationExperiment[]) {
     groups.push({ key: "formats", label: "formats", experiments: formats });
   }
 
-  const dates = Array.from(
+  const datedExperiments = experiments.filter(
+    (
+      experiment,
+    ): experiment is NavigationExperiment & { date: string } =>
+      experiment.section === "dated" && experiment.date !== null,
+  );
+  const areas = Array.from(
     new Set(
-      experiments
-        .map((experiment) => experiment.date)
-        .filter((date): date is string => date !== null),
+      datedExperiments.map((experiment) => experiment.area),
     ),
-  ).sort((first, second) => second.localeCompare(first));
+  );
+  const showAreaInDateLabel = areas.length > 1;
 
-  for (const date of dates) {
-    const dateExperiments = experiments
-      .filter((experiment) => experiment.date === date)
-      .sort((first, second) => first.key.localeCompare(second.key));
+  for (const area of areas) {
+    const dates = Array.from(
+      new Set(
+        datedExperiments
+          .filter((experiment) => experiment.area === area)
+          .map((experiment) => experiment.date),
+      ),
+    ).sort((first, second) => second.localeCompare(first));
 
-    groups.push({
-      key: date,
-      label: getDateLabel(date),
-      archiveKey: dateExperiments[0]?.key.split("/")[0],
-      experiments: dateExperiments,
-    });
+    for (const date of dates) {
+      const dateExperiments = datedExperiments
+        .filter(
+          (experiment) => experiment.area === area && experiment.date === date,
+        )
+        .sort((first, second) => first.key.localeCompare(second.key));
+
+      groups.push({
+        key: `${area}:${date}`,
+        label: showAreaInDateLabel ? `${area} / ${getDateLabel(date)}` : getDateLabel(date),
+        archiveKey: `${area}/${dateExperiments[0]?.key.split("/")[1]}`,
+        experiments: dateExperiments,
+      });
+    }
   }
 
   return groups;
@@ -70,9 +89,11 @@ function groupExperiments(experiments: NavigationExperiment[]) {
 export default function GoldfishesNavigation({
   experiments,
   archiveKey,
+  scope,
 }: {
   experiments: NavigationExperiment[];
   archiveKey?: string;
+  scope?: "screen" | "pc";
 }) {
   const [query, setQuery] = useState("");
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
@@ -161,7 +182,7 @@ export default function GoldfishesNavigation({
     <main className="min-h-screen bg-black text-white">
       <header className="sticky top-0 z-20 grid min-h-14 grid-cols-[auto_1fr_auto] items-center gap-4 bg-black px-4 sm:gap-8">
         <h1 className="flex items-center gap-2 text-[15px] font-semibold tracking-[-0.02em]">
-          {archiveKey ? (
+          {archiveKey || scope ? (
             <>
               <Link
                 href="/"
@@ -172,7 +193,7 @@ export default function GoldfishesNavigation({
               <span aria-hidden="true" className="text-white/25">
                 /
               </span>
-              <span>{archiveKey}</span>
+              <span>{archiveKey ?? scope}</span>
             </>
           ) : (
             "Goldfishes"
@@ -206,6 +227,18 @@ export default function GoldfishesNavigation({
           />
         </label>
         <div className="flex items-center gap-5 font-mono text-[10px] text-white/45">
+          <Link
+            href="/screen"
+            className="hover:text-white focus-visible:text-white focus-visible:outline-none"
+          >
+            screen
+          </Link>
+          <Link
+            href="/pc"
+            className="hover:text-white focus-visible:text-white focus-visible:outline-none"
+          >
+            pc
+          </Link>
           <span>{filteredExperiments.length} experiments</span>
           <span className="hidden lg:inline">J/K move · Enter open · Esc clear</span>
         </div>
