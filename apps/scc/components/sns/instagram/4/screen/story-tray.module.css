@@ -80,6 +80,13 @@
 
 .influencePathDirected {
   stroke-width: 2.3;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: influence-directed-trace 1200ms cubic-bezier(0.25, 0.7, 0.35, 1) both;
+}
+
+.influenceArrow {
+  animation: influence-arrow 1200ms cubic-bezier(0.25, 0.7, 0.35, 1) both;
 }
 
 .influenceTarget {
@@ -259,16 +266,16 @@
 
 .storyLabel {
   display: block;
-  overflow: hidden;
   width: 100%;
   margin-top: 4px;
   color: #f4f4f5;
-  font-size: clamp(10px, calc(var(--story-size) * 0.16), 15px);
+  font-size: clamp(7px, calc(var(--story-size) * 0.19), 12px);
   font-weight: 400;
-  letter-spacing: -0.02em;
-  line-height: 16px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  letter-spacing: -0.035em;
+  line-height: 1.14;
+  overflow-wrap: anywhere;
+  text-align: center;
+  white-space: normal;
   transition: opacity 150ms ease-out, transform 200ms ease-out;
 }
 
@@ -445,6 +452,11 @@
   stroke-width: 1.35px;
 }
 
+.techMark .techMarkThree {
+  font-size: 47px;
+  letter-spacing: -4.2px;
+}
+
 .generatedLogo {
   display: block;
   width: 64%;
@@ -455,6 +467,21 @@
   0% { opacity: 0; }
   12% { opacity: 0.98; }
   78% { opacity: 0.58; }
+  100% { opacity: 0; }
+}
+
+@keyframes influence-directed-trace {
+  0%, 11% { opacity: 0; stroke-dashoffset: 1; }
+  16% { opacity: 0.98; stroke-dashoffset: 1; }
+  56% { opacity: 0.98; stroke-dashoffset: 0; }
+  70% { opacity: 0.78; stroke-dashoffset: 0; }
+  100% { opacity: 0; stroke-dashoffset: -1; }
+}
+
+@keyframes influence-arrow {
+  0%, 50% { opacity: 0; }
+  57% { opacity: 0.98; }
+  92% { opacity: 0.78; }
   100% { opacity: 0; }
 }
 
@@ -476,6 +503,7 @@
   .storyRing::before,
   .logoSurface,
   .influencePath,
+  .influenceArrow,
   .influenceTarget {
     animation-duration: 0.01ms;
     transition-duration: 0.01ms;

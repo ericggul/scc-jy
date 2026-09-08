@@ -6,8 +6,8 @@ import {
   createSocialStorySystem,
   stepSocialStorySystem,
 } from "../model/social-stories";
+import { techKeywordAt } from "../model/tech-keywords";
 import type { StoryInfluence } from "../model/types";
-import { instagramStoryRows } from "../../1/model/data";
 import styles from "./story-tray.module.css";
 
 const REFERENCE_STORY_SIZE = 93;
@@ -16,7 +16,7 @@ const MIN_ICON_SIZE = 28;
 const MAX_ICON_SIZE = REFERENCE_STORY_SIZE;
 const DEFAULT_STORY_GAP = 26;
 const MAX_STORY_GAP = 80;
-const STORY_LABEL_HEIGHT = 20;
+const STORY_LABEL_HEIGHT = 28;
 const SIMULATION_STEP_MILLISECONDS = 210;
 
 type GridSize = {
@@ -29,14 +29,8 @@ type StageSize = {
   height: number;
 };
 
-type StorySurface = "empty" | "white" | "face" | "hangul" | "hanja" | "numbers" | "hieroglyph" | "logo" | "colour" | "paris" | "techMono" | "tech";
+type StorySurface = "techMono" | "tech";
 type EdgePresentation = "line" | "directed";
-
-type ParisLine = Readonly<{
-  label: string;
-  color: string;
-  textColor: string;
-}>;
 
 type StoryRingPalette = Readonly<{
   id: "instagram" | "rose" | "sunset" | "lilac" | "ocean" | "forest" | "citrus" | "ember" | "dusk" | "monochrome";
@@ -67,61 +61,7 @@ const surfaceOptions: readonly { label: string; value: StorySurface }[] = [
   { label: "tech mono", value: "techMono" },
   { label: "tech", value: "tech" },
 ];
-
-const humanFaceImages = instagramStoryRows.flat().map((story) => story.image);
-const hangulGlyphs = [
-  "한", "병", "책", "밤", "봄", "숲", "빛", "달", "별", "물", "집", "길",
-  "꿈", "눈", "말", "손", "방", "문", "창", "틈", "섬", "꽃", "잔", "술",
-  "차", "옷", "숨", "벽", "밥", "바", "개", "돌", "파", "선", "점", "면",
-  "결", "잎", "콩", "강", "산", "새", "달", "불", "비", "낮", "밤", "집",
-] as const;
-const hanjaGlyphs = [
-  // Ethical and philosophical concepts.
-  "德", "禮", "樂", "靜", "覺", "靈", "觀", "識", "護", "鑑", "願", "變",
-  "續", "緣", "論", "轉", "歸", "濟", "懷", "蘊", "禪", "釋", "讓", "遷",
-  // Cultural symbols and figurative motifs.
-  "藝", "醫", "藍", "蘭", "龍", "龜", "鶴", "鐘", "鐵", "鏡", "寶", "織",
-  "歷", "顧", "邊", "遺", "關", "讀", "齋", "翼", "麗", "穩", "鵬", "薰",
-] as const;
-const numberGlyphs = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"] as const;
-const hieroglyphs = [
-  "𓀀", "𓀁", "𓀂", "𓀃", "𓀅", "𓀇", "𓀉", "𓀊", "𓀋", "𓀍", "𓀏", "𓀑",
-  "𓀓", "𓀕", "𓀗", "𓀙", "𓀛", "𓀝", "𓀟", "𓀡", "𓀣", "𓀥", "𓀧", "𓀩",
-  "𓂀", "𓂁", "𓂂", "𓂃", "𓂅", "𓂇", "𓂉", "𓂋", "𓂍", "𓂏", "𓂑", "𓂓",
-  "𓃀", "𓃁", "𓃂", "𓃃", "𓃅", "𓃇", "𓃉", "𓃋", "𓃍", "𓃏", "𓃑", "𓃓",
-] as const;
-const generatedLogoPalette = ["#ef5b43", "#f2ba35", "#35b89d", "#3578e5", "#7957cc", "#1b1d20"] as const;
-const parisLines: readonly ParisLine[] = [
-  { label: "1", color: "#ffcd00", textColor: "#1a1d20" },
-  { label: "2", color: "#003ca6", textColor: "#fff" },
-  { label: "3", color: "#837902", textColor: "#fff" },
-  { label: "4", color: "#cf009e", textColor: "#fff" },
-  { label: "5", color: "#ff7e2e", textColor: "#1a1d20" },
-  { label: "6", color: "#6eca97", textColor: "#1a1d20" },
-  { label: "7", color: "#fa9aba", textColor: "#1a1d20" },
-  { label: "8", color: "#e19bdf", textColor: "#1a1d20" },
-  { label: "9", color: "#b6bd00", textColor: "#1a1d20" },
-  { label: "10", color: "#c9910d", textColor: "#1a1d20" },
-  { label: "11", color: "#704b1c", textColor: "#fff" },
-  { label: "12", color: "#007852", textColor: "#fff" },
-  { label: "13", color: "#6ec4e8", textColor: "#1a1d20" },
-  { label: "14", color: "#62259d", textColor: "#fff" },
-  { label: "A", color: "#e3051c", textColor: "#fff" },
-  { label: "B", color: "#5291ce", textColor: "#fff" },
-  { label: "C", color: "#ffce00", textColor: "#1a1d20" },
-  { label: "D", color: "#00a88f", textColor: "#fff" },
-  { label: "E", color: "#c04191", textColor: "#fff" },
-] as const;
-const techTerms = [
-  "AI", "AR", "AX", "BI", "BT", "CD", "CI", "CM", "CR", "CS", "CV", "CX",
-  "DB", "DC", "DL", "DM", "DR", "DS", "DT", "DX", "EC", "EM", "FE", "FI",
-  "FX", "GC", "GD", "HR", "IA", "IC", "ID", "IM", "IP", "IR", "IS", "IT",
-  "KB", "KR", "MA", "MB", "ML", "MR", "NC", "NG", "NL", "OA", "OK", "OM",
-  "OO", "OP", "OS", "OT", "PC", "PE", "PI", "PL", "PM", "PO", "PR", "PS",
-  "QA", "QC", "RD", "RE", "RF", "RL", "RM", "SA", "SC", "SD", "SE", "SI",
-  "SM", "SO", "SP", "SR", "SS", "ST", "SW", "TA", "TC", "TD", "TF", "TM",
-  "TP", "TS", "UI", "UX", "VC", "VM", "VR", "XR",
-] as const;
+const techSurfaceStyle: CSSProperties = { backgroundColor: "#242a2f" };
 const storyRingPalettes: readonly StoryRingPalette[] = [
   { id: "instagram", name: "Instagram", gradient: "conic-gradient(from 205deg, #fed044, #ff264f 30%, #ed0e9b 58%, #ff5e29 80%, #fed044)", edgeStart: "#ffbd5b", edgeMiddle: "#fa4aa5", edgeEnd: "#ffd06a" },
   { id: "rose", name: "Rose", gradient: "conic-gradient(from 205deg, #ffc990, #f45b99 30%, #bd4ab9 58%, #ee8a74 80%, #ffc990)", edgeStart: "#ffc49a", edgeMiddle: "#e95f9d", edgeEnd: "#ef9dbe" },
@@ -135,13 +75,13 @@ const storyRingPalettes: readonly StoryRingPalette[] = [
   { id: "monochrome", name: "Monochrome", gradient: "conic-gradient(from 205deg, #f3f5f6, #9199a0 30%, #4c555e 58%, #aeb5bb 80%, #f3f5f6)", edgeStart: "#d8dde0", edgeMiddle: "#8b949b", edgeEnd: "#f3f5f6" },
 ];
 const techPaletteGroups: readonly TechPaletteGroup[] = [
-  { paletteId: "instagram", terms: ["AX", "DX", "GD", "NG"] },
-  { paletteId: "lilac", terms: ["AI", "ML", "DL", "RL", "CV", "NL"] },
-  { paletteId: "ocean", terms: ["AR", "BI", "DB", "DC", "DM", "DS", "DT", "KB", "MR", "VR", "XR"] },
-  { paletteId: "forest", terms: ["CD", "CI", "CM", "CR", "QA", "QC", "RD", "RE", "SD", "SE", "SI", "SW"] },
-  { paletteId: "citrus", terms: ["FE", "IA", "IC", "ID", "IM", "IS", "IT", "NC", "OA", "OO", "OS", "OT", "PC", "UI", "UX"] },
-  { paletteId: "rose", terms: ["CS", "CX", "EM", "HR", "PR", "PS", "SA"] },
-  { paletteId: "sunset", terms: ["OM", "OP", "PL", "PM", "PO", "SM", "SO", "SP", "TA", "TC", "TD", "TM", "TP", "TS"] },
+  { paletteId: "instagram", terms: ["AX", "DX", "GD", "NG", "AGI", "GPT", "LLM", "RAG", "VLM"] },
+  { paletteId: "lilac", terms: ["AI", "ML", "DL", "RL", "CV", "NL", "GPU", "NLP", "NPU"] },
+  { paletteId: "ocean", terms: ["AR", "BI", "DB", "DC", "DM", "DS", "DT", "KB", "MR", "VR", "XR", "API", "CDN", "CLI", "IoT", "SDK"] },
+  { paletteId: "forest", terms: ["CD", "CI", "CM", "CR", "QA", "QC", "RD", "RE", "SD", "SE", "SI", "SW", "IDE", "RPA", "SRE"] },
+  { paletteId: "citrus", terms: ["FE", "IA", "IC", "ID", "IM", "IS", "IT", "NC", "OA", "OO", "OS", "OT", "PC", "UI", "UX", "KPI", "MVP"] },
+  { paletteId: "rose", terms: ["CS", "CX", "EM", "HR", "PR", "PS", "SA", "CRM", "ERP", "ESG"] },
+  { paletteId: "sunset", terms: ["OM", "OP", "PL", "PM", "PO", "SM", "SO", "SP", "TA", "TC", "TD", "TM", "TP", "TS", "DAO", "NFT"] },
   { paletteId: "dusk", terms: ["EC", "FI", "FX", "IR", "MA", "PE", "PI", "VC"] },
   { paletteId: "ember", terms: ["BT", "DR", "GC", "IP", "RF", "SC", "SS", "ST", "TF", "VM"] },
   { paletteId: "monochrome", terms: ["KR", "MB", "OK", "RM", "SR"] },
@@ -160,18 +100,6 @@ function getGridSize(
   };
 }
 
-function colourUnit(index: number, seed: number, salt: number) {
-  const value = Math.sin((index + 1) * (seed + salt * 19.73)) * 43758.5453123;
-  return value - Math.floor(value);
-}
-
-function colourFor(index: number, seed: number) {
-  const hue = Math.round(colourUnit(index, seed, 1) * 360);
-  const saturation = Math.round(52 + colourUnit(index, seed, 2) * 43);
-  const lightness = Math.round(33 + colourUnit(index, seed, 3) * 42);
-  return `hsl(${hue} ${saturation}% ${lightness}%)`;
-}
-
 function storyRingPaletteById(id: StoryRingPalette["id"]) {
   return storyRingPalettes.find((palette) => palette.id === id) ?? storyRingPalettes[0]!;
 }
@@ -182,84 +110,13 @@ function techPaletteForTerm(term: string) {
 }
 
 function techPaletteForIndex(index: number) {
-  return techPaletteForTerm(techTerms[index % techTerms.length]!);
-}
-
-function getSurfaceStyle(surface: StorySurface, index: number, colourSeed: number): CSSProperties {
-  if (surface === "empty" || surface === "hangul" || surface === "hanja" || surface === "numbers" || surface === "hieroglyph" || surface === "techMono" || surface === "tech") return { backgroundColor: "#242a2f" };
-  if (surface === "face") {
-    return {
-      backgroundColor: "#d7cec2",
-      backgroundImage: `url("${humanFaceImages[index % humanFaceImages.length]}")`,
-      backgroundSize: "cover",
-    };
-  }
-  if (surface === "logo") return { backgroundColor: "#f7f5ef" };
-  if (surface === "colour") {
-    return { backgroundColor: colourFor(index, colourSeed) };
-  }
-  if (surface === "paris") return { backgroundColor: parisLines[index % parisLines.length]!.color };
-  return { backgroundColor: "#fff" };
-}
-
-function isCharacterSurface(surface: StorySurface): surface is "hangul" | "hanja" | "numbers" | "hieroglyph" {
-  return surface === "hangul" || surface === "hanja" || surface === "numbers" || surface === "hieroglyph";
-}
-
-function getCharacterGlyph(surface: "hangul" | "hanja" | "numbers" | "hieroglyph", index: number) {
-  if (surface === "hangul") return hangulGlyphs[(index * 17 + 11) % hangulGlyphs.length]!;
-  if (surface === "hanja") return hanjaGlyphs[(index * 23 + 7) % hanjaGlyphs.length]!;
-  if (surface === "hieroglyph") return hieroglyphs[(index * 29 + 3) % hieroglyphs.length]!;
-  return numberGlyphs[index % numberGlyphs.length]!;
-}
-
-function GeneratedLogo({ index }: { index: number }) {
-  return (
-    <svg aria-hidden="true" className={styles.generatedLogo} viewBox="0 0 100 100">
-      {Array.from({ length: 5 }, (_, column) => {
-        const segmentCount = 2 + ((index * 7 + column * 5) % 3);
-        const offset = 10 + ((index * 11 + column * 3) % 4) * 4;
-
-        return Array.from({ length: segmentCount }, (_, segment) => {
-          const height = 12 + ((index + column * 2 + segment * 3) % 2) * 6;
-          const y = Math.min(78 - height, offset + segment * 20);
-          const color = generatedLogoPalette[(index * 13 + column * 3 + segment) % generatedLogoPalette.length]!;
-
-          return <rect fill={color} height={height} key={`logo-${column}-${segment}`} width="10" x={17 + column * 16} y={y} />;
-        });
-      })}
-    </svg>
-  );
-}
-
-function HieroglyphMark({ glyph }: { glyph: string }) {
-  return (
-    <svg aria-hidden="true" className={styles.hieroglyphMark} viewBox="0 0 100 100">
-      <text dominantBaseline="central" textAnchor="middle" x="50" y="50">{glyph}</text>
-    </svg>
-  );
-}
-
-function NumberMark({ glyph }: { glyph: string }) {
-  return (
-    <svg aria-hidden="true" className={styles.numberMark} viewBox="0 0 100 100">
-      <text dominantBaseline="central" textAnchor="middle" x="50" y="50">{glyph}</text>
-    </svg>
-  );
-}
-
-function ParisLineMark({ line }: { line: ParisLine }) {
-  return (
-    <svg aria-hidden="true" className={styles.parisLineMark} viewBox="0 0 100 100">
-      <text className={line.label.length > 1 ? styles.parisDoubleDigit : undefined} dominantBaseline="central" fill={line.textColor} textAnchor="middle" x="50" y="50">{line.label}</text>
-    </svg>
-  );
+  return techPaletteForTerm(techKeywordAt(index).abbreviation);
 }
 
 function TechMark({ term }: { term: string }) {
   return (
     <svg aria-hidden="true" className={styles.techMark} viewBox="0 0 100 100">
-      <text dominantBaseline="central" textAnchor="middle" x="50" y="50">{term}</text>
+      <text className={term.length === 3 ? styles.techMarkThree : undefined} dominantBaseline="central" textAnchor="middle" x="50" y="50">{term}</text>
     </svg>
   );
 }
@@ -331,7 +188,6 @@ export function InstagramSocialStoryTray() {
   const [iconSize, setIconSize] = useState(DEFAULT_ICON_SIZE);
   const [storyGap, setStoryGap] = useState(DEFAULT_STORY_GAP);
   const [showLabels, setShowLabels] = useState(false);
-  const [colourSeed] = useState(() => Math.random() * 100000);
   const [ringPaletteId, setRingPaletteId] = useState<StoryRingPalette["id"]>("instagram");
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
   const [system, setSystem] = useState(() => createSocialStorySystem(1, 1));
@@ -437,7 +293,7 @@ export function InstagramSocialStoryTray() {
 
                 return (
                   <marker id={`influence-arrow-${influence.id}`} key={`influence-arrow-${influence.id}`} markerHeight="8" markerUnits="userSpaceOnUse" markerWidth="8" orient="auto" refX="7" refY="4" viewBox="0 0 8 8">
-                    <path d="M 0 0 L 8 4 L 0 8 z" fill={targetPalette.edgeMiddle} />
+                    <path className={styles.influenceArrow} d="M 0 0 L 8 4 L 0 8 z" fill={targetPalette.edgeMiddle} />
                   </marker>
                 );
               }) : null}
@@ -453,6 +309,7 @@ export function InstagramSocialStoryTray() {
         <ul className={styles.storyGrid} ref={gridRef} style={gridStyle}>
           {system.nodes.map((story) => {
             const storyState = system.states[story.index];
+            const techKeyword = techKeywordAt(story.index);
             const isEmpty = storyState?.status === "empty";
             const isNew = storyState?.status === "new";
             const isViewing = storyState?.status === "viewing";
@@ -464,18 +321,13 @@ export function InstagramSocialStoryTray() {
                   <span className={`${styles.storyRing} ${isNew ? styles.storyRingNew : isViewing ? styles.storyRingViewing : styles.storyRingPlain}`} style={testSurface === "tech" ? { "--story-ring-gradient": techPaletteForIndex(story.index).gradient } as CSSProperties : undefined}>
                     <span
                       aria-hidden="true"
-                      className={`${styles.logoSurface} ${isCharacterSurface(testSurface) || testSurface === "logo" || testSurface === "paris" || testSurface === "techMono" || testSurface === "tech" ? styles.centeredSurface : ""} ${testSurface === "face" ? styles.monochromeFace : ""}`}
-                      style={getSurfaceStyle(testSurface, story.index, colourSeed)}
+                      className={`${styles.logoSurface} ${styles.centeredSurface}`}
+                      style={techSurfaceStyle}
                     >
-                      {testSurface === "logo" ? <GeneratedLogo index={story.index} /> : null}
-                      {testSurface === "hieroglyph" ? <HieroglyphMark glyph={getCharacterGlyph(testSurface, story.index)} /> : null}
-                      {testSurface === "numbers" ? <NumberMark glyph={getCharacterGlyph(testSurface, story.index)} /> : null}
-                      {testSurface === "paris" ? <ParisLineMark line={parisLines[story.index % parisLines.length]!} /> : null}
-                      {testSurface === "techMono" || testSurface === "tech" ? <TechMark term={techTerms[story.index % techTerms.length]!} /> : null}
-                      {isCharacterSurface(testSurface) && testSurface !== "hieroglyph" && testSurface !== "numbers" ? <span className={`${styles.characterGlyph} ${testSurface === "hanja" ? styles.hanjaGlyph : ""}`}>{getCharacterGlyph(testSurface, story.index)}</span> : null}
+                      <TechMark term={techKeyword.abbreviation} />
                     </span>
                   </span>
-                  {showLabels ? <span className={styles.storyLabel}>{story.handle}</span> : null}
+                  {showLabels ? <span className={styles.storyLabel}>{techKeyword.text}</span> : null}
                 </span>
               </li>
             );

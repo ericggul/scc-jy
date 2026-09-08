@@ -6,13 +6,6 @@ import type {
   StoryTie,
 } from "./types";
 
-const HANDLES = [
-  "han.jiwon", "miso.archive", "yumi__o", "haeun.k", "siwoo.film", "eunchae.jpg",
-  "leena.seo", "noah.kim", "yeoreum", "dohee.cho", "jinseoul", "sora__lee",
-  "maeul.diary", "haneulpark", "riaonfilm", "jaeonfilm", "mina.park", "bora.archive",
-  "do__not", "aeri.lee", "june.after", "nari.zip", "seoyeon.k", "sori.cho",
-] as const;
-
 const DIRECT_TRANSMISSION_CHANCE = 0.985;
 const MAX_VISIBLE_INFLUENCES = 120;
 const VIEW_EVENT_RATE = 0.24;
@@ -230,7 +223,6 @@ export function createSocialStorySystem(
   const nodes: StoryNode[] = Array.from({ length: columns * rows }, (_, index) => ({
     id: `story-${index + 1}`,
     index,
-    handle: HANDLES[index % HANDLES.length]!,
   }));
   let randomSeed = 0x7d35a2c1;
   const states: StoryCellState[] = [];

@@ -3,7 +3,6 @@ export type StoryStatus = "empty" | "new" | "viewing" | "leaving";
 export type StoryNode = Readonly<{
   id: string;
   index: number;
-  handle: string;
 }>;
 
 export type StoryCellState = Readonly<{
