@@ -77,9 +77,17 @@ export default function ChessOne() {
   const promotionRef = useRef<HTMLButtonElement>(null);
   const status = useMemo(() => gameStatus(game), [game]);
   const moves = useMemo(() => status.kind === "playing" ? legalMoves(game) : [], [game, status.kind]);
-  const relationMoves = useMemo(() => status.kind === "playing" ? legalMoves(game) : [], [game, status.kind]);
+  const relationMoves = useMemo(() => {
+    const seen = new Set<string>();
+    return [...legalMovesForColor(game, "w"), ...legalMovesForColor(game, "b")].filter((move) => {
+      const key = `${move.from}:${move.to}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [game]);
   const allAttacks = useMemo(() => emptyAttacks(game), [game]);
-  const attacks = useMemo(() => allAttacks.filter((attack) => attack.color === game.turn), [allAttacks, game.turn]);
+  const attacks = allAttacks;
   const ended = status.kind !== "playing";
   const teamSummaries = useMemo(() => teams.map((color) => {
     const candidates = legalMovesForColor(game, color);

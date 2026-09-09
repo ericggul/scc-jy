@@ -4,8 +4,16 @@ set -euo pipefail
 SCRIPT_DIR=$(cd "$(dirname "$0")/.." && pwd)
 CERT_DIR="$SCRIPT_DIR/certificates"
 
-LOCAL_HOSTNAME=$(scutil --get LocalHostName 2>/dev/null || hostname -s)
-DEFAULT_CERT_HOSTNAME=$(printf "%s.local" "$LOCAL_HOSTNAME" | tr '[:upper:]' '[:lower:]')
+# macOS may autonomously suffix LocalHostName when a nearby machine advertises
+# the same mDNS name. A deliberately configured HostName is the stable local
+# development address, so prefer it when present.
+CONFIGURED_HOSTNAME=$(scutil --get HostName 2>/dev/null || true)
+if [ -n "$CONFIGURED_HOSTNAME" ]; then
+  DEFAULT_CERT_HOSTNAME=$(printf "%s" "$CONFIGURED_HOSTNAME" | tr '[:upper:]' '[:lower:]')
+else
+  LOCAL_HOSTNAME=$(scutil --get LocalHostName 2>/dev/null || hostname -s)
+  DEFAULT_CERT_HOSTNAME=$(printf "%s.local" "$LOCAL_HOSTNAME" | tr '[:upper:]' '[:lower:]')
+fi
 CERT_HOSTNAME=${CERT_HOSTNAME:-"$DEFAULT_CERT_HOSTNAME"}
 SHORT_HOSTNAME=${CERT_HOSTNAME%.local}
 

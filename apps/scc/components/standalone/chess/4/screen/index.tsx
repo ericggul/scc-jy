@@ -5,14 +5,46 @@ import { chooseMove, createGame, emptyAttacks, gameStatus, legalMoves, legalMove
 import { motionTiming, RELATION_ARCHIVE_OPACITY } from "./motion";
 import ChessPiece from "./piece";
 import styles from "./chess.module.css";
-import TwistedBoard from "./twisted-board";
 
 const names = { p: "pawn", n: "knight", b: "bishop", r: "rook", q: "queen", k: "king" };
 const squares = Array.from({ length: 64 }, (_, square) => square);
 const drawNames = { "threefold-repetition": "Threefold repetition", "fifty-move": "Fifty-move rule", "insufficient-material": "Insufficient material" };
 type EdgeShape = "straight" | "cubic";
-type PieceMotion = { id: number; from: number; to: number; piece: Piece; index: number; label: string; duration: number; potential: number[]; startedAt: number };
+type PieceMotion = { id: number; from: number; to: number; piece: Piece; index: number; label: string; duration: number; potential: number[] };
 type RelationSnapshot = { id: number; attacks: ReturnType<typeof emptyAttacks>; moves: Move[] };
+type BoardConfig = {
+  aggregateEnabled: boolean;
+  darkMode: boolean;
+  delay: number;
+  edgeLabelsVisible: boolean;
+  edgeShape: EdgeShape;
+  pieceTextVisible: boolean;
+  running: boolean;
+};
+
+type ParallelLayout = { columns: number; rows: number; strokeScale: number; tile: number };
+
+function useParallelLayout(): ParallelLayout {
+  const [viewport, setViewport] = useState({ width: 1440, height: 900 });
+  useEffect(() => {
+    const update = () => setViewport({ width: window.innerWidth, height: window.innerHeight });
+    update();
+    window.addEventListener("resize", update, { passive: true });
+    return () => window.removeEventListener("resize", update);
+  }, []);
+  const target = Math.max(1, Math.min(viewport.width, viewport.height) * 0.48);
+  const columns = Math.max(1, Math.round(viewport.width / target));
+  const rows = Math.max(1, Math.round(viewport.height / target));
+  const tile = Math.ceil(Math.max(viewport.width / columns, viewport.height / rows));
+  return { columns, rows, strokeScale: Math.max(0.45, Math.min(1.2, tile / (Math.min(viewport.width, viewport.height) * 0.9))), tile };
+}
+
+function chooseBoardMove(game: ReturnType<typeof createGame>, slot: number) {
+  const preferred = chooseMove(game);
+  if (slot === 0 || !preferred) return preferred;
+  const candidates = legalMoves(game);
+  return candidates[(game.history.length * 3 + slot * 11) % candidates.length] ?? preferred;
+}
 
 function allRelationMoves(game: ReturnType<typeof createGame>) {
   const seen = new Set<string>();
@@ -216,19 +248,11 @@ function MotionFade({ children, onComplete }: { children: ReactNode; onComplete?
   }}>{children}</div></div>;
 }
 
-export default function ChessOne() {
+function ChessBoard({ config, slot, strokeScale }: { config: BoardConfig; slot: number; strokeScale: number }) {
+  const { aggregateEnabled, darkMode, delay, edgeLabelsVisible, edgeShape, pieceTextVisible, running } = config;
   const [game, setGame] = useState(createGame);
-  const [mode] = useState<"watch" | "play">("watch");
-  const [running, setRunning] = useState(true);
-  const [delay, setDelay] = useState(100);
-  const [boardSize, setBoardSize] = useState(90);
-  const [edgeShape, setEdgeShape] = useState<EdgeShape>("cubic");
-  const [controlsOpen, setControlsOpen] = useState(false);
-  const [edgeLabelsVisible, setEdgeLabelsVisible] = useState(false);
-  const [pieceTextVisible, setPieceTextVisible] = useState(false);
-  const [aggregateEnabled, setAggregateEnabled] = useState(false);
+  const [ready, setReady] = useState(slot === 0);
   const [relationArchive, setRelationArchive] = useState<RelationSnapshot[]>([]);
-  const [darkMode, setDarkMode] = useState(false);
   const flipped = false;
   const [selected, setSelected] = useState<number | null>(null);
   const [promotion, setPromotion] = useState<Move[] | null>(null);
@@ -279,7 +303,7 @@ export default function ChessOne() {
   const detail = status.kind === "checkmate" ? "Checkmate"
     : status.kind === "draw" ? drawNames[status.reason]
     : status.kind === "stalemate" ? "No legal moves"
-    : status.check ? "Check" : `Move ${game.fullmoveNumber} · ${mode === "play" ? "Two players" : running ? "Playing" : "Paused"}`;
+    : status.check ? "Check" : `Move ${game.fullmoveNumber} · ${running ? "Playing" : "Paused"}`;
 
   const playWithMotion = useCallback((move: Move) => {
     const piece = game.board[move.from];
@@ -288,12 +312,18 @@ export default function ChessOne() {
     const duration = delay;
     const id = ++motionId.current;
     setRelationArchive((archive) => [...archive, { id, game, attacks: emptyAttacks(game), moves: allRelationMoves(game) }]);
-    setPieceMotion({ id, from: move.from, to: move.to, piece, index, label: pieceLabel(game, move.from), duration, potential: potentialTargets(piece, move.from), startedAt: performance.now() });
+    setPieceMotion({ id, from: move.from, to: move.to, piece, index, label: pieceLabel(game, move.from), duration, potential: potentialTargets(piece, move.from) });
     setGame(playMove(game, move));
   }, [delay, game]);
 
   useEffect(() => {
-    if (!running || mode !== "watch" || pieceMotion) return;
+    if (slot === 0) return;
+    const timer = window.setTimeout(() => setReady(true), slot * 45);
+    return () => window.clearTimeout(timer);
+  }, [slot]);
+
+  useEffect(() => {
+    if (!ready || !running || pieceMotion) return;
     if (ended) {
       const timer = window.setTimeout(() => {
         setGame(createGame());
@@ -304,25 +334,39 @@ export default function ChessOne() {
       return () => window.clearTimeout(timer);
     }
     const timer = window.setTimeout(() => {
-      const move = chooseMove(game);
+      const move = chooseBoardMove(game, slot);
       if (move) playWithMotion(move);
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [game, running, delay, mode, ended, pieceMotion, playWithMotion]);
+  }, [game, ready, running, delay, ended, pieceMotion, playWithMotion, slot]);
+
+  useEffect(() => {
+    if (!pieceMotion) return;
+    const id = pieceMotion.id;
+    const timer = window.setTimeout(() => {
+      setPieceMotion((current) => current?.id === id ? null : current);
+    }, pieceMotion.duration + 32);
+    return () => window.clearTimeout(timer);
+  }, [pieceMotion]);
 
   useEffect(() => {
     if (promotion) promotionRef.current?.focus();
   }, [promotion]);
 
   useEffect(() => {
+    if (!aggregateEnabled) return;
     const board = boardRef.current;
     if (!board) return;
     const observer = new ResizeObserver(() => setArchiveViewportVersion((version) => version + 1));
     observer.observe(board);
     return () => observer.disconnect();
-  }, []);
+  }, [aggregateEnabled]);
 
   useEffect(() => {
+    if (!aggregateEnabled) {
+      archiveRender.current = { count: 0, signature: "" };
+      return;
+    }
     const canvas = archiveCanvasRef.current;
     if (!canvas) return;
     const bounds = canvas.getBoundingClientRect();
@@ -345,11 +389,11 @@ export default function ChessOne() {
     const ink = darkMode ? "#fff" : "#111";
     const attack = darkMode ? "#ff1838" : "#b4232d";
     for (const snapshot of relationArchive.slice(archiveRender.current.count)) {
-      for (const relation of snapshot.attacks) drawArchivedRelation(context, relation.from, relation.to, edgeShape, attack, RELATION_ARCHIVE_OPACITY * 0.72, 1.25, cell);
-      for (const relation of snapshot.moves) drawArchivedRelation(context, relation.from, relation.to, edgeShape, ink, RELATION_ARCHIVE_OPACITY * 0.88, 1.75, cell);
+      for (const relation of snapshot.attacks) drawArchivedRelation(context, relation.from, relation.to, edgeShape, attack, RELATION_ARCHIVE_OPACITY * 0.72, 1.25 * strokeScale, cell);
+      for (const relation of snapshot.moves) drawArchivedRelation(context, relation.from, relation.to, edgeShape, ink, RELATION_ARCHIVE_OPACITY * 0.88, 1.75 * strokeScale, cell);
     }
     archiveRender.current.count = relationArchive.length;
-  }, [archiveViewportVersion, darkMode, edgeShape, relationArchive]);
+  }, [aggregateEnabled, archiveViewportVersion, darkMode, edgeShape, relationArchive, strokeScale]);
 
   function commit(move: Move) {
     playWithMotion(move);
@@ -364,7 +408,7 @@ export default function ChessOne() {
   }
 
   function selectSquare(square: number) {
-    if (mode !== "play" || ended || promotion) return;
+    if (ended || promotion) return;
     const candidates = available.filter((move) => move.to === square);
     if (candidates.length > 1) { setPromotion(candidates); return; }
     if (candidates.length === 1) { commit(candidates[0]); return; }
@@ -386,18 +430,13 @@ export default function ChessOne() {
     squareRefs.current[visibleSquares[next]]?.focus();
   }
 
-  function reset() {
-    setGame(createGame()); setRunning(true); setSelected(null); setPromotion(null); setPieceMotion(null); setRelationArchive([]);
-  }
-
   return (
-    <main className={styles.page} aria-label="Chess simulation" data-space="twisted" data-theme={darkMode ? "dark" : "light"}>
-      <div className={styles.surface} style={{ "--board-size": `${boardSize}vmin` } as CSSProperties}>
+    <section className={styles.page} aria-label={`Chess simulation ${slot + 1}`} data-grid-board="true" data-slot={slot} data-theme={darkMode ? "dark" : "light"} style={{ "--attack-stroke": `${1.25 * strokeScale}px`, "--grid-stroke": `${Math.max(0.6, strokeScale)}px`, "--move-stroke": `${1.75 * strokeScale}px` } as CSSProperties}>
+      <div className={styles.surface}>
         <div className={styles.srOnly} aria-live="polite" aria-atomic="true">{headline}. {detail}</div>
         <div className={styles.board} ref={boardRef}>
-            <TwistedBoard aggregateEnabled={aggregateEnabled} archive={relationArchive} attacks={attacks} darkMode={darkMode} edgeLabelsVisible={edgeLabelsVisible} edgeShape={edgeShape} game={game} motion={pieceMotion} onMotionFinish={finishMotion} pieceTextVisible={pieceTextVisible} relationMoves={relationMoves} />
             <canvas aria-hidden="true" className={styles.aggregateCanvas} data-visible={aggregateEnabled} ref={archiveCanvasRef} />
-            <RelationLayer attacks={attacks} edgeShape={edgeShape} excludeFrom={pieceMotion?.to} flipped={flipped} game={game} id="base" labelsVisible={edgeLabelsVisible} relationMoves={relationMoves} />
+            <RelationLayer attacks={attacks} edgeShape={edgeShape} excludeFrom={pieceMotion?.to} flipped={flipped} game={game} id={`base-${slot}`} labelsVisible={edgeLabelsVisible} relationMoves={relationMoves} />
             <div className={styles.squares} role="group" aria-label="Chessboard. Use arrow keys to navigate, Enter to select a piece and destination.">
               {visibleSquares.map((square) => {
                 const piece = game.board[square];
@@ -427,15 +466,15 @@ export default function ChessOne() {
               })}
             </div>
             {pieceMotion && <>
-              <MotionPotentialLayer edgeShape={edgeShape} flipped={flipped} id={`potential-${pieceMotion.id}`} labelsVisible={edgeLabelsVisible} motion={pieceMotion} />
+              <MotionPotentialLayer edgeShape={edgeShape} flipped={flipped} id={`potential-${slot}-${pieceMotion.id}`} labelsVisible={edgeLabelsVisible} motion={pieceMotion} />
               <div aria-hidden="true" className={styles.motionTrack} style={motionStyle}>
                 <MotionFade onComplete={() => finishMotion(pieceMotion.id)}><div className={styles.motionCell} /></MotionFade>
               </div>
               <div aria-hidden="true" className={styles.differenceRelations} style={motionWindowStyle}>
-                <MotionFade><RelationLayer attacks={attacks} edgeShape={edgeShape} excludeFrom={pieceMotion.to} flipped={flipped} game={game} id={`difference-${pieceMotion.id}`} labelsVisible={edgeLabelsVisible} relationMoves={relationMoves} /></MotionFade>
+                <MotionFade><RelationLayer attacks={attacks} edgeShape={edgeShape} excludeFrom={pieceMotion.to} flipped={flipped} game={game} id={`difference-${slot}-${pieceMotion.id}`} labelsVisible={edgeLabelsVisible} relationMoves={relationMoves} /></MotionFade>
               </div>
               <div aria-hidden="true" className={styles.differenceMotionRelations} style={motionWindowStyle}>
-                <MotionPotentialLayer edgeShape={edgeShape} flipped={flipped} id={`potential-difference-${pieceMotion.id}`} labelsVisible={edgeLabelsVisible} motion={pieceMotion} />
+                <MotionPotentialLayer edgeShape={edgeShape} flipped={flipped} id={`potential-difference-${slot}-${pieceMotion.id}`} labelsVisible={edgeLabelsVisible} motion={pieceMotion} />
               </div>
               {pieceTextVisible && <div key={pieceMotion.id} aria-hidden="true" className={styles.motionTrack} style={motionStyle}><MotionFade><div className={styles.motionPiece}><ChessPiece index={pieceMotion.index} piece={pieceMotion.piece} /></div></MotionFade></div>}
             </>}
@@ -448,43 +487,56 @@ export default function ChessOne() {
           </div>
         {ended && <p className={styles.result}>{headline}</p>}
       </div>
-      <div className={styles.controls}>
-        <section className={styles.controlPanel} id="chess-parameters" aria-label="Chess parameters" hidden={!controlsOpen}>
-          <div className={styles.controlActions}>
-            <div className={styles.actions}>
-              <button aria-pressed={edgeShape === "straight"} onClick={() => setEdgeShape("straight")}>straight</button>
-              <button aria-pressed={edgeShape === "cubic"} onClick={() => setEdgeShape("cubic")}>cubic</button>
-              <button aria-pressed={edgeLabelsVisible} onClick={() => setEdgeLabelsVisible(!edgeLabelsVisible)}>edge label</button>
-              <button aria-pressed={pieceTextVisible} onClick={() => setPieceTextVisible(!pieceTextVisible)}>piece text</button>
-              <button aria-pressed={aggregateEnabled} onClick={() => setAggregateEnabled(!aggregateEnabled)}>aggregate</button>
-              <button aria-pressed={darkMode} onClick={() => setDarkMode(!darkMode)}>dark</button>
-            </div>
-            <label className={styles.parameter}>
-              <span>pace</span>
-              <input aria-label="Seconds between moves" type="range" min="50" max="500" step="50" value={delay} onChange={(event) => setDelay(Number(event.currentTarget.value))} />
-              <output>{(delay / 1000).toFixed(delay % 100 === 0 ? 1 : 2)}s</output>
-            </label>
-            <label className={styles.parameter}>
-              <span>size</span>
-              <input aria-label="Board size" type="range" min="40" max="90" step="1" value={boardSize} onChange={(event) => setBoardSize(Number(event.currentTarget.value))} />
-              <output>{boardSize}%</output>
-            </label>
-          </div>
-          <div className={styles.actions}>
-            <button disabled={ended} onClick={() => setRunning(!running)}>{running && !ended ? "pause" : "start"}</button>
-            <button disabled={running || ended} onClick={() => { const move = chooseMove(game); if (move) playWithMotion(move); }}>step</button>
-            <button onClick={reset}>reset</button>
-            <details className={styles.history}>
-              <summary>moves</summary>
-              <div className={styles.moves} role="region" aria-label="Move history" tabIndex={0}>
-                {game.history.length === 0 && <span>—</span>}
-                {game.history.map((notation, ply) => ply % 2 === 0 && <div key={`move-${ply / 2 + 1}`} className={styles.moveRow}><span>{ply / 2 + 1}.</span><span>{notation}</span><span>{game.history[ply + 1] ?? ""}</span></div>)}
-              </div>
-            </details>
-          </div>
-        </section>
-        <button className={styles.expandButton} aria-controls="chess-parameters" aria-expanded={controlsOpen} onClick={() => setControlsOpen(!controlsOpen)}>{controlsOpen ? "collapse" : "expand"}</button>
-      </div>
-    </main>
+    </section>
   );
+}
+
+export default function ChessFour() {
+  const layout = useParallelLayout();
+  const [running, setRunning] = useState(true);
+  const [delay, setDelay] = useState(100);
+  const [edgeShape, setEdgeShape] = useState<EdgeShape>("cubic");
+  const [controlsOpen, setControlsOpen] = useState(false);
+  const [edgeLabelsVisible, setEdgeLabelsVisible] = useState(false);
+  const [pieceTextVisible, setPieceTextVisible] = useState(false);
+  const [aggregateEnabled, setAggregateEnabled] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
+  const [resetVersion, setResetVersion] = useState(0);
+  const config: BoardConfig = { aggregateEnabled, darkMode, delay, edgeLabelsVisible, edgeShape, pieceTextVisible, running };
+  const fieldStyle = {
+    gridTemplateColumns: `repeat(${layout.columns}, ${layout.tile}px)`,
+    gridAutoRows: `${layout.tile}px`,
+    width: `${layout.columns * layout.tile}px`,
+    height: `${layout.rows * layout.tile}px`,
+  } as CSSProperties;
+
+  return <main className={styles.multiPage} aria-label="Independent chess simulations" data-theme={darkMode ? "dark" : "light"}>
+    <div className={styles.tileField} style={fieldStyle}>
+      {Array.from({ length: layout.columns * layout.rows }, (_, slot) => <ChessBoard config={config} key={`${resetVersion}-${slot}`} slot={slot} strokeScale={layout.strokeScale} />)}
+    </div>
+    <div className={styles.controls}>
+      <section className={styles.controlPanel} id="chess-4-parameters" aria-label="Parallel chess parameters" hidden={!controlsOpen}>
+        <div className={styles.controlActions}>
+          <div className={styles.actions}>
+            <button aria-pressed={edgeShape === "straight"} onClick={() => setEdgeShape("straight")}>straight</button>
+            <button aria-pressed={edgeShape === "cubic"} onClick={() => setEdgeShape("cubic")}>cubic</button>
+            <button aria-pressed={edgeLabelsVisible} onClick={() => setEdgeLabelsVisible(!edgeLabelsVisible)}>edge label</button>
+            <button aria-pressed={pieceTextVisible} onClick={() => setPieceTextVisible(!pieceTextVisible)}>piece text</button>
+            <button aria-pressed={aggregateEnabled} onClick={() => setAggregateEnabled(!aggregateEnabled)}>aggregate</button>
+            <button aria-pressed={darkMode} onClick={() => setDarkMode(!darkMode)}>dark</button>
+          </div>
+          <label className={styles.parameter}>
+            <span>pace</span>
+            <input aria-label="Seconds between moves" type="range" min="50" max="500" step="50" value={delay} onChange={(event) => setDelay(Number(event.currentTarget.value))} />
+            <output>{(delay / 1000).toFixed(delay % 100 === 0 ? 1 : 2)}s</output>
+          </label>
+        </div>
+        <div className={styles.actions}>
+          <button onClick={() => setRunning(!running)}>{running ? "pause" : "start"}</button>
+          <button onClick={() => setResetVersion((value) => value + 1)}>reset</button>
+        </div>
+      </section>
+      <button className={styles.expandButton} aria-controls="chess-4-parameters" aria-expanded={controlsOpen} onClick={() => setControlsOpen(!controlsOpen)}>{controlsOpen ? "collapse" : "expand"}</button>
+    </div>
+  </main>;
 }
