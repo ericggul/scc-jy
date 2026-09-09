@@ -13,7 +13,7 @@ export const techKeywords = [
   "Zero Trust Security", "Autonomous Decision Systems",
 ] as const;
 
-export type SurfaceVariant = "colours" | "keywords" | "keyword-sentence";
+export type SurfaceVariant = "colours" | "keywords" | "keyword-sentence" | "google";
 
 export const fieldConfig = {
   phoneCount: 90,

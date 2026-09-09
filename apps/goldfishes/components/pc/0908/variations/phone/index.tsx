@@ -3,6 +3,7 @@ import { fieldConfig, type SurfaceVariant } from "../model/config";
 import type { FishPhone } from "../model/field";
 import { keywordSentenceAt } from "../model/keyword-sentences";
 import styles from "../phone-field.module.css";
+import GoogleMobile from "./google-mobile";
 
 export default memo(function Phone({ phone, surface, width }: { phone: FishPhone; surface: SurfaceVariant; width: number }) {
   const keywordSentence = keywordSentenceAt(phone.surfaceIndex);
@@ -22,18 +23,16 @@ export default memo(function Phone({ phone, surface, width }: { phone: FishPhone
           transform: `scale(${width / fieldConfig.phoneWidth})`,
         }}
       >
-        {surface === "colours" ? (
-          <div className={styles.colour} style={{ backgroundColor: phone.activeColour ?? "transparent" }}>
-            <span aria-hidden="true" className={styles.camera} />
-          </div>
+        {surface === "google" ? (
+          <GoogleMobile surfaceIndex={phone.surfaceIndex} />
+        ) : surface === "colours" ? (
+          <div className={styles.colour} style={{ backgroundColor: phone.activeColour ?? "transparent" }} />
         ) : surface === "keywords" ? (
           <div className={styles.keywordSurface}>
-            <span aria-hidden="true" className={styles.camera} />
             <span className={styles.keyword}>{keywordSentence.keyword}</span>
           </div>
         ) : (
           <div className={styles.keywordSentenceSurface}>
-            <span aria-hidden="true" className={styles.camera} />
             <div className={styles.keywordSentenceCopy}>
               <span className={styles.keywordTitle}>{keywordSentence.keyword}</span>
               <span className={styles.sentence}>{keywordSentence.sentence}</span>

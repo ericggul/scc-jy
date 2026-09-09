@@ -129,6 +129,15 @@ export const goldfishExperiments: readonly GoldfishExperiment[] = [
     load: () => import("./screen/0908/overlay"),
   },
   {
+    key: "screen/0908/overlay-2",
+    legacyKeys: ["0908/overlay-2"],
+    area: "screen",
+    section: "dated",
+    date: "2026-09-08",
+    phrase: "Original 3D goldfish school with configurable keyword surfaces",
+    load: () => import("./screen/0908/overlay-2"),
+  },
+  {
     key: "screen/0908/overlay-2d",
     legacyKeys: ["0908/overlay-2d"],
     area: "screen",

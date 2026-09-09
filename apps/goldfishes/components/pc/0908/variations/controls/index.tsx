@@ -24,6 +24,7 @@ export default function FieldControls({ settings, columns, rows, surface, onChan
         <button aria-pressed={surface === "colours"} onClick={() => onSurfaceChange("colours")} type="button">colours</button>
         <button aria-pressed={surface === "keywords"} onClick={() => onSurfaceChange("keywords")} type="button">keywords</button>
         <button aria-pressed={surface === "keyword-sentence"} onClick={() => onSurfaceChange("keyword-sentence")} type="button">keyword + sentence</button>
+        <button aria-pressed={surface === "google"} onClick={() => onSurfaceChange("google")} type="button">google</button>
       </div>
       {controls.map(({ key, label, min, max, step, factor, unit }) => (
         <label className={styles.sizeControl} key={key}>

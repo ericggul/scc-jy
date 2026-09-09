@@ -3,15 +3,42 @@
 .grid { display: grid; place-content: center; }
 .phoneSlot { min-width: 0; min-height: 0; position: relative; opacity: 1; transform: scale(1); transition: opacity 800ms ease, transform 800ms ease; }
 .phoneSlot[data-present="false"] { opacity: 0; pointer-events: none; transform: scale(.96); }
-.phone { position: absolute; top: 0; left: 0; padding: 8px; overflow: hidden; background: #28282a; border-radius: 12% / 5.55%; box-shadow: inset 0 0 0 1px #656568; transform-origin: top left; }
-.colour { position: relative; width: 100%; height: 100%; border-radius: 10.5% / 4.85%; }
-.keywordSurface { position: relative; display: grid; width: 100%; height: 100%; place-items: center; overflow: hidden; border-radius: 10.5% / 4.85%; background: #efefec; color: #171716; }
-.keyword { display: block; width: 100%; padding: 42px 14px 14px; font: 800 70px/.84 Arial, Helvetica, sans-serif; letter-spacing: -.085em; overflow-wrap: anywhere; text-align: center; }
-.keywordSentenceSurface { position: relative; width: 100%; height: 100%; overflow: hidden; border-radius: 10.5% / 4.85%; background: #efefec; color: #171716; }
-.keywordSentenceCopy { display: flex; height: 100%; flex-direction: column; justify-content: center; gap: 30px; padding: 55px 20px 20px; }
+.phone { position: absolute; top: 0; left: 0; padding: 8px; overflow: hidden; background: #28282a; box-shadow: inset 0 0 0 1px #656568; transform-origin: top left; }
+.colour { position: relative; width: 100%; height: 100%; }
+.keywordSurface { position: relative; display: grid; width: 100%; height: 100%; place-items: center; overflow: hidden; background: #efefec; color: #171716; }
+.keyword { display: block; width: 100%; padding: 14px; font: 800 70px/.84 Arial, Helvetica, sans-serif; letter-spacing: -.085em; overflow-wrap: anywhere; text-align: center; }
+.keywordSentenceSurface { position: relative; width: 100%; height: 100%; overflow: hidden; background: #efefec; color: #171716; }
+.keywordSentenceCopy { display: flex; height: 100%; flex-direction: column; justify-content: center; gap: 30px; padding: 20px; }
 .keywordTitle { font: 800 48px/.86 Arial, Helvetica, sans-serif; letter-spacing: -.085em; overflow-wrap: anywhere; }
 .sentence { font: 700 39px/.92 Arial, Helvetica, sans-serif; letter-spacing: -.07em; overflow-wrap: anywhere; }
-.camera { position: absolute; z-index: 1; top: 12px; left: 50%; width: 82px; height: 20px; border-radius: 999px; background: #151516; transform: translateX(-50%); }
+.googleSurface { width: 100%; height: 100%; overflow: hidden; background: #fff; color: #202124; font: 16px/1.35 Arial, Helvetica, sans-serif; }
+.googleSurface, .googleSurface * { box-sizing: border-box; }
+.googleHeader { display: flex; height: 64px; align-items: center; justify-content: space-between; padding: 9px 15px 4px; }
+.googleWordmark { display: inline-flex; align-items: baseline; font: 500 33px/1 Arial, Helvetica, sans-serif; letter-spacing: -1.85px; }
+.googleWordmark span:nth-child(1), .googleWordmark span:nth-child(4) { color: #4285f4; }
+.googleWordmark span:nth-child(2), .googleWordmark span:nth-child(6) { color: #ea4335; }
+.googleWordmark span:nth-child(3) { color: #fbbc05; }
+.googleWordmark span:nth-child(5) { color: #34a853; }
+.googleHeaderActions { display: flex; align-items: center; gap: 13px; }
+.googleApps { color: #5f6368; font: 25px/1 Arial, sans-serif; transform: rotate(90deg); }
+.googleSignIn { padding: 7px 12px; border-radius: 4px; background: #1a73e8; color: #fff; font: 600 12px/1 Arial, Helvetica, sans-serif; }
+.googleSearchBox { display: flex; height: 46px; align-items: center; gap: 10px; margin: 0 12px; padding: 0 13px; border: 1px solid #dfe1e5; border-radius: 24px; box-shadow: 0 1px 2px rgb(60 64 67 / 16%); }
+.googleSearchIcon { width: 20px; height: 20px; flex: none; fill: #5f6368; }
+.googleQuery { min-width: 0; flex: 1; overflow: hidden; color: #202124; font: 15px/1.2 Arial, Helvetica, sans-serif; text-overflow: ellipsis; white-space: nowrap; }
+.googleSearchTools { display: flex; align-items: center; gap: 10px; }
+.googleMicrophone { color: #4285f4; font: 18px/1 Arial, sans-serif; text-shadow: -1px 0 #ea4335, 0 1px #34a853, 1px 0 #fbbc05; }
+.googleLensIcon { width: 19px; height: 19px; fill: #4285f4; }
+.googleTabs { display: flex; height: 45px; align-items: flex-end; gap: 23px; overflow: hidden; padding: 0 19px; border-bottom: 1px solid #ebebeb; color: #5f6368; font: 13px/36px Arial, Helvetica, sans-serif; white-space: nowrap; }
+.googleTabs span { position: relative; display: block; height: 36px; }
+.googleTabSelected { color: #1a73e8; }
+.googleTabSelected::after { position: absolute; right: 0; bottom: 0; left: 0; height: 3px; border-radius: 3px 3px 0 0; background: #1a73e8; content: ""; }
+.googleResults { padding: 9px 19px 24px; }
+.googleResultCount { margin: 0 0 15px; color: #70757a; font: 12px/1.3 Arial, Helvetica, sans-serif; }
+.googleResult { margin: 0 0 19px; }
+.googleResultSource { margin: 0 0 3px; color: #202124; font: 12px/1.3 Arial, Helvetica, sans-serif; }
+.googleResultSource span { color: #5f6368; }
+.googleResult h2 { margin: 0 0 3px; color: #1a0dab; font: 18px/1.22 Arial, Helvetica, sans-serif; letter-spacing: -.2px; }
+.googleResult p:last-child { display: -webkit-box; margin: 0; overflow: hidden; color: #4d5156; font: 13px/1.38 Arial, Helvetica, sans-serif; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .controls { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: .65rem 1.15rem; padding: .7rem 1rem; color: #f6f6f6; font: .64rem var(--font-geist-mono), monospace; }
 .sizeControl { display: flex; align-items: center; gap: .55rem; color: rgb(246 246 246 / 70%); }
 .sizeControl input { width: clamp(4rem, 7vw, 7rem); margin: 0; accent-color: #f6f6f6; cursor: ew-resize; }
