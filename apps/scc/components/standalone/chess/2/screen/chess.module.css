@@ -50,6 +50,15 @@
   pointer-events: none;
   animation: edge-label-in 80ms ease-out var(--edge-delay) both;
 }
+.steadyEdges .moveRelation,
+.steadyEdges .attackRelation {
+  animation: none;
+  stroke-dashoffset: 0;
+}
+.steadyEdges .edgeLabel {
+  animation: none;
+  opacity: 1;
+}
 .squares { width: 100%; height: 100%; display: grid; grid-template: repeat(8, 1fr) / repeat(8, 1fr); }
 .page button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .square { display: grid; place-items: center; position: relative; border: 0; padding: 0; min-width: 0; background: #15191b; }

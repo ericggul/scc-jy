@@ -1,6 +1,6 @@
 # SCC experiment records
 
-- [chess/1–2](experiments/standalone/chess/README.md): minimal 2D chess, automatic matches and local two-player play.
+- [chess/1–3](experiments/standalone/chess/README.md): minimal 2D chess, automatic matches and local two-player play.
 
 - [aerodynamics/1–2](experiments/standalone/aerodynamics/README.md): interactive 3D ABC Euler flow with moving arrows or raised-middle-finger hands.
 

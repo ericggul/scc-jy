@@ -10,6 +10,7 @@ const squares = Array.from({ length: 64 }, (_, square) => square);
 const teams = ["w", "b"] as const;
 const drawNames = { "threefold-repetition": "Threefold repetition", "fifty-move": "Fifty-move rule", "insufficient-material": "Insufficient material" };
 type EdgeShape = "straight" | "cubic";
+type EdgeMotion = "staggered" | "steady";
 
 function linePoint(square: number, flipped: boolean) {
   const position = flipped ? 63 - square : square;
@@ -66,6 +67,7 @@ export default function ChessOne() {
   const [delay, setDelay] = useState(100);
   const [boardSize, setBoardSize] = useState(90);
   const [edgeShape, setEdgeShape] = useState<EdgeShape>("cubic");
+  const [edgeMotion, setEdgeMotion] = useState<EdgeMotion>("staggered");
   const [controlsOpen, setControlsOpen] = useState(false);
   const [flipped, setFlipped] = useState(false);
   const [selected, setSelected] = useState<number | null>(null);
@@ -75,16 +77,9 @@ export default function ChessOne() {
   const promotionRef = useRef<HTMLButtonElement>(null);
   const status = useMemo(() => gameStatus(game), [game]);
   const moves = useMemo(() => status.kind === "playing" ? legalMoves(game) : [], [game, status.kind]);
-  const relationMoves = useMemo(() => {
-    const seen = new Set<string>();
-    return [...legalMovesForColor(game, "w"), ...legalMovesForColor(game, "b")].filter((move) => {
-      const key = `${move.from}:${move.to}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-  }, [game]);
-  const attacks = useMemo(() => emptyAttacks(game), [game]);
+  const relationMoves = useMemo(() => status.kind === "playing" ? legalMoves(game) : [], [game, status.kind]);
+  const allAttacks = useMemo(() => emptyAttacks(game), [game]);
+  const attacks = useMemo(() => allAttacks.filter((attack) => attack.color === game.turn), [allAttacks, game.turn]);
   const ended = status.kind !== "playing";
   const teamSummaries = useMemo(() => teams.map((color) => {
     const candidates = legalMovesForColor(game, color);
@@ -96,11 +91,11 @@ export default function ChessOne() {
       turn: ended ? "complete" : game.turn === color ? "now" : "wait",
       previous,
       cases: candidates.length,
-      attacks: attacks.filter((attack) => attack.color === color).length,
+      attacks: allAttacks.filter((attack) => attack.color === color).length,
       proposal: moveCoordinates(proposal),
       strategy: proposal ? `${capture ? "capture" : "activity"} / 2-ply` : "terminal",
     };
-  }), [attacks, ended, game]);
+  }), [allAttacks, ended, game]);
   const available = moves.filter((move) => move.from === selected);
   const visibleSquares = flipped ? [...squares].reverse() : squares;
   const turnName = game.turn === "w" ? "White" : "Black";
@@ -187,7 +182,7 @@ export default function ChessOne() {
       <div className={styles.surface} style={{ "--board-size": `${boardSize}vmin` } as CSSProperties}>
         <div className={styles.srOnly} aria-live="polite" aria-atomic="true">{headline}. {detail}</div>
         <div className={styles.board}>
-            <svg aria-hidden="true" className={styles.relationOverlay} viewBox="0 0 8 8" preserveAspectRatio="none">
+            <svg aria-hidden="true" className={`${styles.relationOverlay} ${edgeMotion === "steady" ? styles.steadyEdges : ""}`} viewBox="0 0 8 8" preserveAspectRatio="none">
               <defs>
                 <marker id="move-arrow" markerHeight="6" markerWidth="6" orient="auto" refX="5" refY="3" viewBox="0 0 6 6">
                   <path d="M 0 0 L 6 3 L 0 6 z" fill="#111" />
@@ -257,6 +252,8 @@ export default function ChessOne() {
               <button aria-pressed={mode === "play"} onClick={() => changeMode("play")}>two players</button>
               <button aria-pressed={edgeShape === "straight"} onClick={() => setEdgeShape("straight")}>straight</button>
               <button aria-pressed={edgeShape === "cubic"} onClick={() => setEdgeShape("cubic")}>cubic</button>
+              <button aria-pressed={edgeMotion === "staggered"} onClick={() => setEdgeMotion("staggered")}>staggered</button>
+              <button aria-pressed={edgeMotion === "steady"} onClick={() => setEdgeMotion("steady")}>steady</button>
             </div>
             <label className={styles.parameter}>
               <span>pace</span>

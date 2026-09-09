@@ -10,7 +10,6 @@ const squares = Array.from({ length: 64 }, (_, square) => square);
 const teams = ["w", "b"] as const;
 const drawNames = { "threefold-repetition": "Threefold repetition", "fifty-move": "Fifty-move rule", "insufficient-material": "Insufficient material" };
 type EdgeShape = "straight" | "cubic";
-type EdgeMotion = "staggered" | "steady";
 
 function linePoint(square: number, flipped: boolean) {
   const position = flipped ? 63 - square : square;
@@ -30,10 +29,6 @@ function edgePath(fromSquare: number, toSquare: number, shape: EdgeShape, flippe
   const normalX = (-dy / distance) * bend;
   const normalY = (dx / distance) * bend;
   return `M ${from.x} ${from.y} C ${from.x + dx * 0.3 + normalX} ${from.y + dy * 0.3 + normalY} ${from.x + dx * 0.7 + normalX} ${from.y + dy * 0.7 + normalY} ${to.x} ${to.y}`;
-}
-
-function edgeDelay(milliseconds: number): CSSProperties {
-  return { "--edge-delay": `${milliseconds}ms` } as CSSProperties;
 }
 
 function pieceLabel(game: ReturnType<typeof createGame>, square: number) {
@@ -67,7 +62,6 @@ export default function ChessOne() {
   const [delay, setDelay] = useState(100);
   const [boardSize, setBoardSize] = useState(90);
   const [edgeShape, setEdgeShape] = useState<EdgeShape>("cubic");
-  const [edgeMotion, setEdgeMotion] = useState<EdgeMotion>("staggered");
   const [controlsOpen, setControlsOpen] = useState(false);
   const [flipped, setFlipped] = useState(false);
   const [selected, setSelected] = useState<number | null>(null);
@@ -165,7 +159,7 @@ export default function ChessOne() {
   }
 
   return (
-    <main className={styles.page} aria-label="Chess simulation">
+    <main className={styles.page} data-turn={game.turn} aria-label="Chess simulation">
       <section className={styles.teamPanels} aria-label="Team position summaries">
         {teamSummaries.map((team) => <aside key={team.color} className={`${styles.teamPanel} ${team.color === "w" ? styles.whiteTeam : styles.blackTeam}`}>
           <p className={styles.teamName}>{team.color === "w" ? "white" : "black"}</p>
@@ -182,29 +176,27 @@ export default function ChessOne() {
       <div className={styles.surface} style={{ "--board-size": `${boardSize}vmin` } as CSSProperties}>
         <div className={styles.srOnly} aria-live="polite" aria-atomic="true">{headline}. {detail}</div>
         <div className={styles.board}>
-            <svg aria-hidden="true" className={`${styles.relationOverlay} ${edgeMotion === "steady" ? styles.steadyEdges : ""}`} viewBox="0 0 8 8" preserveAspectRatio="none">
+            <svg aria-hidden="true" className={styles.relationOverlay} viewBox="0 0 8 8" preserveAspectRatio="none">
               <defs>
                 <marker id="move-arrow" markerHeight="6" markerWidth="6" orient="auto" refX="5" refY="3" viewBox="0 0 6 6">
-                  <path d="M 0 0 L 6 3 L 0 6 z" fill="#e7e7e7" />
+                  <path d="M 0 0 L 6 3 L 0 6 z" fill={game.turn === "w" ? "#111" : "#e3e7e5"} />
                 </marker>
                 <marker id="attack-arrow" markerHeight="6" markerWidth="6" orient="auto" refX="5" refY="3" viewBox="0 0 6 6">
-                  <path d="M 0 0 L 6 3 L 0 6 z" fill="#dc4c56" />
+                  <path d="M 0 0 L 6 3 L 0 6 z" fill={game.turn === "w" ? "#b4232d" : "#dc4c56"} />
                 </marker>
               </defs>
-              {attacks.map((attack, index) => {
+              {attacks.map((attack) => {
                 const label = edgeLabelPoint(attack.from, attack.to, edgeShape, flipped);
-                const delay = edgeDelay(Math.min(index * 4, 144));
                 return <g key={`attack-${attack.from}-${attack.to}`}>
-                  <path className={styles.attackRelation} d={edgePath(attack.from, attack.to, edgeShape, flipped)} markerEnd="url(#attack-arrow)" pathLength="1" style={delay} />
-                  <text className={styles.edgeLabel} dominantBaseline="central" fontSize="0.12" style={delay} textAnchor="middle" x={label.x} y={label.y}>{pieceLabel(game, attack.from)}</text>
+                  <path className={styles.attackRelation} d={edgePath(attack.from, attack.to, edgeShape, flipped)} markerEnd="url(#attack-arrow)" pathLength="1" />
+                  <text className={styles.edgeLabel} dominantBaseline="central" fontSize="0.12" textAnchor="middle" x={label.x} y={label.y}>{pieceLabel(game, attack.from)}</text>
                 </g>;
               })}
-              {relationMoves.map((move, index) => {
+              {relationMoves.map((move) => {
                 const label = edgeLabelPoint(move.from, move.to, edgeShape, flipped);
-                const delay = edgeDelay(Math.min(index * 6, 144));
                 return <g key={`move-${move.from}-${move.to}-${move.promotion ?? ""}`}>
-                  <path className={styles.moveRelation} d={edgePath(move.from, move.to, edgeShape, flipped)} markerEnd="url(#move-arrow)" pathLength="1" style={delay} />
-                  <text className={styles.edgeLabel} dominantBaseline="central" fontSize="0.12" style={delay} textAnchor="middle" x={label.x} y={label.y}>{pieceLabel(game, move.from)}</text>
+                  <path className={styles.moveRelation} d={edgePath(move.from, move.to, edgeShape, flipped)} markerEnd="url(#move-arrow)" pathLength="1" />
+                  <text className={styles.edgeLabel} dominantBaseline="central" fontSize="0.12" textAnchor="middle" x={label.x} y={label.y}>{pieceLabel(game, move.from)}</text>
                 </g>;
               })}
             </svg>
@@ -252,8 +244,6 @@ export default function ChessOne() {
               <button aria-pressed={mode === "play"} onClick={() => changeMode("play")}>two players</button>
               <button aria-pressed={edgeShape === "straight"} onClick={() => setEdgeShape("straight")}>straight</button>
               <button aria-pressed={edgeShape === "cubic"} onClick={() => setEdgeShape("cubic")}>cubic</button>
-              <button aria-pressed={edgeMotion === "staggered"} onClick={() => setEdgeMotion("staggered")}>staggered</button>
-              <button aria-pressed={edgeMotion === "steady"} onClick={() => setEdgeMotion("steady")}>steady</button>
             </div>
             <label className={styles.parameter}>
               <span>pace</span>
