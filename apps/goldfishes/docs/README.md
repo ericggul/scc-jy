@@ -27,6 +27,7 @@ For a route change, read its document, the specific modules being changed, and t
 | `/screen/0908/attention-print` | 2026-09-08 | Serial technology signs, vermilion fish and accumulated ink. [doc](./0908/attention-print.md) |
 | `/pc/0908/default` | 2026-09-08 | Independent keyword-driven news phones, one per goldfish. [doc](./pc/0908/default.md) |
 | `/pc/0908/variations` | 2026-09-08 | Mobile colour and keyword surface variations. [doc](./pc/0908/variations.md) |
+| `/pc/0910/image-search` | 2026-09-10 | Desktop image-search grammar under subsecond technology-query replacement. [doc](./pc/0910/image-search.md) |
 
 Each experiment is a complete local copy: no cross-experiment implementation or ledger imports. Existing public images may be addressed by URL; only immutable company logos are a shared collection (`public/assets/goldfishes/assets/company-logos`). Asset URLs must exist inside this independently deployed app; after changing a collection, run `pnpm audit:goldfishes-assets`.
 

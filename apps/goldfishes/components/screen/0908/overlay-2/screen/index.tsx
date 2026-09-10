@@ -16,10 +16,13 @@ import type { StoryInfluence } from "../model/types";
 import styles from "./story-tray.module.css";
 
 const REFERENCE_STORY_SIZE = 93;
-const DEFAULT_ICON_SIZE = 40;
+const DEFAULT_ICON_SIZE = 50;
 const MIN_ICON_SIZE = 28;
 const MAX_ICON_SIZE = REFERENCE_STORY_SIZE;
-const DEFAULT_STORY_GAP = 26;
+const DEFAULT_STORY_GAP = 30;
+const EDGE_SCALE_REFERENCE_SIZE = 40;
+const LINE_EDGE_WIDTH = 2.15;
+const DIRECTED_EDGE_WIDTH = 2.3;
 const MAX_STORY_GAP = 80;
 const STORY_LABEL_HEIGHT = 28;
 const SIMULATION_STEP_MILLISECONDS = 210;
@@ -278,6 +281,7 @@ export function InstagramSocialStoryTray() {
   const storyRowHeight = iconSize + (showLabels ? STORY_LABEL_HEIGHT : 0);
   const selectedRingPalette = storyRingPalettes.find((palette) => palette.id === ringPaletteId) ?? storyRingPalettes[0]!;
   const selectedFishPalette = fishColourPalettes.find((palette) => palette.id === fishPaletteId) ?? fishColourPalettes[0]!;
+  const edgeWidth = (edgePresentation === "directed" ? DIRECTED_EDGE_WIDTH : LINE_EDGE_WIDTH) * iconSize / EDGE_SCALE_REFERENCE_SIZE;
 
   useEffect(() => {
     systemRef.current = system;
@@ -525,7 +529,7 @@ export function InstagramSocialStoryTray() {
             </defs>
             {influenceGeometry.map((influence) => (
               <g className={styles.influence} key={influence.id}>
-                <path className={`${styles.influencePath} ${edgePresentation === "directed" ? styles.influencePathDirected : ""}`} d={influence.path} markerEnd={edgePresentation === "directed" ? `url(#influence-arrow-${influence.id})` : undefined} pathLength="1" stroke={`url(#influence-${influence.id})`} />
+                <path className={`${styles.influencePath} ${edgePresentation === "directed" ? styles.influencePathDirected : ""}`} d={influence.path} markerEnd={edgePresentation === "directed" ? `url(#influence-arrow-${influence.id})` : undefined} pathLength="1" stroke={`url(#influence-${influence.id})`} style={{ strokeWidth: edgeWidth }} />
                 <circle className={styles.influenceTarget} cx={influence.endX} cy={influence.endY} r="2.25" />
               </g>
             ))}

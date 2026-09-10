@@ -7,6 +7,7 @@
 This tree is an archive of route-specific contracts, evidence, parameters, useful failures and unresolved questions—not a duplicate of repository policy. Start with the applicable group, then the numbered route.
 
 - `experiments/complex-systems/`: field, network and topology studies; retain model/presentation separation and field-first wrappers.
+- [financial-network/1](experiments/complex-systems/financial-network/README.md): interdependent payments, liquidity freezes and collateral contagion.
 - `experiments/dynamical-systems/`, `statistical-modelling/`: equations, integrator/performance boundaries and evidence.
 - `experiments/dashboard/`: reference-faithful workstation contracts and density checks.
 - `experiments/network-system/`, `finger-skating/`, `realtime/`: transport, multi-device and socket-state contracts.

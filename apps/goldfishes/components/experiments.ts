@@ -200,6 +200,15 @@ export const goldfishExperiments: readonly GoldfishExperiment[] = [
     phrase: "Mobile colour and keyword surface variations",
     load: () => import("./pc/0908/variations"),
   },
+  {
+    key: "pc/0910/image-search",
+    legacyKeys: [],
+    area: "pc",
+    section: "dated",
+    date: "2026-09-10",
+    phrase: "Desktop image-search grammar under subsecond technology-query replacement",
+    load: () => import("./pc/0910/image-search"),
+  },
 ];
 
 export const goldfishExperimentDateKeys = Array.from(

@@ -1,5 +1,6 @@
 export const threeBodyExperiments = [
   { slug: "1", label: "three body / 1" },
+  { slug: "2", label: "three body / 2" },
 ] as const;
 
 export type ThreeBodyExperimentSlug =
