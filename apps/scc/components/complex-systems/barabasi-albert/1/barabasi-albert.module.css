@@ -1,0 +1,139 @@
+.field {
+  --ink: #254f99;
+  --quiet: rgba(37, 79, 153, 0.72);
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #fbfcff;
+  color: var(--ink);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.header {
+  position: absolute;
+  top: clamp(1rem, 2.4vw, 2.25rem);
+  right: clamp(1rem, 2.4vw, 2.25rem);
+  margin: 0;
+  pointer-events: none;
+}
+
+.header p,
+.controls {
+  margin: 0;
+  font: 0.64rem var(--font-geist-mono), monospace;
+  letter-spacing: -0.025em;
+}
+
+.controls {
+  position: absolute;
+  right: clamp(1rem, 2.4vw, 2.25rem);
+  bottom: clamp(1rem, 2.4vw, 2.25rem);
+  left: clamp(1rem, 2.4vw, 2.25rem);
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0.65rem;
+  background: rgba(251, 252, 255, 0.78);
+  backdrop-filter: blur(9px);
+  -webkit-backdrop-filter: blur(9px);
+}
+
+.controls dl,
+.actions,
+.parameterGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem 1.05rem;
+  margin: 0;
+}
+
+.parameterGroup {
+  gap: 0.58rem;
+}
+
+.controls dl div {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.controls dt,
+.groupLabel {
+  color: var(--quiet);
+}
+
+.controls dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.actions button {
+  border: 0;
+  border-bottom: 1px solid transparent;
+  padding: 0.24rem 0;
+  background: transparent;
+  color: var(--quiet);
+  cursor: pointer;
+  font: inherit;
+}
+
+.actions button:hover:not(:disabled),
+.actions button[aria-pressed="true"] {
+  border-bottom-color: currentColor;
+  color: var(--ink);
+}
+
+.parameterGroup:first-child button[aria-pressed="true"] {
+  color: #1f5eb8;
+}
+
+.parameterGroup:nth-child(2) button[aria-pressed="true"] {
+  color: #1f5eb8;
+}
+
+.actions button:disabled {
+  cursor: default;
+  opacity: 0.38;
+}
+
+.actions button:focus-visible {
+  outline: 1px solid var(--ink);
+  outline-offset: 4px;
+}
+
+.screenReaderOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+@media (max-width: 620px) {
+  .controls {
+    right: 1rem;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+
+  .actions {
+    gap: 0.55rem 0.84rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .actions button {
+    cursor: default;
+  }
+}

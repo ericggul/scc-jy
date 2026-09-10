@@ -1,0 +1,107 @@
+.field {
+  --paper: #fafaf7;
+  --ink: #11110f;
+  --muted: #6b6b66;
+  --alert: #bd3427;
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: manipulation;
+}
+
+.controls,
+.readout {
+  margin: 0;
+  font: 0.82rem/1.15 var(--font-geist-mono), ui-monospace, monospace;
+  letter-spacing: -.035em;
+}
+
+.controls {
+  position: absolute;
+  top: 50%;
+  right: clamp(14px, 1.8vw, 28px);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  transform: translateY(-50%);
+}
+
+.controlPanel {
+  position: absolute;
+  top: 50%;
+  right: calc(100% + 20px);
+  display: flex;
+  width: max-content;
+  max-width: min(355px, calc(100vw - 72px));
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1rem;
+  transform: translateY(-50%);
+}
+
+.actions {
+  display: flex;
+  max-width: 300px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: .34rem 1rem;
+}
+
+.actions button,
+.expandButton {
+  border: 0;
+  border-bottom: 1px solid transparent;
+  padding: .32rem 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+}
+
+.actions button:hover,
+.actions button[aria-pressed="true"],
+.expandButton:hover { border-bottom-color: currentColor; color: var(--ink); }
+
+.actions button:focus-visible,
+.expandButton:focus-visible,
+.relationHit:focus-visible { outline: 1px solid var(--ink); outline-offset: 4px; }
+
+.readout {
+  position: absolute;
+  right: clamp(14px, 1.8vw, 28px);
+  bottom: clamp(14px, 1.8vw, 28px);
+  left: clamp(14px, 1.8vw, 28px);
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem 1rem;
+  align-items: end;
+  justify-content: space-between;
+  color: var(--muted);
+}
+
+.failure { color: var(--alert); }
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+@media (max-width: 760px) {
+  .controls { right: 14px; bottom: 14px; top: auto; transform: none; }
+  .controlPanel { top: auto; right: 0; bottom: calc(100% + 12px); transform: none; }
+  .readout { right: 14px; bottom: 14px; left: 14px; padding-right: 72px; font-size: .55rem; }
+}

@@ -4,10 +4,14 @@
 
 - [aerodynamics/1–2](experiments/standalone/aerodynamics/README.md): interactive 3D ABC Euler flow with moving arrows or raised-middle-finger hands.
 
+- [barabasi-albert/1](experiments/complex-systems/barabasi-albert/README.md): seeded network growth with degree-proportional attachment.
+
 This tree is an archive of route-specific contracts, evidence, parameters, useful failures and unresolved questions—not a duplicate of repository policy. Start with the applicable group, then the numbered route.
 
 - `experiments/complex-systems/`: field, network and topology studies; retain model/presentation separation and field-first wrappers.
 - [financial-network/1](experiments/complex-systems/financial-network/README.md): interdependent payments, liquidity freezes and collateral contagion.
+- [financial-network/2](experiments/complex-systems/financial-network/2.md): a synthetic macro-financial payment network with rollover, collateral and threshold contagion.
+- [diffusion-graph/1](experiments/complex-systems/diffusion-graph/README.md): NetLogo-derived directed-lattice diffusion with persistent rewiring enabled by default.
 - `experiments/dynamical-systems/`, `statistical-modelling/`: equations, integrator/performance boundaries and evidence.
 - `experiments/dashboard/`: reference-faithful workstation contracts and density checks.
 - `experiments/network-system/`, `finger-skating/`, `realtime/`: transport, multi-device and socket-state contracts.

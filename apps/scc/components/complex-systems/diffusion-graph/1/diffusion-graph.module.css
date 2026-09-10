@@ -1,0 +1,127 @@
+.field {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #05080e;
+  color: #f3f6ff;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  outline: none;
+}
+
+.canvas:focus-visible {
+  box-shadow: inset 0 0 0 1px rgba(243, 246, 255, 0.86);
+}
+
+.controls {
+  position: absolute;
+  right: clamp(1rem, 2.5vw, 2.4rem);
+  bottom: clamp(1rem, 2.5vw, 2.4rem);
+  left: clamp(1rem, 2.5vw, 2.4rem);
+  display: grid;
+  gap: 0.38rem;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 0.62rem;
+  letter-spacing: -0.02em;
+  text-shadow: 0 1px 4px #05080e, 0 0 9px #05080e;
+}
+
+.readout,
+.controlGroups,
+.controlGroup,
+.control {
+  display: flex;
+  align-items: center;
+}
+
+.readout {
+  flex-wrap: wrap;
+  gap: 0.28rem 0.85rem;
+  color: rgba(243, 246, 255, 0.66);
+  font-variant-numeric: tabular-nums;
+}
+
+.controlGroups {
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.45rem 1.1rem;
+}
+
+.controlGroup {
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.controlGroup legend {
+  float: left;
+  margin-right: 0.16rem;
+  padding: 0;
+  color: rgba(243, 246, 255, 0.54);
+  font-size: 0.54rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.control {
+  display: grid;
+  grid-template-columns: auto minmax(3.8rem, 5.8rem) auto;
+  gap: 0.35rem;
+  color: rgba(243, 246, 255, 0.82);
+}
+
+.control input {
+  width: 100%;
+  margin: 0;
+  accent-color: #9ebcff;
+}
+
+.control output {
+  min-width: 2rem;
+  color: #f3f6ff;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.controlGroup button {
+  border: 0;
+  border-bottom: 1px solid transparent;
+  padding: 0.2rem 0;
+  background: transparent;
+  color: rgba(243, 246, 255, 0.78);
+  cursor: pointer;
+  font: inherit;
+  text-shadow: inherit;
+}
+
+.controlGroup button:hover,
+.controlGroup button[aria-pressed="true"] {
+  border-bottom-color: currentColor;
+  color: #f3f6ff;
+}
+
+.controlGroup button:focus-visible,
+.control input:focus-visible {
+  outline: 1px solid #f3f6ff;
+  outline-offset: 3px;
+}
+
+@media (max-width: 43rem) {
+  .controls { font-size: 0.56rem; }
+  .controlGroups { gap: 0.34rem 0.75rem; }
+}
+
+@media (max-width: 31rem) {
+  .readout { gap: 0.22rem 0.58rem; }
+  .control { grid-template-columns: auto minmax(3rem, 4.4rem) auto; }
+}

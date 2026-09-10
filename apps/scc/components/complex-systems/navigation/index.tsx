@@ -181,8 +181,6 @@ export default function ComplexSystemsNavigation({
                 <Link
                   key={experiment.id}
                   href={experiment.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
                   prefetch={false}
                   data-complex-system
                   className={styles.route}

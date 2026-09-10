@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
 export default function FinancialNetworkPage() {
-  redirect("/financial-network/1");
+  redirect("/financial-network/2");
 }

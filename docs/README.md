@@ -44,6 +44,8 @@ history when their subject affects the task, not for every code change.
 | `apps/scc/components/dashboard/palantir` | `1` | [palantir/1](../apps/scc/docs/experiments/dashboard/palantir/1.md) |
 | `apps/scc/components/dashboard/stock` | `default`, `1`, `2`, `3`, `4` | [stock index](../apps/scc/docs/experiments/dashboard/stock/README.md) |
 | `apps/scc/components/realtime/calendar` | `default`, `1` | [calendar](../apps/scc/docs/experiments/realtime/calendar/README.md) |
+| `apps/scc/components/complex-systems/barabasi-albert` | `1` | [Barabási–Albert network growth](../apps/scc/docs/experiments/complex-systems/barabasi-albert/README.md) |
+| `apps/scc/components/complex-systems/financial-network` | `1`–`2` | [financial network / 2](../apps/scc/docs/experiments/complex-systems/financial-network/2.md) |
 | `apps/scc/components/complex-systems/living-topology` | `1`–`4` | [living topology](../apps/scc/docs/experiments/complex-systems/living-topology/README.md) |
 | `apps/scc/components/dynamical-systems/attractor` | `1`–`3` | [attractor sequence](../apps/scc/docs/experiments/dynamical-systems/attractor/README.md) |
 | `apps/scc/components/dynamical-systems/three-body` | `1` | [three body](../apps/scc/docs/experiments/dynamical-systems/three-body/README.md) |
@@ -54,6 +56,7 @@ history when their subject affects the task, not for every code change.
 | `apps/scc/components/complex-systems/void` | `1`–`3` | [void field](../apps/scc/docs/experiments/complex-systems/void/README.md) |
 | `apps/scc/components/complex-systems/face-voronoi` | `1`–`3` | [face voronoi](../apps/scc/docs/experiments/complex-systems/face-voronoi/README.md) |
 | `apps/scc/components/complex-systems/page-rank` | `1` | [page rank](../apps/scc/docs/experiments/complex-systems/page-rank/README.md) |
+| `apps/scc/components/complex-systems/diffusion-graph` | `1` | [diffusion graph](../apps/scc/docs/experiments/complex-systems/diffusion-graph/README.md) |
 | `apps/scc/components/complex-systems/cellular-automata` | `colour/1`–`6`, `grid-network/1` | [cellular automata](../apps/scc/docs/experiments/complex-systems/cellular-automata/README.md) |
 | `apps/scc/components/complex-systems/adaptive-coevolving-network` | `polling-ecology` | [polling ecology](../apps/scc/docs/experiments/complex-systems/adaptive-coevolving-network/README.md) |
 | Complex-systems acceptance standard | — | [removals and simulation standard](../apps/scc/docs/experiments/complex-systems/rejected-examples.md) |

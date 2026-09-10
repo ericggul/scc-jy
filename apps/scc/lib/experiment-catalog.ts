@@ -62,6 +62,12 @@ export const experimentCatalog = [
     description: "A graph that continually buds, sheds, connects, and severs itself.",
   },
   {
+    href: "/barabasi-albert",
+    label: "barabasi-albert",
+    description:
+      "A growing graph where each new vertex attaches preferentially to established hubs.",
+  },
+  {
     href: "/face-voronoi",
     label: "face-voronoi",
     description:
@@ -72,6 +78,12 @@ export const experimentCatalog = [
     label: "page-rank",
     description:
       "A directed graph where rank mass moves through links by diffusion or surfer visits.",
+  },
+  {
+    href: "/diffusion-graph",
+    label: "diffusion-graph",
+    description:
+      "A rewiring directed lattice where a conserved value diffuses through active links.",
   },
   {
     href: "/adaptive-coevolving-network",
