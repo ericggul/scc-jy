@@ -45,7 +45,8 @@ history when their subject affects the task, not for every code change.
 | `apps/scc/components/dashboard/stock` | `default`, `1`, `2`, `3`, `4` | [stock index](../apps/scc/docs/experiments/dashboard/stock/README.md) |
 | `apps/scc/components/realtime/calendar` | `default`, `1` | [calendar](../apps/scc/docs/experiments/realtime/calendar/README.md) |
 | `apps/scc/components/complex-systems/barabasi-albert` | `1` | [Barabási–Albert network growth](../apps/scc/docs/experiments/complex-systems/barabasi-albert/README.md) |
-| `apps/scc/components/complex-systems/financial-network` | `1`–`2` | [financial network / 2](../apps/scc/docs/experiments/complex-systems/financial-network/2.md) |
+| `apps/scc/components/complex-systems/erdos-renyi` | `1` | [Erdős–Rényi random graph](../apps/scc/docs/experiments/complex-systems/erdos-renyi/README.md) |
+| `apps/scc/components/complex-systems/financial-network` | `1`–`4` | [financial network / 4](../apps/scc/docs/experiments/complex-systems/financial-network/4.md) |
 | `apps/scc/components/complex-systems/living-topology` | `1`–`4` | [living topology](../apps/scc/docs/experiments/complex-systems/living-topology/README.md) |
 | `apps/scc/components/dynamical-systems/attractor` | `1`–`3` | [attractor sequence](../apps/scc/docs/experiments/dynamical-systems/attractor/README.md) |
 | `apps/scc/components/dynamical-systems/three-body` | `1` | [three body](../apps/scc/docs/experiments/dynamical-systems/three-body/README.md) |

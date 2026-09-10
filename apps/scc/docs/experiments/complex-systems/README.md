@@ -4,7 +4,7 @@ This directory records scientific and visual requirements for SCC
 complex-systems experiments. Existing routes are evidence and implementation
 history. They are not a design system and must not be copied as one.
 
-Current mathematical demonstrator: [Barabási–Albert network growth / 1](barabasi-albert/README.md).
+Current mathematical demonstrators: [Barabási–Albert network growth / 1](barabasi-albert/README.md) and [Erdős–Rényi random graph / 1](erdos-renyi/README.md).
 
 ## Visual rule: no inherited complex-systems style
 

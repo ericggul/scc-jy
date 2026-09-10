@@ -22,14 +22,17 @@ export type RelationKind =
   | "debt-service"
   | "refinancing"
   | "bank-income"
+  | "interbank-funding"
   | "repo"
   | "public-bill"
   | "loan-stock"
   | "deposit-stock"
+  | "interbank-credit"
   | "central-bank-facility";
 
 export type RelationLayer = "payment" | "claim" | "facility";
 export type ShockPersistence = "brief" | "persistent";
+export type NetworkPreset = "compact" | "expanded";
 
 export type FinancialActor = {
   id: string;
@@ -60,6 +63,7 @@ export type FinancialRelation = {
 };
 
 export type FinancialNetworkState = {
+  preset: NetworkPreset;
   time: number;
   actors: FinancialActor[];
   relations: FinancialRelation[];
@@ -80,6 +84,11 @@ export type NetworkSummary = {
 const EPSILON = 1e-7;
 const STEP = 1 / 20;
 
+// The simulation is dimensionless internally. One displayed unit represents
+// ten million nominal currency units, keeping the representative balance
+// sheets and their live payment flows legible on the same field.
+export const NOMINAL_UNIT_MILLIONS = 10;
+
 const relationLabels: Record<RelationKind, string> = {
   wage: "wage payment",
   consumption: "consumer spending",
@@ -89,10 +98,12 @@ const relationLabels: Record<RelationKind, string> = {
   "debt-service": "debt service",
   refinancing: "refinancing credit",
   "bank-income": "bank income recycling",
+  "interbank-funding": "interbank funding settlement",
   repo: "collateral funding rollover",
   "public-bill": "public bill rollover",
   "loan-stock": "corporate loan stock",
   "deposit-stock": "deposit liability",
+  "interbank-credit": "interbank credit claim",
   "central-bank-facility": "central bank collateral facility",
 };
 
@@ -121,12 +132,15 @@ const periodicDemand = (state: FinancialNetworkState, relation: FinancialRelatio
 const availableCash = (state: FinancialNetworkState, actor: FinancialActor) => {
   if (actor.fractured) return 0;
   const activeShock = state.time < actor.shockedUntil ? actor.shockSeverity : 0;
-  // A strained firm does not put every remaining deposit back into circulation.
-  // This is a deliberately simple precautionary-hoarding rule: it makes a
-  // funding shock visible first as a shrinking payment surface, then as arrears.
-  const precautionaryReserve = actor.kind === "firm"
-    ? Math.max(0, actor.stress - 0.24) * actor.liquidityNeed * 4.2
-    : 0;
+  // Precautionary hoarding is a transmission mechanism, not a visual effect:
+  // a missed receipt makes an actor preserve cash, which constrains the next
+  // counterparty's settlement and can turn a local stop into a network wave.
+  const reserveMultiplier = actor.kind === "firm" ? 4.4
+    : actor.kind === "household" ? 2.5
+      : actor.kind === "bank" ? 3.2
+        : actor.kind === "fund" ? 3.6
+          : 0;
+  const precautionaryReserve = Math.max(0, actor.stress - 0.2) * actor.liquidityNeed * reserveMultiplier;
   return Math.max(0, actor.cash * (1 - activeShock) - precautionaryReserve);
 };
 
@@ -180,7 +194,13 @@ function createActor(
   community: number,
   cash: number,
   collateral = 0,
+  liquidityScale = 1,
 ): FinancialActor {
+  const liquidityNeed = kind === "bank" ? 118
+    : kind === "fund" ? 74
+      : kind === "firm" ? 16
+        : kind === "household" ? 8
+          : 0;
   return {
     id,
     label,
@@ -188,8 +208,7 @@ function createActor(
     community,
     cash,
     collateral,
-    liquidityNeed:
-      kind === "bank" ? 118 : kind === "fund" ? 74 : kind === "firm" ? 16 : kind === "household" ? 8 : 0,
+    liquidityNeed: liquidityNeed * liquidityScale,
     arrears: 0,
     stress: 0.04,
     shockedUntil: 0,
@@ -223,70 +242,116 @@ function createRelation(
 }
 
 /**
- * A deliberately compact macro-financial circuit. There are few actors, but
- * no relation is elided: every payment, rollover, claim and facility is kept
- * as a separate directed ledger relation so the screen can be read as a map.
+ * A bounded stock-flow circuit. Actors are sector representatives—not a claim
+ * that the visible firms or households are a literal economy—and every
+ * settlement, claim, rollover and facility remains explicit. The expanded
+ * preset repeats the same household/firm relation grammar over a larger fixed
+ * field; it does not introduce a second economic model.
  */
-export function createFinancialNetwork(): FinancialNetworkState {
-  const actors: FinancialActor[] = [
-    createActor("bank-1", "BANK 01", "bank", 0, 268),
-    createActor("bank-2", "BANK 02", "bank", 1, 268),
-    createActor("firm-1", "FIRM 01", "firm", 0, 34, 146),
-    createActor("firm-2", "FIRM 02", "firm", 1, 34, 146),
-    createActor("firm-3", "FIRM 03", "firm", 0, 46, 224),
-    createActor("household-1", "HOUSEHOLD 01", "household", 0, 58),
-    createActor("household-2", "HOUSEHOLD 02", "household", 1, 58),
-    createActor("fund-1", "FUND 01", "fund", 0, 152, 98),
-    createActor("fund-2", "FUND 02", "fund", 1, 152, 98),
-    createActor("treasury", "TREASURY", "treasury", 0, 620),
-    createActor("central-bank", "CENTRAL BANK", "central-bank", 0, 1_000),
-  ];
+export function createFinancialNetwork(preset: NetworkPreset = "compact"): FinancialNetworkState {
+  const expanded = preset === "expanded";
+  const bankCount = expanded ? 6 : 4;
+  const sectorCount = expanded ? 20 : 8;
+  const householdsPerFirm = expanded ? 2 : 1;
+  const householdCount = sectorCount * householdsPerFirm;
+  // Funds, the public balance sheets, procurement paths, and interbank links
+  // stay exactly as the compact /2 model defines them. The only expanded
+  // population is the requested 6 banks / 20 firms / 40 households.
+  const fundCount = 4;
+  const actors: FinancialActor[] = [];
+  for (let index = 0; index < bankCount; index += 1) {
+    actors.push(createActor(`bank-${index + 1}`, `BANK ${String(index + 1).padStart(2, "0")}`, "bank", index, 510));
+  }
+  for (let index = 0; index < sectorCount; index += 1) {
+    actors.push(createActor(`firm-${index + 1}`, `FIRM ${String(index + 1).padStart(2, "0")}`, "firm", index % bankCount, 42, 174));
+  }
+  for (let index = 0; index < householdCount; index += 1) {
+    // The 40-household view resolves each compact household sector into two
+    // representatives. Their stock and liquidity buffer are halves, preserving
+    // the aggregate household balance sheet rather than doubling the economy.
+    const householdScale = 1 / householdsPerFirm;
+    actors.push(createActor(
+      `household-${index + 1}`,
+      `HOUSEHOLD ${String(index + 1).padStart(2, "0")}`,
+      "household",
+      (index % sectorCount) % bankCount,
+      76 * householdScale,
+      0,
+      householdScale,
+    ));
+  }
+  for (let index = 0; index < fundCount; index += 1) {
+    actors.push(createActor(`fund-${index + 1}`, `FUND ${String(index + 1).padStart(2, "0")}`, "fund", index, 238, 116));
+  }
+  actors.push(createActor("treasury", "TREASURY", "treasury", 0, 1_180));
+  actors.push(createActor("central-bank", "CENTRAL BANK", "central-bank", 0, 1_650));
 
   const relations: FinancialRelation[] = [];
   const add = (...args: Parameters<typeof createRelation>) => relations.push(createRelation(...args));
 
-  const firms = [
-    { id: "firm-1", bank: "bank-1", phase: 0.1, loan: 118 },
-    { id: "firm-2", bank: "bank-2", phase: 0.72, loan: 118 },
-    { id: "firm-3", bank: "bank-1", phase: 1.34, loan: 164 },
+  for (let index = 0; index < sectorCount; index += 1) {
+    const firm = `firm-${index + 1}`;
+    const bank = `bank-${(index % bankCount) + 1}`;
+    const supplier = `firm-${((index + 2) % sectorCount) + 1}`;
+    const phase = index * 0.59;
+    const householdShare = 1 / householdsPerFirm;
+    add(`loan:${firm}`, firm, bank, "loan-stock", "claim", 0, phase, 128);
+    add(`debt-service:${firm}`, firm, bank, "debt-service", "payment", 1.34, phase + 0.15);
+    add(`refinancing:${firm}`, bank, firm, "refinancing", "payment", 1.34, phase + 0.48);
+    add(`deposit:${firm}`, bank, firm, "deposit-stock", "claim", 0, phase + 0.65, 42);
+    add(`firm-tax:${firm}`, firm, "treasury", "tax", "payment", 0.32, phase + 0.92);
+    for (let householdSlot = 0; householdSlot < householdsPerFirm; householdSlot += 1) {
+      const household = `household-${index + 1 + householdSlot * sectorCount}`;
+      const householdPhase = phase + householdSlot * 0.19;
+      add(`wage:${firm}:${household}`, firm, household, "wage", "payment", 3.28 * householdShare, householdPhase + 0.26);
+      add(`consumption:${household}`, household, firm, "consumption", "payment", 2.54 * householdShare, householdPhase + 0.58);
+      add(`household-tax:${household}`, household, "treasury", "tax", "payment", 0.23 * householdShare, householdPhase + 0.82);
+      add(`bank-income:${household}`, bank, household, "bank-income", "payment", 0.14 * householdShare, householdPhase + 1.16);
+      add(`deposit:${household}`, bank, household, "deposit-stock", "claim", 0, householdPhase + 0.12, 76 * householdShare);
+    }
+    add(`supplier:${firm}:${supplier}`, firm, supplier, "supplier-payment", "payment", 0.78, phase + 1.38);
+  }
+
+  const procurementFirms = [2, 5, 8];
+  for (const [index, firmNumber] of procurementFirms.entries()) {
+    add(
+      `procurement:firm-${firmNumber}`,
+      "treasury",
+      `firm-${firmNumber}`,
+      "procurement",
+      "payment",
+      index === procurementFirms.length - 1 ? 0.94 : 1.12,
+      0.42 + index * 0.71,
+    );
+  }
+
+  for (let index = 0; index < fundCount; index += 1) {
+    const fund = `fund-${index + 1}`;
+    const bank = `bank-${index + 1}`;
+    const phase = 0.36 + index * 0.82;
+    add(`repo-payment:${fund}`, fund, bank, "repo", "payment", 0.72, phase);
+    add(`repo-roll:${fund}`, bank, fund, "repo", "payment", 0.72, phase + 0.32);
+    add(`bill-purchase:${fund}`, fund, "treasury", "public-bill", "payment", 0.64, phase + 0.66);
+    add(`bill-redemption:${fund}`, "treasury", fund, "public-bill", "payment", 0.64, phase + 1.04);
+    add(`deposit:${fund}`, bank, fund, "deposit-stock", "claim", 0, phase, 238);
+    add(`facility:${bank}`, "central-bank", bank, "central-bank-facility", "facility", 0, phase, 88);
+  }
+
+  // Short bank-to-bank funding creates a second transmission surface. These
+  // are obligations, not a decorative mesh: if one bank hoards cash, the
+  // receiving bank loses an actual settlement while its credit claim remains.
+  const interbankPairs = [
+    ["bank-1", "bank-2", 0.24],
+    ["bank-2", "bank-3", 1.08],
+    ["bank-3", "bank-4", 1.92],
   ] as const;
-
-  for (const firm of firms) {
-    add(`loan:${firm.id}`, firm.id, firm.bank, "loan-stock", "claim", 0, firm.phase, firm.loan);
-    add(`debt-service:${firm.id}`, firm.id, firm.bank, "debt-service", "payment", 1.45, firm.phase + 0.18);
-    add(`refinancing:${firm.id}`, firm.bank, firm.id, "refinancing", "payment", 1.45, firm.phase + 0.48);
-    add(`deposit:${firm.id}`, firm.bank, firm.id, "deposit-stock", "claim", 0, firm.phase + 0.7, 34);
-    add(`firm-tax:${firm.id}`, firm.id, "treasury", "tax", "payment", 0.34, firm.phase + 1.08);
-  }
-
-  for (const household of [
-    { id: "household-1", firm: "firm-1", bank: "bank-1", phase: 0.26 },
-    { id: "household-2", firm: "firm-2", bank: "bank-2", phase: 0.92 },
-  ] as const) {
-    add(`wage:${household.firm}:${household.id}`, household.firm, household.id, "wage", "payment", 3.35, household.phase);
-    add(`consumption:${household.id}`, household.id, household.firm, "consumption", "payment", 2.62, household.phase + 0.42);
-    add(`household-tax:${household.id}`, household.id, "treasury", "tax", "payment", 0.26, household.phase + 0.86);
-    add(`bank-income:${household.id}`, household.bank, household.id, "bank-income", "payment", 0.16, household.phase + 1.2);
-    add(`deposit:${household.id}`, household.bank, household.id, "deposit-stock", "claim", 0, household.phase, 58);
-  }
-
-  add("supplier:firm-1:firm-3", "firm-1", "firm-3", "supplier-payment", "payment", 1.12, 1.75);
-  add("supplier:firm-2:firm-3", "firm-2", "firm-3", "supplier-payment", "payment", 1.12, 2.12);
-  add("procurement:firm-3", "treasury", "firm-3", "procurement", "payment", 1.82, 0.56);
-
-  for (const funding of [
-    { fund: "fund-1", bank: "bank-1", phase: 0.35 },
-    { fund: "fund-2", bank: "bank-2", phase: 1.12 },
-  ] as const) {
-    add(`repo-payment:${funding.fund}`, funding.fund, funding.bank, "repo", "payment", 0.9, funding.phase);
-    add(`repo-roll:${funding.fund}`, funding.bank, funding.fund, "repo", "payment", 0.9, funding.phase + 0.34);
-    add(`bill-purchase:${funding.fund}`, funding.fund, "treasury", "public-bill", "payment", 0.74, funding.phase + 0.68);
-    add(`bill-redemption:${funding.fund}`, "treasury", funding.fund, "public-bill", "payment", 0.74, funding.phase + 1.02);
-    add(`deposit:${funding.fund}`, funding.bank, funding.fund, "deposit-stock", "claim", 0, funding.phase, 152);
-    add(`facility:${funding.bank}`, "central-bank", funding.bank, "central-bank-facility", "facility", 0, funding.phase, 86);
+  for (const [from, to, phase] of interbankPairs) {
+    add(`interbank-credit:${from}:${to}`, from, to, "interbank-credit", "claim", 0, phase, 56);
+    add(`interbank-funding:${from}:${to}`, from, to, "interbank-funding", "payment", 0.62, phase + 0.28);
   }
 
   return {
+    preset,
     time: 0,
     actors,
     relations,
@@ -380,17 +445,53 @@ function updateClaimStocks(state: FinancialNetworkState) {
 }
 
 function updateStressAndCollateral(state: FinancialNetworkState, dt: number) {
+  const incomingPressure = new Map<string, { weighted: number; weight: number }>();
+  const addIncomingPressure = (actorId: string, pressure: number, weight: number) => {
+    const current = incomingPressure.get(actorId) ?? { weighted: 0, weight: 0 };
+    current.weighted += pressure * weight;
+    current.weight += weight;
+    incomingPressure.set(actorId, current);
+  };
+
+  for (const relation of state.relations.filter((candidate) => candidate.layer === "payment")) {
+    const payer = byId(state, relation.from);
+    if (!payer) continue;
+    const accumulatedShortfall = relation.arrears / Math.max(relation.baseline * 6, 1);
+    const pressure = clamp(
+      Math.max(accumulatedShortfall, payer.stress * 0.78, activeShock(payer, state) * 0.85),
+      0,
+      1,
+    );
+    addIncomingPressure(relation.to, pressure, Math.max(relation.baseline, 0.1));
+  }
+
   let forcedSales = 0;
   for (const actor of state.actors) {
     const shock = activeShock(actor, state);
     const liquidityGap = Math.max(0, actor.liquidityNeed - availableCash(state, actor));
     const arrearsPressure = actor.arrears / Math.max(actor.liquidityNeed * 5, 1);
+    const incoming = incomingPressure.get(actor.id);
+    const counterpartyPressure = incoming ? incoming.weighted / Math.max(incoming.weight, EPSILON) : 0;
+    const creditPressure = actor.kind === "bank"
+      ? state.relations
+        .filter((relation) => relation.kind === "loan-stock" && relation.to === actor.id)
+        .reduce((pressure, relation) => pressure + relation.arrears / Math.max(relation.outstanding, 1), 0) /
+        Math.max(state.relations.filter((relation) => relation.kind === "loan-stock" && relation.to === actor.id).length, 1)
+      : 0;
+    const collateralPressure = (actor.kind === "firm" || actor.kind === "fund")
+      ? Math.max(0, 1 - state.assetPrice) * 0.58
+      : 0;
     const next = clamp(
-      shock * 0.92 + liquidityGap / Math.max(actor.liquidityNeed * 2.5, 1) + arrearsPressure,
+      shock * 0.96 +
+        liquidityGap / Math.max(actor.liquidityNeed * 2.5, 1) +
+        arrearsPressure * 0.62 +
+        counterpartyPressure * 0.86 +
+        creditPressure * 1.15 +
+        collateralPressure,
       0,
       1,
     );
-    actor.stress += (next - actor.stress) * clamp(dt * 1.2, 0, 1);
+    actor.stress += (next - actor.stress) * clamp(dt * 1.7, 0, 1);
     actor.arrears *= Math.exp(-dt * 0.08);
     if ((actor.kind === "firm" || actor.kind === "fund") && actor.stress > 0.46) {
       forcedSales += actor.collateral * (actor.stress - 0.46) * dt * 0.038;
@@ -450,9 +551,12 @@ export function applyLiquidityShock(
   const actor = byId(state, actorId);
   if (!actor || actor.kind === "treasury" || actor.kind === "central-bank") return;
   const boundedSeverity = clamp(severity, 0.08, 0.9);
-  actor.shockSeverity = boundedSeverity;
+  // A brief shock is a tested liquidity interruption, not a covert permanent
+  // default. Persistent shocks retain the selected severity and can activate
+  // the reinforcing channels below.
+  actor.shockSeverity = persistence === "brief" ? boundedSeverity * 0.52 : boundedSeverity;
   actor.shockedUntil =
-    persistence === "brief" ? state.time + 4.5 : Number.POSITIVE_INFINITY;
+    persistence === "brief" ? state.time + 2.25 : Number.POSITIVE_INFINITY;
 }
 
 export function clearLiquidityShock(state: FinancialNetworkState, actorId: string) {

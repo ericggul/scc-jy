@@ -1,0 +1,179 @@
+.field {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #030403;
+  color: #e6e5dd;
+  font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.viewport { position: absolute; inset: 0; touch-action: none; }
+.graph { display: block; width: 100%; height: 100%; user-select: none; }
+.edges { fill: none; }
+.edge {
+  stroke: var(--edge-color);
+  stroke-width: 1.25;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0;
+}
+.arrow { fill: var(--edge-color); pointer-events: none; }
+.facility { stroke-dasharray: 8 6; opacity: .82; }
+.arrears { stroke-dasharray: 8 4; opacity: .95; }
+.edgeActive { opacity: 1; }
+.edgeTarget { fill: none; stroke: transparent; stroke-width: 22; cursor: crosshair; }
+.edgeLabel {
+  fill: var(--edge-color);
+  font-size: 14.5px;
+  font-weight: 760;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.055em;
+  paint-order: stroke;
+  stroke: #030403;
+  stroke-linejoin: round;
+  stroke-width: 5px;
+  pointer-events: none;
+  opacity: 1;
+}
+.edgeThreat .edge {
+  animation: threatEdgeStroke var(--threat-cycle) steps(1, end) infinite;
+}
+.edgeThreat .arrow, .edgeThreat .edgeLabel {
+  animation: threatEdgeFill var(--threat-cycle) steps(1, end) infinite;
+}
+@keyframes threatEdgeStroke {
+  0%, 49.999% { stroke: var(--edge-color); }
+  50%, 100% { stroke: #e94a58; }
+}
+@keyframes threatEdgeFill {
+  0%, 49.999% { fill: var(--edge-color); }
+  50%, 100% { fill: #e94a58; }
+}
+
+.nodeGroup { --node-fill: #070907; --node-label: #e6e5dd; --node-stroke: #90948b; }
+.nodeHit {
+  fill: var(--node-fill);
+  stroke: var(--node-stroke);
+  stroke-width: 1.35px;
+  cursor: pointer;
+  transition: r 180ms cubic-bezier(.22, .8, .28, 1), stroke-width 120ms ease, fill 120ms ease;
+}
+.nodeHit:hover { stroke-width: 2.4px; }
+.nodeLabel {
+  fill: var(--node-label);
+  font-size: 13.5px;
+  font-weight: 760;
+  letter-spacing: -.085em;
+  pointer-events: none;
+}
+.household .nodeLabel { display: none; }
+.householdLabel {
+  fill: #90948b;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: -.065em;
+  pointer-events: none;
+}
+.bank .nodeLabel { font-size: 16px; }
+.fund .nodeLabel { font-size: 13px; }
+.treasury .nodeLabel { font-size: 15px; }
+.centralBank .nodeLabel { font-size: 15px; }
+.frozen .nodeHit { fill: #40161c; stroke: #e94a58; stroke-width: 2.8px; }
+.frozen .nodeLabel, .frozen .householdLabel { fill: #ffffff; }
+.affected .nodeHit { stroke: #e94a58; stroke-width: 3.3px; }
+.defaulted .nodeHit { fill: #40161c; stroke: #e94a58; stroke-width: 3px; }
+.defaulted .nodeLabel, .defaulted .householdLabel { fill: #ffffff; }
+.threat .nodeHit {
+  animation: threatBackground var(--threat-cycle) steps(1, end) infinite;
+}
+@keyframes threatBackground {
+  0%, 49.999% { fill: var(--node-fill); stroke: var(--node-stroke); }
+  50%, 100% { fill: #dc3d4c; stroke: #ffd0d4; }
+}
+.stateLabel {
+  fill: #e94a58;
+  font-size: 11.5px;
+  font-weight: 780;
+  letter-spacing: -.06em;
+  paint-order: stroke;
+  stroke: #030403;
+  stroke-width: 3px;
+  pointer-events: none;
+}
+.dimmed { opacity: .13; }
+
+.controls, .zoom {
+  position: absolute;
+  z-index: 3;
+  bottom: 21px;
+  display: flex;
+  align-items: center;
+  gap: 17px;
+}
+.controls { left: 24px; }
+.zoom { right: 24px; gap: 13px; }
+.modeControl { display: flex; align-items: center; gap: 13px; }
+.key { display: flex; flex-wrap: wrap; align-items: center; gap: 7px 13px; color: #4d5a5b; font-size: 12px; font-weight: 660; letter-spacing: -.055em; }
+.key span { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.key i { width: 8px; height: 8px; border-radius: 50%; }
+.controls button, .zoom button {
+  position: relative;
+  min-height: 28px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #90948b;
+  font: 700 12px/1 var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  letter-spacing: -.055em;
+  cursor: pointer;
+}
+.controls button:hover, .zoom button:hover { color: #e6e5dd; }
+.controls button[aria-pressed="true"] { color: #f0a000; }
+.controls button[aria-pressed="true"]::after {
+  position: absolute;
+  right: 0;
+  bottom: -4px;
+  left: 0;
+  height: 2px;
+  background: #f0a000;
+  content: "";
+}
+.controls button:disabled { color: #9ca4a1; cursor: default; }
+.controls button:focus-visible, .zoom button:focus-visible, .nodeHit:focus-visible, .edgeTarget:focus-visible {
+  outline: 2px solid #f0a000;
+  outline-offset: 4px;
+}
+
+.readout, .interaction {
+  position: absolute;
+  z-index: 3;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  color: #90948b;
+  font-size: 13px;
+  font-weight: 640;
+  letter-spacing: -.055em;
+  text-shadow: none;
+}
+.readout { top: 22px; left: 24px; }
+.readout strong { color: #e6e5dd; font-weight: 780; }
+.readout em { color: #e94a58; font-style: normal; font-weight: 780; }
+.interaction { right: 24px; bottom: 22px; max-width: min(56vw, 700px); justify-content: flex-end; }
+.interaction strong { color: #e94a58; font-weight: 780; }
+.interaction span:last-child { color: #666b63; }
+
+.srOnly { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+
+@media (max-width: 760px) {
+  .edgeLabel { font-size: 11px; }
+  .householdLabel { font-size: 11px; }
+  .controls, .zoom { bottom: 12px; gap: 11px; }
+  .controls { left: 14px; }.zoom { right: 14px; }
+  .modeControl { gap: 10px; }
+  .key { display: none; }
+  .controls button, .zoom button { font-size: 12px; }
+  .readout { top: 14px; left: 14px; gap: 7px; max-width: calc(100vw - 28px); flex-wrap: wrap; font-size: 12px; }
+  .interaction { right: 14px; bottom: 46px; max-width: calc(100vw - 28px); flex-wrap: wrap; font-size: 12px; }
+}

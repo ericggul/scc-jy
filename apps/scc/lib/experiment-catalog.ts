@@ -68,6 +68,12 @@ export const experimentCatalog = [
       "A growing graph where each new vertex attaches preferentially to established hubs.",
   },
   {
+    href: "/erdos-renyi",
+    label: "erdos-renyi",
+    description:
+      "A seeded random graph where every possible edge is independently sampled.",
+  },
+  {
     href: "/face-voronoi",
     label: "face-voronoi",
     description:

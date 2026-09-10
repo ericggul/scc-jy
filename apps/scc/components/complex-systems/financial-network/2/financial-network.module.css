@@ -59,7 +59,8 @@
 }
 
 .actions button,
-.expandButton {
+.expandButton,
+.scaleButton {
   border: 0;
   border-bottom: 1px solid transparent;
   padding: .32rem 0;
@@ -71,11 +72,19 @@
 
 .actions button:hover,
 .actions button[aria-pressed="true"],
-.expandButton:hover { border-bottom-color: currentColor; color: var(--ink); }
+.expandButton:hover,
+.scaleButton:hover { border-bottom-color: currentColor; color: var(--ink); }
 
 .actions button:focus-visible,
 .expandButton:focus-visible,
+.scaleButton:focus-visible,
 .relationHit:focus-visible { outline: 1px solid var(--ink); outline-offset: 4px; }
+
+.scaleButton {
+  position: absolute;
+  top: clamp(14px, 1.8vw, 28px);
+  left: clamp(14px, 1.8vw, 28px);
+}
 
 .readout {
   position: absolute;

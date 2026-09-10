@@ -10,6 +10,7 @@ export type LayoutPoint = {
 export type GraphLayout = Map<number, LayoutPoint>;
 
 const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
+const MAX_REPULSION_SAMPLES_PER_CELL = 18;
 
 function clamp(value: number, minimum: number, maximum: number) {
   return Math.min(maximum, Math.max(minimum, value));
@@ -97,7 +98,22 @@ export function relaxGraphLayout(
             `${column + columnOffset}:${row + rowOffset}`,
           );
           if (!candidates) continue;
-          for (const rightIndex of candidates) {
+          // A dense mature graph may place many vertices in one visual cell.
+          // Sampling the local field keeps visual relaxation linear instead of
+          // turning it into an all-pairs loop as the network keeps growing.
+          const sampleStride = Math.max(
+            1,
+            Math.ceil(candidates.length / MAX_REPULSION_SAMPLES_PER_CELL),
+          );
+          const sampleOffset =
+            (left.id * 11 + (rowOffset + 1) * 3 + columnOffset + 1) %
+            sampleStride;
+          for (
+            let candidateIndex = sampleOffset;
+            candidateIndex < candidates.length;
+            candidateIndex += sampleStride
+          ) {
+            const rightIndex = candidates[candidateIndex]!;
             if (rightIndex <= leftIndex) continue;
             const right = nodes[rightIndex]!;
             const rightPoint = layout.get(right.id);
@@ -111,9 +127,9 @@ export function relaxGraphLayout(
               dx = Math.cos(angle) * 0.001;
               dy = Math.sin(angle) * 0.001;
             }
-            const distanceSquared = Math.max(0.0009, dx * dx + dy * dy);
+            const distanceSquared = Math.max(0.0016, dx * dx + dy * dy);
             const distance = Math.sqrt(distanceSquared);
-            const strength = 0.000018 / distanceSquared;
+            const strength = 0.0000075 / distanceSquared;
             const xForce = (strength * dx) / distance / safeAspect;
             const yForce = (strength * dy) / distance;
 
@@ -141,7 +157,7 @@ export function relaxGraphLayout(
         dy = Math.sin(angle) * 0.001;
       }
       const distance = Math.max(0.001, Math.hypot(dx, dy));
-      const strength = (distance - 0.052) * 0.024;
+      const strength = (distance - 0.042) * 0.028;
       const xForce = (strength * dx) / distance / safeAspect;
       const yForce = (strength * dy) / distance;
 
@@ -151,6 +167,7 @@ export function relaxGraphLayout(
       targetForce.y -= yForce;
     }
 
+    const maximumDegree = Math.max(...graph.degrees, 1);
     for (const node of nodes) {
       const point = layout.get(node.id);
       const force = forces.get(node.id);
@@ -164,22 +181,29 @@ export function relaxGraphLayout(
       }
       const radius = Math.hypot(radialX, radialY);
       const birthShare = graph.generation > 0 ? node.bornAt / graph.generation : 0;
-      const targetRadius = 0.035 + 0.39 * Math.pow(birthShare, 0.62);
-      const radialStrength = (targetRadius - radius) * 0.012;
+      const degreeShare = (graph.degrees[node.id] ?? 0) / maximumDegree;
+      // Older or highly connected vertices settle nearer the centre; newer,
+      // lightly connected vertices make the sparse perimeter. This is a soft
+      // target, not an outward force, so the graph cannot collect at its frame.
+      const outerness =
+        0.55 * Math.pow(birthShare, 0.7) +
+        0.45 * (1 - Math.sqrt(degreeShare));
+      const targetRadius = 0.035 + 0.27 * outerness;
+      const radialStrength = (targetRadius - radius) * 0.06;
       const xRadialForce = (radialStrength * radialX) / radius / safeAspect;
       const yRadialForce = (radialStrength * radialY) / radius;
       point.vx = clamp(
-        (point.vx + force.x + xRadialForce) * 0.78,
-        -0.006,
-        0.006,
+        (point.vx + force.x + xRadialForce) * 0.8,
+        -0.005,
+        0.005,
       );
       point.vy = clamp(
-        (point.vy + force.y + yRadialForce) * 0.78,
-        -0.006,
-        0.006,
+        (point.vy + force.y + yRadialForce) * 0.8,
+        -0.005,
+        0.005,
       );
-      point.x = clamp(point.x + point.vx, 0.025, 0.975);
-      point.y = clamp(point.y + point.vy, 0.025, 0.975);
+      point.x = clamp(point.x + point.vx, 0.08, 0.92);
+      point.y = clamp(point.y + point.vy, 0.08, 0.92);
     }
   }
 }

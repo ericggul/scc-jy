@@ -40,6 +40,17 @@ function graphReadout(graph: BarabasiAlbertGraph): NetworkReadout {
   };
 }
 
+function createInitialGraph(attachments: number) {
+  return growBarabasiAlbertGraphTo(
+    createBarabasiAlbertGraph({
+      initialNodeCount: INITIAL_VISIBLE_NODES,
+      attachments,
+      seed: MODEL_SEED,
+    }),
+    INITIAL_VISIBLE_NODES,
+  );
+}
+
 function nodeColour(degree: number, maximumDegree: number, newest: boolean) {
   void degree;
   void maximumDegree;
@@ -111,18 +122,18 @@ export default function BarabasiAlbertScreen() {
   const attachmentRef = useRef(DEFAULT_ATTACHMENTS);
   const speedRef = useRef(1);
   const pausedRef = useRef(false);
-  const graphRef = useRef<BarabasiAlbertGraph | null>(null);
+  const graphRef = useRef<BarabasiAlbertGraph>(
+    createInitialGraph(DEFAULT_ATTACHMENTS),
+  );
   const layoutRef = useRef<GraphLayout>(new Map());
   const stepRef = useRef<(() => void) | null>(null);
   const restartRef = useRef<((attachments: number) => void) | null>(null);
   const [attachments, setAttachments] = useState(DEFAULT_ATTACHMENTS);
   const [speed, setSpeed] = useState(1);
   const [paused, setPaused] = useState(false);
-  const [readout, setReadout] = useState<NetworkReadout>({
-    vertices: INITIAL_VISIBLE_NODES,
-    edges: 0,
-    hubDegree: 0,
-  });
+  const [readout, setReadout] = useState<NetworkReadout>(() =>
+    graphReadout(graphRef.current),
+  );
 
   useEffect(() => {
     const field = fieldRef.current;
@@ -159,12 +170,7 @@ export default function BarabasiAlbertScreen() {
 
     const restart = (nextAttachments: number) => {
       attachmentRef.current = nextAttachments;
-      const seed = createBarabasiAlbertGraph({
-        initialNodeCount: 5,
-        attachments: nextAttachments,
-        seed: MODEL_SEED,
-      });
-      graphRef.current = growBarabasiAlbertGraphTo(seed, INITIAL_VISIBLE_NODES);
+      graphRef.current = createInitialGraph(nextAttachments);
       layoutRef.current = new Map();
       synchronizeGraphLayout(
         graphRef.current,
