@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { bankBalanceError, createEconomy, setFrozen, stepEconomy, type Economy } from "./index.ts";
+import { graphLayout } from "../rendering/field.ts";
 
 const stepFor = (state: Economy, seconds: number, dt = 1) => {
   for (let elapsed = 0; elapsed < seconds - 1e-9; elapsed += dt) stepEconomy(state, Math.min(dt, seconds - elapsed));
@@ -21,6 +22,42 @@ test("constructs the agreed six-sector economy with payer-to-payee debt edges", 
   assert.equal(count("centralBank"), 1);
   assert.ok(state.nodes.every((node) => node.community >= 0 && node.community <= 3));
   assert.ok(state.edges.filter((item) => item.kind === "loan").every((item) => item.from.startsWith("firm-") && item.to.startsWith("bank-")));
+});
+
+test("resolves the 200-person economy into diversified, individually settling households", () => {
+  const state = createEconomy("expanded");
+  const count = (sector: string) => state.nodes.filter((node) => node.sector === sector).length;
+  assert.equal(count("household"), 200);
+  assert.equal(count("firm"), 20);
+  assert.equal(count("bank"), 6);
+  assert.equal(count("fund"), 4);
+  assert.equal(state.nodes.length, 232);
+  assert.equal(state.edges.length, 1_068);
+  assert.equal(state.edges.filter((edge) => edge.kind === "wage" && edge.from === "firm-1").reduce((sum, edge) => sum + edge.principal, 0), 6);
+  const firmOneDemand = state.edges.filter((edge) => edge.kind === "consumption" && edge.to === "firm-1").reduce((sum, edge) => sum + edge.principal, 0);
+  const householdOneDemand = state.edges.filter((edge) => edge.kind === "consumption" && edge.from === "household-1" && edge.to === "firm-1").reduce((sum, edge) => sum + edge.principal, 0);
+  assert.ok(Math.abs(householdOneDemand / firmOneDemand - 0.05) < 1e-10, "one household should supply only 5% of either firm's consumer demand");
+  const points = graphLayout(state.nodes);
+  const householdPoints = state.nodes.filter((node) => node.sector === "household").map((node) => points.get(node.id)!);
+  assert.equal(new Set(householdPoints.map((point) => `${point.x}:${point.y}`)).size, 200);
+  assert.equal(householdPoints.filter((point) => point.x < 400).length, 100);
+  assert.equal(householdPoints.filter((point) => point.x > 1_200).length, 100);
+});
+
+test("one household bankruptcy remains a local loss in the 200-person economy", () => {
+  const healthy = createEconomy("expanded");
+  const failed = createEconomy("expanded");
+  const household = failed.nodes.find((node) => node.id === "household-1");
+  assert.ok(household);
+  household.defaulted = true;
+  stepFor(healthy, 120, 1 / 24);
+  stepFor(failed, 120, 1 / 24);
+  assert.deepEqual(failed.nodes.filter((node) => node.defaulted).map((node) => node.id), ["household-1"]);
+  assert.equal(failed.price, 1);
+  const healthyDemand = healthy.edges.filter((edge) => edge.kind === "consumption" && edge.to === "firm-1").reduce((sum, edge) => sum + edge.flow, 0);
+  const failedDemand = failed.edges.filter((edge) => edge.kind === "consumption" && edge.to === "firm-1").reduce((sum, edge) => sum + edge.flow, 0);
+  assert.ok(failedDemand / healthyDemand > 0.94 && failedDemand / healthyDemand < 0.96, "one failed household should remove about 5% of its receiving firm's demand");
+  for (const bank of failed.nodes.filter((node) => node.sector === "bank")) assert.ok(Math.abs(bankBalanceError(failed, bank.id)) < 1e-7);
 });
 
 test("baseline remains viable for 10,000 periods without autonomous distress", () => {

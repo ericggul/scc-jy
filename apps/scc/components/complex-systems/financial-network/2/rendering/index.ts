@@ -78,17 +78,38 @@ function numericId(id: string) {
   return Math.max(0, Number(id.match(/(\d+)$/)?.[1] ?? 0) - 1);
 }
 
+function peripheralHouseholdPoint(index: number, total: number): Point {
+  // The household population is a stable civic field around—not on—the
+  // institutional rings. Splitting alternate IDs left/right prevents an
+  // individual firm's ten households from becoming a visible local bundle.
+  const sideIndex = Math.floor(index / 2);
+  const householdCountOnSide = Math.ceil(total / 2);
+  const columns = total >= 100 ? 6 : 4;
+  const rows = Math.ceil(householdCountOnSide / columns);
+  const column = sideIndex % columns;
+  const row = Math.floor(sideIndex / columns);
+  const left = index % 2 === 0;
+  const xStart = left ? 48 : 1_082;
+  const xEnd = left ? 358 : 1_392;
+  const yStart = 72;
+  const yEnd = 748;
+  return {
+    x: xStart + column / (columns - 1) * (xEnd - xStart),
+    y: yStart + (rows === 1 ? 0 : row / (rows - 1)) * (yEnd - yStart),
+  };
+}
+
 /**
- * The dense preset remains a fixed institution map. Households occupy the
- * outer payment surface, firms make the production ring, and funding shares an
- * inner ring around the public/monetary core. The central bank is the exact
- * centre; all other positions are fixed radii, not an elliptical approximation.
- * No balance-sheet state participates, so a shock cannot be mistaken for
- * layout motion.
+ * The dense preset remains a fixed institution map. Firms make the production
+ * ring and funding shares an inner ring around the public/monetary core.
+ * Households fill the otherwise unused left/right periphery rather than repeat
+ * circular slots. The central bank is the exact centre; no balance-sheet state
+ * participates, so a shock cannot be mistaken for layout motion.
  */
 function expandedLayout(actors: readonly FinancialActor[]) {
   const positions = new Map<string, Point>();
   const firms = actors.filter((actor) => actor.kind === "firm");
+  const households = actors.filter((actor) => actor.kind === "household");
   const fundingOrder = [
     "bank-1", "fund-1", "bank-2", "fund-2", "bank-3",
     "fund-3", "bank-4", "fund-4", "bank-5", "bank-6",
@@ -97,19 +118,7 @@ function expandedLayout(actors: readonly FinancialActor[]) {
   for (const actor of actors) {
     if (actor.kind === "household") {
       const householdIndex = numericId(actor.id);
-      const firstHouseholdRing = householdIndex < firms.length;
-      // Household placement is civic, not a visual copy of firm placement.
-      // Both rings occupy their own uniform circumference slots, shifted to
-      // opposite half-sectors from the production ring and from one another.
-      positions.set(
-        actor.id,
-        ringPoint(
-          householdIndex % firms.length,
-          firms.length,
-          firstHouseholdRing ? 350 : 300,
-          -Math.PI / 2 + (firstHouseholdRing ? 1 : -1) * Math.PI / firms.length,
-        ),
-      );
+      positions.set(actor.id, peripheralHouseholdPoint(householdIndex, households.length));
       continue;
     }
     if (actor.kind === "firm") {
@@ -132,7 +141,7 @@ function expandedLayout(actors: readonly FinancialActor[]) {
 
 function nodeHalfBounds(id: string, expanded = false) {
   if (expanded) {
-    if (id.startsWith("household-")) return { x: 32, y: 17 };
+    if (id.startsWith("household-")) return { x: 25, y: 12 };
     if (id.startsWith("firm-")) return { x: 40, y: 20 };
     if (id.startsWith("bank-")) return { x: 48, y: 24 };
     if (id.startsWith("fund-")) return { x: 42, y: 20 };

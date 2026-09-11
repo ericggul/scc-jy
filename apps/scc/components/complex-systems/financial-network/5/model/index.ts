@@ -12,6 +12,7 @@
 
 export type Sector = "household" | "firm" | "bank" | "fund" | "treasury" | "centralBank";
 export type EdgeKind = "wage" | "consumption" | "loan" | "tax" | "procurement" | "dividend" | "bond" | "backstop" | "backstopDisbursement";
+export type PopulationPreset = "compact" | "expanded";
 
 export interface EconomyNode {
   id: string;
@@ -67,13 +68,25 @@ export interface Economy {
   price: number;
   /** Counterparties reassess at discrete, deterministic intervals. */
   nextNetworkReview: number;
+  population: PopulationPreset;
 }
 
 const EPSILON = 1e-8;
 // A fixed settlement quantum makes a UI calling at 24 Hz and a caller using
 // one-second chunks follow the same payment order and liquidity lock.
 const PERIOD = 1 / 24;
-const byId = (state: Economy, id: string) => state.nodes.find((node) => node.id === id);
+// The large field retains stable entity IDs. Caching lookup removes repeated
+// linear scans from the 24 Hz settlement loop without moving state outside the
+// model or weakening deterministic replay.
+const nodesByState = new WeakMap<Economy, Map<string, EconomyNode>>();
+const byId = (state: Economy, id: string) => {
+  let nodes = nodesByState.get(state);
+  if (!nodes) {
+    nodes = new Map(state.nodes.map((node) => [node.id, node]));
+    nodesByState.set(state, nodes);
+  }
+  return nodes.get(id);
+};
 const clamp = (value: number, low: number, high: number) => Math.min(high, Math.max(low, value));
 const availableCash = (node: EconomyNode) => node.frozen ? node.liquidCash : node.cash;
 
@@ -167,27 +180,34 @@ function payInterest(borrower: EconomyNode, requested: number) {
 }
 
 function refreshBalanceSheets(state: Economy) {
+  const loansByBank = new Map<string, number>();
+  const debtsByBorrower = new Map<string, number>();
+  const publicDebtByBank = new Map<string, number>();
+  let publicClaims = 0;
+  for (const edge of state.edges) {
+    if (edge.kind === "loan") {
+      loansByBank.set(edge.to, (loansByBank.get(edge.to) ?? 0) + edge.principal);
+      debtsByBorrower.set(edge.from, (debtsByBorrower.get(edge.from) ?? 0) + edge.principal);
+    }
+    if (edge.kind === "backstop") {
+      publicDebtByBank.set(edge.from, (publicDebtByBank.get(edge.from) ?? 0) + edge.principal);
+      publicClaims += edge.principal;
+    }
+  }
   for (const bank of state.nodes.filter((node) => node.sector === "bank")) bank.deposits = 0;
   for (const node of state.nodes.filter((item) => item.sector !== "bank")) {
     const bank = bankFor(state, node);
     if (bank) bank.deposits += node.cash;
   }
   for (const bank of state.nodes.filter((node) => node.sector === "bank")) {
-    const loans = state.edges
-      .filter((item) => item.kind === "loan" && item.to === bank.id)
-      .reduce((sum, item) => sum + item.principal, 0);
-    const publicDebt = state.edges
-      .filter((item) => item.kind === "backstop" && item.from === bank.id)
-      .reduce((sum, item) => sum + item.principal, 0);
+    const loans = loansByBank.get(bank.id) ?? 0;
+    const publicDebt = publicDebtByBank.get(bank.id) ?? 0;
     bank.equity = bank.cash + loans + bank.collateral * state.price - bank.deposits - publicDebt;
     bank.defaulted = bank.equity < -0.001;
   }
   for (const node of state.nodes.filter((item) => item.sector !== "bank")) {
-    const debts = state.edges
-      .filter((item) => item.kind === "loan" && item.from === node.id)
-      .reduce((sum, item) => sum + item.principal, 0);
-    const publicClaims = node.sector === "centralBank" ? state.edges.filter((item) => item.kind === "backstop").reduce((sum, item) => sum + item.principal, 0) : 0;
-    node.equity = node.cash + node.collateral * state.price + publicClaims - debts;
+    const debts = debtsByBorrower.get(node.id) ?? 0;
+    node.equity = node.cash + node.collateral * state.price + (node.sector === "centralBank" ? publicClaims : 0) - debts;
   }
 }
 
@@ -268,14 +288,21 @@ function sellCollateral(state: Economy, bank: EconomyNode, dt: number) {
 }
 
 function updateStress(state: Economy, dt: number) {
+  const arrearsByBorrower = new Map<string, number>();
+  const debtByBorrower = new Map<string, number>();
+  for (const edge of state.edges) {
+    if (edge.kind !== "loan") continue;
+    arrearsByBorrower.set(edge.from, (arrearsByBorrower.get(edge.from) ?? 0) + edge.arrears);
+    debtByBorrower.set(edge.from, (debtByBorrower.get(edge.from) ?? 0) + edge.principal);
+  }
   for (const node of state.nodes) {
     const shortage = node.shortfall / Math.max(EPSILON, dt) / Math.max(1, node.reserveTarget);
     const liquidity = availableCash(node) / Math.max(1, node.reserveTarget);
     const pressure = (node.frozen ? 0.14 : 0) + shortage * 0.3 + Math.max(0, 0.35 - liquidity) * 0.12;
     node.stress = clamp(node.stress + (pressure - node.stress) * clamp(dt * 0.35, 0, 1), 0, 1);
     node.shortfall = 0;
-    const arrears = state.edges.filter((item) => item.kind === "loan" && item.from === node.id).reduce((sum, item) => sum + item.arrears, 0);
-    const debt = state.edges.filter((item) => item.kind === "loan" && item.from === node.id).reduce((sum, item) => sum + item.principal, 0);
+    const arrears = arrearsByBorrower.get(node.id) ?? 0;
+    const debt = debtByBorrower.get(node.id) ?? 0;
     if (!node.defaulted && node.sector === "firm" && arrears > debt * 0.3 && availableCash(node) < node.reserveTarget * 0.12) {
       node.defaulted = true;
       // Default recognises the unsecured portion immediately. The remaining
@@ -511,17 +538,28 @@ export function setFrozen(state: Economy, id: string, frozen: boolean): void {
   node.liquidCash = frozen ? node.cash * 0.15 : node.cash;
 }
 
-export function createEconomy(): Economy {
+export function createEconomy(population: PopulationPreset = "compact"): Economy {
+  const expanded = population === "expanded";
+  const bankCount = expanded ? 6 : 4;
+  const firmCount = expanded ? 20 : 10;
+  const householdsPerFirm = expanded ? 10 : 2;
+  // The compact model represents two household positions per firm. Resolving
+  // that position into ten people keeps each firm's normal household ledger
+  // intact: every individual has one fifth of the previous cash, wage and tax.
+  const householdScale = expanded ? 2 / householdsPerFirm : 1;
   const nodes: EconomyNode[] = [];
-  const add = (id: string, label: string, sector: Sector, community: number, cash: number, bankId?: string) =>
-    nodes.push({ id, label, sector, community, cash, liquidCash: cash, equity: 0, reserveTarget: sector === "bank" ? 110 : sector === "firm" ? 22 : sector === "fund" ? 55 : 12, frozen: false, defaulted: false, stress: 0.03, bankId, collateral: sector === "firm" ? 130 : sector === "fund" ? 25 : 0, deposits: 0, creditLimit: sector === "bank" ? 720 : 0, shortfall: 0, incomeShortfall: 0, savingPropensity: 0, lossMemory: 0, lendingStandard: 1, observedLoss: 0, nextSwitchAt: 0 });
-  for (let index = 0; index < 4; index += 1) add(`bank-${index + 1}`, `Bank ${index + 1}`, "bank", index, 1320);
-  for (let index = 0; index < 20; index += 1) {
-    const employerCommunity = Math.floor(index / 2) % 4;
-    add(`household-${index + 1}`, `Household ${index + 1}`, "household", employerCommunity, 58, `bank-${employerCommunity + 1}`);
+  const add = (id: string, label: string, sector: Sector, community: number, cash: number, bankId?: string, reserveScale = 1) =>
+    nodes.push({ id, label, sector, community, cash, liquidCash: cash, equity: 0, reserveTarget: (sector === "bank" ? 110 : sector === "firm" ? 22 : sector === "fund" ? 55 : 12) * reserveScale, frozen: false, defaulted: false, stress: 0.03, bankId, collateral: sector === "firm" ? 130 : sector === "fund" ? 25 : 0, deposits: 0, creditLimit: sector === "bank" ? 720 : 0, shortfall: 0, incomeShortfall: 0, savingPropensity: 0, lossMemory: 0, lendingStandard: 1, observedLoss: 0, nextSwitchAt: 0 });
+  for (let index = 0; index < bankCount; index += 1) add(`bank-${index + 1}`, `Bank ${index + 1}`, "bank", index, 1320);
+  for (let firm = 0; firm < firmCount; firm += 1) {
+    const community = firm % bankCount;
+    for (let worker = 0; worker < householdsPerFirm; worker += 1) {
+      const householdId = firm * householdsPerFirm + worker + 1;
+      add(`household-${householdId}`, `Household ${householdId}`, "household", community, 58 * householdScale, `bank-${community + 1}`, householdScale);
+    }
   }
-  for (let index = 0; index < 10; index += 1) add(`firm-${index + 1}`, `Firm ${index + 1}`, "firm", index % 4, 54, `bank-${(index % 4) + 1}`);
-  for (let index = 0; index < 4; index += 1) add(`fund-${index + 1}`, `Fund ${index + 1}`, "fund", index, 470, `bank-${index + 1}`);
+  for (let index = 0; index < firmCount; index += 1) add(`firm-${index + 1}`, `Firm ${index + 1}`, "firm", index % bankCount, 54, `bank-${(index % bankCount) + 1}`);
+  for (let index = 0; index < 4; index += 1) add(`fund-${index + 1}`, `Fund ${index + 1}`, "fund", index, 470, `bank-${(index % bankCount) + 1}`);
   // Public-sector balances are outside the commercial-bank deposit ledger in
   // this compact model; they can pay into it but do not make Bank 1 a hidden
   // systemically dominant custodian.
@@ -530,30 +568,43 @@ export function createEconomy(): Economy {
 
   const edges: EconomyEdge[] = [];
   const addEdge = (id: string, from: string, to: string, kind: EdgeKind, principal: number) => edges.push({ id, from, to, kind, principal, flow: 0, arrears: 0 });
-  for (let firm = 0; firm < 10; firm += 1) {
+  for (let firm = 0; firm < firmCount; firm += 1) {
     const firmId = `firm-${firm + 1}`;
-    const bankId = `bank-${(firm % 4) + 1}`;
+    const bankId = `bank-${(firm % bankCount) + 1}`;
     addEdge(`loan:${firmId}:${bankId}`, firmId, bankId, "loan", 106);
     addEdge(`procurement:${firmId}`, "treasury", firmId, "procurement", 0.8);
     addEdge(`tax-firm:${firmId}`, firmId, "treasury", "tax", 0.2);
-    for (let worker = 0; worker < 2; worker += 1) {
-      const householdId = `household-${firm * 2 + worker + 1}`;
-      addEdge(`wage:${firmId}:${householdId}`, firmId, householdId, "wage", 3.0);
-      // The primary employer is local, but a second purchase link diversifies
-      // demand so a shock propagates through trade rather than one island.
-      addEdge(`consumption:${householdId}:${firmId}`, householdId, firmId, "consumption", 2.2872);
-      addEdge(`consumption:${householdId}:other`, householdId, `firm-${((firm + 3) % 10) + 1}`, "consumption", 0.5718);
-      addEdge(`tax-household:${householdId}`, householdId, "treasury", "tax", 0.3);
+    for (let worker = 0; worker < householdsPerFirm; worker += 1) {
+      const householdId = `household-${firm * householdsPerFirm + worker + 1}`;
+      addEdge(`wage:${firmId}:${householdId}`, firmId, householdId, "wage", 3.0 * householdScale);
+      if (expanded) {
+        // Every household has two equal suppliers. One stopped household thus
+        // removes 5% of either recipient firm's household demand, never an
+        // entire firm's consumer base.
+        const secondSupplier = `firm-${((firm + 1) % firmCount) + 1}`;
+        const basketShare = 2.859 * householdScale / 2;
+        addEdge(`consumption:${householdId}:${firmId}`, householdId, firmId, "consumption", basketShare);
+        addEdge(`consumption:${householdId}:${secondSupplier}`, householdId, secondSupplier, "consumption", basketShare);
+      } else {
+        // The compact field remains byte-for-byte equivalent in its payment
+        // proportions so existing /5 observations retain their baseline.
+        addEdge(`consumption:${householdId}:${firmId}`, householdId, firmId, "consumption", 2.2872);
+        addEdge(`consumption:${householdId}:other`, householdId, `firm-${((firm + 3) % firmCount) + 1}`, "consumption", 0.5718);
+      }
+      addEdge(`tax-household:${householdId}`, householdId, "treasury", "tax", 0.3 * householdScale);
     }
   }
-  for (let household = 0; household < 20; household += 1) addEdge(`dividend:${household + 1}`, `bank-${(Math.floor(household / 2) % 4) + 1}`, `household-${household + 1}`, "dividend", 0);
+  for (let household = 0; household < firmCount * householdsPerFirm; household += 1) {
+    const community = Math.floor(household / householdsPerFirm) % bankCount;
+    addEdge(`dividend:${household + 1}`, `bank-${community + 1}`, `household-${household + 1}`, "dividend", 0);
+  }
   for (let fund = 0; fund < 4; fund += 1) {
     // Short public bills mature and are rolled in the same period: the fund
     // receives the old bill's redemption then purchases the replacement.
     addEdge(`bond-rollover:${fund + 1}`, `fund-${fund + 1}`, "treasury", "bond", 0.16);
     addEdge(`bond-redemption:${fund + 1}`, "treasury", `fund-${fund + 1}`, "bond", 0.16);
   }
-  const state: Economy = { nodes, edges, time: 0, price: 1, nextNetworkReview: 1 };
+  const state: Economy = { nodes, edges, time: 0, price: 1, nextNetworkReview: 1, population };
   refreshBalanceSheets(state);
   // Equal finite loss-absorbing capital, not oversized reserves that hide drift.
   for (const bank of nodes.filter((node) => node.sector === "bank")) {

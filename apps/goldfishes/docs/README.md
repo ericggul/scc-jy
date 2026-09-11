@@ -20,6 +20,7 @@ For a route change, read its document, the specific modules being changed, and t
 | `/screen/0908/dots` | 2026-09-08 | Instagram/4 copied unchanged as an independent experiment. [doc](./0908/dots.md) |
 | `/screen/0908/overlay` | 2026-09-08 | Original DOM/SVG field with a transparent 3D school. [doc](./0908/overlay.md) |
 | `/screen/0908/overlay-2` | 2026-09-08 | Original 3D goldfish school with configurable keyword surfaces. [doc](./0908/overlay-2.md) |
+| `/screen/0908/overlay-3` | 2026-09-08 | Original 3D goldfish school with switchable technology typefaces. [doc](./0908/overlay-3.md) |
 | `/screen/0908/overlay-2d` | 2026-09-08 | Original field with the Canvas2D goldfish glyph from 2d/1. [doc](./0908/overlay-2d.md) |
 | `/screen/0908/overlay-2d-2` | 2026-09-08 | Persistent individual goldfish trails replace influence edges. [doc](./0908/overlay-2d-2.md) |
 | `/screen/0908/overlay-2d-3` | 2026-09-08 | Local attention, habituation and trail feedback reshape the keyword field. [doc](./0908/overlay-2d-3.md) |

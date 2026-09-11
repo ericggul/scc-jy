@@ -35,6 +35,13 @@
   pointer-events: none;
   opacity: 1;
 }
+.denseGraph .edgeLabel {
+  font-size: 7.5px;
+  stroke-width: 2.5px;
+  letter-spacing: -.04em;
+}
+.denseGraph .edgeTarget { stroke-width: 12px; }
+.denseGraph .nodeHit { stroke-width: .85px; }
 .edgeThreat .edge {
   animation: threatEdgeStroke var(--threat-cycle) steps(1, end) infinite;
 }

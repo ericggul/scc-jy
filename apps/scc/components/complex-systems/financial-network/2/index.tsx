@@ -31,7 +31,7 @@ type Layer = "payments" | "claims";
 type ScreenRelationGeometry = {
   path: Path2D;
   pathLength: number;
-  label: Point;
+  label: Point | null;
   end: Point;
   tangent: Point;
 };
@@ -66,7 +66,7 @@ function nodeIdentifier(actor: FinancialActor) {
 
 function nodeBox(actor: FinancialActor, expanded = false) {
   if (expanded) {
-    if (actor.kind === "household") return { width: 64, height: 34, solid: false };
+    if (actor.kind === "household") return { width: 50, height: 24, solid: false };
     if (actor.kind === "firm") return { width: 80, height: 40, solid: false };
     if (actor.kind === "bank") return { width: 96, height: 48, solid: true };
     if (actor.kind === "fund") return { width: 84, height: 40, solid: false };
@@ -151,13 +151,14 @@ function transactionTiming(relation: FinancialRelation, preset: NetworkPreset): 
   // restoring an always-on mesh. The range is deliberately non-harmonic, so
   // settlement events do not converge into a shared beat.
   const expanded = preset === "expanded";
-  // More household representatives create more independent settlements, not a
-  // shared blink. A longer individual return interval retains roughly the same
-  // simultaneous foreground density while total new settlements still rises.
-  const period = expanded ? 3.42 + variation * 2.8 : 1.38 + variation * 1.8;
+  // Two hundred households create more independent settlements, not a shared
+  // blink. The long, non-harmonic return interval caps concurrent foreground
+  // curves while still admitting dozens of distinct new settlements per
+  // second across the full field.
+  const period = expanded ? 10.4 + variation * 4.4 : 1.38 + variation * 1.8;
   return {
     period,
-    duration: expanded ? 0.4 + ((hash >>> 10) % 181) / 1_000 : 0.52 + ((hash >>> 10) % 241) / 1_000,
+    duration: expanded ? 0.36 + ((hash >>> 10) % 121) / 1_000 : 0.52 + ((hash >>> 10) % 241) / 1_000,
     offset: (relation.phase * 0.47 + variation) * period,
   };
 }
@@ -189,7 +190,8 @@ function riskValueForActor(state: FinancialNetworkState, actor: FinancialActor) 
 }
 
 function riskIntervalForValue(risk: number, fractured = false) {
-  if (fractured || risk >= 0.7) return 0.1;
+  if (fractured || risk >= 0.85) return 0.05;
+  if (risk >= 0.7) return 0.1;
   if (risk >= 0.4) return 0.2;
   if (risk >= 0.2) return 0.4;
   return null;
@@ -269,9 +271,11 @@ function FinancialCanvas({
   useEffect(() => {
     const canvas = canvasRef.current;
     const context = canvas?.getContext("2d", { alpha: false });
+    const topologyCanvas = document.createElement("canvas");
+    const topologyContext = topologyCanvas.getContext("2d", { alpha: false });
     const staticCanvas = document.createElement("canvas");
-    const staticContext = staticCanvas.getContext("2d", { alpha: false });
-    if (!canvas || !context || !staticContext) return;
+    const staticContext = staticCanvas.getContext("2d", { alpha: true });
+    if (!canvas || !context || !topologyContext || !staticContext) return;
     let width = 1;
     let height = 1;
     let ratio = 1;
@@ -286,11 +290,14 @@ function FinancialCanvas({
     let staticClaims = false;
     let staticSelected: string | null = null;
     let staticPaintAt = Number.NEGATIVE_INFINITY;
+    let topologyDirty = true;
+    let topologyClaims = false;
     const geometryByRelation = new Map<string, ReturnType<typeof edgeGeometry>>();
     const screenGeometryByRelation = new Map<string, ScreenRelationGeometry>();
     const initialState = network.current;
     const expanded = initialState.preset === "expanded";
     const paymentRelations = initialState.relations.filter((relation) => relation.layer === "payment");
+    const paymentById = new Map(paymentRelations.map((relation) => [relation.id, relation]));
     const claimRelations = initialState.relations.filter((relation) => relation.layer === "claim" || relation.layer === "facility");
     const relationCodes = new Map<string, string>();
     for (const [index, relation] of paymentRelations.entries()) relationCodes.set(relation.id, `P${String(index + 1).padStart(2, "0")}`);
@@ -300,6 +307,11 @@ function FinancialCanvas({
     const activeTransactions = new Map<string, TransactionPulse>();
     const actorsById = new Map(initialState.actors.map((actor) => [actor.id, actor]));
     const ledgerValues = new Map<string, number>();
+    const staticRefreshInterval = expanded
+      ? initialState.actors.filter((actor) => actor.kind === "household").length >= 100
+        ? 1_000 / 8
+        : 1_000 / 12
+      : 0;
 
     const fieldTransform = () => {
       if (!expanded) return { scale: width / WORLD.width, x: 0, y: 0 };
@@ -358,12 +370,16 @@ function FinancialCanvas({
       ratio = Math.min(2, Math.max(1, window.devicePixelRatio || 1));
       canvas.width = Math.round(width * ratio);
       canvas.height = Math.round(height * ratio);
+      topologyCanvas.width = canvas.width;
+      topologyCanvas.height = canvas.height;
       staticCanvas.width = canvas.width;
       staticCanvas.height = canvas.height;
       context.setTransform(ratio, 0, 0, ratio, 0, 0);
+      topologyContext.setTransform(ratio, 0, 0, ratio, 0, 0);
       staticContext.setTransform(ratio, 0, 0, ratio, 0, 0);
       screenGeometryByRelation.clear();
       staticDirty = true;
+      topologyDirty = true;
     };
 
     const geometryFor = (relation: FinancialRelation) => {
@@ -374,9 +390,12 @@ function FinancialCanvas({
       return geometry;
     };
 
-    const screenGeometryFor = (relation: FinancialRelation) => {
+    const screenGeometryFor = (relation: FinancialRelation, needsLabel = false) => {
       const cached = screenGeometryByRelation.get(relation.id);
-      if (cached) return cached;
+      if (cached) {
+        if (needsLabel && !cached.label) cached.label = labelPointFor(geometryFor(relation), relation);
+        return cached;
+      }
       const curve = geometryFor(relation);
       const start = toScreen(curve.start);
       const controlA = toScreen(curve.controlA);
@@ -396,13 +415,15 @@ function FinancialCanvas({
       const screenGeometry = {
         path,
         pathLength: Math.max(1, pathLength),
-        label: labelPointFor(curve, relation),
+        label: needsLabel ? labelPointFor(curve, relation) : null,
         end,
         tangent: { x: (end.x - controlB.x) / tangentLength, y: (end.y - controlB.y) / tangentLength },
       };
       screenGeometryByRelation.set(relation.id, screenGeometry);
       return screenGeometry;
     };
+
+    const labelFor = (relation: FinancialRelation) => screenGeometryFor(relation, true).label!;
 
     const drawRail = (
       target: CanvasRenderingContext2D,
@@ -514,6 +535,24 @@ function FinancialCanvas({
       target.restore();
     };
 
+    const drawTopology = (
+      claims: boolean,
+      relations: readonly FinancialRelation[],
+    ) => {
+      topologyContext.fillStyle = "#fafaf7";
+      topologyContext.fillRect(0, 0, width, height);
+      topologyContext.globalAlpha = 1;
+      topologyContext.lineCap = "round";
+      topologyContext.lineJoin = "round";
+      for (const relation of relations) {
+        const railWidth = Math.max(
+          1.2,
+          relationRailWidth(relation, claims) * 2,
+        ) * fieldTransform().scale;
+        drawRail(topologyContext, relation, "#777772", railWidth, 0.3);
+      }
+    };
+
     const drawStaticField = (
       state: FinancialNetworkState,
       claims: boolean,
@@ -521,8 +560,7 @@ function FinancialCanvas({
       relations: readonly FinancialRelation[],
       relationCode: (relation: FinancialRelation) => string,
     ) => {
-      staticContext.fillStyle = "#fafaf7";
-      staticContext.fillRect(0, 0, width, height);
+      staticContext.clearRect(0, 0, width, height);
       staticContext.globalAlpha = 1;
       staticContext.lineCap = "round";
       staticContext.lineJoin = "round";
@@ -538,14 +576,6 @@ function FinancialCanvas({
         }
       }
 
-      for (const relation of relations) {
-        const railWidth = Math.max(
-          1.2,
-          relationRailWidth(relation, claims) * 2,
-        ) * fieldTransform().scale;
-        drawRail(staticContext, relation, "#777772", railWidth, 0.3);
-      }
-
       if (claims) {
         staticContext.font = `700 ${Math.max(9, Math.min(11, width / 140))}px Arial, Helvetica, sans-serif`;
         staticContext.textAlign = "center";
@@ -553,7 +583,7 @@ function FinancialCanvas({
         staticContext.lineWidth = 3;
         staticContext.strokeStyle = "#fafaf7";
         for (const relation of relations) {
-          const label = screenGeometryFor(relation).label;
+          const label = labelFor(relation);
           const text = `${displayAmount(relation, true)}  ${relationCode(relation)}`;
           staticContext.strokeText(text, label.x, label.y);
           staticContext.fillStyle = "#575752";
@@ -576,7 +606,15 @@ function FinancialCanvas({
         const relationCode = (relation: FinancialRelation) => relationCodes.get(relation.id) ?? "—";
 
         const modelRefreshDue = staticModelTime !== state.time &&
-          performance.now() - staticPaintAt >= (expanded ? 1_000 / 12 : 0);
+          performance.now() - staticPaintAt >= staticRefreshInterval;
+        // Payment rails show stable contractual topology; their live amount is
+        // represented by the foreground settlement. Claim rails instead carry
+        // an outstanding stock, so they refresh with the cached claim field.
+        if (topologyDirty || topologyClaims !== claims || (claims && modelRefreshDue)) {
+          drawTopology(claims, relations);
+          topologyDirty = false;
+          topologyClaims = claims;
+        }
         if (staticDirty || staticClaims !== claims || staticSelected !== selected || modelRefreshDue) {
           drawStaticField(state, claims, selected, relations, relationCode);
           staticDirty = false;
@@ -587,6 +625,7 @@ function FinancialCanvas({
         }
 
         context.globalAlpha = 1;
+        context.drawImage(topologyCanvas, 0, 0, topologyCanvas.width, topologyCanvas.height, 0, 0, width, height);
         context.drawImage(staticCanvas, 0, 0, staticCanvas.width, staticCanvas.height, 0, 0, width, height);
         context.lineCap = "round";
         context.lineJoin = "round";
@@ -616,11 +655,12 @@ function FinancialCanvas({
           context.textBaseline = "middle";
           context.lineWidth = 3;
           context.strokeStyle = "#fafaf7";
-          for (const relation of paymentRelations) {
-            const transaction = activeTransactions.get(relation.id);
-            const stage = transaction ? settlementStage(transaction.progress) : null;
-            if (!transaction || !stage || stage.labelAlpha <= 0.01) continue;
-            const label = screenGeometryFor(relation).label;
+          for (const [relationId, transaction] of activeTransactions) {
+            const relation = paymentById.get(relationId);
+            if (!relation) continue;
+            const stage = settlementStage(transaction.progress);
+            if (stage.labelAlpha <= 0.01) continue;
+            const label = labelFor(relation);
             const text = `${relationCode(relation)}  ${transactionDescription(relation)}  ${displayMoney(transaction.amount)}`;
             const interval = riskIntervalForRelation(state, relation, actorsById);
             const alert = !!interval && riskPulseIsOn(presentationTime, interval);
@@ -635,7 +675,7 @@ function FinancialCanvas({
         const active = activeRelationId ? relations.find((relation) => relation.id === activeRelationId) : null;
         const activeTransaction = active && !claims ? activeTransactions.get(active.id) : null;
         if (active && (claims || activeTransaction)) {
-          const label = screenGeometryFor(active).label;
+          const label = labelFor(active);
           context.save();
           context.fillStyle = "#171714";
           context.font = `700 ${Math.max(12, width / 100)}px Arial, Helvetica, sans-serif`;

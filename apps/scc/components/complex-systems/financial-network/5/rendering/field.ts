@@ -25,6 +25,29 @@ const minimumRadius: Record<Sector, number> = {
   centralBank: 22.5,
 };
 
+const numericId = (id: string) => Math.max(0, Number(id.match(/(\d+)$/)?.[1] ?? 1) - 1);
+
+function ringPoint(index: number, count: number, radius: number, centre: GraphPoint, phase = -Math.PI / 2): GraphPoint {
+  const angle = phase + index / Math.max(1, count) * Math.PI * 2;
+  return { x: centre.x + Math.cos(angle) * radius, y: centre.y + Math.sin(angle) * radius };
+}
+
+function peripheralHouseholdPoint(index: number, total: number): GraphPoint {
+  const sideIndex = Math.floor(index / 2);
+  const perSide = Math.ceil(total / 2);
+  const columns = 5;
+  const rows = Math.ceil(perSide / columns);
+  const column = sideIndex % columns;
+  const row = Math.floor(sideIndex / columns);
+  const left = index % 2 === 0;
+  const xStart = left ? 28 : 1_320;
+  const xEnd = left ? 292 : 1_572;
+  return {
+    x: xStart + column / (columns - 1) * (xEnd - xStart),
+    y: 30 + (rows === 1 ? 0 : row / (rows - 1)) * 800,
+  };
+}
+
 const spendableCash = (node: EconomyNode) => node.frozen ? node.liquidCash : node.cash;
 
 /**
@@ -33,10 +56,12 @@ const spendableCash = (node: EconomyNode) => node.frozen ? node.liquidCash : nod
  * contracts the circle immediately without making banks and households
  * incomparable through their very different baseline balances.
  */
-export function nodeRadius(node: EconomyNode, referenceNode: EconomyNode = node) {
+export function nodeRadius(node: EconomyNode, referenceNode: EconomyNode = node, denseHouseholds = false) {
   const normal = Math.max(0.001, spendableCash(referenceNode));
   const ratio = Math.max(0, Math.min(1.35, spendableCash(node) / normal));
-  return Math.max(minimumRadius[node.sector] * 0.28, sectorRadius[node.sector] * Math.sqrt(ratio));
+  const baseRadius = denseHouseholds && node.sector === "household" ? 5.8 : sectorRadius[node.sector];
+  const minimum = denseHouseholds && node.sector === "household" ? 2.9 : minimumRadius[node.sector];
+  return Math.max(minimum * 0.28, baseRadius * Math.sqrt(ratio));
 }
 
 function radiusForId(id: string, radii?: ReadonlyMap<string, number>) {
@@ -107,6 +132,30 @@ const fixedPositions: Record<string, GraphPoint> = {
  */
 export function graphLayout(nodes: readonly EconomyNode[]) {
   const points = new Map<string, GraphPoint>();
+  const households = nodes.filter((node) => node.sector === "household");
+  const expanded = households.length >= 100;
+  if (expanded) {
+    const firms = nodes.filter((node) => node.sector === "firm");
+    const financial = nodes.filter((node) => node.sector === "bank" || node.sector === "fund");
+    const centre = { x: 800, y: 450 };
+    for (const node of nodes) {
+      if (node.sector === "household") {
+        points.set(node.id, peripheralHouseholdPoint(numericId(node.id), households.length));
+        continue;
+      }
+      if (node.sector === "firm") {
+        points.set(node.id, ringPoint(numericId(node.id), firms.length, 252, centre));
+        continue;
+      }
+      if (node.sector === "bank" || node.sector === "fund") {
+        points.set(node.id, ringPoint(financial.findIndex((item) => item.id === node.id), financial.length, 150, centre));
+        continue;
+      }
+      if (node.sector === "centralBank") points.set(node.id, { x: 800, y: 450 });
+      else points.set(node.id, { x: 800, y: 700 });
+    }
+    return points;
+  }
   for (const node of nodes) {
     const point = fixedPositions[node.id];
     if (point) points.set(node.id, point);

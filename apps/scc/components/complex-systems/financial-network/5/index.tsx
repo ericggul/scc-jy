@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { createEconomy, setFrozen, stepEconomy, type EconomyNode } from "./model/index";
+import { createEconomy, setFrozen, stepEconomy, type EconomyNode, type PopulationPreset } from "./model/index";
 import {
   GRAPH_SIZE,
   graphLayout,
@@ -21,6 +21,7 @@ import styles from "./network.module.css";
 const related = (edge: GraphRelation, id: string | null) => !id || edge.from === id || edge.to === id;
 /** Below this visual epsilon the line is already sub-pixel and transparent. */
 const LIVE_FLOW_EPSILON = 0.002;
+const DENSE_HOUSEHOLD_COUNT = 100;
 
 const labelStripe = (id: string) => {
   let hash = 0;
@@ -81,6 +82,7 @@ export default function FinancialNetworkFive() {
   const [hovered, setHovered] = useState<string | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [population, setPopulation] = useState<PopulationPreset>("compact");
   const [showNodeLabels, setShowNodeLabels] = useState(true);
   const [view, setView] = useState({ x: 0, y: 0, zoom: 1 });
   const running = useRef(true);
@@ -97,11 +99,12 @@ export default function FinancialNetworkFive() {
       if (!document.hidden && running.current && !preference.matches) {
         stepEconomy(economy.current, 4 / 24);
         stepEconomy(reference.current, 4 / 24);
-        // The ledger settles at 24 Hz, but repainting every numeric label and
-        // stroke marker at that rate makes a dense SVG field shimmer. A 12 Hz
-        // visual sample keeps changes legible while CSS bridges each step.
+        // The ledger settles at 24 Hz. The compact field samples at 12 Hz;
+        // the 200-household field uses an 8 Hz geometry sample so its thousand
+        // live SVG relations do not churn as one text raster.
         const now = performance.now();
-        if (now - lastPaint >= 1000 / 12) {
+        const visualHz = economy.current.nodes.filter((node) => node.sector === "household").length >= DENSE_HOUSEHOLD_COUNT ? 8 : 12;
+        if (now - lastPaint >= 1000 / visualHz) {
           lastPaint = now;
           setRevision((value) => value + 1);
           // Refresh one sixth of value labels per visual tick. Each number is
@@ -126,15 +129,25 @@ export default function FinancialNetworkFive() {
     };
   }, []);
 
-  const points = useMemo(() => graphLayout(economy.current.nodes), []);
+  const denseField = economy.current.nodes.filter((node) => node.sector === "household").length >= DENSE_HOUSEHOLD_COUNT;
+  const points = useMemo(() => graphLayout(economy.current.nodes), [population]);
   const referenceNodes = new Map(reference.current.nodes.map((node) => [node.id, node]));
-  const radii = new Map(economy.current.nodes.map((node) => [node.id, nodeRadius(node, referenceNodes.get(node.id))]));
+  const nodesById = new Map(economy.current.nodes.map((node) => [node.id, node]));
+  const radii = new Map(economy.current.nodes.map((node) => [node.id, nodeRadius(node, referenceNodes.get(node.id), denseField)]));
   // This field is a transaction record, not a latent-obligation diagram. A
   // relation has geometry while actual payment flow remains above a sub-pixel
   // visual epsilon. Width and opacity themselves are never thresholded.
   const relations = visibleRelations(economy.current, "payments")
     .filter((edge) => !edge.facility && edge.flow > LIVE_FLOW_EPSILON);
   const referenceRelations = new Map(visibleRelations(reference.current, "payments").map((edge) => [edge.id, edge]));
+  const incomingFlow = new Map<string, number>();
+  const referenceIncomingFlow = new Map<string, number>();
+  for (const edge of economy.current.edges) {
+    if (edge.kind !== "backstopDisbursement") incomingFlow.set(edge.to, (incomingFlow.get(edge.to) ?? 0) + edge.flow);
+  }
+  for (const edge of reference.current.edges) {
+    if (edge.kind !== "backstopDisbursement") referenceIncomingFlow.set(edge.to, (referenceIncomingFlow.get(edge.to) ?? 0) + edge.flow);
+  }
   // A liquidity lock changes the ledger, not the camera's analytical scope.
   // Relation isolation is therefore pointer/focus transient only.
   const focus = hovered;
@@ -162,16 +175,20 @@ export default function FinancialNetworkFive() {
     redraw();
   };
 
-  const reset = () => {
-    economy.current = createEconomy();
-    reference.current = createEconomy();
+  const replacePopulation = (nextPopulation: PopulationPreset) => {
+    economy.current = createEconomy(nextPopulation);
+    reference.current = createEconomy(nextPopulation);
+    setPopulation(nextPopulation);
     setSelected([]);
     setHovered(null);
     setActiveId(null);
     setLabelFlows(new Map());
     setView({ x: 0, y: 0, zoom: 1 });
+    setShowNodeLabels(nextPopulation === "compact");
     redraw();
   };
+
+  const reset = () => replacePopulation(population);
 
   const zoom = (next: number) => setView((current) => {
     const value = Math.max(0.8, Math.min(1.55, next));
@@ -186,7 +203,7 @@ export default function FinancialNetworkFive() {
     <h1 className={styles.srOnly}>금융 네트워크</h1>
     <div className={styles.viewport}>
       <svg
-        className={styles.graph}
+        className={`${styles.graph} ${denseField ? styles.denseGraph : ""}`}
         viewBox={`${view.x} ${view.y} ${graphWidth} ${graphHeight}`}
         preserveAspectRatio="xMidYMid meet"
         role="group"
@@ -209,8 +226,8 @@ export default function FinancialNetworkFive() {
           {relations.map((edge) => {
             const path = relationPath(edge, points, radii);
             const relevant = related(edge, focus);
-            const from = economy.current.nodes.find((node) => node.id === edge.from)!;
-            const to = economy.current.nodes.find((node) => node.id === edge.to)!;
+            const from = nodesById.get(edge.from)!;
+            const to = nodesById.get(edge.to)!;
             const labelPoint = relationLabelPoint(edge, points, radii);
             // Both curves begin at zero: a healthy payment circuit is legible
             // at a glance, while a drying channel still has no visual floor.
@@ -236,8 +253,8 @@ export default function FinancialNetworkFive() {
         <g className={styles.nodes}>
           {economy.current.nodes.map((node) => {
             const point = points.get(node.id)!;
-            const actualIncoming = economy.current.edges.filter((edge) => edge.to === node.id && edge.kind !== "backstopDisbursement").reduce((sum, edge) => sum + edge.flow, 0);
-            const referenceIncoming = reference.current.edges.filter((edge) => edge.to === node.id && edge.kind !== "backstopDisbursement").reduce((sum, edge) => sum + edge.flow, 0);
+            const actualIncoming = incomingFlow.get(node.id) ?? 0;
+            const referenceIncoming = referenceIncomingFlow.get(node.id) ?? 0;
             const incomingRatio = referenceIncoming > 0.01 ? actualIncoming / referenceIncoming : 1;
             const affected = !node.frozen && incomingRatio < 0.85;
             // A flash is a binary visual event: normal cell background, then
@@ -269,6 +286,7 @@ export default function FinancialNetworkFive() {
       {reduced
         ? <button type="button" onClick={() => { stepEconomy(economy.current, 1); redraw(); }}>한 걸음</button>
         : <button type="button" onClick={() => { running.current = !running.current; setPaused(!running.current); }}>{paused ? "재생" : "정지"}</button>}
+      <button type="button" onClick={() => replacePopulation(population === "compact" ? "expanded" : "compact")} aria-pressed={population === "expanded"}>200명</button>
       <button type="button" onClick={() => setShowNodeLabels((visible) => !visible)} aria-pressed={showNodeLabels}>노드명</button>
       <button type="button" onClick={release} disabled={!selected.length}>동결 해제</button>
       <button type="button" onClick={reset}>초기화</button>
@@ -279,7 +297,7 @@ export default function FinancialNetworkFive() {
       <button type="button" onClick={() => zoom(view.zoom + 0.15)} aria-label="확대">+</button>
     </div>
     {selected.length > 0 && <aside className={styles.interaction} aria-live="polite"><strong>동결 · {economy.current.nodes.filter((node) => node.frozen).map(nodeLabel).join(", ")}</strong><span>잠긴 유동성 {economy.current.nodes.filter((node) => node.frozen).reduce((sum, node) => sum + node.cash - node.liquidCash, 0).toFixed(1)}</span><span>해제해도 결손은 복구되지 않음</span></aside>}
-    {readout && <aside className={styles.readout} aria-live="polite"><span>{nodeLabel(economy.current.nodes.find((node) => node.id === readout.from)!)} → {nodeLabel(economy.current.nodes.find((node) => node.id === readout.to)!)}</span><strong>{readout.label} · {relationAmount(readout, "payments")}</strong>{readout.arrears > 0.005 && <em>연체</em>}</aside>}
+    {readout && <aside className={styles.readout} aria-live="polite"><span>{nodeLabel(nodesById.get(readout.from)!)} → {nodeLabel(nodesById.get(readout.to)!)}</span><strong>{readout.label} · {relationAmount(readout, "payments")}</strong>{readout.arrears > 0.005 && <em>연체</em>}</aside>}
     <span className={styles.srOnly}>{revision}</span>
   </main>;
 }

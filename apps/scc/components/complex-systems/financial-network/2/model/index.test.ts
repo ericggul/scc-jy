@@ -6,6 +6,7 @@ import {
   stepFinancialNetwork,
   summarizeNetwork,
 } from "./index.ts";
+import { layoutActors } from "../rendering/index.ts";
 
 function advance(state: ReturnType<typeof createFinancialNetwork>, seconds: number) {
   for (let elapsed = 0; elapsed < seconds; elapsed += 0.25) {
@@ -32,17 +33,17 @@ test("builds a compact macro-financial economy with every ledger channel live", 
   assert.ok(state.relations.some((relation) => relation.kind === "central-bank-facility"));
 });
 
-test("builds the 20-sector circular preset without collapsing its ledger channels", () => {
+test("builds the 20-sector preset with 200 independently settling households", () => {
   const state = createFinancialNetwork("expanded");
   const total = (kind: string) => state.actors.filter((actor) => actor.kind === kind).length;
   assert.equal(state.preset, "expanded");
-  assert.equal(total("household"), 40);
+  assert.equal(total("household"), 200);
   assert.equal(total("firm"), 20);
   assert.equal(total("bank"), 6);
   assert.equal(total("fund"), 4);
-  assert.equal(state.actors.length, 72);
-  assert.equal(state.relations.filter((relation) => relation.layer === "payment").length, 262);
-  assert.equal(state.relations.filter((relation) => relation.layer === "claim").length, 87);
+  assert.equal(state.actors.length, 232);
+  assert.equal(state.relations.filter((relation) => relation.layer === "payment").length, 1_102);
+  assert.equal(state.relations.filter((relation) => relation.layer === "claim").length, 247);
   assert.equal(state.relations.filter((relation) => relation.layer === "facility").length, 4);
   assert.equal(
     state.relations
@@ -50,26 +51,52 @@ test("builds the 20-sector circular preset without collapsing its ledger channel
       .reduce((total, relation) => total + relation.baseline, 0),
     3.28,
   );
-  assert.equal(
+  assert.ok(Math.abs(
     state.relations
       .filter((relation) => relation.kind === "deposit-stock" && relation.to === "household-1")
-      .reduce((total, relation) => total + relation.outstanding, 0),
-    38,
-  );
+      .reduce((total, relation) => total + relation.outstanding, 0) - 7.6,
+  ) < 1e-9);
+  assert.ok(Math.abs(
+    state.relations
+      .filter((relation) => relation.kind === "consumption" && relation.to === "firm-1")
+      .reduce((total, relation) => total + relation.baseline, 0) - 3.48,
+  ) < 1e-9);
   advance(state, 2);
-  assert.ok(state.relations.some((relation) => relation.id === "wage:firm-20:household-40" && relation.actual > 1));
+  assert.ok(state.relations.some((relation) => relation.id === "wage:firm-20:household-200" && relation.actual > 0.15));
   assert.ok(state.relations.some((relation) => relation.id === "interbank-funding:bank-3:bank-4" && relation.actual > 0.1));
   assert.equal(state.actors.some((actor) => actor.fractured), false);
 });
 
-test("the 20-sector preset sustains a normal circulating economy", () => {
+test("the 20-sector preset sustains a normal circulating economy for a long observation", () => {
   const state = createFinancialNetwork("expanded");
-  advance(state, 30);
+  advance(state, 120);
   const summary = summarizeNetwork(state);
   assert.equal(summary.fractured, 0);
   assert.ok(summary.paymentIndex > 0.9 && summary.paymentIndex < 1.07);
-  assert.ok(summary.refinancingIndex > 0.85);
+  assert.ok(summary.refinancingIndex > 0.9);
   assert.ok(summary.assetPrice > 0.98);
+});
+
+test("one persistent household interruption remains local in the 200-household field", () => {
+  const state = createFinancialNetwork("expanded");
+  applyLiquidityShock(state, "household-1", 0.78, "persistent");
+  advance(state, 120);
+  const summary = summarizeNetwork(state);
+  assert.equal(summary.fractured, 0);
+  assert.ok(summary.paymentIndex > 0.9);
+  assert.ok((state.actors.find((actor) => actor.id === "household-1")?.stress ?? 0) > 0.7);
+});
+
+test("the 200 household markers occupy unique peripheral positions", () => {
+  const state = createFinancialNetwork("expanded");
+  const points = layoutActors(state.actors);
+  const householdPoints = state.actors
+    .filter((actor) => actor.kind === "household")
+    .map((actor) => points.get(actor.id));
+  assert.equal(householdPoints.filter(Boolean).length, 200);
+  assert.equal(new Set(householdPoints.map((point) => `${point?.x},${point?.y}`)).size, 200);
+  assert.equal(householdPoints.filter((point) => (point?.x ?? 0) < 720).length, 100);
+  assert.equal(householdPoints.filter((point) => (point?.x ?? 0) > 720).length, 100);
 });
 
 test("normal circulation fluctuates without an autonomous fracture", () => {
@@ -98,7 +125,7 @@ test("a brief local liquidity seizure is absorbed by the normal circuit", () => 
 test("a local persistent seizure propagates through receipts, bank credit and supplier wages", () => {
   const state = createFinancialNetwork();
   applyLiquidityShock(state, "firm-1", 0.78, "persistent");
-  advance(state, 12);
+  advance(state, 18);
   const remoteWage = state.relations.find(
     (relation) => relation.id === "wage:firm-3:household-3",
   );

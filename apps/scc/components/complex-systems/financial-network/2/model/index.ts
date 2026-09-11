@@ -115,11 +115,26 @@ export function actorLabel(actor: FinancialActor) {
   return actor.label;
 }
 
-const byId = (state: FinancialNetworkState, id: string) =>
-  state.actors.find((actor) => actor.id === id);
+// The large 20-sector field is still a single deterministic model, but it has
+// enough household relations that repeated linear actor scans would turn each
+// 20 Hz model tick into avoidable work. Actors never enter or leave a state,
+// so an identity cache keeps settlement and stress propagation constant-time.
+const actorsByState = new WeakMap<FinancialNetworkState, Map<string, FinancialActor>>();
+
+const byId = (state: FinancialNetworkState, id: string) => {
+  let actors = actorsByState.get(state);
+  if (!actors) {
+    actors = new Map(state.actors.map((actor) => [actor.id, actor]));
+    actorsByState.set(state, actors);
+  }
+  return actors.get(id);
+};
 
 const clamp = (value: number, lower: number, upper: number) =>
   Math.min(upper, Math.max(lower, value));
+
+const excessPressure = (value: number, threshold: number) =>
+  Math.max(0, (value - threshold) / Math.max(EPSILON, 1 - threshold));
 
 const periodicDemand = (state: FinancialNetworkState, relation: FinancialRelation) => {
   const slow = Math.sin(state.time * 0.57 + relation.phase);
@@ -252,11 +267,16 @@ export function createFinancialNetwork(preset: NetworkPreset = "compact"): Finan
   const expanded = preset === "expanded";
   const bankCount = expanded ? 6 : 4;
   const sectorCount = expanded ? 20 : 8;
-  const householdsPerFirm = expanded ? 2 : 1;
+  // The expanded field resolves every firm-facing household sector into ten
+  // independently settling households. Its aggregate household balance sheet
+  // remains exactly the same, so one household's shock removes only one tenth
+  // of that firm's household payment surface instead of becoming a sector-wide
+  // default by construction.
+  const householdsPerFirm = expanded ? 10 : 1;
   const householdCount = sectorCount * householdsPerFirm;
   // Funds, the public balance sheets, procurement paths, and interbank links
   // stay exactly as the compact /2 model defines them. The only expanded
-  // population is the requested 6 banks / 20 firms / 40 households.
+  // population is the requested 6 banks / 20 firms / 200 households.
   const fundCount = 4;
   const actors: FinancialActor[] = [];
   for (let index = 0; index < bankCount; index += 1) {
@@ -266,8 +286,8 @@ export function createFinancialNetwork(preset: NetworkPreset = "compact"): Finan
     actors.push(createActor(`firm-${index + 1}`, `FIRM ${String(index + 1).padStart(2, "0")}`, "firm", index % bankCount, 42, 174));
   }
   for (let index = 0; index < householdCount; index += 1) {
-    // The 40-household view resolves each compact household sector into two
-    // representatives. Their stock and liquidity buffer are halves, preserving
+    // The dense household view resolves each household sector into ten
+    // representatives. Their stock and liquidity buffer are shares, preserving
     // the aggregate household balance sheet rather than doubling the economy.
     const householdScale = 1 / householdsPerFirm;
     actors.push(createActor(
@@ -295,17 +315,44 @@ export function createFinancialNetwork(preset: NetworkPreset = "compact"): Finan
     const supplier = `firm-${((index + 2) % sectorCount) + 1}`;
     const phase = index * 0.59;
     const householdShare = 1 / householdsPerFirm;
+    // In the compact demonstrator the households intentionally retain a
+    // little cash over its short observation window. At 20 sectors that drift
+    // becomes a firm-wide leak. The expanded circuit therefore returns the
+    // normal household income back to firms as consumption. The expanded
+    // calibration also lowers the representative tax shares below so the
+    // non-procurement firms neither mechanically hoard nor bleed cash during
+    // an ordinary long observation.
+    const householdConsumption = expanded ? 3.48 : 2.54;
+    const firmTax = expanded ? 0.2 : 0.32;
+    const householdTax = expanded ? 0.17 : 0.23;
     add(`loan:${firm}`, firm, bank, "loan-stock", "claim", 0, phase, 128);
     add(`debt-service:${firm}`, firm, bank, "debt-service", "payment", 1.34, phase + 0.15);
     add(`refinancing:${firm}`, bank, firm, "refinancing", "payment", 1.34, phase + 0.48);
     add(`deposit:${firm}`, bank, firm, "deposit-stock", "claim", 0, phase + 0.65, 42);
-    add(`firm-tax:${firm}`, firm, "treasury", "tax", "payment", 0.32, phase + 0.92);
+    add(`firm-tax:${firm}`, firm, "treasury", "tax", "payment", firmTax, phase + 0.92);
     for (let householdSlot = 0; householdSlot < householdsPerFirm; householdSlot += 1) {
       const household = `household-${index + 1 + householdSlot * sectorCount}`;
       const householdPhase = phase + householdSlot * 0.19;
       add(`wage:${firm}:${household}`, firm, household, "wage", "payment", 3.28 * householdShare, householdPhase + 0.26);
-      add(`consumption:${household}`, household, firm, "consumption", "payment", 2.54 * householdShare, householdPhase + 0.58);
-      add(`household-tax:${household}`, household, "treasury", "tax", "payment", 0.23 * householdShare, householdPhase + 0.82);
+      // In the dense field a household has a two-firm consumption basket.
+      // Its own interruption therefore removes five percent—not ten percent—
+      // of each receiving firm's household demand, while the aggregate sector
+      // flow remains unchanged. Compact mode keeps its one relation exactly.
+      const consumerFirms = expanded
+        ? [firm, `firm-${((index + 1) % sectorCount) + 1}`]
+        : [firm];
+      for (const [consumerIndex, consumerFirm] of consumerFirms.entries()) {
+        add(
+          expanded ? `consumption:${household}:${consumerFirm}` : `consumption:${household}`,
+          household,
+          consumerFirm,
+          "consumption",
+          "payment",
+          householdConsumption * householdShare / consumerFirms.length,
+          householdPhase + 0.58 + consumerIndex * 0.13,
+        );
+      }
+      add(`household-tax:${household}`, household, "treasury", "tax", "payment", householdTax * householdShare, householdPhase + 0.82);
       add(`bank-income:${household}`, bank, household, "bank-income", "payment", 0.14 * householdShare, householdPhase + 1.16);
       add(`deposit:${household}`, bank, household, "deposit-stock", "claim", 0, householdPhase + 0.12, 76 * householdShare);
     }
@@ -313,6 +360,9 @@ export function createFinancialNetwork(preset: NetworkPreset = "compact"): Finan
   }
 
   const procurementFirms = [2, 5, 8];
+  // The three pre-existing public procurement routes stay constant across
+  // presets; expansion adds household resolution, not extra public routes.
+  const procurementBaselines = [1.12, 1.12, 0.94];
   for (const [index, firmNumber] of procurementFirms.entries()) {
     add(
       `procurement:firm-${firmNumber}`,
@@ -320,7 +370,7 @@ export function createFinancialNetwork(preset: NetworkPreset = "compact"): Finan
       `firm-${firmNumber}`,
       "procurement",
       "payment",
-      index === procurementFirms.length - 1 ? 0.94 : 1.12,
+      procurementBaselines[index]!,
       0.42 + index * 0.71,
     );
   }
@@ -469,15 +519,26 @@ function updateStressAndCollateral(state: FinancialNetworkState, dt: number) {
   for (const actor of state.actors) {
     const shock = activeShock(actor, state);
     const liquidityGap = Math.max(0, actor.liquidityNeed - availableCash(state, actor));
-    const arrearsPressure = actor.arrears / Math.max(actor.liquidityNeed * 5, 1);
+    // Ordinary phase differences leave tiny, short-lived settlement residuals.
+    // They are not a contagion event. Transmission begins only beyond a small
+    // buffer so that a single household's local interruption cannot turn the
+    // normal equilibrium into an autonomous collapse.
+    const arrearsPressure = excessPressure(
+      actor.arrears / Math.max(actor.liquidityNeed * 5, 1),
+      0.06,
+    );
     const incoming = incomingPressure.get(actor.id);
-    const counterpartyPressure = incoming ? incoming.weighted / Math.max(incoming.weight, EPSILON) : 0;
-    const creditPressure = actor.kind === "bank"
+    const counterpartyPressure = excessPressure(
+      incoming ? incoming.weighted / Math.max(incoming.weight, EPSILON) : 0,
+      0.08,
+    );
+    const rawCreditPressure = actor.kind === "bank"
       ? state.relations
         .filter((relation) => relation.kind === "loan-stock" && relation.to === actor.id)
         .reduce((pressure, relation) => pressure + relation.arrears / Math.max(relation.outstanding, 1), 0) /
         Math.max(state.relations.filter((relation) => relation.kind === "loan-stock" && relation.to === actor.id).length, 1)
       : 0;
+    const creditPressure = excessPressure(rawCreditPressure, 0.04);
     const collateralPressure = (actor.kind === "firm" || actor.kind === "fund")
       ? Math.max(0, 1 - state.assetPrice) * 0.58
       : 0;
