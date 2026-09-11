@@ -5,14 +5,14 @@ Route: `/screen/0908/overlay-3` (alias `/0908/overlay-3`). A local `0908/overlay
 ## Surface and layout
 
 - Field background: `#07090b`; tech bubble background: `#171a1e`.
-- Default surface is `tech mono`. `tech` and `tech mono` share `mono`, `ui`, `image`, and `image mono`; the former `display` treatment is removed.
+- Default surface is `tech mono` with `image` type. `tech` and `tech mono` share `mono`, `ui`, `image`, and `image mono`; the former `display` treatment is removed.
 - `image` crops the local 6×6 no-text technology atlas in keyword order. `image mono` only desaturates/adjusts that image; the surface still controls ring colour.
 - The edge stays the parent’s plain edge. Directional edge controls and labels beneath bubbles are removed.
 - Right-side collapsible controls group surface, tech type, layout, fish school, story rings, and field options.
 
 ## Fish school
 
-- Count slider: 150–600 (step 10); size slider: ×0.8–×1.2 (step 0.05). Default: 500 fish, ×0.9, Instagram palette.
+- Count slider: 150–600 (step 10); size slider: ×0.8–×1.2 (step 0.05). Default: 600 fish, ×0.8, Instagram palette.
 - A target fish faces its keyword and brings its mouth to `bubble radius + mouth reach + 1px`; directional body support bounds prevent mouth, side, or tail overlap.
 - Target capture/contact begins at `bubble radius + 48px`. Near a target, tangential drift is damped so fish press toward the bubble rather than orbiting it.
 - Target reconsideration is 2.1–3.7 seconds; cruise speed is 24px/s and target approach caps at 44px/s.
@@ -22,6 +22,7 @@ Route: `/screen/0908/overlay-3` (alias `/0908/overlay-3`). A local `0908/overlay
 - `traces`: a 12Hz typed ring buffer holding only the latest 1–10 seconds (default 5). Paths are batched and capped at 12,000 segments per frame.
 - `target lines`: one mouth-to-current-target line per fish, never candidate/all-cell links. `target curve` uses an explicit two-control-point cubic Bézier and enables target lines on first activation.
 - `approach rings`: rings-only mode. Story edges and target lines are hidden. Every fish inside its target’s outer 24px approach band has one closed circle centred on that keyword, with the fish on its circumference. It fades in over 0.20s on entry, stays while that geometric condition holds, and fades out over 0.30s only after departure; isolated rings are clearer while overlapping rings are attenuated. Ring states and opacity buckets are fixed typed arrays rendered at full resolution by GPU instances.
+- `backboard` and `approach rings` are enabled initially; all other field options remain off.
 - `origins +`: a visible, centred `+` glyph inside each bubble surface, below its keyword/image.
 
 ## Limits
