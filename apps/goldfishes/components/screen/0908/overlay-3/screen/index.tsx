@@ -11,7 +11,7 @@ import {
 import { loadSocialStorySystem, saveSocialStorySystem } from "../model/session";
 import { AttentionSchool, type FieldLayout } from "../model/attention-school";
 import { techKeywordAt } from "../model/tech-keywords";
-import type { FishColourPaletteId, GoldfishScene } from "../rendering/goldfish-scene";
+import type { FishColourPaletteId, GoldfishScene, TargetLineShape } from "../rendering/goldfish-scene";
 import type { StoryInfluence } from "../model/types";
 import styles from "./story-tray.module.css";
 
@@ -24,7 +24,15 @@ const EDGE_SCALE_REFERENCE_SIZE = 40;
 const LINE_EDGE_WIDTH = 2.15;
 const MAX_STORY_GAP = 80;
 const SIMULATION_STEP_MILLISECONDS = 210;
-const FISH_COUNT = 350;
+const MIN_FISH_COUNT = 150;
+const MAX_FISH_COUNT = 600;
+const MIN_FISH_SCALE = 0.8;
+const MAX_FISH_SCALE = 1.2;
+const DEFAULT_FISH_COUNT = 500;
+const DEFAULT_FISH_SCALE = 0.9;
+const DEFAULT_TRACE_SECONDS = 5;
+const TECH_IMAGE_ATLAS_URL = "/images/0908/tech-keyword-atlas/tech-keyword-atlas-v1.png";
+const TECH_IMAGE_ATLAS_COLUMNS = 6;
 const SESSION_STORAGE_KEY = "goldfishes:0908:overlay-3:stories:v1";
 
 type GridSize = {
@@ -38,7 +46,7 @@ type StageSize = {
 };
 
 type StorySurface = "empty" | "white" | "face" | "numbers" | "colour" | "techMono" | "tech";
-type TechTypeface = "mono" | "ui" | "display";
+type TechTypeface = "mono" | "ui" | "image" | "imageMono";
 
 type StoryRingPalette = Readonly<{
   id: "instagram" | "rose" | "sunset" | "lilac" | "ocean" | "forest" | "citrus" | "ember" | "dusk" | "monochrome";
@@ -83,7 +91,8 @@ const surfaceOptions: readonly { label: string; value: StorySurface }[] = [
 const techTypefaceOptions: readonly { label: string; value: TechTypeface }[] = [
   { label: "mono", value: "mono" },
   { label: "ui", value: "ui" },
-  { label: "display", value: "display" },
+  { label: "image", value: "image" },
+  { label: "image mono", value: "imageMono" },
 ];
 const humanFaceImages = Array.from(
   { length: 60 },
@@ -162,6 +171,19 @@ function techPaletteForIndex(index: number) {
   return techPaletteForTerm(techKeywordAt(index).abbreviation);
 }
 
+function techImageStyle(index: number): CSSProperties {
+  const tile = index % 36;
+  const column = tile % TECH_IMAGE_ATLAS_COLUMNS;
+  const row = Math.floor(tile / TECH_IMAGE_ATLAS_COLUMNS);
+  return {
+    backgroundColor: "#171a1e",
+    backgroundImage: `url("${TECH_IMAGE_ATLAS_URL}")`,
+    backgroundPosition: `${column / (TECH_IMAGE_ATLAS_COLUMNS - 1) * 100}% ${row / (TECH_IMAGE_ATLAS_COLUMNS - 1) * 100}%`,
+    backgroundRepeat: "no-repeat",
+    backgroundSize: `${TECH_IMAGE_ATLAS_COLUMNS * 100}% ${TECH_IMAGE_ATLAS_COLUMNS * 100}%`,
+  };
+}
+
 function colourUnit(index: number, seed: number, salt: number) {
   const value = Math.sin((index + 1) * (seed + salt * 19.73)) * 43758.5453123;
   return value - Math.floor(value);
@@ -174,7 +196,11 @@ function colourFor(index: number, seed: number) {
   return `hsl(${hue} ${saturation}% ${lightness}%)`;
 }
 
-function getSurfaceStyle(surface: StorySurface, index: number, colourSeed: number): CSSProperties {
+function getSurfaceStyle(surface: StorySurface, index: number, colourSeed: number, typeface: TechTypeface): CSSProperties {
+  if ((surface === "techMono" || surface === "tech") && (typeface === "image" || typeface === "imageMono")) {
+    const image = techImageStyle(index);
+    return typeface === "imageMono" ? { ...image, filter: "grayscale(1) contrast(1.08) brightness(0.88)" } : image;
+  }
   if (surface === "empty" || surface === "numbers" || surface === "techMono" || surface === "tech") return { backgroundColor: "#171a1e" };
   if (surface === "face") {
     const tint = politicianTint(index);
@@ -185,11 +211,7 @@ function getSurfaceStyle(surface: StorySurface, index: number, colourSeed: numbe
 }
 
 function TechMark({ term, typeface }: { term: string; typeface: TechTypeface }) {
-  const typefaceClassName = typeface === "ui"
-    ? styles.techMarkUi
-    : typeface === "display"
-      ? styles.techMarkDisplay
-      : styles.techMarkMono;
+  const typefaceClassName = typeface === "ui" ? styles.techMarkUi : styles.techMarkMono;
 
   return (
     <svg aria-hidden="true" className={`${styles.techMark} ${typefaceClassName}`} viewBox="0 0 100 100">
@@ -260,6 +282,7 @@ function getInfluenceGeometry(
 
 export function InstagramSocialStoryTray() {
   const gridRef = useRef<HTMLUListElement>(null);
+  const ringCanvasRef = useRef<HTMLCanvasElement>(null);
   const traceCanvasRef = useRef<HTMLCanvasElement>(null);
   const fishCanvasRef = useRef<HTMLCanvasElement>(null);
   const schoolRef = useRef<AttentionSchool | null>(null);
@@ -271,22 +294,30 @@ export function InstagramSocialStoryTray() {
   const [storyGap, setStoryGap] = useState(DEFAULT_STORY_GAP);
   const [showTraces, setShowTraces] = useState(false);
   const showTracesRef = useRef(false);
-  const [fishPaletteId, setFishPaletteId] = useState<FishColourPaletteId>("classic");
-  const fishPaletteIdRef = useRef<FishColourPaletteId>("classic");
-  const [isFishPaletteOpen, setIsFishPaletteOpen] = useState(false);
+  const [traceDurationSeconds, setTraceDurationSeconds] = useState(DEFAULT_TRACE_SECONDS);
+  const traceDurationRef = useRef(DEFAULT_TRACE_SECONDS);
+  const [showTargetLines, setShowTargetLines] = useState(false);
+  const showTargetLinesRef = useRef(false);
+  const [showApproachRings, setShowApproachRings] = useState(false);
+  const showApproachRingsRef = useRef(false);
+  const [targetLineShape, setTargetLineShape] = useState<TargetLineShape>("straight");
+  const targetLineShapeRef = useRef<TargetLineShape>("straight");
+  const [showOriginMarks, setShowOriginMarks] = useState(false);
+  const [fishPaletteId, setFishPaletteId] = useState<FishColourPaletteId>("instagram");
+  const fishPaletteIdRef = useRef<FishColourPaletteId>("instagram");
   const [jakarta, setJakarta] = useState(false);
   const [jakartaAmount, setJakartaAmount] = useState(100);
   const [isControlsExpanded, setIsControlsExpanded] = useState(false);
+  const [fishCount, setFishCount] = useState(DEFAULT_FISH_COUNT);
+  const [fishScale, setFishScale] = useState(DEFAULT_FISH_SCALE);
   const [colourSeed] = useState(() => Math.random() * 100000);
   const [ringPaletteId, setRingPaletteId] = useState<StoryRingPalette["id"]>("monochrome");
-  const [isPaletteOpen, setIsPaletteOpen] = useState(false);
   const [system, setSystem] = useState(() => createSocialStorySystem(1, 1));
   const systemRef = useRef(system);
   const simulationTimeRef = useRef(0);
   const [gridReady, setGridReady] = useState(false);
   const fishLayoutRef = useRef<FieldLayout>({ width: 1, height: 1, columns: 1, rows: 1, iconSize: DEFAULT_ICON_SIZE, gap: DEFAULT_STORY_GAP });
   const selectedRingPalette = storyRingPalettes.find((palette) => palette.id === ringPaletteId) ?? storyRingPalettes[0]!;
-  const selectedFishPalette = fishColourPalettes.find((palette) => palette.id === fishPaletteId) ?? fishColourPalettes[0]!;
   const edgeWidth = LINE_EDGE_WIDTH * iconSize / EDGE_SCALE_REFERENCE_SIZE;
 
   useEffect(() => {
@@ -392,8 +423,9 @@ export function InstagramSocialStoryTray() {
 
   useEffect(() => {
     const canvas = fishCanvasRef.current;
+    const ringCanvas = ringCanvasRef.current;
     const traceCanvas = traceCanvasRef.current;
-    if (!canvas || !traceCanvas) return;
+    if (!canvas || !ringCanvas || !traceCanvas) return;
     let disposed = false;
     let scene: GoldfishScene | undefined;
     let school: AttentionSchool | undefined;
@@ -403,7 +435,11 @@ export function InstagramSocialStoryTray() {
     let targetSystem: typeof systemRef.current | undefined = systemRef.current;
     let elapsedSeconds = 0;
     let tracesVisible = false;
-    let renderedFishPaletteId: FishColourPaletteId = "classic";
+    let renderedTraceDuration = traceDurationRef.current;
+    let targetLinesVisible = false;
+    let approachRingsVisible = false;
+    let renderedTargetLineShape = targetLineShapeRef.current;
+    let renderedFishPaletteId: FishColourPaletteId = "instagram";
     let failed = false;
     const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
     const fail = (reason: unknown) => {
@@ -423,7 +459,7 @@ export function InstagramSocialStoryTray() {
       const nextKey = `${layout.width}:${layout.height}:${layout.columns}:${layout.rows}:${layout.iconSize}:${layout.gap}`;
       if (nextKey === layoutKey) return false;
       layoutKey = nextKey;
-      if (school) school.resize(layout); else school = new AttentionSchool(layout, FISH_COUNT);
+      if (school) school.resize(layout); else school = new AttentionSchool(layout, fishCount, fishScale);
       schoolRef.current = school;
       targetSystem = undefined;
       syncTargets();
@@ -433,7 +469,7 @@ export function InstagramSocialStoryTray() {
       if (!scene) return;
       scene.setSize(Math.max(1, canvas.clientWidth), Math.max(1, canvas.clientHeight));
       applyLayout();
-      if (school) scene.render(school.fish, elapsedSeconds, 0, showTracesRef.current, fishPaletteIdRef.current);
+      if (school) scene.render(school.fish, elapsedSeconds, 0, showTracesRef.current, traceDurationRef.current, showTargetLinesRef.current, showApproachRingsRef.current, targetLineShapeRef.current, school.relations, fishPaletteIdRef.current);
     };
     const draw = () => {
       if (disposed || failed || !scene || !school) return;
@@ -442,6 +478,14 @@ export function InstagramSocialStoryTray() {
       const targetsChanged = syncTargets();
       const traceChanged = tracesVisible !== showTracesRef.current;
       tracesVisible = showTracesRef.current;
+      const traceDurationChanged = renderedTraceDuration !== traceDurationRef.current;
+      renderedTraceDuration = traceDurationRef.current;
+      const targetLinesChanged = targetLinesVisible !== showTargetLinesRef.current;
+      targetLinesVisible = showTargetLinesRef.current;
+      const approachRingsChanged = approachRingsVisible !== showApproachRingsRef.current;
+      approachRingsVisible = showApproachRingsRef.current;
+      const targetLineShapeChanged = renderedTargetLineShape !== targetLineShapeRef.current;
+      renderedTargetLineShape = targetLineShapeRef.current;
       const fishPaletteChanged = renderedFishPaletteId !== fishPaletteIdRef.current;
       renderedFishPaletteId = fishPaletteIdRef.current;
       if (!document.hidden && !motion.matches) {
@@ -449,9 +493,9 @@ export function InstagramSocialStoryTray() {
         const delta = Math.min(1000 / 24, Math.max(0, started - previous));
         elapsedSeconds += delta / 1000;
         school.step(delta / 1000, now);
-        scene.render(school.fish, elapsedSeconds, delta / 1000, showTracesRef.current, fishPaletteIdRef.current);
-      } else if (layoutChanged || targetsChanged || traceChanged || fishPaletteChanged) {
-        scene.render(school.fish, elapsedSeconds, 0, showTracesRef.current, fishPaletteIdRef.current);
+        scene.render(school.fish, elapsedSeconds, delta / 1000, showTracesRef.current, traceDurationRef.current, showTargetLinesRef.current, showApproachRingsRef.current, targetLineShapeRef.current, school.relations, fishPaletteIdRef.current);
+      } else if (layoutChanged || targetsChanged || traceChanged || traceDurationChanged || targetLinesChanged || approachRingsChanged || targetLineShapeChanged || fishPaletteChanged) {
+        scene.render(school.fish, elapsedSeconds, 0, showTracesRef.current, traceDurationRef.current, showTargetLinesRef.current, showApproachRingsRef.current, targetLineShapeRef.current, school.relations, fishPaletteIdRef.current);
       }
       previous = started;
       timer = window.setTimeout(draw, Math.max(1000 / 24, 1000 / 24 - (performance.now() - started)));
@@ -465,7 +509,7 @@ export function InstagramSocialStoryTray() {
     canvas.addEventListener("webglcontextlost", contextLost);
     void import("../rendering/goldfish-scene").then(({ GoldfishScene: Scene }) => {
       if (disposed) return;
-      scene = new Scene(canvas, traceCanvas, FISH_COUNT);
+      scene = new Scene(canvas, traceCanvas, ringCanvas, fishCount, fishScale);
       resize(); // Establish a static frame before autonomous animation.
       timer = window.setTimeout(draw, 1000 / 24);
     }).catch(fail);
@@ -479,7 +523,7 @@ export function InstagramSocialStoryTray() {
       scene?.dispose();
       if (schoolRef.current === school) schoolRef.current = null;
     };
-  }, []);
+  }, [fishCount, fishScale]);
 
   const gridStyle = {
     "--grid-columns": gridSize.columns,
@@ -499,13 +543,13 @@ export function InstagramSocialStoryTray() {
     storyGap,
     system.influences,
   ]);
-
   return (
     <main aria-label="Instagram stories influenced by nearby stories" className={styles.screen}
       style={jakarta ? { filter: `contrast(${1 + jakartaAmount * 0.0028}) brightness(${1 + jakartaAmount * 0.0004}) saturate(${1 - jakartaAmount * 0.001}) hue-rotate(${jakartaAmount * 0.06}deg)` } : undefined}>
       <section className={styles.gridStage}>
+        <canvas aria-hidden="true" className={styles.ringOverlay} ref={ringCanvasRef} />
         <canvas aria-hidden="true" className={styles.traceOverlay} ref={traceCanvasRef} />
-        {stageSize.width > 0 && stageSize.height > 0 ? (
+        {!showApproachRings && stageSize.width > 0 && stageSize.height > 0 ? (
           <svg aria-hidden="true" className={styles.influenceLayer} viewBox={`0 0 ${stageSize.width} ${stageSize.height}`}>
             <defs>
               {influenceGeometry.map((influence) => {
@@ -546,10 +590,11 @@ export function InstagramSocialStoryTray() {
                     <span
                       aria-hidden="true"
                       className={`${styles.logoSurface} ${testSurface === "numbers" || testSurface === "techMono" || testSurface === "tech" ? styles.centeredSurface : ""} ${testSurface === "face" ? styles.monochromeFace : ""}`}
-                      style={getSurfaceStyle(testSurface, story.index, colourSeed)}
+                      style={getSurfaceStyle(testSurface, story.index, colourSeed, techTypeface)}
                     >
+                      {showOriginMarks ? <span aria-hidden="true" className={styles.originMarker}>+</span> : null}
                       {testSurface === "numbers" ? <NumberMark glyph={numberGlyphs[story.index % numberGlyphs.length]!} /> : null}
-                      {testSurface === "techMono" || testSurface === "tech" ? <TechMark term={techKeyword.abbreviation} typeface={techTypeface} /> : null}
+                      {testSurface === "techMono" || testSurface === "tech" ? techTypeface === "image" || techTypeface === "imageMono" ? null : <TechMark term={techKeyword.abbreviation} typeface={techTypeface} /> : null}
                     </span>
                   </span>
                 </span>
@@ -559,86 +604,129 @@ export function InstagramSocialStoryTray() {
         </ul>
       </section>
 
-      <section aria-label="Story surface test" className={`${styles.controls} ${isControlsExpanded ? styles.controlsExpanded : ""}`}>
+      <section aria-label="Field controls" className={styles.controls}>
+        <button aria-controls="story-surface-controls" aria-expanded={isControlsExpanded} className={styles.controlsToggle} onClick={() => setIsControlsExpanded((current) => !current)} type="button">
+          {isControlsExpanded ? "close" : "controls"}
+        </button>
         {isControlsExpanded ? (
           <div className={styles.controlPanel} id="story-surface-controls">
-            <div className={styles.controlActions}>
-          <div className={styles.controlScroll}>
-            <div className={styles.actions}>
-              <button aria-pressed={jakarta} title="Apply the overlay-2d-4 deep-black backboard colour treatment." onClick={() => setJakarta(!jakarta)} type="button">Backboard</button>
-              <button aria-pressed={showTraces} onClick={() => setShowTraces((current) => { const next = !current; showTracesRef.current = next; return next; })} type="button">trace {showTraces ? "active" : "inactive"}</button>
-              {surfaceOptions.map((option) => (
-                <button aria-pressed={testSurface === option.value} key={option.value} onClick={() => setTestSurface(option.value)} type="button">
-                  {option.label}
-                </button>
-              ))}
-              {testSurface === "techMono" || testSurface === "tech" ? (
-                <span aria-label="Tech typeface" className={styles.techTypeControl} role="group">
-                  <span className={styles.techTypeLabel}>type</span>
-                  {techTypefaceOptions.map((option) => (
-                    <button aria-pressed={techTypeface === option.value} key={option.value} onClick={() => setTechTypeface(option.value)} type="button">
+            <div className={styles.controlScroll}>
+              <fieldset className={styles.controlGroup}>
+                <legend className={styles.controlLegend}>surface</legend>
+                <div className={styles.optionGrid}>
+                  {surfaceOptions.map((option) => (
+                    <button aria-pressed={testSurface === option.value} className={styles.optionButton} key={option.value} onClick={() => setTestSurface(option.value)} type="button">
                       {option.label}
                     </button>
                   ))}
-                </span>
+                </div>
+              </fieldset>
+
+              {testSurface === "techMono" || testSurface === "tech" ? (
+                <fieldset className={styles.controlGroup}>
+                  <legend className={styles.controlLegend}>tech type</legend>
+                  <div className={styles.optionGrid}>
+                    {techTypefaceOptions.map((option) => (
+                      <button aria-pressed={techTypeface === option.value} className={styles.optionButton} key={option.value} onClick={() => setTechTypeface(option.value)} type="button">
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </fieldset>
               ) : null}
-            </div>
-            <label className={styles.sizeControl}>
-              <span>size</span>
-              <input aria-label="Story icon size" max={MAX_ICON_SIZE} min={MIN_ICON_SIZE} onChange={(event) => setIconSize(Number(event.currentTarget.value))} step="1" type="range" value={iconSize} />
-              <output>{iconSize}px</output>
-            </label>
-            <label className={styles.sizeControl} aria-disabled={!jakarta}>
-              <span>filter</span>
-              <input aria-label="Backboard intensity" disabled={!jakarta} min="0" max="100" step="1" type="range" value={jakartaAmount} onChange={(event) => setJakartaAmount(Number(event.currentTarget.value))} />
-              <output>{jakartaAmount}%</output>
-            </label>
-            <label className={styles.sizeControl}>
-              <span>margin</span>
-              <input aria-label="Space between story icons" max={MAX_STORY_GAP} min="0" onChange={(event) => setStoryGap(Number(event.currentTarget.value))} step="1" type="range" value={storyGap} />
-              <output>{storyGap}px</output>
-            </label>
-          </div>
-          <div className={styles.paletteControl}>
-            <button aria-expanded={isFishPaletteOpen} aria-label="Choose goldfish colors" className={styles.paletteTrigger} onClick={() => setIsFishPaletteOpen((current) => !current)} type="button">
-              <span aria-hidden="true" className={styles.palettePreview} style={{ background: selectedFishPalette.gradient }} />
-            </button>
-            {isFishPaletteOpen ? (
-              <div aria-label="Goldfish color palettes" className={styles.palettePopover} role="group">
-                {fishColourPalettes.map((palette) => (
-                  <button aria-label={palette.name} aria-pressed={palette.id === fishPaletteId} className={styles.paletteOption} key={palette.id} onClick={() => { fishPaletteIdRef.current = palette.id; setFishPaletteId(palette.id); setIsFishPaletteOpen(false); }} type="button">
-                    <span aria-hidden="true" className={styles.palettePreview} style={{ background: palette.gradient }} />
-                  </button>
-                ))}
-              </div>
-            ) : null}
-          </div>
-          <div className={styles.paletteControl}>
-            <button aria-expanded={isPaletteOpen} aria-label="Choose story ring colors" className={styles.paletteTrigger} onClick={() => setIsPaletteOpen((current) => !current)} type="button">
-              <span aria-hidden="true" className={styles.palettePreview} style={{ background: selectedRingPalette.gradient }} />
-            </button>
-            {isPaletteOpen ? (
-              <div aria-label="Story ring color palettes" className={styles.palettePopover} role="group">
-                {storyRingPalettes.map((palette) => (
-                  <button aria-label={palette.name} aria-pressed={palette.id === ringPaletteId} className={styles.paletteOption} key={palette.id} onClick={() => { setRingPaletteId(palette.id); setIsPaletteOpen(false); }} type="button">
-                    <span aria-hidden="true" className={styles.palettePreview} style={{ background: palette.gradient }} />
-                  </button>
-                ))}
-              </div>
-            ) : null}
-          </div>
+
+              <fieldset className={styles.controlGroup}>
+                <legend className={styles.controlLegend}>layout</legend>
+                <label className={styles.sliderControl}>
+                  <span>icon</span>
+                  <input aria-label="Story icon size" max={MAX_ICON_SIZE} min={MIN_ICON_SIZE} onChange={(event) => setIconSize(Number(event.currentTarget.value))} step="1" type="range" value={iconSize} />
+                  <output>{iconSize}px</output>
+                </label>
+                <label className={styles.sliderControl}>
+                  <span>margin</span>
+                  <input aria-label="Space between story icons" max={MAX_STORY_GAP} min="0" onChange={(event) => setStoryGap(Number(event.currentTarget.value))} step="1" type="range" value={storyGap} />
+                  <output>{storyGap}px</output>
+                </label>
+              </fieldset>
+
+              <fieldset className={styles.controlGroup}>
+                <legend className={styles.controlLegend}>fish school</legend>
+                <label className={styles.sliderControl}>
+                  <span>size</span>
+                  <input aria-label="Goldfish size" max={MAX_FISH_SCALE} min={MIN_FISH_SCALE} onChange={(event) => setFishScale(Number(event.currentTarget.value))} step="0.05" type="range" value={fishScale} />
+                  <output>×{fishScale.toFixed(2)}</output>
+                </label>
+                <label className={styles.sliderControl}>
+                  <span>count</span>
+                  <input aria-label="Goldfish count" max={MAX_FISH_COUNT} min={MIN_FISH_COUNT} onChange={(event) => setFishCount(Number(event.currentTarget.value))} step="10" type="range" value={fishCount} />
+                  <output>{fishCount}</output>
+                </label>
+                <div className={styles.paletteRow}>
+                  <span className={styles.choiceLabel}>colour</span>
+                  <span aria-label="Goldfish colour palette" className={styles.paletteOptions} role="group">
+                    {fishColourPalettes.map((palette) => (
+                      <button aria-label={palette.name} aria-pressed={palette.id === fishPaletteId} className={styles.paletteOption} key={palette.id} onClick={() => { fishPaletteIdRef.current = palette.id; setFishPaletteId(palette.id); }} type="button">
+                        <span aria-hidden="true" className={styles.palettePreview} style={{ background: palette.gradient }} />
+                      </button>
+                    ))}
+                  </span>
+                </div>
+              </fieldset>
+
+              <fieldset className={styles.controlGroup}>
+                <legend className={styles.controlLegend}>story rings</legend>
+                <div className={styles.paletteRow}>
+                  <span className={styles.choiceLabel}>colour</span>
+                  <span aria-label="Story ring colour palette" className={styles.paletteOptions} role="group">
+                    {storyRingPalettes.map((palette) => (
+                      <button aria-label={palette.name} aria-pressed={palette.id === ringPaletteId} className={styles.paletteOption} key={palette.id} onClick={() => setRingPaletteId(palette.id)} type="button">
+                        <span aria-hidden="true" className={styles.palettePreview} style={{ background: palette.gradient }} />
+                      </button>
+                    ))}
+                  </span>
+                </div>
+              </fieldset>
+
+              <fieldset className={styles.controlGroup}>
+                <legend className={styles.controlLegend}>field</legend>
+                <div className={styles.optionGrid}>
+                  <button aria-pressed={jakarta} className={styles.optionButton} onClick={() => setJakarta((current) => !current)} type="button">backboard</button>
+                  <button aria-pressed={showTraces} className={styles.optionButton} onClick={() => setShowTraces((current) => { const next = !current; showTracesRef.current = next; return next; })} type="button">traces</button>
+                  <button aria-pressed={showTargetLines} className={styles.optionButton} onClick={() => setShowTargetLines((current) => { const next = !current; showTargetLinesRef.current = next; return next; })} type="button">target lines</button>
+                  <button aria-pressed={showApproachRings} className={styles.optionButton} onClick={() => setShowApproachRings((current) => {
+                    const next = !current;
+                    showApproachRingsRef.current = next;
+                    if (next && showTargetLinesRef.current) {
+                      showTargetLinesRef.current = false;
+                      setShowTargetLines(false);
+                    }
+                    return next;
+                  })} type="button">approach rings</button>
+                  <button aria-pressed={targetLineShape === "curve"} className={styles.optionButton} onClick={() => {
+                    const next = targetLineShapeRef.current === "straight" ? "curve" : "straight";
+                    targetLineShapeRef.current = next;
+                    setTargetLineShape(next);
+                    if (next === "curve" && !showTargetLinesRef.current) {
+                      showTargetLinesRef.current = true;
+                      setShowTargetLines(true);
+                    }
+                  }} type="button">target curve</button>
+                  <button aria-pressed={showOriginMarks} className={styles.optionButton} onClick={() => setShowOriginMarks((current) => !current)} type="button">origins +</button>
+                </div>
+                <label aria-disabled={!jakarta} className={styles.sliderControl}>
+                  <span>filter</span>
+                  <input aria-label="Backboard intensity" disabled={!jakarta} max="100" min="0" onChange={(event) => setJakartaAmount(Number(event.currentTarget.value))} step="1" type="range" value={jakartaAmount} />
+                  <output>{jakartaAmount}%</output>
+                </label>
+                <label aria-disabled={!showTraces} className={styles.sliderControl}>
+                  <span>trace</span>
+                  <input aria-label="Recent goldfish trace duration" disabled={!showTraces} max="10" min="1" onChange={(event) => { const next = Number(event.currentTarget.value); traceDurationRef.current = next; setTraceDurationSeconds(next); }} step="1" type="range" value={traceDurationSeconds} />
+                  <output>{traceDurationSeconds}s</output>
+                </label>
+              </fieldset>
             </div>
           </div>
         ) : null}
-        <button aria-controls="story-surface-controls" aria-expanded={isControlsExpanded} className={styles.controlsToggle} onClick={() => {
-          if (isControlsExpanded) {
-            setIsFishPaletteOpen(false);
-            setIsPaletteOpen(false);
-          }
-          setIsControlsExpanded((current) => !current);
-        }} type="button">
-          {isControlsExpanded ? "collapse" : "expand"}
-        </button>
       </section>
     </main>
   );

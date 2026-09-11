@@ -33,18 +33,19 @@ export type CellRelations = Readonly<{
   scoreMax: Float32Array;
 }>;
 type Target = { index: number; x: number; y: number; born: number; strength: number };
-const MAX_FISH_COUNT = 350;
+const MAX_FISH_COUNT = 1000;
 // Screen-space bounds of the 1.0× rendered glyph, measured from the root.
 // The tail is deliberately much longer than the mouth.
-const FISH_MOUTH_REACH = 6.15;
-const FISH_TAIL_REACH = 13.08;
-const FISH_SIDE_REACH = 6.15;
+const FISH_MOUTH_REACH_AT_SCALE_ONE = 6.15;
+const FISH_TAIL_REACH_AT_SCALE_ONE = 13.08;
+const FISH_SIDE_REACH_AT_SCALE_ONE = 6.15;
 const FISH_EDGE_GAP = 1;
 const CRUISE_SPEED = 24;
 const MAX_FISH_SPEED = 64;
 const TARGET_APPROACH_SPEED = 44;
 const TARGET_RECONSIDER_MINIMUM = 2100;
 const TARGET_RECONSIDER_RANGE = 1600;
+export const TARGET_CAPTURE_PADDING = 48;
 
 export function storyCenter(index: number, layout: FieldLayout) {
   const { width, height, columns, rows, iconSize, gap } = layout;
@@ -71,6 +72,9 @@ export class AttentionSchool {
   readonly fish: Fish[];
   private readonly nextVelocity: Float64Array;
   private readonly next: Int32Array;
+  private readonly mouthReach: number;
+  private readonly tailReach: number;
+  private readonly sideReach: number;
   private heads = new Int32Array(0);
   private bucketColumns = 0;
   private targets = new Map<number, Target>();
@@ -122,23 +126,23 @@ export class AttentionSchool {
    */
   private exclusionRadius(fish: Fish, target: Target, distance: number) {
     if (distance < 0.001) {
-      return this.layout.iconSize / 2 + FISH_TAIL_REACH + FISH_SIDE_REACH + FISH_EDGE_GAP;
+      return this.layout.iconSize / 2 + this.tailReach + this.sideReach + FISH_EDGE_GAP;
     }
     const inwardX = (target.x - fish.x) / distance;
     const inwardY = (target.y - fish.y) / distance;
     const forwardX = Math.cos(fish.facing);
     const forwardY = Math.sin(fish.facing);
     const alignment = Math.max(-1, Math.min(1, forwardX * inwardX + forwardY * inwardY));
-    const longitudinalReach = alignment >= 0 ? FISH_MOUTH_REACH : FISH_TAIL_REACH;
+    const longitudinalReach = alignment >= 0 ? this.mouthReach : this.tailReach;
     const lateralShare = Math.sqrt(Math.max(0, 1 - alignment * alignment));
     return this.layout.iconSize / 2
       + longitudinalReach * Math.abs(alignment)
-      + FISH_SIDE_REACH * lateralShare
+      + this.sideReach * lateralShare
       + FISH_EDGE_GAP;
   }
 
   private resolveObstacles(fish: Fish) {
-    const searchRadius = this.layout.iconSize / 2 + FISH_TAIL_REACH + FISH_SIDE_REACH + FISH_EDGE_GAP;
+    const searchRadius = this.layout.iconSize / 2 + this.tailReach + this.sideReach + FISH_EDGE_GAP;
     for (let pass = 0; pass < 24; pass++) {
       let overlap = false;
       for (const target of this.nearbyTargets(fish.x, fish.y, searchRadius)) {
@@ -149,7 +153,7 @@ export class AttentionSchool {
         overlap = true;
         this.markRelation(fish, target.index, 2);
         const relation = fish.id * this.relationState.cellCount + target.index;
-        if (!(this.relationState.flags[relation]! & 4)) this.relationState.weights[relation] = Math.max(this.relationState.weights[relation]!, Math.min(1, (radius - distance) / FISH_TAIL_REACH));
+        if (!(this.relationState.flags[relation]! & 4)) this.relationState.weights[relation] = Math.max(this.relationState.weights[relation]!, Math.min(1, (radius - distance) / this.tailReach));
         const angle = unit(fish.id, target.index + 17) * Math.PI * 2;
         const ux = distance > 0.001 ? dx / distance : Math.cos(angle);
         const uy = distance > 0.001 ? dy / distance : Math.sin(angle);
@@ -179,8 +183,11 @@ export class AttentionSchool {
     return entry ? entry.value * Math.exp(-Math.max(0, now - entry.time) / 12000) : 0;
   }
 
-  constructor(layout: FieldLayout, count = 100) {
+  constructor(layout: FieldLayout, count = 100, fishScale = 1) {
     this.layout = layout;
+    this.mouthReach = FISH_MOUTH_REACH_AT_SCALE_ONE * fishScale;
+    this.tailReach = FISH_TAIL_REACH_AT_SCALE_ONE * fishScale;
+    this.sideReach = FISH_SIDE_REACH_AT_SCALE_ONE * fishScale;
     this.fish = Array.from({ length: Math.min(MAX_FISH_COUNT, Math.max(1, count)) }, (_, id) => {
       const heading = unit(id, 3) * Math.PI * 2;
       return { id, x: unit(id, 1) * layout.width, y: unit(id, 2) * layout.height,
@@ -274,7 +281,7 @@ export class AttentionSchool {
     mechanisms.length = 0;
     for (const fish of this.fish) {
       const target = this.targets.get(fish.target);
-      if (target && Math.hypot(target.x - fish.x, target.y - fish.y) < iconSize / 2 + 48) {
+      if (target && Math.hypot(target.x - fish.x, target.y - fish.y) < iconSize / 2 + TARGET_CAPTURE_PADDING) {
         this.occupancy.set(target.index, (this.occupancy.get(target.index) ?? 0) + 1);
       }
     }
@@ -335,18 +342,18 @@ export class AttentionSchool {
         const distance = Math.max(0.1, Math.hypot(dx, dy));
         const familiarity = this.remembered(fish.id, target.index, now);
         // A target-facing fish reaches the ring with its mouth, not its root.
-        const radius = iconSize / 2 + FISH_MOUTH_REACH + FISH_EDGE_GAP;
+        const radius = iconSize / 2 + this.mouthReach + FISH_EDGE_GAP;
         const radial = Math.max(-32, Math.min(TARGET_APPROACH_SPEED, (distance - radius) * 1.25));
         targetInwardX = -dx / distance;
         targetInwardY = -dy / distance;
-        targetCapture = Math.max(0, Math.min(1, (radius + 48 - distance) / 48));
+        targetCapture = Math.max(0, Math.min(1, (radius + TARGET_CAPTURE_PADDING - distance) / TARGET_CAPTURE_PADDING));
         const desiredX = targetInwardX * radial;
         const desiredY = targetInwardY * radial;
         const captureStrength = 2.5 + targetCapture * 5.5;
         ax += (desiredX - fish.vx) * captureStrength;
         ay += (desiredY - fish.vy) * captureStrength;
         desiredFacing = Math.atan2(target.y - fish.y, target.x - fish.x);
-        const contact = distance < iconSize / 2 + 48;
+        const contact = distance < iconSize / 2 + TARGET_CAPTURE_PADDING;
         this.markRelation(fish, target.index, contact ? 12 : 4);
         this.relationState.weights[fish.id * this.relationState.cellCount + target.index] = contact ? 1 : Math.min(1, Math.abs(radial) / 95);
         let record = this.mechanismPool[i];

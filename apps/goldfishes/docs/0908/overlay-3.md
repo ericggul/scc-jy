@@ -1,11 +1,30 @@
 # 0908 overlay-3
 
-Route: `/screen/0908/overlay-3` (alias `/0908/overlay-3`). Date: 2026-09-08.
+Route: `/screen/0908/overlay-3` (alias `/0908/overlay-3`). A local `0908/overlay-2` trial; its model, renderer, and controls remain isolated from the parent experiment.
 
-Question: can the colour-coded technology abbreviations retain the compact, instrument-like presence of `overlay-2` while participants compare different type voices in the same field?
+## Surface and layout
 
-Baseline: a complete local copy of `0908/overlay-2`. Mutation: `tech mono` is the default surface, and both `tech` and `tech mono` expose the same three bottom-control type treatments: the original mono, system UI sans, and the bundled IDF Voyageur display face. The two surfaces continue to differ only in their existing ring-colour treatment. The edge is fixed to the parent’s plain line; the directed-edge authoring control and rendering branch are removed. Bubble labels and their control are removed, so the grid and fish target field use icon-only rows. The school contains 350 fish rendered at the `1.0` baseline scale. A target fish turns toward its bubble and steers its mouth to `icon radius + 7.15px`; a directional hard exclusion boundary accounts for the 6.15px mouth, 13.08px tail, and 6.15px side extents, so no rendered fish part intersects any bubble. Near the target, environmental-current and tangential flocking drift are damped, avoiding circumferential orbiting; its position settles while its existing tail animation continues. Target reconsideration occurs every 2.1–3.7 seconds unless the target disappears. Untargeted cruise speed is 24px/s and target speed tops out at 44px/s. The remaining authoring controls are collapsed by default behind one bottom-right `expand` / `collapse` button.
+- Field background: `#07090b`; tech bubble background: `#171a1e`.
+- Default surface is `tech mono`. `tech` and `tech mono` share `mono`, `ui`, `image`, and `image mono`; the former `display` treatment is removed.
+- `image` crops the local 6×6 no-text technology atlas in keyword order. `image mono` only desaturates/adjusts that image; the surface still controls ring colour.
+- The edge stays the parent’s plain edge. Directional edge controls and labels beneath bubbles are removed.
+- Right-side collapsible controls group surface, tech type, layout, fish school, story rings, and field options.
 
-Invariants: the 350-fish 3D school, local attention and story models, 24Hz cadence, story geometry, keyword/ring palette mapping, all other surface options, and backboard and trace controls remain local copies of the parent. The field background is darkened to `#07090b`; technology bubbles are darkened to `#171a1e`.
+## Fish school
 
-Evidence boundary: this is a typographic trial, not a claim that any treatment is more legible or appropriate. `pnpm --filter @scc/goldfishes typecheck` passes; browser comparison remains unverified.
+- Count slider: 150–600 (step 10); size slider: ×0.8–×1.2 (step 0.05). Default: 500 fish, ×0.9, Instagram palette.
+- A target fish faces its keyword and brings its mouth to `bubble radius + mouth reach + 1px`; directional body support bounds prevent mouth, side, or tail overlap.
+- Target capture/contact begins at `bubble radius + 48px`. Near a target, tangential drift is damped so fish press toward the bubble rather than orbiting it.
+- Target reconsideration is 2.1–3.7 seconds; cruise speed is 24px/s and target approach caps at 44px/s.
+
+## Field render options
+
+- `traces`: a 12Hz typed ring buffer holding only the latest 1–10 seconds (default 5). Paths are batched and capped at 12,000 segments per frame.
+- `target lines`: one mouth-to-current-target line per fish, never candidate/all-cell links. `target curve` uses an explicit two-control-point cubic Bézier and enables target lines on first activation.
+- `approach rings`: rings-only mode. Story edges and target lines are hidden. Every fish inside its target’s outer 24px approach band has one closed circle centred on that keyword, with the fish on its circumference. It fades in over 0.20s on entry, stays while that geometric condition holds, and fades out over 0.30s only after departure; isolated rings are clearer while overlapping rings are attenuated. Ring states and opacity buckets are fixed typed arrays rendered at full resolution by GPU instances.
+- `origins +`: a visible, centred `+` glyph inside each bubble surface, below its keyword/image.
+
+## Limits
+
+- The renderer/model have a 1,000-fish internal allocation ceiling; participant controls remain capped at 600.
+- Renderer cadence is 24Hz at pixel ratio 1. The generated atlas is shared at `public/images/0908/tech-keyword-atlas/tech-keyword-atlas-v1.png`.
